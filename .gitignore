@@ -12,7 +12,7 @@
 # vendor
 
 # Ignore configuration files that may contain sensitive information.
-site/sites/*/settings*.php
+site/sites/**/settings*.php
 site/sites/*/services*.yml
 
 # Ignore paths that contain user-generated content.
@@ -21,7 +21,7 @@ site/sites/*/files/js
 site/sites/*/files/php
 site/sites/*/files/config*
 site/sites/*/files/styles
-/site/sites/*/files/.htaccess
+site/sites/*/files/.htaccess
 site/sites/*/private
 
 # Ignore SimpleTest multi-site environment.
