@@ -129,3 +129,13 @@ back-to-top:
     js/custom/back-to-top.js: { scope: 'footer' }
   dependencies:
     - core/jquery
+
+fixed-header:
+  version: VERSION
+  css:
+    component:
+      css/components/fixed-header.css: {}
+  js:
+    js/custom/fixed-header.js: { scope: 'footer' }
+  dependencies:
+    - core/jquery

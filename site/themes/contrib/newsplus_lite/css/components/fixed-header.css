@@ -1,0 +1,12 @@
+/*fixed main-menu*/
+.onscroll #header {
+  position: fixed;
+  z-index: 499;
+  top: 0;
+  width: 100%;
+  -webkit-transition: top 0.5s ease-in-out;
+     -moz-transition: top 0.5s ease-in-out;
+       -o-transition: top 0.5s ease-in-out;
+      -ms-transition: top 0.5s ease-in-out;
+          transition: top 0.5s ease-in-out;
+}
