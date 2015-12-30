@@ -30,7 +30,6 @@ global-styling:
       css/components/teaser-listing.css: {}
       css/components/pager.css: {}
       css/components/image-overlay.css: {}
-      css/components/to-top.css: {}
       css/components/admin.css: {}
       css/components/search.css: {}
       css/components/forms.css: {}
@@ -118,5 +117,15 @@ node-features:
   version: VERSION
   js:
     js/custom/node-features.js: { scope: 'footer' }
+  dependencies:
+    - core/jquery
+
+back-to-top:
+  version: VERSION
+  css:
+    component:
+      css/components/to-top.css: {}
+  js:
+    js/custom/back-to-top.js: { scope: 'footer' }
   dependencies:
     - core/jquery
