@@ -1,0 +1,70 @@
+/* --------------- System Tabs  --------------- */
+.block.block-local-tasks-block {
+  padding-bottom: 0;
+}
+div.tabs {
+  margin-bottom: 20px;
+}
+.tabs ul.primary li.is-active a {
+}
+@media screen and (max-width: 37.5em) { /* 600px */
+  .tabs ul.primary {
+  }
+  .tabs ul.primary li {
+    display: block;
+    margin: 0;
+  }
+  .tabs ul.primary li a {
+  }
+  .tabs ul.primary li.is-active a {
+  }
+}
+@media screen and (min-width: 37.5em) { /* 600px */
+  .tabs ul.primary {
+    margin: 0;
+    margin-bottom: 20px;
+    border-collapse: collapse;
+    height: auto;
+    line-height: normal;
+    overflow: hidden;
+    border: none;
+    white-space: nowrap;
+  }
+  .tabs ul.primary li {
+    display: block;
+    float: left; /* LTR */
+    vertical-align: bottom;
+    margin: 0 5px 0 0; /* LTR */
+  }
+  .tabs ul.primary li a {
+    float: left; /* not LTR */
+  }
+  .tabs ul.primary li.is-active a {
+  }
+}
+.tabs ul.secondary {
+  margin: 0;
+  margin-bottom: 20px;
+  padding: 0;
+  overflow: hidden;
+}
+.tabs ul.secondary li {
+  display: block;
+  float: left; /* LTR */
+  margin: 0;
+  padding: 0 1em;
+}
+.tabs ul.secondary li:last-child {
+  border-right: none; /* LTR */
+}
+.tabs ul.secondary li:first-child {
+  padding-left: 0; /* LTR */
+}
+.tabs ul.secondary li a {
+  display: inline;
+  padding: 0.25em 0.5em;
+  text-decoration: none;
+}
+.tabs ul.secondary li a.is-active {
+  border-bottom: none;
+}

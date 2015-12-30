@@ -1,0 +1,12 @@
+/*Tables*/
+table { border-collapse: collapse; width:100%; color: #000000; margin: 25px 0 40px; }
+
+table th { font-size: 16px; text-transform: uppercase; border: 1px solid #fff; background-color: #c0273c; color: #ffffff; font-weight: 400; }
+
+table th a, table th a:hover { color: #fff; }
+
+table th, table td { vertical-align: top; padding:10px 20px; text-align:left; }
+
+table td { border:1px solid #fff; }
+
+table tr.even, table tr.odd  { border-bottom: 1px solid #fff; background:#e4e4e4; font-size: 14px; }

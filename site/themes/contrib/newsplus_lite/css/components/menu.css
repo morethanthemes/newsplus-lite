@@ -1,0 +1,73 @@
+/**
+ * @file
+ * Styles for menus in Bartik.
+ */
+
+/* This is needed to override ul.menu styles in menu.theme.css */
+ul.menu {
+  margin: 0;
+  padding: 0 0 0.25em 0;
+}
+
+/*Menus*/
+ul.menu { margin: 0; padding: 0; list-style: none; }
+
+ul.menu li { margin:0; position: relative; list-style: none; padding: 0; }
+
+ul.menu li a {
+  padding: 7px 10px 8px 25px;
+  line-height: 150%;
+  display: block;
+  color: #3f3f3f;
+  text-decoration: none;
+}
+
+ul.menu li a:hover { text-decoration: none; background-color: #ea2d49; color: #ffffff; }
+
+ul.menu li.menu-item--expanded ul { padding-left: 25px; }
+
+/*menu arrows  */
+ul.menu li.menu-item--collapsed > a:before { content: "\f105"; font-family: 'FontAwesome'; position: absolute; left: 0px; font-size: 20px; top: 7px; color: #ea2d49;
+-webkit-transition: all linear 0.2s; -moz-transition: all linear 0.2s; -o-transition: all linear 0.2s;  -ms-transition: all linear 0.2s;
+transition: all linear 0.2s; font-weight: 700; }
+
+ul.menu li.menu-item--expanded > a:before { content: "\f107"; font-family: 'FontAwesome'; position: absolute; left: 0px; font-size: 20px; top: 7px; color: #ea2d49;
+-webkit-transition: all linear 0.2s; -moz-transition: all linear 0.2s; -o-transition: all linear 0.2s;  -ms-transition: all linear 0.2s;
+transition: all linear 0.2s; font-weight: 700; }
+
+ul.menu li > a:hover:before { left: 10px; color: #ffffff!important; }
+
+ul.menu li.menu-item--expanded > a:hover:before { left: 5px; }
+
+#pre-header ul.menu li.menu-item--collapsed > a:before,
+#pre-header ul.menu li.menu-item--expanded > a:before,
+#header-top ul.menu li.menu-item--collapsed > a:before,
+#header-top ul.menu li.menu-item--expanded > a:before {
+  content: "";
+}
+
+/*Subfooter menu*/
+.subfooter-area.right ul.menu { text-align: right; }
+
+.subfooter-area ul.menu li { display: inline-block; }
+
+.subfooter-area ul.menu ul.menu { display: none; }
+
+.subfooter-area ul.menu li a { margin:0; padding: 0 8px 0 6px; border-right: 1px solid #464646; color: #464646; line-height: 1; }
+
+.subfooter-area ul.menu li a:hover { color: #ea2d49; text-decoration: underline; background-color: transparent; }
+
+.subfooter-area ul.menu li:last-of-type a { border-right: none; padding-right: 0; }
+
+.subfooter-area.left ul.menu li.first a { padding-left: 0; }
+
+.subfooter-area ul.menu li.menu-item--expanded > a:before, .subfooter-area ul.menu li > a:before { content: ""; }
+
+@media (max-width: 991px) {
+  .subfooter-area ul.menu, .subfooter-area.right ul.menu { text-align: center; padding: 0 0 0 2px; }
+}
+
+@media (max-width: 767px) {
+  .subfooter-area ul.menu li { display: block; padding: 10px 20px; }
+  .subfooter-area ul.menu li:last-of-type a, .subfooter-area ul.menu li a { border-right: none; padding: 0 10px; }
+}

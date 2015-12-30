@@ -1,0 +1,334 @@
+<?php
+
+
+/**
+ * @file
+ * Functions to support theming in the newsplus_lite theme.
+ */
+
+use Drupal\Core\Theme\ThemeSettings;
+use Drupal\Core\Template\Attribute;
+
+/**
+ * Implements hook_preprocess_HOOK() for HTML document templates.
+ *
+ * Adds body classes if certain regions have content.
+ */
+function newsplus_lite_preprocess_html(&$variables) {
+  // Add information about the number of sidebars.
+  if (!empty($variables['page']['sidebar_first']) && !empty($variables['page']['sidebar_second'])) {
+    $variables['attributes']['class'][] = 'layout-two-sidebars';
+  }
+  elseif (!empty($variables['page']['sidebar_first'])) {
+    $variables['attributes']['class'][] = 'layout-one-sidebar';
+    $variables['attributes']['class'][] = 'layout-sidebar-first';
+  }
+  elseif (!empty($variables['page']['sidebar_second'])) {
+    $variables['attributes']['class'][] = 'layout-one-sidebar';
+    $variables['attributes']['class'][] = 'layout-sidebar-second';
+  }
+  else {
+    $variables['attributes']['class'][] = 'layout-no-sidebars';
+  }
+
+  if (!empty($variables['page']['featured_top'])) {
+    $variables['attributes']['class'][] = 'has-featured-top';
+  }
+
+  $headings_font_family = theme_get_setting('features.headings_font_family');
+  $variables['attributes']['class'][] = $headings_font_family;
+
+  $paragraph_font_family = theme_get_setting('features.paragraph_font_family');
+  $variables['attributes']['class'][] = $paragraph_font_family;
+
+  $sitename_font_family = theme_get_setting('features.sitename_font_family');
+  $variables['attributes']['class'][] = $sitename_font_family;
+
+  $slogan_font_family = theme_get_setting('features.slogan_font_family');
+  $variables['attributes']['class'][] = $slogan_font_family;
+
+}
+
+function newsplus_lite_preprocess_breadcrumb(&$variables){
+  if(($node = \Drupal::routeMatch()->getParameter('node')) && $variables['breadcrumb']){
+    $variables['breadcrumb'][] = array(
+      'text' => $node->getTitle()
+    );
+   }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for page templates.
+ */
+function newsplus_lite_preprocess_page_title(&$variables) {
+  // Since the title and the shortcut link are both block level elements,
+  // positioning them next to each other is much simpler with a wrapper div.
+  if (!empty($variables['title_suffix']['add_or_remove_shortcut']) && $variables['title']) {
+    // Add a wrapper div using the title_prefix and title_suffix render
+    // elements.
+    $variables['title_prefix']['shortcut_wrapper'] = array(
+      '#markup' => '<div class="shortcut-wrapper clearfix">',
+      '#weight' => 100,
+    );
+    $variables['title_suffix']['shortcut_wrapper'] = array(
+      '#markup' => '</div>',
+      '#weight' => -99,
+    );
+    // Make sure the shortcut link is the first item in title_suffix.
+    $variables['title_suffix']['add_or_remove_shortcut']['#weight'] = -100;
+  }
+}
+
+function newsplus_lite_preprocess_page(&$variables) {
+
+  // $variables['#attached']['library'][] = 'newsplus_lite/magnific-popup-init'; //Attach library in theme file example
+
+  $three_columns_grid_layout = theme_get_setting('features.three_columns_grid_layout');
+  $sidebar_first = $variables['page']['sidebar_first'];
+  $sidebar_second = $variables['page']['sidebar_second'];
+  $footer_first = $variables['page']['footer_first'];
+  $footer_second = $variables['page']['footer_second'];
+  $footer_third = $variables['page']['footer_third'];
+  $footer_fourth = $variables['page']['footer_fourth'];
+  $pre_header_left = $variables['page']['pre_header_left'];
+  $pre_header_right = $variables['page']['pre_header_right'];
+  $header = $variables['page']['header'];
+  $header_top_right = $variables['page']['header_top_right'];
+
+  /**
+   * Insert variables into the page template.
+   */
+  if ($variables['is_front'] || isset($variables['node']) && ($variables['node']->getType() == 'blog' || $variables['node']->getType() == 'article' || $variables['node']->getType() == 'mt_post')) {
+    if (isset($variables['node']) && $variables['node']->getType() != 'page' ) {
+      if($sidebar_first && $sidebar_second) {
+        if ($three_columns_grid_layout == 'grid_3_6_3') {
+          $variables['main_grid_class'] = 'col-md-6';
+          $variables['sidebar_first_grid_class'] = 'col-md-3';
+          $variables['sidebar_second_grid_class'] = 'col-md-3';
+        } elseif ($three_columns_grid_layout == 'grid_2_6_4') {
+          $variables['main_grid_class'] = 'col-md-6';
+          $variables['sidebar_first_grid_class'] = 'col-md-2';
+          $variables['sidebar_second_grid_class'] = 'col-md-4';
+        } elseif ($three_columns_grid_layout == 'grid_4_6_2') {
+          $variables['main_grid_class'] = 'col-md-6';
+          $variables['sidebar_first_grid_class'] = 'col-md-4';
+          $variables['sidebar_second_grid_class'] = 'col-md-2';
+        }
+      } elseif ($sidebar_first && !$sidebar_second) {
+        $variables['main_grid_class'] = 'col-md-8';
+        $variables['sidebar_first_grid_class'] = 'col-md-4';
+      } elseif (!$sidebar_first && $sidebar_second) {
+        $variables['main_grid_class'] = 'col-md-8';
+        $variables['sidebar_second_grid_class'] = 'col-md-4';
+      } else {
+        $variables['main_grid_class'] = 'col-md-8 col-md-offset-2';
+        $variables['sidebar_first_grid_class'] = '';
+        $variables['sidebar_second_grid_class'] = '';
+      }
+    } else {
+      if($sidebar_first && $sidebar_second) {
+        if ($three_columns_grid_layout == 'grid_3_6_3') {
+          $variables['main_grid_class'] = 'col-md-6';
+          $variables['sidebar_first_grid_class'] = 'col-md-3';
+          $variables['sidebar_second_grid_class'] = 'col-md-3';
+        } elseif ($three_columns_grid_layout == 'grid_2_6_4') {
+          $variables['main_grid_class'] = 'col-md-6';
+          $variables['sidebar_first_grid_class'] = 'col-md-2';
+          $variables['sidebar_second_grid_class'] = 'col-md-4';
+        } elseif ($three_columns_grid_layout == 'grid_4_6_2') {
+          $variables['main_grid_class'] = 'col-md-6';
+          $variables['sidebar_first_grid_class'] = 'col-md-4';
+          $variables['sidebar_second_grid_class'] = 'col-md-2';
+        }
+      } elseif ($sidebar_first && !$sidebar_second) {
+        $variables['main_grid_class'] = 'col-md-8';
+        $variables['sidebar_first_grid_class'] = 'col-md-4';
+      } elseif (!$sidebar_first && $sidebar_second) {
+        $variables['main_grid_class'] = 'col-md-8';
+        $variables['sidebar_second_grid_class'] = 'col-md-4';
+      } else {
+        $variables['main_grid_class'] = 'col-md-12';
+        $variables['sidebar_first_grid_class'] = '';
+        $variables['sidebar_second_grid_class'] = '';
+      }
+    }
+  } else {
+    if (isset($variables['node']) && $variables['node']->getType() != 'page' ) {
+      if($sidebar_first && $sidebar_second) {
+        if ($three_columns_grid_layout == 'grid_3_6_3') {
+          $variables['main_grid_class'] = 'col-md-6';
+          $variables['sidebar_first_grid_class'] = 'col-md-3';
+          $variables['sidebar_second_grid_class'] = 'col-md-3';
+        } elseif ($three_columns_grid_layout == 'grid_2_6_4') {
+          $variables['main_grid_class'] = 'col-md-6';
+          $variables['sidebar_first_grid_class'] = 'col-md-2';
+          $variables['sidebar_second_grid_class'] = 'col-md-4';
+        } elseif ($three_columns_grid_layout == 'grid_4_6_2') {
+          $variables['main_grid_class'] = 'col-md-6';
+          $variables['sidebar_first_grid_class'] = 'col-md-4';
+          $variables['sidebar_second_grid_class'] = 'col-md-2';
+        }
+      } elseif ($sidebar_first && !$sidebar_second) {
+        $variables['main_grid_class'] = 'col-md-7';
+        $variables['sidebar_first_grid_class'] = 'col-md-4';
+      } elseif (!$sidebar_first && $sidebar_second) {
+        $variables['main_grid_class'] = 'col-md-7 col-md-offset-1';
+        $variables['sidebar_second_grid_class'] = 'col-md-4';
+      } else {
+        $variables['main_grid_class'] = 'col-md-8 col-md-offset-2';
+        $variables['sidebar_first_grid_class'] = '';
+        $variables['sidebar_second_grid_class'] = '';
+      }
+    } else {
+      if($sidebar_first && $sidebar_second) {
+        if ($three_columns_grid_layout == 'grid_3_6_3') {
+          $variables['main_grid_class'] = 'col-md-6';
+          $variables['sidebar_first_grid_class'] = 'col-md-3';
+          $variables['sidebar_second_grid_class'] = 'col-md-3';
+        } elseif ($three_columns_grid_layout == 'grid_2_6_4') {
+          $variables['main_grid_class'] = 'col-md-6';
+          $variables['sidebar_first_grid_class'] = 'col-md-2';
+          $variables['sidebar_second_grid_class'] = 'col-md-4';
+        } elseif ($three_columns_grid_layout == 'grid_4_6_2') {
+          $variables['main_grid_class'] = 'col-md-6';
+          $variables['sidebar_first_grid_class'] = 'col-md-4';
+          $variables['sidebar_second_grid_class'] = 'col-md-2';
+        }
+      } elseif ($sidebar_first && !$sidebar_second) {
+        $variables['main_grid_class'] = 'col-md-7';
+        $variables['sidebar_first_grid_class'] = 'col-md-4';
+      } elseif (!$sidebar_first && $sidebar_second) {
+        $variables['main_grid_class'] = 'col-md-7 col-md-offset-1';
+        $variables['sidebar_second_grid_class'] = 'col-md-4';
+      } else {
+        $variables['main_grid_class'] = 'col-md-12';
+        $variables['sidebar_first_grid_class'] = '';
+        $variables['sidebar_second_grid_class'] = '';
+      }
+    }
+  }
+
+  if ($pre_header_left && $pre_header_right) {
+    $variables['pre_header_left_grid_class'] = 'col-md-8';
+    $variables['pre_header_right_grid_class'] = 'col-md-4';
+  } else {
+    $variables['pre_header_left_grid_class'] = 'col-md-12';
+    $variables['pre_header_right_grid_class'] = 'col-md-12';
+  }
+
+  if ($header) {
+    $variables['header_inside_left_grid_class'] = 'col-md-8';
+  } else {
+    $variables['header_inside_left_grid_class'] = 'col-md-12';
+  }
+
+  if ($header_top_right) {
+    $variables['header_top_inside_left_grid_class'] = 'col-md-6';
+  } else {
+    $variables['header_top_inside_left_grid_class'] = 'col-md-12';
+  }
+
+  if ($footer_first && $footer_second && $footer_third && $footer_fourth) {
+    $variables['footer_grid_class'] = 'col-sm-3';
+  } elseif ((!$footer_first && $footer_second && $footer_third && $footer_fourth) || ($footer_first && !$footer_second && $footer_third && $footer_fourth)
+  || ($footer_first && $footer_second && !$footer_third && $footer_fourth) || ($footer_first && $footer_second && $footer_third && !$footer_fourth)) {
+    $variables['footer_grid_class'] = 'col-sm-4';
+  } elseif ((!$footer_first && !$footer_second && $footer_third && $footer_fourth) || (!$footer_first && $footer_second && !$footer_third && $footer_fourth)
+  || (!$footer_first && $footer_second && $footer_third && !$footer_fourth) || ($footer_first && !$footer_second && !$footer_third && $footer_fourth)
+  || ($footer_first && !$footer_second && $footer_third && !$footer_fourth) || ($footer_first && $footer_second && !$footer_third && !$footer_fourth)) {
+    $variables['footer_grid_class'] = 'col-sm-6';
+  } else {
+    $variables['footer_grid_class'] = 'col-sm-12';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for maintenance-page.html.twig.
+ */
+function newsplus_lite_preprocess_maintenance_page(&$variables) {
+  // By default, site_name is set to Drupal if no db connection is available
+  // or during site installation. Setting site_name to an empty string makes
+  // the site and update pages look cleaner.
+  // @see template_preprocess_maintenance_page
+  if (!$variables['db_is_active']) {
+    $variables['site_name'] = '';
+  }
+
+  // newsplus_lite has custom styling for the maintenance page.
+  $variables['#attached']['library'][] = 'newsplus_lite/maintenance_page';
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for node.html.twig.
+ */
+function newsplus_lite_preprocess_node(&$variables) {
+  // Remove the "Add new comment" link on teasers or when the comment form is
+  // displayed on the page.
+  if ($variables['teaser'] || !empty($variables['content']['comments']['comment_form'])) {
+    unset($variables['content']['links']['comment']['#links']['comment-add']);
+  }
+
+  $variables['posted_ago'] = \Drupal::service('date.formatter')->formatInterval(REQUEST_TIME - $variables['node']->getCreatedTime(), $granularity = 1);
+  $variables['changed_ago'] = \Drupal::service('date.formatter')->formatInterval(REQUEST_TIME - $variables['node']->getChangedTime(), $granularity = 1);
+  if (isset($variables['content']['field_image']['#theme'])){
+    $variables['has_image'] = true;
+  } else {
+    $variables['has_image'] = false;
+  }
+  if ($variables['teaser'] && isset($variables['content']['field_image']['#theme'])) {
+    $variables['content_class'] = 'with-image';
+  } else {
+    $variables['content_class'] = 'without-image';
+  }
+
+  $node_content = $variables['content'];
+  $node_content = render($node_content);
+  $words = str_word_count(strip_tags($node_content));
+  $minutes = floor($words / 275);
+  $variables['minutes'] = $minutes;
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for block.html.twig.
+ */
+function newsplus_lite_preprocess_block(&$variables) {
+  // Add a clearfix class to system branding blocks.
+  if ($variables['plugin_id'] == 'system_branding_block') {
+    $variables['attributes']['class'][] = 'clearfix';
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for menu.html.twig.
+ */
+function newsplus_lite_preprocess_menu(&$variables) {
+  $variables['attributes']['class'][] = 'clearfix';
+}
+
+/**
+ * Implements hook_theme_suggestions_HOOK_alter() for form templates.
+ */
+function newsplus_lite_theme_suggestions_form_alter(array &$suggestions, array $variables) {
+  if ($variables['element']['#form_id'] == 'search_block_form') {
+    $suggestions[] = 'form__search_block_form';
+  }
+}
+
+/**
+ * Implements hook_form_alter() to add classes to the search form.
+ */
+function newsplus_lite_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  if (in_array($form_id, ['search_block_form', 'search_form'])) {
+    $key = ($form_id == 'search_block_form') ? 'actions' : 'basic';
+    if (!isset($form[$key]['submit']['#attributes'])) {
+      $form[$key]['submit']['#attributes'] = new Attribute();
+    }
+    $form[$key]['submit']['#attributes']->addClass('search-form__submit');
+  }
+}
+
+
+function newsplus_lite_preprocess_field(&$variables) {
+  $element = $variables['element'];
+  $variables['view_mode'] = $element['#view_mode']; //Expose node view_mode to field templates
+}

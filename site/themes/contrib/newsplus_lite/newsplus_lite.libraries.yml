@@ -1,0 +1,122 @@
+bootstrap:
+  version: VERSION
+  css:
+    base: #The CSS category. base is loaded before theme category
+      bootstrap/css/bootstrap.min.css: { weight: 0 } #weight sets the order within the category above
+  js:
+    bootstrap/js/bootstrap.min.js: {}
+  dependencies:
+    - core/jquery
+
+global-styling:
+  version: VERSION
+  css:
+    base:
+      css/base/elements.css: { weight: 1 }
+      css/base/layout.css: {}
+      css/base/typography.css: {}
+    component:
+      css/components/sidebar.css: {}
+      css/components/site-branding.css: {}
+      css/components/page-title.css: {}
+      css/components/breadcrumb.css: {}
+      css/components/tabs.css: {}
+      css/components/block.css: {}
+      css/components/node.css: {}
+      css/components/field.css: {}
+      css/components/comments.css: {}
+      css/components/menu.css: {}
+      css/components/primary-menu.css: {}
+      css/components/teaser-listing.css: {}
+      css/components/pager.css: {}
+      css/components/image-overlay.css: {}
+      css/components/to-top.css: {}
+      css/components/admin.css: {}
+      css/components/search.css: {}
+      css/components/forms.css: {}
+      css/components/buttons.css: {}
+      css/components/node-images.css: {}
+      css/components/node-links.css: {}
+      css/components/tables.css: {}
+
+messages:
+  version: VERSION
+  css:
+    component:
+      css/components/messages.css: { preprocess: false }
+
+color.preview:
+  version: VERSION
+  css:
+    theme:
+      color/preview.css: {}
+  js:
+    color/preview.js: {}
+  dependencies:
+    - color/drupal.color
+
+maintenance_page:
+  version: VERSION
+  css:
+    theme:
+      css/maintenance-page.css: {}
+  dependencies:
+    - system/maintenance
+    - newsplus_lite/global-styling
+
+magnific-popup:
+  version: VERSION
+  css:
+    base:
+      js/magnific-popup/magnific-popup.css: { weight: 0 }
+  js:
+    js/magnific-popup/jquery.magnific-popup.min.js: {}
+  dependencies:
+    - core/jquery
+
+magnific-popup-init:
+  version: VERSION
+  js:
+    js/init/magnific-popup-init.js: { scope: 'footer' }
+  dependencies:
+    - newsplus_lite/magnific-popup
+
+fontawesome:
+  version: 4.5.0
+  remote: //maxcdn.bootstrapcdn.com/font-awesome/4.5.0/
+  css:
+    theme:
+      //maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css: {}
+  license:
+    name: MIT
+    url: //opensource.org/licenses/mit-license.html
+    gpl-compatible: true
+
+fonts-montserrat:
+  version: VERSION
+  remote: //fonts.googleapis.com/css
+  css:
+    theme:
+      //fonts.googleapis.com/css?family=Montserrat:400,700: {}
+  license:
+    name: SIL Open Font License, 1.1
+    url: //scripts.sil.org/OFL
+    gpl-compatible: true
+
+fonts-roboto:
+  version: VERSION
+  remote: //fonts.googleapis.com/css
+  css:
+    theme:
+      //fonts.googleapis.com/css?family=Roboto:400,400italic,700,300,700italic&subset=latin-ext,latin,greek: {}
+  license:
+    name: Apache License, version 2.0
+    url: //www.apache.org/licenses/LICENSE-2.0.html
+    gpl-compatible: true
+
+node-features:
+  version: VERSION
+  js:
+    js/custom/node-features.js: { scope: 'footer' }
+  dependencies:
+    - core/jquery

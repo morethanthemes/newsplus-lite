@@ -1,0 +1,113 @@
+/**
+ * @file
+ * Visual styles for Newsplus Lite's forms.
+ */
+
+.form-item {
+  margin:20px 0;
+}
+input.form-text,
+input.form-tel,
+input.form-email,
+input.form-url,
+input.form-search,
+input.form-file,
+input.form-number,
+input.form-color,
+textarea.form-textarea,
+textarea {
+  background: #fff;
+  color: #898989;
+  font-size: 14px;
+  padding: 10px 15px;
+  outline:none;
+  border: 2px solid #c5c5c5;
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  -o-border-radius: 0;
+  border-radius: 0;
+  width: 100%;
+  line-height: 1;
+  height: 43px;
+  -webkit-appearance: none;
+}
+select.form-select,
+select {
+  height: 43px;
+  border: 2px solid #c5c5c5;
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  -o-border-radius: 0;
+  padding: 10px 15px;
+}
+.form-type-password-confirm input.form-text {
+  width: 50%;
+}
+input.form-text:focus,
+textarea:focus {
+  border-color: #ea2d49;
+}
+.colored-area input.form-text,
+.colored-area textarea,
+.colored-area input.form-text:focus,
+.colored-area textarea:focus {
+  border-color: #fff;
+}
+textarea.form-textarea,
+textarea {
+  resize:none;
+  line-height: 1.57;
+  height: auto;
+}
+label,
+.label {
+  display: block;
+  color: inherit;
+  text-align: left;
+  margin-bottom: 5px;
+}
+fieldset {
+  border:1px solid #c5c5c5;
+  padding: 0.5em;
+  margin: 20px 0 35px;
+}
+fieldset legend {
+  border:1px solid #c5c5c5;
+  display: inline-block;
+  width: auto;
+  padding: 5px;
+  font-size: 12px;
+  text-transform: uppercase;
+  margin-left: 10px;
+}
+input[type="radio"],
+input[type="checkbox"] {
+  margin: 0px 0 3px;
+}
+select {
+  width: 100%;
+  margin: 10px 0;
+  color: #3f3f3f;
+}
+
+/* Disabled form elements */
+.form-disabled input,
+.form-disabled select,
+.form-disabled textarea {
+  background: #ededed;
+  border-color: #bbb;
+  color: #717171;
+}
+.form-disabled label {
+  color: #717171;
+}
+
+/* Form error styles. */
+.form-item textarea.error + .cke {
+  border: 2px solid red;
+}
+
+/* Form error message styles. */
+.form-item--error-message {
+  color: #e32700;
+}

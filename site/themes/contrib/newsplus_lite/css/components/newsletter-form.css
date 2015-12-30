@@ -1,0 +1,21 @@
+.subscribe-form {
+  position: relative;
+}
+.subscribe-form input.form-text:focus {
+  border-color: #c5c5c5;
+}
+.subscribe-form .form-actions {
+  position: absolute;
+  top:0;
+  right: 0;
+  margin: 0;
+}
+.subscribe-form .form-actions input {
+  margin: 0;
+  background-color: #c5c5c5;
+  font-family: "FontAwesome";
+  min-width: 0;
+  font-size: 28px;
+  padding: 8px 22px 7px;
+   height: 43px;
+ }

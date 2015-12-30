@@ -1,0 +1,15 @@
+/*Node links*/
+ul.inline li { padding: 0 8px 0 0; }
+
+ul.links li a, .more a, ul.links li.statistics_counter span { font-size: 11px; padding: 7px 15px; min-width: 105px; background-color: #dddddd;
+display: inline-block; text-align: center; margin-top: 8px; }
+
+ul.links li.statistics_counter span { color: #c0273c; }
+
+ul.links li a:hover, .more a:hover { background-color: #ea2d49; color: #fff; text-decoration: none; }
+
+@media (max-width: 767px) {
+  ul.inline li:first-child, ul.inline li { padding: 0; }
+  ul.links li a, .more a { padding: 7px 10px; min-width: 0px; margin-top: 5px; }
+  ul.links li span { padding-right: 10px; }
+}

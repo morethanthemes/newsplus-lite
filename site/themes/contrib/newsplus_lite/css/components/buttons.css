@@ -1,0 +1,62 @@
+/**
+ * @file
+ * Styles for Newsplus Lite's buttons.
+ */
+a.button,
+input[type="submit"],
+input[type="reset"],
+input[type="button"] {
+  font-size: 13px;
+  text-transform: uppercase;
+  padding: 15px;
+  background-color: #c0273c;
+  color: #ffffff;
+  display: inline-block;
+  line-height: 1;
+  text-decoration: none;
+  min-width: 130px;
+  text-align: center;
+  border: none;
+  margin:10px 0 0;
+  -webkit-transition: all 0.2s ease-in-out;
+  -moz-transition: all 0.2s ease-in-out;
+  -ms-transition: all 0.2s ease-in-out;
+  -o-transition: all 0.2s ease-in-out;
+  transition: all 0.2s ease-in-out;
+  -webkit-border-radius: 0px;
+  -moz-border-radius: 0px;
+  border-radius: 0px;
+}
+.pre-header-area a.button,
+.pre-header-area input[type="submit"],
+.header-top-area a.button,
+.header-top-area input[type="submit"] {
+  background-color: #c0273c!important;
+}
+input[type="submit"],
+input[type="reset"],
+input[type="button"] {
+  margin-right: 5px;
+}
+a.button:hover,
+input[type="submit"]:hover,
+input[type="reset"]:hover,
+input[type="button"]:hover,
+a.button:active,
+input[type="submit"]:active,
+input[type="reset"]:active,
+input[type="button"]:active,
+a.button:focus,
+input[type="submit"]:focus,
+input[type="reset"]:focus,
+input[type="button"]:focus {
+  text-decoration: none;
+  background-color: #ea2d49;
+  color: #ffffff;
+}
+span.button-operator {
+  margin: 0 10px 0 5px;
+}
+.comment_forbidden a:last-child {
+  margin-right: 5px;
+}

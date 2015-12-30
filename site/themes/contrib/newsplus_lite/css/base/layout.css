@@ -1,0 +1,74 @@
+/*Layout*/
+#pre-header { background-color: #ea2d49; }
+
+#header-top { background-color: #ea2d49; border-bottom: 1px solid #ffffff; padding-top: 45px; padding-bottom: 5px; }
+
+#header { background-color: #c0273c; border-bottom: 6px solid #b00711; }
+
+#header-inside { background-color: #c0273c; }
+
+#page-intro-inside { position: relative; background-color: #ffffff; }
+
+#page>.container { background-color: #fff; border-bottom: 6px solid #e5e5e5; overflow: hidden; }
+
+#page-inside { padding-bottom: 30px; }
+
+#top-content { padding: 20px 0 0 0; }
+
+#top-content #slideshow { margin-right: -15px; margin-left: -15px; }
+
+#top-content + #main-content { padding-top: 10px; }
+
+.front #banner #slideshow { margin-top: 10px; }
+
+#main-content { padding-top: 45px; }
+
+#highlighted { background-color: #f8f8f8; border-bottom: 6px solid #e4e4e4; padding-bottom: 0; margin-bottom: 50px; padding-left: 15px; padding-right: 15px; }
+
+#footer { border-bottom: 6px solid #dadada; padding-top: 50px; padding-bottom: 25px; }
+
+#subfooter { padding-top: 15px; padding-bottom: 10px; }
+
+@media (min-width: 992px) {
+  .no-sidebars #highlighted { margin-left: -28.6%; margin-right: -28.6%; padding-left: 28.6%; padding-right: 28.6%; }
+  .sidebar-second #highlighted, .sidebar-second #slideshow { margin-left: -15px; }
+  .sidebar-first #highlighted, .sidebar-first #slideshow { margin-right: -15px; }
+  .not-front.sidebar-second #highlighted { margin-left: -17.8%; padding-left: 17.8%; }
+  .not-front.sidebar-first #highlighted { margin-right: -17.8%; padding-right: 17.8%; }
+  .not-front.sidebar-second #slideshow { margin-left: -17.8%; }
+  .not-front.sidebar-first #slideshow { margin-right: -17.8%; }
+}
+
+@media (max-width: 991px) {
+  #highlighted, #slideshow { margin-right: -15px; margin-left: -15px; }
+}
+
+@media (max-width: 767px) {
+  #header-top { padding-top: 10px; }
+  /*Header Mobile Layout*/
+  #header-inside { position: relative; }
+  #header-inside.mean-container { padding-right: 40px; }
+  #header-inside.mean-container #header-top-left, #header-top-inside.mean-container #header-top-right { z-index: 13; position: relative; }
+  #header-inside.mean-container .mean-bar { position: absolute; top: 5px; }
+  #header-inside.mean-container .dropdown.search-bar .dropdown-menu { margin-right: -40px; }
+  /*Fixed header position*/
+  #header { position: static!important; top: auto; }
+  #page, #page-intro { margin-top: 0!important; }
+}
+
+/*Regions*/
+.header-top-area, .header-area, .pre-header-area { color: #fff; }
+
+.header-top-area a, .header-area a, .pre-header-area a { color: #fff; text-decoration: underline; }
+
+.header-top-area a:hover, .header-area a:hover, .pre-header-area a:hover { color: #fff; text-decoration: none; }
+
+.footer-area { font-size: 14px; line-height: 1.57; color: #464646; }
+
+.subfooter-area { font-size: 13px; }
+
+.subfooter-area p { padding-bottom: 5px; }
+
+@media (max-width: 991px) {
+  .subfooter-area { text-align: center; }
+}

@@ -1,0 +1,83 @@
+/**
+ * @file
+ * Visual styles for the site branding block in Newsplus Lite.
+ */
+
+/* Logo - Site name*/
+#logo,
+#footer-logo {
+  padding: 0;
+  float: left;
+  margin-right: 15px;
+  display: inline-block;
+  padding-top: 5px;
+}
+#logo:hover {
+  opacity: 0.9;
+  filter: alpha(opacity=90);
+  -webkit-transition: all 0.2s ease-in-out;
+  -moz-transition: all 0.2s ease-in-out;
+  -o-transition: all 0.2s ease-in-out;
+  -ms-transition: all 0.2s ease-in-out;
+  transition: all 0.2s ease-in-out;
+}
+#site-name a,
+#footer-site-name {
+  font-size: 40px;
+  font-weight: 700;
+  line-height:1;
+  text-decoration: none;
+}
+#site-name a:hover {
+  text-decoration: none;
+  opacity: 0.9;
+  filter: alpha(opacity=90);
+  -webkit-transition: all 0.2s ease-in-out;
+  -moz-transition: all 0.2s ease-in-out;
+  -o-transition: all 0.2s ease-in-out;
+  -ms-transition: all 0.2s ease-in-out;
+  transition: all 0.2s ease-in-out;
+}
+#footer-site-name {
+  color: #898989;
+}
+#site-slogan {
+  font-size: 16px;
+  line-height:1.30;
+  padding:0;
+}
+@media (min-width: 992px) and (max-width: 1199px) {
+  #site-name a {
+    font-size: 36px;
+  }
+  #site-slogan {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 767px) {
+  #logo {
+    float: none;
+    margin-right: 0;
+    text-align: center;
+    width: 100%;
+    -webkit-transform: scale(0.75);
+    -moz-transform: scale(0.75);
+    -ms-transform: scale(0.75);
+    -o-transform: scale(0.75);
+    transform: scale(0.75);
+  }
+  #logo img {
+    margin: 0 auto;
+  }
+  #site-name,
+  #site-slogan {
+    text-align: center;
+  }
+  #site-name {
+    margin: 5px 0 0 0;
+  }
+  #site-slogan {
+    padding: 5px 0 0 0;
+  }
+}

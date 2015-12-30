@@ -1,0 +1,85 @@
+/*Image overlay*/
+.overlayed, 
+.image-popup .field--type-image .field__item a {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  max-width: 100%;
+  float: left;
+}
+.overlay,
+.image-popup .field--type-image .field__item a::before {
+  position: absolute;
+  bottom: 0px;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  opacity: 0;
+  filter: alpha(opacity=0);
+  background-color: #ea2d49;
+  background-color: rgba(234,45,73,0.3);
+  z-index: 2;
+  webkit-transition: opacity 0.2s linear;
+  -moz-transition: opacity 0.2s linear;
+  o-transition: opacity 0.2s linear;
+  transition: opacity 0.2s linear;
+}
+.image-popup .field--type-image .field__item a::before {
+  content: " ";
+}
+.overlay i,
+.image-popup .field--type-image .field__item a::after {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: auto;
+  font-size: 18px;
+  color: #ffffff;
+  text-align: center;
+  width: 40px;
+  height: 40px;
+  background-color: #ea2d49;
+  -webkit-transition: all linear 0.2s;
+  -moz-transition: all linear 0.2s;
+  -o-transition: all linear 0.2s;
+   -ms-transition: all linear 0.2s;
+  transition: all linear 0.2s;
+}
+.image-popup .field--type-image .field__item a::after {
+  font-family: FontAwesome;
+  opacity: 0;
+  filter: alpha(opacity=0);
+  content: "\f067";
+  font-size: 18px;
+  color: #FFFFFF;
+}
+.node--view-mode-teaser .image-popup .field--type-image .field__item a::after {
+  content: "\f0c1";
+}
+.image-popup .field--type-image .field__item a::after,
+.overlay i:before {
+  line-height: 42px;
+}
+.image-popup .field--type-image .image-listing-item .field__item a::after,
+.image-listing-item .overlay i {
+  font-size: 10px;
+  width: 25px;
+  height: 25px;
+}
+.image-popup .field--type-image .image-listing-item .field__item a::after,
+.image-listing-item .overlay i:before {
+  line-height: 27px;
+}
+.overlayed:hover,
+.image-popup .field--type-image .field__item a:hover {
+  color: #ffffff!important;
+  text-decoration: none;
+}
+.overlayed:hover .overlay,
+.image-popup .field--type-image .field__item a:hover::before,
+.image-popup .field--type-image .field__item a:hover::after {
+  opacity: 1;
+  filter: alpha(opacity=100);
+}

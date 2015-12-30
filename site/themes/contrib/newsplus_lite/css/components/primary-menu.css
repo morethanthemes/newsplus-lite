@@ -1,0 +1,185 @@
+/* --------------- Primary Menu ------------ */
+
+.region-navigation {
+  clear: both;
+}
+.region-navigation .menu {
+}
+.region-navigation .menu-item {
+}
+.region-navigation .menu a {
+  display: block;
+  text-decoration: none;
+}
+.region-navigation .menu a:hover,
+.region-navigation .menu a:focus {
+
+}
+.region-navigation .menu a:active {
+  
+}
+.region-navigation .menu-item a.is-active {
+}
+
+/* ---------- Primary Menu Toggle ----------- */
+/* Hide the toggle by default. */
+.menu-toggle,
+.menu-toggle-target {
+  display: none;
+}
+/* Unhide it for the primary menu. */
+.region-navigation .menu-toggle-target {
+  display: inherit;
+  position: fixed;
+  top: 0;
+}
+.region-navigation .menu-toggle {
+  display: none;
+}
+body:not(:target) .region-navigation .menu-toggle {
+  color: #FFF;
+  float: none;
+  display: block;
+  text-decoration: none;
+  padding: 0.9em 10px 0.9em 10px;
+  z-index: 1000;
+}
+body:not(:target) .region-navigation .menu-toggle:after {
+  content:"\f0c9";
+  font-family: Fontawesome;
+  font-size: 22px;
+  line-height: 22px;
+  width: 22px;
+  height: 22px;
+  display: inline-block;
+  position: absolute;
+  right: 10px; /* LTR */
+}
+[dir="rtl"] body:not(:target) .region-navigation .menu-toggle:after {
+  right: initial;
+  left: 10px;
+}
+body:not(:target) .region-navigation .menu-toggle:hover,
+body:not(:target) .region-navigation .menu-toggle--hide {
+  background-color: #EA2D49;
+}
+body:not(:target) .region-navigation .menu-toggle-target-show:target ~ .menu-toggle,
+body:not(:target) .region-navigation .menu-toggle--hide {
+  display: none;
+}
+body:not(:target) .region-navigation .menu-toggle-target-show:target ~ .menu-toggle--hide {
+  display: block;
+}
+
+body:not(:target) .region-navigation .menu-item {
+  height: 0;
+  overflow: hidden;
+}
+body:not(:target) .region-navigation .menu-toggle-target-show:target ~ .menu .menu-item {
+  height: auto;
+  overflow: visible;
+}
+
+/**
+ * Media queries for primary menu.
+ */
+@media all and (min-width: 768px) and (max-width: 991px) {
+  .region-navigation .menu {
+    margin: 0 5px;
+    padding: 0;
+    text-align: center;
+  }
+  .region-navigation .menu-item,
+  body:not(:target) .region-navigation .menu-item {
+    float: left;
+    margin-right: 1.5%;
+    padding: 0;
+    display: inline-block;
+    width: 31%;
+    height: auto;
+    overflow: visible;
+    background-color: #EA2D49;
+  }
+  .region-navigation .menu-item a,
+  body:not(:target) .region-navigation .menu-item a {
+    background-color: #C0273C;
+  }
+  .region-navigation .menu-item:nth-child(3n) {
+    margin-right: -5px;
+  }
+  .region-navigation .menu a {
+    float: none;
+    display: block;
+    margin-bottom: 5px;
+    padding: 0.9em 5px;
+  }
+  .region-navigation .menu .menu-item a:hover {
+    background-color: #EA2D49;
+  }
+  body:not(:target) .region-navigation .menu-toggle {
+    display: none;
+  }
+}
+
+@media all and (min-width: 992px) {
+  .region-navigation .block-menu .menu {
+
+  }
+  .region-navigation .menu-item,
+  body:not(:target) .region-navigation .menu-item {
+    width: auto;
+    height: auto;
+    overflow: visible;
+  }
+  .region-navigation .menu a {
+
+  }
+  .featured .region-navigation .menu-item a:active,
+  .featured .region-navigation .menu-item a.is-active {
+  }
+  body:not(:target) .region-navigation .menu-toggle {
+    display: none;
+  }
+}
+
+#main-navigation ul.menu li a { font-size: 18px; padding: 13px 18px 8px; color: #ffffff; }
+#pre-header ul.menu li a,
+#header-top ul.menu li a { font-size: 14px; padding: 10px 18px 10px; color: #ffffff; }
+
+#main-navigation ul.menu li.expanded > a:before, #main-navigation ul.menu li.collapsed > a:before,
+#pre-header ul.menu li.expanded > a:before, #pre-header ul.menu li.collapsed > a:before,
+#header-top ul.menu li.expanded > a:before, #header-top ul.menu li.collapsed > a:before { content: ""; }
+
+#main-navigation ul.menu li li,
+#pre-header ul.menu li li,
+#header-top ul.menu li li { margin: 0; }
+
+
+/* Remove collapsed & expanded menu arrows */
+.region-navigation ul.menu li.menu-item--collapsed > a:before,
+.region-navigation ul.menu li.menu-item--expanded > a:before {
+  content: ""
+}
+
+@media all and (min-width: 992px) {
+  /* Pre header, Header & Main navigation menus*/
+  #main-navigation ul.menu li,
+  #pre-header ul.menu li,
+  #header-top ul.menu li {
+    display: inline-block;
+    float: none;
+  }
+}
+@media all and (min-width: 992px) and (max-width: 1199px) {
+  #main-navigation ul.menu li a {
+    font-size: 15px;
+    padding: 15px 18px 11px;
+  }
+}
+@media all and (min-width: 768px) {
+  #main-navigation ul.menu ul.menu,
+  #pre-header ul.menu ul.menu,
+  #header-top ul.menu ul.menu {
+    display:none;
+  }
+}

@@ -1,0 +1,51 @@
+/**
+ * @file
+ * Visual styles for Newsplus Lite's field components.
+ */
+
+.field--label-inline .field__items {
+  margin-top: 20px;
+}
+.field--type-entity-reference ul.links {
+  list-style: none;
+}
+.field--name-field-tags .field__items {
+  padding: 0;
+  margin: 0;
+}
+.field--name-field-tags .field-label {
+  font-weight: normal;
+  padding-right: 5px; /* LTR */
+}
+/*Taxonomy term reference*/
+.field--name-field-tags {
+  display: block;
+  overflow: hidden;
+  position: relative;
+  margin: 0 0 40px 0;
+}
+.field--name-field-tags ul.field__items li {
+  float: left;
+  padding: 0 1em 0 0;
+  white-space: nowrap;
+}
+.field--name-field-tags ul.field__items li {
+  margin-right: 3px;
+  padding: 0;
+}
+.field--name-field-tags ul.field__items li a {
+  color: #ffffff;
+  padding: 5px 6px;
+  line-height: 1;
+  background-color: #7d7d7d;
+  display: inline-block;
+  margin: 1px 0 2px 0;
+  text-transform: uppercase;
+  font-size: 11px;
+  min-width: auto;
+}
+.field--name-field-tags ul.field__items li a:hover {
+  background-color: #ea2d49;
+  text-decoration: none;
+  color:#ffffff;
+}

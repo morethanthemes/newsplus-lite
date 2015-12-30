@@ -1,0 +1,9 @@
+/**
+ * @file
+ * Visual styles for Bartik's page-title component.
+ */
+
+.block-page-title-block {
+  padding: 0;
+  margin: 0;
+}

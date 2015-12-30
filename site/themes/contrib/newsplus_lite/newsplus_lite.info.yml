@@ -1,0 +1,36 @@
+name: News+
+type: theme
+base theme: classy
+description: 'A flexible, recolorable theme with many regions and a responsive, mobile-first layout.'
+package: Core
+version: @VERSION@
+core: 8.x
+libraries:
+  - newsplus_lite/bootstrap
+  - newsplus_lite/fontawesome
+  - newsplus_lite/fonts-roboto
+  - newsplus_lite/fonts-montserrat
+  - newsplus_lite/global-styling
+  - newsplus_lite/messages
+regions:
+  pre_header_left: 'Pre Header Left'
+  pre_header_right: 'Pre header Right'
+  header_top_left: 'Header Top Left'
+  header_top_right: 'Header Top Right'
+  navigation: 'Navigation'
+  header: 'Header'
+  page_intro: 'Page Intro'
+  top_content: 'Top Content'
+  banner: 'Banner'
+  highlighted: 'Highlighted'
+  promoted: 'Promoted Area'
+  breadcrumb: 'Breadcrumb'
+  content: 'Content'
+  sidebar_first: 'First Sidebar'
+  sidebar_second: 'Second Sidebar'
+  footer_first: 'Footer First'
+  footer_second: 'Footer Second'
+  footer_third: 'Footer Third'
+  footer_fourth: 'Footer Fourth'
+  sub_footer_left: 'Subfooter Left'
+  footer: 'Subfooter Right'
