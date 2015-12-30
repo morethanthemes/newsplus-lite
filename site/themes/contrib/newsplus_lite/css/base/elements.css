@@ -188,6 +188,10 @@ h5,
   border-bottom: 1px solid #c0273c;
   text-transform: uppercase;
 }
+.node--view-mode-teaser h2.node__title,
+.node--view-mode-teaser h2.node__title {
+  font-weight: 700;
+}
 .sidebar h3.title {
   margin-top: 9px;
 }
