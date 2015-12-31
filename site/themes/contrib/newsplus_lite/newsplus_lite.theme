@@ -35,16 +35,16 @@ function newsplus_lite_preprocess_html(&$variables) {
     $variables['attributes']['class'][] = 'has-featured-top';
   }
 
-  $headings_font_family = theme_get_setting('features.headings_font_family');
+  $headings_font_family = theme_get_setting('headings_font_family');
   $variables['attributes']['class'][] = $headings_font_family;
 
-  $paragraph_font_family = theme_get_setting('features.paragraph_font_family');
+  $paragraph_font_family = theme_get_setting('paragraph_font_family');
   $variables['attributes']['class'][] = $paragraph_font_family;
 
-  $sitename_font_family = theme_get_setting('features.sitename_font_family');
+  $sitename_font_family = theme_get_setting('sitename_font_family');
   $variables['attributes']['class'][] = $sitename_font_family;
 
-  $slogan_font_family = theme_get_setting('features.slogan_font_family');
+  $slogan_font_family = theme_get_setting('slogan_font_family');
   $variables['attributes']['class'][] = $slogan_font_family;
 
 }
@@ -83,7 +83,7 @@ function newsplus_lite_preprocess_page(&$variables) {
 
   // $variables['#attached']['library'][] = 'newsplus_lite/magnific-popup-init'; //Attach library in theme file example
 
-  $three_columns_grid_layout = theme_get_setting('features.three_columns_grid_layout');
+  $three_columns_grid_layout = theme_get_setting('three_columns_grid_layout');
   $sidebar_first = $variables['page']['sidebar_first'];
   $sidebar_second = $variables['page']['sidebar_second'];
   $footer_first = $variables['page']['footer_first'];
