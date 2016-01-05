@@ -11,9 +11,11 @@ jQuery(document).ready(function($) {
       affixTop = $("#affix").offset().top;
 
       //The admin overlay menu height
-      var adminHeight = 100;
+      var headerHeight = $("#header").outerHeight(true);
+      var adminHeight = parseInt($('body').css('paddingTop'));
+      var topValue = adminHeight + headerHeight + 15;
 
-      var initAffixTop = affixTop-adminHeight;
+      var initAffixTop = affixTop - adminHeight - headerHeight - 15;
       function initializeAffix(topAffix) {
         $("#affix").affix({
           offset: {
@@ -28,9 +30,9 @@ jQuery(document).ready(function($) {
       $("#affix").on("affixed.bs.affix", function () {
         //We set through JS the inline style top position
         if ($(".user-logged-in").length>0) {
-          $("#affix").css("top", (adminHeight)+"px");
+          $("#affix").css("top", (topValue)+"px");
         } else {
-          $("#affix").css("top", (15)+"px");
+          $("#affix").css("top", (headerHeight +15)+"px");
         }
       });
     });
