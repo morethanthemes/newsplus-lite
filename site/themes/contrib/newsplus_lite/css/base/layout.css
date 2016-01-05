@@ -7,6 +7,10 @@
 
 #header-inside { background-color: #c0273c; }
 
+#header-inside-right {
+  padding-top: 13px;
+}
+
 #page-intro-inside { position: relative; background-color: #ffffff; }
 
 #page>.container { background-color: #fff; border-bottom: 6px solid #e5e5e5; overflow: hidden; }
