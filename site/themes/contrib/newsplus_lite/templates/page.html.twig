@@ -280,7 +280,6 @@ Will have to find an other way to print this markup
             {# #main #}
             <div id="main" class="clearfix">
 
-              {# <?php if (theme_get_setting('frontpage_content_print') || !drupal_is_front_page()):?>  #}
               {% if page.content %}
                 {{ page.content }}
               {% endif %}

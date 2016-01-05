@@ -14,7 +14,8 @@ global-styling:
     base:
       css/base/elements.css: { weight: 1 }
       css/base/layout.css: {}
-      css/base/typography.css: {}
+      css/base/headings-font.css: {}
+      css/base/paragraph-font.css: {}
     component:
       css/components/sidebar.css: {}
       css/components/site-branding.css: {}
@@ -37,6 +38,7 @@ global-styling:
       css/components/node-images.css: {}
       css/components/node-links.css: {}
       css/components/tables.css: {}
+      css/components/to-top.css: {}
 
 messages:
   version: VERSION
@@ -120,13 +122,10 @@ node-features:
   dependencies:
     - core/jquery
 
-back-to-top:
+to-top:
   version: VERSION
-  css:
-    component:
-      css/components/to-top.css: {}
   js:
-    js/custom/back-to-top.js: { scope: 'footer' }
+    js/custom/to-top.js: { scope: 'footer' }
   dependencies:
     - core/jquery
 
@@ -139,3 +138,9 @@ fixed-header:
     js/custom/fixed-header.js: { scope: 'footer' }
   dependencies:
     - core/jquery
+
+theme-settings:
+  version: VERSION
+  css:
+    theme:
+      css/components/theme-settings.css: {}

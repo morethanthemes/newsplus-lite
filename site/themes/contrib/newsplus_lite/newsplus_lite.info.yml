@@ -11,8 +11,6 @@ libraries:
   - newsplus_lite/fonts-montserrat
   - newsplus_lite/global-styling
   - newsplus_lite/messages
-  - newsplus_lite/back-to-top
-  - newsplus_lite/fixed-header
 regions:
   pre_header_left: 'Pre Header Left'
   pre_header_right: 'Pre header Right'

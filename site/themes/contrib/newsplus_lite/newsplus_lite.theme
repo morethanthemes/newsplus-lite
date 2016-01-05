@@ -35,18 +35,6 @@ function newsplus_lite_preprocess_html(&$variables) {
     $variables['attributes']['class'][] = 'has-featured-top';
   }
 
-  $headings_font_family = theme_get_setting('headings_font_family');
-  $variables['attributes']['class'][] = $headings_font_family;
-
-  $paragraph_font_family = theme_get_setting('paragraph_font_family');
-  $variables['attributes']['class'][] = $paragraph_font_family;
-
-  $sitename_font_family = theme_get_setting('sitename_font_family');
-  $variables['attributes']['class'][] = $sitename_font_family;
-
-  $slogan_font_family = theme_get_setting('slogan_font_family');
-  $variables['attributes']['class'][] = $slogan_font_family;
-
 }
 
 function newsplus_lite_preprocess_breadcrumb(&$variables){
@@ -81,9 +69,6 @@ function newsplus_lite_preprocess_page_title(&$variables) {
 
 function newsplus_lite_preprocess_page(&$variables) {
 
-  // $variables['#attached']['library'][] = 'newsplus_lite/magnific-popup-init'; //Attach library in theme file example
-
-  $three_columns_grid_layout = theme_get_setting('three_columns_grid_layout');
   $sidebar_first = $variables['page']['sidebar_first'];
   $sidebar_second = $variables['page']['sidebar_second'];
   $footer_first = $variables['page']['footer_first'];
@@ -101,19 +86,9 @@ function newsplus_lite_preprocess_page(&$variables) {
   if ($variables['is_front'] || isset($variables['node']) && ($variables['node']->getType() == 'blog' || $variables['node']->getType() == 'article' || $variables['node']->getType() == 'mt_post')) {
     if (isset($variables['node']) && $variables['node']->getType() != 'page' ) {
       if($sidebar_first && $sidebar_second) {
-        if ($three_columns_grid_layout == 'grid_3_6_3') {
-          $variables['main_grid_class'] = 'col-md-6';
-          $variables['sidebar_first_grid_class'] = 'col-md-3';
-          $variables['sidebar_second_grid_class'] = 'col-md-3';
-        } elseif ($three_columns_grid_layout == 'grid_2_6_4') {
-          $variables['main_grid_class'] = 'col-md-6';
-          $variables['sidebar_first_grid_class'] = 'col-md-2';
-          $variables['sidebar_second_grid_class'] = 'col-md-4';
-        } elseif ($three_columns_grid_layout == 'grid_4_6_2') {
-          $variables['main_grid_class'] = 'col-md-6';
-          $variables['sidebar_first_grid_class'] = 'col-md-4';
-          $variables['sidebar_second_grid_class'] = 'col-md-2';
-        }
+        $variables['main_grid_class'] = 'col-md-6';
+        $variables['sidebar_first_grid_class'] = 'col-md-3';
+        $variables['sidebar_second_grid_class'] = 'col-md-3';
       } elseif ($sidebar_first && !$sidebar_second) {
         $variables['main_grid_class'] = 'col-md-8';
         $variables['sidebar_first_grid_class'] = 'col-md-4';
@@ -127,19 +102,9 @@ function newsplus_lite_preprocess_page(&$variables) {
       }
     } else {
       if($sidebar_first && $sidebar_second) {
-        if ($three_columns_grid_layout == 'grid_3_6_3') {
-          $variables['main_grid_class'] = 'col-md-6';
-          $variables['sidebar_first_grid_class'] = 'col-md-3';
-          $variables['sidebar_second_grid_class'] = 'col-md-3';
-        } elseif ($three_columns_grid_layout == 'grid_2_6_4') {
-          $variables['main_grid_class'] = 'col-md-6';
-          $variables['sidebar_first_grid_class'] = 'col-md-2';
-          $variables['sidebar_second_grid_class'] = 'col-md-4';
-        } elseif ($three_columns_grid_layout == 'grid_4_6_2') {
-          $variables['main_grid_class'] = 'col-md-6';
-          $variables['sidebar_first_grid_class'] = 'col-md-4';
-          $variables['sidebar_second_grid_class'] = 'col-md-2';
-        }
+        $variables['main_grid_class'] = 'col-md-6';
+        $variables['sidebar_first_grid_class'] = 'col-md-3';
+        $variables['sidebar_second_grid_class'] = 'col-md-3';
       } elseif ($sidebar_first && !$sidebar_second) {
         $variables['main_grid_class'] = 'col-md-8';
         $variables['sidebar_first_grid_class'] = 'col-md-4';
@@ -155,19 +120,9 @@ function newsplus_lite_preprocess_page(&$variables) {
   } else {
     if (isset($variables['node']) && $variables['node']->getType() != 'page' ) {
       if($sidebar_first && $sidebar_second) {
-        if ($three_columns_grid_layout == 'grid_3_6_3') {
-          $variables['main_grid_class'] = 'col-md-6';
-          $variables['sidebar_first_grid_class'] = 'col-md-3';
-          $variables['sidebar_second_grid_class'] = 'col-md-3';
-        } elseif ($three_columns_grid_layout == 'grid_2_6_4') {
-          $variables['main_grid_class'] = 'col-md-6';
-          $variables['sidebar_first_grid_class'] = 'col-md-2';
-          $variables['sidebar_second_grid_class'] = 'col-md-4';
-        } elseif ($three_columns_grid_layout == 'grid_4_6_2') {
-          $variables['main_grid_class'] = 'col-md-6';
-          $variables['sidebar_first_grid_class'] = 'col-md-4';
-          $variables['sidebar_second_grid_class'] = 'col-md-2';
-        }
+        $variables['main_grid_class'] = 'col-md-6';
+        $variables['sidebar_first_grid_class'] = 'col-md-3';
+        $variables['sidebar_second_grid_class'] = 'col-md-3';
       } elseif ($sidebar_first && !$sidebar_second) {
         $variables['main_grid_class'] = 'col-md-7';
         $variables['sidebar_first_grid_class'] = 'col-md-4';
@@ -181,19 +136,9 @@ function newsplus_lite_preprocess_page(&$variables) {
       }
     } else {
       if($sidebar_first && $sidebar_second) {
-        if ($three_columns_grid_layout == 'grid_3_6_3') {
-          $variables['main_grid_class'] = 'col-md-6';
-          $variables['sidebar_first_grid_class'] = 'col-md-3';
-          $variables['sidebar_second_grid_class'] = 'col-md-3';
-        } elseif ($three_columns_grid_layout == 'grid_2_6_4') {
-          $variables['main_grid_class'] = 'col-md-6';
-          $variables['sidebar_first_grid_class'] = 'col-md-2';
-          $variables['sidebar_second_grid_class'] = 'col-md-4';
-        } elseif ($three_columns_grid_layout == 'grid_4_6_2') {
-          $variables['main_grid_class'] = 'col-md-6';
-          $variables['sidebar_first_grid_class'] = 'col-md-4';
-          $variables['sidebar_second_grid_class'] = 'col-md-2';
-        }
+        $variables['main_grid_class'] = 'col-md-6';
+        $variables['sidebar_first_grid_class'] = 'col-md-3';
+        $variables['sidebar_second_grid_class'] = 'col-md-3';
       } elseif ($sidebar_first && !$sidebar_second) {
         $variables['main_grid_class'] = 'col-md-7';
         $variables['sidebar_first_grid_class'] = 'col-md-4';
@@ -239,6 +184,18 @@ function newsplus_lite_preprocess_page(&$variables) {
     $variables['footer_grid_class'] = 'col-sm-6';
   } else {
     $variables['footer_grid_class'] = 'col-sm-12';
+  }
+
+  //Load fixed-header library
+  $fixed_header = theme_get_setting('fixed_header');
+  if ($fixed_header) {
+    $variables['#attached']['library'][] = 'newsplus_lite/fixed-header';
+  }
+
+  //Load to-top library
+  $to_top = theme_get_setting('scrolltop_display');
+  if ($to_top) {
+    $variables['#attached']['library'][] = 'newsplus_lite/to-top';
   }
 }
 
