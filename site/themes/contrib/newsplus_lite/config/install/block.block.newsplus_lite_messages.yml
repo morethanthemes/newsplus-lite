@@ -1,0 +1,20 @@
+uuid: 1495e5ab-af0b-4697-a305-5ac86e3c5296
+langcode: en
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - newsplus_lite
+id: newsplus_lite_messages
+theme: newsplus_lite
+region: top_content
+weight: -6
+provider: null
+plugin: system_messages_block
+settings:
+  id: system_messages_block
+  label: 'Status messages'
+  provider: system
+  label_display: '0'
+visibility: {  }

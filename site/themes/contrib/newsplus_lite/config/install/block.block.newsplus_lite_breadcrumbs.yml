@@ -1,0 +1,20 @@
+uuid: dce31d03-8534-432c-951d-294bf7278f3f
+langcode: en
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - newsplus_lite
+id: newsplus_lite_breadcrumbs
+theme: newsplus_lite
+region: breadcrumb
+weight: 0
+provider: null
+plugin: system_breadcrumb_block
+settings:
+  id: system_breadcrumb_block
+  label: Breadcrumbs
+  provider: system
+  label_display: '0'
+visibility: {  }

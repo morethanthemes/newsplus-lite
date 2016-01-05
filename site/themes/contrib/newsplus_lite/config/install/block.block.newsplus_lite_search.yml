@@ -1,0 +1,20 @@
+uuid: 6831d4ff-59d4-4f00-a600-a28040c4598c
+langcode: en
+status: true
+dependencies:
+  module:
+    - search
+  theme:
+    - newsplus_lite
+id: newsplus_lite_search
+theme: newsplus_lite
+region: sidebar_second
+weight: -13
+provider: null
+plugin: search_form_block
+settings:
+  id: search_form_block
+  label: Search
+  provider: search
+  label_display: visible
+visibility: {  }
