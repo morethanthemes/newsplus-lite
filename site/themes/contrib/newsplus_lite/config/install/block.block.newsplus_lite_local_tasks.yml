@@ -1,0 +1,20 @@
+uuid: fee1166c-91f9-4cde-9223-35d2ed10ca49
+langcode: en
+status: true
+dependencies:
+  theme:
+    - newsplus_lite
+id: newsplus_lite_local_tasks
+theme: newsplus_lite
+region: content
+weight: -7
+provider: null
+plugin: local_tasks_block
+settings:
+  id: local_tasks_block
+  label: Tabs
+  provider: core
+  label_display: '0'
+  primary: true
+  secondary: true
+visibility: {  }

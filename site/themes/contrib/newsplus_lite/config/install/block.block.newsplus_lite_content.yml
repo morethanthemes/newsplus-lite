@@ -1,0 +1,20 @@
+uuid: 8a3eba9c-a312-4f99-8113-1915f9c4ba69
+langcode: en
+status: true
+dependencies:
+  module:
+    - system
+  theme:
+    - newsplus_lite
+id: newsplus_lite_content
+theme: newsplus_lite
+region: content
+weight: 0
+provider: null
+plugin: system_main_block
+settings:
+  id: system_main_block
+  label: 'Main page content'
+  provider: system
+  label_display: '0'
+visibility: {  }

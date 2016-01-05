@@ -1,0 +1,24 @@
+uuid: 1a2f61e9-7435-4b1c-8300-ce603cb3b687
+langcode: en
+status: true
+dependencies:
+  config:
+    - system.menu.tools
+  module:
+    - system
+  theme:
+    - newsplus_lite
+id: newsplus_lite_tools
+theme: newsplus_lite
+region: sidebar_second
+weight: -9
+provider: null
+plugin: 'system_menu_block:tools'
+settings:
+  id: 'system_menu_block:tools'
+  label: Tools
+  provider: system
+  label_display: visible
+  level: 1
+  depth: 0
+visibility: {  }

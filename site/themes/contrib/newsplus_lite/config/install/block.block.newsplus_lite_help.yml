@@ -1,0 +1,20 @@
+uuid: 0c939f85-d88b-41d0-8800-d6d1461f4ed2
+langcode: en
+status: true
+dependencies:
+  module:
+    - help
+  theme:
+    - newsplus_lite
+id: newsplus_lite_help
+theme: newsplus_lite
+region: content
+weight: -7
+provider: null
+plugin: help_block
+settings:
+  id: help_block
+  label: Help
+  provider: help
+  label_display: '0'
+visibility: {  }
