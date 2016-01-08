@@ -1,0 +1,32 @@
+/* Quickedit reset styles */
+.quickedit-form input,
+.quickedit-form select.form-select,
+.quickedit-form select,
+.quickedit-form table th,
+.quickedit-form table td {
+  padding: 5px 10px;
+  height: auto;
+  text-transform: none;
+  line-height: 1.1;
+}
+.quickedit-form input.form-file {
+  height: auto;
+  padding: 0;
+}
+.quickedit-form a.button,
+.quickedit-form input[type="submit"],
+.quickedit-form input[type="reset"],
+.quickedit-form input[type="button"] {
+  min-width: 60px;
+}
+.quickedit-form a.tabledrag-handle .handle {
+  padding: 0px;
+  margin: 0px;
+  height: 26px;
+  width: 26px;
+}
+.view-taxonomy-term .node--view-mode-teaser .quickedit-form  .field--name-field-image,
+.view-frontpage .node--view-mode-teaser .quickedit-form  .field--name-field-image {
+  max-width: 920px;
+  margin: 0;
+}

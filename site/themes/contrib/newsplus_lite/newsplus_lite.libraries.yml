@@ -38,6 +38,7 @@ global-styling:
       css/components/node-links.css: {}
       css/components/tables.css: {}
       css/components/to-top.css: {}
+      css/components/quickedit.css: {}
 
 messages:
   version: VERSION
