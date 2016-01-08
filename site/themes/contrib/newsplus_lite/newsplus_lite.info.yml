@@ -8,7 +8,6 @@ libraries:
   - newsplus_lite/bootstrap
   - newsplus_lite/fontawesome
   - newsplus_lite/fonts-roboto
-  - newsplus_lite/fonts-montserrat
   - newsplus_lite/global-styling
   - newsplus_lite/messages
 regions:

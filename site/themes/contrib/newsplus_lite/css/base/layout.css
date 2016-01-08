@@ -63,16 +63,35 @@
 /*Regions*/
 .header-top-area, .header-area, .pre-header-area { color: #fff; }
 
-.header-top-area a, .header-area a, .pre-header-area a { color: #fff; text-decoration: underline; }
-
-.header-top-area a:hover, .header-area a:hover, .pre-header-area a:hover { color: #fff; text-decoration: none; }
-
-.footer-area { font-size: 14px; line-height: 1.57; color: #464646; }
-
-.subfooter-area { font-size: 13px; }
-
-.subfooter-area p { padding-bottom: 5px; }
-
+.header-top-area a,
+.header-area a,
+.pre-header-area a {
+  color: #fff;
+  text-decoration: underline;
+}
+.header-top-area a:hover,
+.header-area a:hover,
+.pre-header-area a:hover,
+.header-top-area a:active,
+.header-area a:active,
+.pre-header-area a:active,
+.header-top-area a:focus,
+.header-area a:focus,
+.pre-header-area a:focus {
+  color: #fff;
+  text-decoration: none;
+}
+.footer-area {
+  font-size: 14px;
+  line-height: 1.57;
+  color: #464646;
+}
+.subfooter-area {
+  font-size: 13px;
+}
+.subfooter-area p {
+  padding-bottom: 5px;
+}
 @media (max-width: 991px) {
   .subfooter-area { text-align: center; }
 }

@@ -14,8 +14,7 @@ global-styling:
     base:
       css/base/elements.css: { weight: 1 }
       css/base/layout.css: {}
-      css/base/headings-font.css: {}
-      css/base/paragraph-font.css: {}
+      css/base/font.css: {}
     component:
       css/components/sidebar.css: {}
       css/components/site-branding.css: {}
@@ -91,17 +90,6 @@ fontawesome:
   license:
     name: MIT
     url: //opensource.org/licenses/mit-license.html
-    gpl-compatible: true
-
-fonts-montserrat:
-  version: VERSION
-  remote: //fonts.googleapis.com/css
-  css:
-    theme:
-      //fonts.googleapis.com/css?family=Montserrat:400,700: {}
-  license:
-    name: SIL Open Font License, 1.1
-    url: //scripts.sil.org/OFL
     gpl-compatible: true
 
 fonts-roboto:
