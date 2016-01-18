@@ -3,7 +3,7 @@ type: theme
 base theme: classy
 description: 'A flexible, recolorable theme with many regions and a responsive, mobile-first layout.'
 package: Core
-core: 8.x
+# core: 8.x
 libraries:
   - newsplus_lite/bootstrap
   - newsplus_lite/fontawesome
@@ -32,3 +32,9 @@ regions:
   footer_fourth: 'Footer Fourth'
   sub_footer_left: 'Subfooter Left'
   footer: 'Subfooter Right'
+
+# Information added by Drupal.org packaging script on 2016-01-12
+version: '8.x-1.0-beta1'
+core: '8.x'
+project: 'newsplus_lite'
+datestamp: 1452609800
