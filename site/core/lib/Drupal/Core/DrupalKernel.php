@@ -765,7 +765,7 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
    *   The cache key used for the service container.
    */
   protected function getContainerCacheKey() {
-    $parts = array('service_container', $this->environment, \Drupal::VERSION, Settings::get('deployment_identifier'));
+    $parts = array('service_container', $this->environment, \Drupal::VERSION, Settings::get('deployment_identifier'), serialize(Settings::get('container_yamls')));
     return implode(':', $parts);
   }
 
@@ -866,7 +866,7 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
 
     // If needs dumping flag was set, dump the container.
     if ($this->containerNeedsDumping && !$this->cacheDrupalContainer($container_definition)) {
-      $this->container->get('logger.factory')->get('DrupalKernel')->notice('Container cannot be saved to cache.');
+      $this->container->get('logger.factory')->get('DrupalKernel')->error('Container cannot be saved to cache.');
     }
 
     return $this->container;
@@ -968,11 +968,13 @@ class DrupalKernel implements DrupalKernelInterface, TerminableInterface {
       }
     }
 
-    // If the class loader is still the same, possibly upgrade to the APCu class
+    // If the class loader is still the same, possibly upgrade to the APC class
     // loader.
+    // ApcClassLoader does not support APCu without backwards compatibility
+    // enabled.
     if ($class_loader_class == get_class($this->classLoader)
         && Settings::get('class_loader_auto_detect', TRUE)
-        && function_exists('apcu_fetch')) {
+        && extension_loaded('apc')) {
       $prefix = Settings::getApcuPrefix('class_loader', $this->root);
       $apc_loader = new \Symfony\Component\ClassLoader\ApcClassLoader($prefix, $this->classLoader);
       $this->classLoader->unregister();
