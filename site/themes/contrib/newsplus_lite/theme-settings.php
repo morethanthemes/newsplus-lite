@@ -52,4 +52,21 @@ function newsplus_lite_form_system_theme_settings_alter(&$form, &$form_state) {
     '#collapsed' => TRUE,
   );
 
+  $form['mtt_settings']['premium_tab']['premium'] = array(
+    '#type' => 'details',
+    '#title' => t('Premium version'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#group' => 'tabs',
+  );
+
+  $form['mtt_settings']['premium_tab']['premium']['premium_description'] = array(
+   '#type' => 'item',
+   '#markup' => '
+   <div class="theme-settings-title">'.t("Get the premium version of this theme").'</div>
+   <div class="theme-settings-image-wrapper">
+   <a href="http://morethanthemes.com/themes/newsplus" target="_blank"><img src="' . base_path() . drupal_get_path('theme', 'newsplus_lite') . '/images/premium.jpg" /></a>
+   </div> ',
+  );
+
 }
