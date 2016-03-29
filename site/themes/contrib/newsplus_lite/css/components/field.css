@@ -2,7 +2,6 @@
  * @file
  * Visual styles for Newsplus Lite's field components.
  */
-
 .field--label-inline .field__items {
   margin-top: 20px;
 }
@@ -24,16 +23,13 @@
   position: relative;
   margin: 0 0 40px 0;
 }
-.field--entity-reference-target-type-taxonomy-term ul.field__items li {
+.field--entity-reference-target-type-taxonomy-term ul.links li {
   float: left;
-  padding: 0 1em 0 0;
   white-space: nowrap;
-}
-.field--entity-reference-target-type-taxonomy-term ul.field__items li {
   margin-right: 3px;
   padding: 0;
 }
-.field--entity-reference-target-type-taxonomy-term ul.field__items li a {
+.field--entity-reference-target-type-taxonomy-term ul.links li a {
   color: #ffffff;
   padding: 5px 6px;
   line-height: 1;
@@ -44,8 +40,7 @@
   font-size: 11px;
   min-width: auto;
 }
-.field--entity-reference-target-type-taxonomy-term ul.field__items li a:hover {
-  background-color: #ea2d49;
+.field--entity-reference-target-type-taxonomy-term ul.links li a:hover {
   text-decoration: none;
   color:#ffffff;
 }
