@@ -2,7 +2,6 @@
  * @file
  * Styles for Newsplus Lite's breadcrumbs.
  */
-
 /*Breadcrumb*/
 .block-system-breadcrumb-block {
   font-size: 10px;
@@ -13,7 +12,10 @@
   padding: 0;
 }
 .breadcrumb li::before {
-  content: "/";
+  content: "";
+}
+.breadcrumb-separator {
+  padding: 0 4px 0 3px;
 }
 /* Reset bootstrab styling */
 .breadcrumb {
@@ -21,5 +23,5 @@
   margin-bottom: 0;
   list-style: outside none none;
   background-color: transparent;
-  border-radius: none;
+  border-radius: 0px;
 }
