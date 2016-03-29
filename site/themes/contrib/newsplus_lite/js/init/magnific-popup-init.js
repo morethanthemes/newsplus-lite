@@ -1,7 +1,7 @@
 jQuery(document).ready(function($) {
   $(window).load(function() {
 
-    $(".image-popup a").magnificPopup({
+    $("a.image-popup").magnificPopup({
       type:"image",
       removalDelay: 300,
       mainClass: "mfp-fade",
