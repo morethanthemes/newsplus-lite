@@ -289,3 +289,7 @@ function newsplus_lite_preprocess_field(&$variables) {
   $element = $variables['element'];
   $variables['view_mode'] = $element['#view_mode']; //Expose node view_mode to field templates
 }
+
+function newsplus_lite_preprocess_field__entity_reference(&$variables) {
+  $variables['entity_reference_target_type'] = $variables['element']['#items']->getItemDefinition()->getSetting('target_type');
+}

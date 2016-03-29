@@ -1,7 +1,6 @@
 {#
 /**
  * @file
- * News+ Lite's theme override for taxonomy term fields.
  *
  * Available variables:
  * - attributes: HTML attributes for the containing element.
@@ -18,7 +17,7 @@
  * - label_display: The display settings for the label.
  *
  * @see template_preprocess_field()
- * @see bartik_preprocess_field()
+ * @see newsplus_lite_preprocess_field__entity_reference()
  */
 #}
 {%
@@ -27,6 +26,7 @@
     'field--name-' ~ field_name|clean_class,
     'field--type-' ~ field_type|clean_class,
     'field--label-' ~ label_display,
+    'field--entity-reference-target-type-' ~ entity_reference_target_type|clean_class,
     'clearfix',
   ]
 %}
