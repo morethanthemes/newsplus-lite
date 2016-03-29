@@ -79,78 +79,25 @@ function newsplus_lite_preprocess_page(&$variables) {
   $pre_header_right = $variables['page']['pre_header_right'];
   $header = $variables['page']['header'];
   $header_top_right = $variables['page']['header_top_right'];
+  $header_top_left = $variables['page']['header_top_left'];
 
   /**
    * Insert variables into the page template.
    */
-  if ($variables['is_front'] || isset($variables['node']) && ($variables['node']->getType() == 'blog' || $variables['node']->getType() == 'article' || $variables['node']->getType() == 'mt_post')) {
-    if (isset($variables['node']) && $variables['node']->getType() != 'page' ) {
-      if($sidebar_first && $sidebar_second) {
-        $variables['main_grid_class'] = 'col-md-6';
-        $variables['sidebar_first_grid_class'] = 'col-md-3';
-        $variables['sidebar_second_grid_class'] = 'col-md-3';
-      } elseif ($sidebar_first && !$sidebar_second) {
-        $variables['main_grid_class'] = 'col-md-8';
-        $variables['sidebar_first_grid_class'] = 'col-md-4';
-      } elseif (!$sidebar_first && $sidebar_second) {
-        $variables['main_grid_class'] = 'col-md-8';
-        $variables['sidebar_second_grid_class'] = 'col-md-4';
-      } else {
-        $variables['main_grid_class'] = 'col-md-8 col-md-offset-2';
-        $variables['sidebar_first_grid_class'] = '';
-        $variables['sidebar_second_grid_class'] = '';
-      }
-    } else {
-      if($sidebar_first && $sidebar_second) {
-        $variables['main_grid_class'] = 'col-md-6';
-        $variables['sidebar_first_grid_class'] = 'col-md-3';
-        $variables['sidebar_second_grid_class'] = 'col-md-3';
-      } elseif ($sidebar_first && !$sidebar_second) {
-        $variables['main_grid_class'] = 'col-md-8';
-        $variables['sidebar_first_grid_class'] = 'col-md-4';
-      } elseif (!$sidebar_first && $sidebar_second) {
-        $variables['main_grid_class'] = 'col-md-8';
-        $variables['sidebar_second_grid_class'] = 'col-md-4';
-      } else {
-        $variables['main_grid_class'] = 'col-md-12';
-        $variables['sidebar_first_grid_class'] = '';
-        $variables['sidebar_second_grid_class'] = '';
-      }
-    }
+  if($sidebar_first && $sidebar_second) {
+    $variables['main_grid_class'] = 'col-md-6';
+    $variables['sidebar_first_grid_class'] = 'col-md-3';
+    $variables['sidebar_second_grid_class'] = 'col-md-3';
+  } elseif ($sidebar_first && !$sidebar_second) {
+    $variables['main_grid_class'] = 'col-md-8';
+    $variables['sidebar_first_grid_class'] = 'col-md-4';
+  } elseif (!$sidebar_first && $sidebar_second) {
+    $variables['main_grid_class'] = 'col-md-8';
+    $variables['sidebar_second_grid_class'] = 'col-md-4';
   } else {
-    if (isset($variables['node']) && $variables['node']->getType() != 'page' ) {
-      if($sidebar_first && $sidebar_second) {
-        $variables['main_grid_class'] = 'col-md-6';
-        $variables['sidebar_first_grid_class'] = 'col-md-3';
-        $variables['sidebar_second_grid_class'] = 'col-md-3';
-      } elseif ($sidebar_first && !$sidebar_second) {
-        $variables['main_grid_class'] = 'col-md-7';
-        $variables['sidebar_first_grid_class'] = 'col-md-4';
-      } elseif (!$sidebar_first && $sidebar_second) {
-        $variables['main_grid_class'] = 'col-md-7 col-md-offset-1';
-        $variables['sidebar_second_grid_class'] = 'col-md-4';
-      } else {
-        $variables['main_grid_class'] = 'col-md-8 col-md-offset-2';
-        $variables['sidebar_first_grid_class'] = '';
-        $variables['sidebar_second_grid_class'] = '';
-      }
-    } else {
-      if($sidebar_first && $sidebar_second) {
-        $variables['main_grid_class'] = 'col-md-6';
-        $variables['sidebar_first_grid_class'] = 'col-md-3';
-        $variables['sidebar_second_grid_class'] = 'col-md-3';
-      } elseif ($sidebar_first && !$sidebar_second) {
-        $variables['main_grid_class'] = 'col-md-7';
-        $variables['sidebar_first_grid_class'] = 'col-md-4';
-      } elseif (!$sidebar_first && $sidebar_second) {
-        $variables['main_grid_class'] = 'col-md-7 col-md-offset-1';
-        $variables['sidebar_second_grid_class'] = 'col-md-4';
-      } else {
-        $variables['main_grid_class'] = 'col-md-12';
-        $variables['sidebar_first_grid_class'] = '';
-        $variables['sidebar_second_grid_class'] = '';
-      }
-    }
+    $variables['main_grid_class'] = 'col-md-8 col-md-offset-2';
+    $variables['sidebar_first_grid_class'] = '';
+    $variables['sidebar_second_grid_class'] = '';
   }
 
   if ($pre_header_left && $pre_header_right) {
@@ -168,9 +115,13 @@ function newsplus_lite_preprocess_page(&$variables) {
   }
 
   if ($header_top_right) {
-    $variables['header_top_inside_left_grid_class'] = 'col-md-6';
+    if ($header_top_left) {
+      $variables['header_top_inside_grid_class'] = 'col-md-6';
+    } else {
+      $variables['header_top_inside_grid_class'] = 'col-md-12';
+    }
   } else {
-    $variables['header_top_inside_left_grid_class'] = 'col-md-12';
+    $variables['header_top_inside_grid_class'] = 'col-md-12';
   }
 
   if ($footer_first && $footer_second && $footer_third && $footer_fourth) {
@@ -237,12 +188,6 @@ function newsplus_lite_preprocess_node(&$variables) {
   } else {
     $variables['content_class'] = 'without-image';
   }
-
-  $node_content = $variables['content'];
-  $node_content = render($node_content);
-  $words = str_word_count(strip_tags($node_content));
-  $minutes = floor($words / 275);
-  $variables['minutes'] = $minutes;
 }
 
 /**

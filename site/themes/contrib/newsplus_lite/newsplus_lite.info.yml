@@ -21,7 +21,6 @@ regions:
   banner: 'Banner'
   highlighted: 'Highlighted'
   promoted: 'Promoted Area'
-  breadcrumb: 'Breadcrumb'
   content: 'Content'
   sidebar_first: 'First Sidebar'
   sidebar_second: 'Second Sidebar'

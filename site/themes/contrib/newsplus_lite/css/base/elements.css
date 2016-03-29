@@ -15,8 +15,9 @@ body {
   font-size: 16px;
   color: #3f3f3f;
   line-height: 1.55;
-  background-color: #f3f3f3;
+  background-color: #ffffff;
   text-rendering: optimizeLegibility;
+  background-color: #f3f3f3;
 }
 p {
   margin: 0;
@@ -28,9 +29,6 @@ p.large {
   font-weight: 700;
   padding-bottom: 20px;
 }
-a {
-  color: #c0273c;
-}
 a:hover {
   -webkit-transition: all 0.2s ease-in-out;
   -moz-transition: all 0.2s ease-in-out;
@@ -38,13 +36,11 @@ a:hover {
   -o-transition: all 0.2s ease-in-out;
   transition: all 0.2s ease-in-out;
   text-decoration: underline;
-  color: #ea2d49;
 }
 a:focus,
 a:active {
   outline: none;
   text-decoration: none;
-  color: #ea2d49;
 }
 code,
 pre {
@@ -57,7 +53,7 @@ pre {
 pre {
   background: #ebebeb;
   border:none;
-  border-left: 10px solid #ea2d49;
+  border-left: 10px solid;
   -webkit-border-radius: 0px;
   -moz-border-radius: 0px;
   border-radius: 0px;
@@ -70,11 +66,11 @@ pre {
 }
 pre:hover {
   max-height: 10000px;
-  -webkit-transition: all ease-in-out 2s; 
-  moz-transition: all ease-in-out 2s; 
-  o-transition: all ease-in-out 2s;
-  -ms-transition: all ease-in-out 2s; 
-  ransition: all ease-in-out 2s;
+  -webkit-transition: all ease-in-out 2s;
+  -moz-transition: all ease-in-out 2s;
+  -o-transition: all ease-in-out 2s;
+  -ms-transition: all ease-in-out 2s;
+  transition: all ease-in-out 2s;
 }
 img {
   max-width: 100%;
@@ -88,41 +84,62 @@ blockquote {
   position: relative;
   margin: 40px 0 50px;
   line-height: 1.33;
-  overflow: hidden;
   min-height: 80px;
 }
-.footer-area blockquote {
-  padding-left: 70px;
+.footer-area blockquote,
+.subfooter-area blockquote,
+.sidebar blockquote {
+  padding-left: 80px;
 }
 /*Blockquote quote symbol*/
 blockquote:after {
   position: absolute;
-  font-family: 'PT Sans', Helvetica Neue, Arial, Sans-serif;
   content: "“";
   left: 15px;
   color: #dddddd;
   font-style: normal;
   font-size: 280px;
-  line-height: 1;
-  top: -20px;
+  line-height: 0.8;
   height: 100%;
+  top: 0;
 }
-.footer-area blockquote:after {
+.footer-area blockquote:after,
+.subfooter-area blockquote:after,
+.sidebar blockquote:after {
   left: 0;
   font-size: 190px;
-  top: -15px;
 }
 @media (min-width: 992px) {
-  .two-sidebars blockquote { padding: 0 0 0 75px; }
-  .two-sidebars blockquote:after { left: 0; font-size: 190px; top: -15px; }
+  .two-sidebars blockquote {
+    padding: 0 0 0 80px;
+  }
+  .two-sidebars blockquote:after {
+    left: 0;
+    font-size: 190px;
+  }
 }
 @media (min-width: 768px) and (max-width: 991px) {
-  .footer-area blockquote { padding-left: 40px; font-size: 18px; }
-  .footer-area blockquote:after { left: 0; font-size: 90px; top: -5px; }
+  .footer-area blockquote,
+  .subfooter-area blockquote,
+  .sidebar blockquote {
+    padding-left: 40px;
+    font-size: 18px;
+  }
+  .footer-area blockquote:after,
+  .subfooter-area blockquote:after,
+  .sidebar blockquote:after {
+    left: 0;
+    font-size: 90px;
+  }
 }
 @media (max-width: 767px) {
-  blockquote { padding: 0 0 0 75px; }
-  blockquote:after { left: 0; font-size: 190px; top: -15px; }
+  blockquote {
+    padding: 0 0 0 80px;
+  }
+  blockquote:after {
+    left: 0;
+    font-size: 190px;
+  }
 }
 ul {
   list-style-type: square;
@@ -130,7 +147,12 @@ ul {
 ul.list li {
   margin-bottom: 5px;
 }
-
+.colored-area {
+  color: #ffffff;
+}
+.colored-area legend{
+  color: #ffffff;
+}
 /*Headings*/
 h1, h2, h3, h4, h5, h6,
 .heading-a,
@@ -181,11 +203,11 @@ h5,
 #page .block-views h2.title {
   margin-top: 7px;
   margin-bottom: 20px;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
   color: #464646;
   padding-bottom: 5px;
-  border-bottom: 1px solid #c0273c;
+  border-bottom: 1px solid;
   text-transform: uppercase;
 }
 .node--view-mode-teaser h2.node__title,

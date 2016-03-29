@@ -39,6 +39,8 @@ global-styling:
       css/components/tables.css: {}
       css/components/to-top.css: {}
       css/components/quickedit.css: {}
+    theme:
+      css/theme/color-default.css: {}
 
 messages:
   version: VERSION
