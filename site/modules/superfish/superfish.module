@@ -1,0 +1,147 @@
+<?php
+
+/**
+ * @file
+ * jQuery Superfish plugin for Drupal menus.
+ */
+
+use Drupal\Component\Utility\Unicode;
+use Drupal\Core\Block\BlockPluginInterface;
+use Drupal\Component\Utility\SafeMarkup;
+
+/**
+ * Generate a list of available slide-in effects.
+ */
+function superfish_effects() {
+  $output = array(
+    'none' => '- ' . t('None') . ' -',
+    'vertical' => t('Vertical'),
+    'horizontal' => t('Horizontal'),
+    'diagonal' => t('Diagonal'));
+
+  if (file_exists('profiles/' . drupal_get_profile() . '/libraries/easing')) {
+    $directory = 'profiles/' . drupal_get_profile() . '/libraries/easing';
+  } else {
+    $directory = 'sites/all/libraries/easing';
+  }
+
+  if (file_exists($directory . '/jquery.easing.js')) {
+    $easing_types = array(
+      'easeInSine_vertical' => 'easeInSine (' . t('Vertical') . ')',
+      'easeInSine_horizontal' => 'easeInSine (' . t('Horizontal') . ')',
+      'easeInSine_diagonal' => 'easeInSine (' . t('Diagonal') . ')',
+      'easeInQuint_vertical' => 'easeInQuint (' . t('Vertical') . ')',
+      'easeInQuint_horizontal' => 'easeInQuint (' . t('Horizontal') . ')',
+      'easeInQuint_diagonal' => 'easeInQuint (' . t('Diagonal') . ')',
+      'easeInQuart_vertical' => 'easeInQuart (' . t('Vertical') . ')',
+      'easeInQuart_horizontal' => 'easeInQuart (' . t('Horizontal') . ')',
+      'easeInQuart_diagonal' => 'easeInQuart (' . t('Diagonal') . ')',
+      'easeInQuad_vertical' => 'easeInQuad (' . t('Vertical') . ')',
+      'easeInQuad_horizontal' => 'easeInQuad (' . t('Horizontal') . ')',
+      'easeInQuad_diagonal' => 'easeInQuad (' . t('Diagonal') . ')',
+      'easeInExpo_vertical' => 'easeInExpo (' . t('Vertical') . ')',
+      'easeInExpo_horizontal' => 'easeInExpo (' . t('Horizontal') . ')',
+      'easeInExpo_diagonal' => 'easeInExpo (' . t('Diagonal') . ')',
+      'easeInElastic_vertical' => 'easeInElastic (' . t('Vertical') . ')',
+      'easeInElastic_horizontal' => 'easeInElastic (' . t('Horizontal') . ')',
+      'easeInElastic_diagonal' => 'easeInElastic (' . t('Diagonal') . ')',
+      'easeInCubic_vertical' => 'easeInCubic (' . t('Vertical') . ')',
+      'easeInCubic_horizontal' => 'easeInCubic (' . t('Horizontal') . ')',
+      'easeInCubic_diagonal' => 'easeInCubic (' . t('Diagonal') . ')',
+      'easeInCirc_vertical' => 'easeInCirc (' . t('Vertical') . ')',
+      'easeInCirc_horizontal' => 'easeInCirc (' . t('Horizontal') . ')',
+      'easeInCirc_diagonal' => 'easeInCirc (' . t('Diagonal') . ')',
+      'easeInBounce_vertical' => 'easeInBounce (' . t('Vertical') . ')',
+      'easeInBounce_horizontal' => 'easeInBounce (' . t('Horizontal') . ')',
+      'easeInBounce_diagonal' => 'easeInBounce (' . t('Diagonal') . ')',
+      'easeInBack_vertical' => 'easeInBack (' . t('Vertical') . ')',
+      'easeInBack_horizontal' => 'easeInBack (' . t('Horizontal') . ')',
+      'easeInBack_diagonal' => 'easeInBack (' . t('Diagonal') . ')',
+      'easeOutQuint_vertical' => 'easeOutQuint (' . t('Vertical') . ')',
+      'easeOutQuint_horizontal' => 'easeOutQuint (' . t('Horizontal') . ')',
+      'easeOutQuint_diagonal' => 'easeOutQuint (' . t('Diagonal') . ')',
+      'easeOutQuart_vertical' => 'easeOutQuart (' . t('Vertical') . ')',
+      'easeOutQuart_horizontal' => 'easeOutQuart (' . t('Horizontal') . ')',
+      'easeOutQuart_diagonal' => 'easeOutQuart (' . t('Diagonal') . ')',
+      'easeOutQuad_vertical' => 'easeOutQuad (' . t('Vertical') . ')',
+      'easeOutQuad_horizontal' => 'easeOutQuad (' . t('Horizontal') . ')',
+      'easeOutQuad_diagonal' => 'easeOutQuad (' . t('Diagonal') . ')',
+      'easeOutExpo_vertical' => 'easeOutExpo (' . t('Vertical') . ')',
+      'easeOutExpo_horizontal' => 'easeOutExpo (' . t('Horizontal') . ')',
+      'easeOutExpo_diagonal' => 'easeOutExpo (' . t('Diagonal') . ')',
+      'easeOutElastic_vertical' => 'easeOutElastic (' . t('Vertical') . ')',
+      'easeOutElastic_horizontal' => 'easeOutElastic (' . t('Horizontal') . ')',
+      'easeOutElastic_diagonal' => 'easeOutElastic (' . t('Diagonal') . ')',
+      'easeOutCubic_vertical' => 'easeOutCubic (' . t('Vertical') . ')',
+      'easeOutCubic_horizontal' => 'easeOutCubic (' . t('Horizontal') . ')',
+      'easeOutCubic_diagonal' => 'easeOutCubic (' . t('Diagonal') . ')',
+      'easeOutCirc_vertical' => 'easeOutCirc (' . t('Vertical') . ')',
+      'easeOutCirc_horizontal' => 'easeOutCirc (' . t('Horizontal') . ')',
+      'easeOutCirc_diagonal' => 'easeOutCirc (' . t('Diagonal') . ')',
+      'easeOutBounce_vertical' => 'easeOutBounce (' . t('Vertical') . ')',
+      'easeOutBounce_horizontal' => 'easeOutBounce (' . t('Horizontal') . ')',
+      'easeOutBounce_diagonal' => 'easeOutBounce (' . t('Diagonal') . ')',
+      'easeOutBack_vertical' => 'easeOutBack (' . t('Vertical') . ')',
+      'easeOutBack_horizontal' => 'easeOutBack (' . t('Horizontal') . ')',
+      'easeOutBack_diagonal' => 'easeOutBack (' . t('Diagonal') . ')',
+      'easeInOutQuint_vertical' => 'easeInOutQuint (' . t('Vertical') . ')',
+      'easeInOutQuint_horizontal' => 'easeInOutQuint (' . t('Horizontal') . ')',
+      'easeInOutQuint_diagonal' => 'easeInOutQuint (' . t('Diagonal') . ')',
+      'easeInOutQuart_vertical' => 'easeInOutQuart (' . t('Vertical') . ')',
+      'easeInOutQuart_horizontal' => 'easeInOutQuart (' . t('Horizontal') . ')',
+      'easeInOutQuart_diagonal' => 'easeInOutQuart (' . t('Diagonal') . ')',
+      'easeInOutQuad_vertical' => 'easeInOutQuad (' . t('Vertical') . ')',
+      'easeInOutQuad_horizontal' => 'easeInOutQuad (' . t('Horizontal') . ')',
+      'easeInOutQuad_diagonal' => 'easeInOutQuad (' . t('Diagonal') . ')',
+      'easeInOutExpo_vertical' => 'easeInOutExpo (' . t('Vertical') . ')',
+      'easeInOutExpo_horizontal' => 'easeInOutExpo (' . t('Horizontal') . ')',
+      'easeInOutExpo_diagonal' => 'easeInOutExpo (' . t('Diagonal') . ')',
+      'easeInOutElastic_vertical' => 'easeInOutElastic (' . t('Vertical') . ')',
+      'easeInOutElastic_horizontal' => 'easeInOutElastic (' . t('Horizontal') . ')',
+      'easeInOutElastic_diagonal' => 'easeInOutElastic (' . t('Diagonal') . ')',
+      'easeInOutCubic_vertical' => 'easeInOutCubic (' . t('Vertical') . ')',
+      'easeInOutCubic_horizontal' => 'easeInOutCubic (' . t('Horizontal') . ')',
+      'easeInOutCubic_diagonal' => 'easeInOutCubic (' . t('Diagonal') . ')',
+      'easeInOutCirc_vertical' => 'easeInOutCirc (' . t('Vertical') . ')',
+      'easeInOutCirc_horizontal' => 'easeInOutCirc (' . t('Horizontal') . ')',
+      'easeInOutCirc_diagonal' => 'easeInOutCirc (' . t('Diagonal') . ')',
+      'easeInOutBounce_vertical' => 'easeInOutBounce (' . t('Vertical') . ')',
+      'easeInOutBounce_horizontal' => 'easeInOutBounce (' . t('Horizontal') . ')',
+      'easeInOutBounce_diagonal' => 'easeInOutBounce (' . t('Diagonal') . ')',
+      'easeInOutBack_vertical' => 'easeInOutBack (' . t('Vertical') . ')',
+      'easeInOutBack_horizontal' => 'easeInOutBack (' . t('Horizontal') . ')',
+      'easeInOutBack_diagonal' => 'easeInOutBack (' . t('Diagonal') . ')');
+    $output = array_merge($output, $easing_types);
+  }
+  return $output;
+}
+
+/**
+ * Helper function to clean up arrays.
+ */
+function superfish_array_remove_empty($haystack) {
+  foreach ($haystack as $key => $value) {
+    if (is_array($value)) {
+      $haystack[$key] = superfish_array_remove_empty($haystack[$key]);
+    }
+    elseif (empty($value) && is_bool($value) !== TRUE) {
+      if ($haystack[$key] != '0') {
+        unset($haystack[$key]);
+      }
+    }
+  }
+  return $haystack;
+}
+
+function superfish_theme($existing, $type, $theme, $path) {
+  return array(
+    'superfish' => array(
+      'render element' => 'element',
+      'file' => 'superfish.theme.inc',
+    ),
+    'superfish_menu_items' => array(
+      'render element' => 'element',
+      'file' => 'superfish.theme.inc',
+    )
+  );
+}

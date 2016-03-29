@@ -1,0 +1,4 @@
+services:
+  menu.menu_tree:
+    class: Drupal\system\Plugin\Block\SuperfishBlock
+    arguments: ['@plugin.manager.menu.link', '@menu.active_trail']
