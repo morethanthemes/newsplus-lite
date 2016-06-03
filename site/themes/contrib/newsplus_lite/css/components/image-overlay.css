@@ -1,4 +1,7 @@
-/*Image overlay*/
+/**
+ * @file
+ * Visual styles for newsplus_lite's image overlay.
+ */
 .overlayed {
   position: relative;
   overflow: hidden;
