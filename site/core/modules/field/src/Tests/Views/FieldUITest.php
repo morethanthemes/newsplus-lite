@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\field\Tests\Views\FieldUITest.
- */
-
 namespace Drupal\field\Tests\Views;
 
 use Drupal\field\Entity\FieldConfig;
@@ -142,4 +137,5 @@ class FieldUITest extends FieldTestBase {
     $option = $this->xpath('//label[@for="edit-options-value-0"]');
     $this->assertEqual(t('False'), (string) $option[0]);
   }
+
 }
