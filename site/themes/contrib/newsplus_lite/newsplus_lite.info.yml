@@ -4,7 +4,6 @@ base theme: classy
 description: 'A flexible, recolorable theme with many regions and a responsive, mobile-first layout.'
 # core: 8.x
 libraries:
-  - newsplus_lite/bootstrap
   - newsplus_lite/fontawesome
   - newsplus_lite/fonts-roboto
   - newsplus_lite/global-styling

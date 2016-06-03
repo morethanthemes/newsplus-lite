@@ -35,6 +35,13 @@ function newsplus_lite_preprocess_html(&$variables) {
     $variables['attributes']['class'][] = 'has-featured-top';
   }
 
+  $bootstrap_remote_type = theme_get_setting('bootstrap_remote_type');
+  if ($bootstrap_remote_type == 'local') {
+    $variables['#attached']['library'][] = 'newsplus_lite/bootstrap';
+  } else {
+    $variables['#attached']['library'][] = 'newsplus_lite/bootstrap-cdn';
+  }
+
 }
 
 function newsplus_lite_preprocess_breadcrumb(&$variables){
