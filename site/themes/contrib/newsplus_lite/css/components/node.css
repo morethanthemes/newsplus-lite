@@ -35,7 +35,7 @@
 /*Node type: Post, Blog Entry, Article*/
 
 /*Node type: Post, Blog Entry, Article - Layout*/
-.node--type-article .node-content { margin-left: 110px; }
+.node-side + .node-content { margin-left: 110px; }
 
 .node--view-mode-teaser .node-content,
 .node-teaser .node-content.full-width, .no-sidebars .node-content.full-width, .two-sidebars .node-content.full-width,
@@ -63,7 +63,7 @@
 }
 
 @media (max-width: 480px) {
-  .node-content { margin-left: 75px; }
+  .node-side + .node-content { margin-left: 75px; }
   .node-side { margin-top: 10px; float: left; top: 0; left: 0; text-align: center; width: 75px; font-size: 12px; padding: 0 15px 0 0; }
 }
 
