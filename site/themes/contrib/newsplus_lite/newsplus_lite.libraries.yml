@@ -141,7 +141,7 @@ fixed-header:
     component:
       css/components/fixed-header.css: {}
   js:
-    js/custom/fixed-header.js: { scope: 'footer' }
+    js/custom/fixed-header.js: { scope: 'footer', weight: -1 }
   dependencies:
     - core/jquery
 
