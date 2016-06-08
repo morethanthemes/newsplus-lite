@@ -18,6 +18,9 @@
   z-index: 499;
   position: relative;
 }
+#header-inside-right {
+  padding-top: 13px;
+}
 @media (max-width: 767px) {
   #header-inside-right {
     margin-right: 40px;
