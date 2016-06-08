@@ -205,6 +205,9 @@ ul.menu li.menu-item--expanded > a:hover:before {
   top: 11px;
 }
 /*Mobile Menu*/
+ul.sf-menu.sf-accordion.sf-expanded {
+  margin-bottom: 10px;
+}
 #main-navigation .sf-accordion-toggle.sf-style-none,
 #pre-header .sf-accordion-toggle.sf-style-none,
 #header-top .sf-accordion-toggle.sf-style-none {
@@ -215,11 +218,16 @@ ul.menu li.menu-item--expanded > a:hover:before {
 #header-top .sf-accordion-toggle.sf-style-none a {
   position: absolute;
   top: 0;
-  right: 0;
+  right: 5px;
   z-index: 100;
   padding: 15px 10px 5px;
   display: inline-block;
   text-decoration: none;
+  -webkit-transition: none;
+  -moz-transition: none;
+  -ms-transition: none;
+  -o-transition: none;
+  transition: none;
 }
 #main-navigation .sf-accordion-toggle.sf-style-none a:after,
 #pre-header .sf-accordion-toggle.sf-style-none a:after,
@@ -234,7 +242,7 @@ ul.menu li.menu-item--expanded > a:hover:before {
 #header-top .sf-accordion-toggle.sf-style-none a.sf-expanded {
   position: relative;
   top: auto;
-  right: auto;
+  right: -10px;
   z-index: auto;
 }
 #main-navigation .sf-accordion-toggle.sf-style-none a.sf-expanded:after,

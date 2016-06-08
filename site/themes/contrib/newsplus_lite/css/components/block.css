@@ -60,3 +60,6 @@ body.maintenance-page {
 .block.block-system-breadcrumb-block {
   padding: 0;
 }
+#pre-header .block-superfish.block {
+  min-height: 48px;
+}
