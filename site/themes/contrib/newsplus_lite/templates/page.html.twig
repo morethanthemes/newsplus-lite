@@ -251,7 +251,11 @@
             {% endif %}
 
             {% if page.highlighted %}
-              {{ page.highlighted }}
+              <div id="highlighted">
+                <div id="highlighted-inside" class="clearfix">
+                  {{ page.highlighted }}
+                </div>
+              </div>
             {% endif %}
 
             {% if page.promoted %}
