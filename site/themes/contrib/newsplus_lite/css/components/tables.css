@@ -1,4 +1,8 @@
-/*Tables*/
+/**
+ * @file
+ * Visual styles for Newsplus Lite's tables.
+ */
+
 table {
   border-collapse: collapse;
   width: 100%;

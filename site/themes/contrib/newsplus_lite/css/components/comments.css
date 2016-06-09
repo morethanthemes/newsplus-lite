@@ -3,58 +3,103 @@
  * Visual styles for comments in Newsplus Lite.
  */
 
-/*Comment*/
-.comment { margin: 0 0 45px 0; overflow: hidden; border-bottom: 1px solid #dddddd; }
-
-.comment header { padding: 0; }
-
-.comment header article.profile .field--name-user-picture { float: left; padding: 0 20px 20px 0; min-width: 80px; max-width: 80px; position: relative; }
-
-.comment .comment__content { float:left; width:85%; position: relative; margin: 0; }
-
+/* Comment */
+.comment {
+  margin: 0 0 45px 0;
+  overflow: hidden;
+  border-bottom: 1px solid #dddddd;
+}
+.comment header {
+  padding: 0;
+}
+.comment header article.profile .field--name-user-picture {
+  float: left;
+  padding: 0 20px 20px 0;
+  min-width: 80px;
+  max-width: 80px;
+  position: relative;
+}
+.comment .comment__content {
+  float: left;
+  width: 85%;
+  position: relative;
+  margin: 0;
+}
 .comment .comment__content > h3 {
   margin: 0 0 5px 0;
   font-size: 16px;
 }
-
 .comment .comment__meta {
   font-size: 10px;
-  color:#898989;
+  color: #898989;
   margin: 0 0 15px;
   padding: 0;
 }
-
-.comment .field-name-comment-body { font-size: 13px; line-height: 1.38; }
-
-.comment ul.links { text-align: right; display: block; margin-bottom: 0; clear: both; }
-
-.comment ul.links li:last-child { padding: 0; }
-
-.indented { margin-left: 80px; }
-
-.two-sidebars .indented { margin-left: 65px; }
-
-.two-sidebars .comment .comment__content, .two-sidebars .comment header article.profile .field--name-user-picture { float:none; width:100%; }
-
-.two-sidebars .comment .comment__meta { margin-bottom: 0; padding-bottom: 10px; }
-
-.two-sidebars .comment header article.profile .field--name-user-picture { min-width: 0; padding: 0; }
-
+.comment .field-name-comment-body {
+  font-size: 13px;
+  line-height: 1.38;
+}
+.comment ul.links {
+  text-align: right;
+  display: block;
+  margin-bottom: 0;
+  clear: both;
+}
+.comment ul.links li:last-child {
+  padding: 0;
+}
+.indented {
+  margin-left: 80px;
+}
+.two-sidebars .indented {
+  margin-left: 65px;
+}
+.two-sidebars .comment .comment__content,
+.two-sidebars .comment header article.profile .field--name-user-picture {
+  float: none;
+  width: 100%;
+}
+.two-sidebars .comment .comment__meta {
+  margin-bottom: 0;
+  padding-bottom: 10px;
+}
+.two-sidebars .comment header article.profile .field--name-user-picture {
+  min-width: 0;
+  padding: 0;
+}
 @media (max-width: 1199px) {
-  .comment .comment__content { width:80%; }
+  .comment .comment__content {
+    width:80%;
+  }
 }
-
 @media (max-width: 767px) {
-  .indented { margin-left: 65px; }
-  .comment .comment__content, .comment header article.profile .field--name-user-picture { float:none; width:100%; }
-  .comment .user-picture { min-width: 0; padding: 0; }
-
-  .comment ul.links li:first-child { padding: 0 4px 0 0; }
-  .comment ul.links li:last-child { padding: 0 0 0 4px; }
-  .comment ul.links li { padding: 0 4px 0 4px; }
-  .comment ul.links li a { margin-bottom: 0; }
+  .indented {
+    margin-left: 65px;
+  }
+  .comment .comment__content,
+  .comment header article.profile .field--name-user-picture {
+    float: none;
+    width: 100%;
+  }
+  .comment .user-picture {
+    min-width: 0;
+    padding: 0;
+  }
+  .comment ul.links li:first-child {
+    padding: 0 4px 0 0;
+  }
+  .comment ul.links li:last-child {
+    padding: 0 0 0 4px;
+  }
+  .comment ul.links li {
+    padding: 0 4px 0 4px;
+  }
+  .comment ul.links li a {
+    margin-bottom: 0;
+  }
 }
-
 @media (max-width: 480px) {
-  .indented { margin-left: 30px; }
+  .indented {
+    margin-left: 30px;
+  }
 }

@@ -2,6 +2,7 @@
  * @file
  * Visual styles for Newsplus Lite's field components.
  */
+
 .field--label-inline .field__items {
   margin-top: 20px;
 }
@@ -16,7 +17,8 @@
   font-weight: normal;
   padding-right: 5px; /* LTR */
 }
-/*Taxonomy term reference*/
+
+/* Taxonomy term reference */
 .field--entity-reference-target-type-taxonomy-term {
   display: block;
   overflow: hidden;

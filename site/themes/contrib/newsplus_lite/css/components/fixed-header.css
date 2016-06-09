@@ -1,4 +1,8 @@
-/*fixed main-menu*/
+/**
+ * @file
+ * Visual styles for Newsplus Lite's fixed header.
+ */
+
 .onscroll #header {
   position: fixed;
   z-index: 499;

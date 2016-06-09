@@ -1,4 +1,8 @@
-/*Layout*/
+/**
+ * @file
+ * Styles for Newsplus Lite's layout.
+ */
+
 #header-top {
   border-bottom: 1px solid #ffffff;
 }
@@ -121,7 +125,8 @@
   #header-top {
     padding-top: 10px;
   }
-  /*Header Mobile Layout*/
+
+  /* Header Mobile Layout */
   #header-inside {
     position: relative;
   }
@@ -140,9 +145,9 @@
   #header-inside.mean-container .dropdown.search-bar .dropdown-menu {
     margin-right: -40px;
   }
-  /*Fixed header position*/
+
+  /* Fixed header position */
   #header {
-    /*position: static!important;*/
     top: auto;
   }
   #page,
@@ -150,7 +155,8 @@
     margin-top: 0!important;
   }
 }
-/*Regions*/
+
+/* Regions */
 .colored-area {
   color: #fff;
 }

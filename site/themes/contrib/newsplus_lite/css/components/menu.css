@@ -29,7 +29,8 @@ ul.menu li a:hover {
 ul.menu li.menu-item--expanded ul {
   padding-left: 25px;
 }
-/*menu arrows  */
+
+/* menu arrows */
 ul.menu li.menu-item--collapsed > a:before {
   content: "\f105";
   font-family: 'FontAwesome';
@@ -111,7 +112,6 @@ ul.menu li.menu-item--expanded > a:hover:before {
     padding: 0 0 0 2px;
   }
 }
-
 @media (max-width: 767px) {
   .subfooter-area ul.menu li {
     display: block;
@@ -123,7 +123,8 @@ ul.menu li.menu-item--expanded > a:hover:before {
     padding: 0 10px;
   }
 }
-/*Superfish Support*/
+
+/* Superfish Support */
 #main-navigation .sf-menu ul {
   display: none;
   top:100%;
@@ -164,6 +165,7 @@ ul.menu li.menu-item--expanded > a:hover:before {
 #header-top .sf-menu ul ul {
   top:0;
 }
+
 /*superfish menu arrows*/
 #main-navigation ul.sf-menu li a.menuparent:after,
 #pre-header ul.sf-menu li a.menuparent:after,
@@ -204,6 +206,7 @@ ul.menu li.menu-item--expanded > a:hover:before {
   right: 10px;
   top: 11px;
 }
+
 /*Mobile Menu*/
 ul.sf-menu.sf-accordion.sf-expanded {
   margin-bottom: 10px;
@@ -218,7 +221,7 @@ ul.sf-menu.sf-accordion.sf-expanded {
 #header-top .sf-accordion-toggle.sf-style-none a {
   position: absolute;
   top: 0;
-  right: 5px;
+  right: -10px;
   z-index: 100;
   padding: 15px 10px 5px;
   display: inline-block;
@@ -242,7 +245,6 @@ ul.sf-menu.sf-accordion.sf-expanded {
 #header-top .sf-accordion-toggle.sf-style-none a.sf-expanded {
   position: relative;
   top: auto;
-  right: -10px;
   z-index: auto;
 }
 #main-navigation .sf-accordion-toggle.sf-style-none a.sf-expanded:after,
@@ -287,6 +289,7 @@ ul.menu.sf-accordion ul li {
 #header-top ul.menu.sf-accordion ul ul ul ul li a {
   padding-left: 75px;
 }
+
 /*mobile menu arrows*/
 #main-navigation ul.sf-accordion li a.menuparent:after,
 #pre-header ul.sf-accordion li a.menuparent:after,

@@ -28,10 +28,9 @@ global-styling:
   css:
     base:
       css/base/elements.css: { weight: 1 }
-      css/base/layout.css: {}
-      css/base/font.css: {}
+      css/base/layout.css: { weight: 1 }
+      css/base/font.css: { weight: 1 }
     component:
-      css/components/sidebar.css: {}
       css/components/site-branding.css: {}
       css/components/page-title.css: {}
       css/components/breadcrumb.css: {}
@@ -85,8 +84,8 @@ maintenance_page:
 magnific-popup:
   version: VERSION
   css:
-    base:
-      js/magnific-popup/magnific-popup.css: { weight: 0 }
+    component:
+      js/magnific-popup/magnific-popup.css: {}
   js:
     js/magnific-popup/jquery.magnific-popup.min.js: {}
   dependencies:

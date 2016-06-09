@@ -1,18 +1,42 @@
-/*Node Images*/
-.images-container { overflow: hidden; }
+/**
+ * @file
+ * Visual styles for Newsplus Lite's node images.
+ */
 
-.image-preview { margin-bottom: 20px; overflow: hidden; }
-
-.image-caption p { font-size: 13px; color: #7d7d7d; padding: 10px 0 0 0; }
-
-.image-listing-items { margin-bottom: 20px; }
-
-.image-listing-item { float: left; padding: 0; margin: 0 2.66% 2.66% 0; max-width: 17.866666666%; position: relative; }
-
-.image-listing-items .image-listing-item:nth-child(5n) { margin-right: 0px; }
-
+.images-container {
+  overflow: hidden;
+}
+.image-preview {
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.image-caption p {
+  font-size: 13px;
+  color: #7d7d7d;
+  padding: 10px 0 0 0;
+}
+.image-listing-items {
+  margin-bottom: 20px;
+}
+.image-listing-item {
+  float: left;
+  padding: 0;
+  margin: 0 2.66% 2.66% 0;
+  max-width: 17.866666666%;
+  position: relative;
+}
+.image-listing-items .image-listing-item:nth-child(5n) {
+  margin-right: 0px;
+}
 @media (max-width: 767px) {
-  .image-listing-item { margin: 0 2.77% 2.77% 0; max-width: 31.481481481481%; }
-  .image-listing-items .image-listing-item:nth-child(5n) { margin-right: 2.77%; }
-  .image-listing-items .image-listing-item:nth-child(3n) { margin-right: 0; }
+  .image-listing-item {
+    margin: 0 2.77% 2.77% 0;
+    max-width: 31.481481481481%;
+  }
+  .image-listing-items .image-listing-item:nth-child(5n) {
+    margin-right: 2.77%;
+  }
+  .image-listing-items .image-listing-item:nth-child(3n) {
+    margin-right: 0;
+  }
 }

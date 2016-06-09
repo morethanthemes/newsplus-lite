@@ -1,4 +1,8 @@
-/*Status messages*/
+/**
+ * @file
+ * Visual styles for Newsplus Lite's status messages.
+ */
+
 .messages {
   color: #ffffff;
   margin: 10px 0 0;
@@ -29,11 +33,42 @@
 }
 
 /*Status messages symbols*/
-.messages--status:before { content: "\f00c"; font-family: "FontAwesome"; font-size: 20px; position: absolute; left: 0; top: 0; background-color: #547f1f;
-width: 55px; text-align: center; height: 100%; padding-top: 13px; }
-
-.messages--error:before { content: "\f00d"; font-family: "FontAwesome"; font-size: 24px; position: absolute; left: 0; top:0; background-color: #980a00;
-width: 55px; text-align: center; height: 100%; padding-top: 10px; }
-
-.messages--warning:before { content: "\f12a"; font-family: "FontAwesome"; font-size: 24px; position: absolute; left: 0; top:0; background-color: #e2630b;
-width: 55px; text-align: center; height: 100%; padding-top: 15px; }
+.messages--status:before {
+  content: "\f00c";
+  font-family: "FontAwesome";
+  font-size: 20px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-color: #547f1f;
+  width: 55px;
+  text-align: center;
+  height: 100%;
+  padding-top: 13px;
+}
+.messages--error:before {
+  content: "\f00d";
+  font-family: "FontAwesome";
+  font-size: 24px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-color: #980a00;
+  width: 55px;
+  text-align: center;
+  height: 100%;
+  padding-top: 10px;
+}
+.messages--warning:before {
+  content: "\f12a";
+  font-family: "FontAwesome";
+  font-size: 24px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-color: #e2630b;
+  width: 55px;
+  text-align: center;
+  height: 100%;
+  padding-top: 15px;
+}

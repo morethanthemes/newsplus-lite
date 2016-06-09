@@ -3,11 +3,6 @@
  * Overall specifications for Newsplus Lite.
  */
 
-
-/**
- * Reusable heading classes are included to help modules change the styling of
- * headings on a page without affecting accessibility.
- */
 html {
   height: 100%;
 }
@@ -91,7 +86,8 @@ blockquote {
 .sidebar blockquote {
   padding-left: 80px;
 }
-/*Blockquote quote symbol*/
+
+/* Blockquote quote symbol */
 blockquote:after {
   position: absolute;
   content: "“";
@@ -153,7 +149,12 @@ ul.list li {
 .colored-area legend{
   color: #ffffff;
 }
-/*Headings*/
+
+/**
+ * Reusable heading classes are included to help modules change the styling of
+ * headings on a page without affecting accessibility.
+ */
+/* Headings */
 h1, h2, h3, h4, h5, h6,
 .heading-a,
 .heading-b,

@@ -1,3 +1,8 @@
+/**
+ * @file
+ * Visual styles for Newsplus Lite's search elements.
+ */
+
 .form-item input.form-search {
   background: #fff;
   color: #898989;
@@ -17,7 +22,6 @@
 input.form-search:focus {
   border-color: #c5c5c5;
 }
-
 .search-help-link {
   margin-top: 1em;
 }
@@ -60,5 +64,3 @@ input.form-search:focus {
 .block-search .form-actions input:hover {
   background-color: transparent;
 }
-
-/* Search results */

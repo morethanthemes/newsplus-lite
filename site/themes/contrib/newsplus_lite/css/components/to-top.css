@@ -1,9 +1,12 @@
-/* Scroll to top */
+/**
+ * @file
+ * Visual styles for Newsplus Lite's scroll to top element.
+ */
+
 #toTop {
   position: fixed;
   right: 30px;
   bottom: 30px;
-  color: #ea2d49;
   cursor: pointer;
   opacity: 1;
   filter: alpha(opacity=100);
