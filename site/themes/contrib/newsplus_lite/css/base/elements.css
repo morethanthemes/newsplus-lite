@@ -200,7 +200,7 @@ h5,
 .title {
   margin-top: 0
 }
-.sidebar h2.title,
+.sidebar .block > h2,
 #page .block-views h2.title {
   margin-top: 7px;
   margin-bottom: 20px;
@@ -218,27 +218,14 @@ h5,
 .sidebar h3.title {
   margin-top: 9px;
 }
-.footer-area h2.title,
-.subfooter-area h2.title {
+.footer-area .block > h2,
+.subfooter-area .block > h2 {
   font-size: 25px;
   margin-bottom: 20px;
-}
-#block-views-mt-user-latest-posts-block.block-views h2.title {
-  font-size: 28px;
-  font-weight: 700;
-  border-bottom: 0;
-  padding: 0;
-  margin-bottom: 45px;
-  text-transform: none;
 }
 @media (max-width: 767px) {
  .node h1.title {
     font-size: 36px;
-  }
-}
-@media (max-width: 480px) {
-  #block-views-mt-user-latest-posts-block.block-views h2.title {
-    margin-bottom: 20px;
   }
 }
 del {
