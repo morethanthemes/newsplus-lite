@@ -3,36 +3,6 @@
  * Visual styles for Newsplus Lite's blocks.
  */
 
-/* Block has it's own content wrapper. */
-.sidebar .block > h2,
-#page .block-views > h2 {
-  margin-top: 7px;
-  margin-bottom: 20px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #464646;
-  padding-bottom: 5px;
-  border-bottom: 1px solid #c0273c;
-  text-transform: uppercase;
-}
-.sidebar h3.title {
-  margin-top: 9px;
-}
-.maintenance-page h1,
-body.maintenance-page {
-  font-family: 'Roboto',Helvetica Neue, Arial, Sans-serif;
-}
-.maintenance-page #site-name,
-.maintenance-page #site-slogan {
-  font-family: 'Montserrat', Helvetica Neue, Arial, Sans-serif;
-}
-.footer-area h2.title,
-.subfooter-area h2.title {
-  font-size: 25px; margin-bottom: 20px;
-}
-@media (max-width: 767px) {
- .node h1.title { font-size: 36px; }
-}
 /*Blocks*/
 .block {
   padding: 0 0 25px 0;
@@ -59,4 +29,7 @@ body.maintenance-page {
 .block.block-page-title-block,
 .block.block-system-breadcrumb-block {
   padding: 0;
+}
+#pre-header .block-superfish.block {
+  min-height: 48px;
 }

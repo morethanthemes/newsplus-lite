@@ -1,0 +1,92 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the Superfish module.
+ */
+
+use Drupal\Core\Language\Language;
+
+/**
+ * Implements hook_enable().
+ */
+function superfish_install() {
+  if (superfish_library_check()){
+    drupal_set_message(t('In order to use Superfish, go to the <a href="@block">Block layout</a> page and use any of the "Place block" buttons to create a Superfish block.', array('@block' => 'structure/block')));
+  } else {
+    drupal_set_message(t('Superfish library is missing. Please refer to the <a href="@documentation">plugin documentation</a> for how you can fix this issue; Once done, go to the <a href="@block">Block layout</a> page and use any of the "Place block" buttons to create a Superfish block.', array('@documentation' => 'http://drupal.org/node/1125896', '@block' => 'structure/block')), 'warning');
+  }
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function superfish_requirements($phase) {
+  $requirements = array();
+  if ($phase == 'runtime') {
+    $requirements['superfish']['title'] = t('Superfish library');
+
+    if (superfish_library_check()) {
+      $requirements['superfish']['value'] = t('Installed');
+      $requirements['superfish']['severity'] = REQUIREMENT_OK;
+    }
+    else {
+      $requirements['superfish']['value'] = t('Not installed');
+      $requirements['superfish']['severity'] = REQUIREMENT_ERROR;
+      $requirements['superfish']['description'] = t('Please download the Superfish library from :url.', array(':url' => 'http://drupal.org/project/superfish'));
+    }
+
+    // Check the uploaded Superfish library version.
+    if (superfish_library_version() != '2.0') {
+      $requirements['superfish']['value'] = t('Not supported');
+      $requirements['superfish']['severity'] = REQUIREMENT_ERROR;
+      $requirements['superfish']['description'] = t('The Superfish library requires an update. You can find the update instructions on :url.', array(':url' => 'http://drupal.org/project/superfish'));
+    }
+  }
+  return $requirements;
+}
+
+/**
+ * Verifies Superfish library is present.
+ */
+function superfish_library_check() {
+  if (function_exists('libraries_get_libraries')) {
+    $library = libraries_get_libraries();
+    if (isset($library['superfish'])) {
+      return TRUE;
+    }
+  }
+  elseif (file_exists('sites/all/libraries/superfish/superfish.js') || file_exists('profiles/' . drupal_get_profile() . '/libraries/superfish/superfish.js')) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Checks Superfish library version.
+ */
+function superfish_library_version() {
+  // Ensure the Libraries API module is installed and working.
+  if (function_exists('libraries_get_path') && libraries_get_path('superfish') != false) {
+    $directory = libraries_get_path('superfish');
+  }
+  // Otherwise use the default directory.
+  elseif (file_exists('profiles/' . drupal_get_profile() . '/libraries/superfish')) {
+    $directory = 'profiles/' . drupal_get_profile() . '/libraries/superfish';
+  }
+  else {
+    $directory = 'sites/all/libraries/superfish';
+  }
+
+  // Get the library version.
+  if (file_exists($directory . '/VERSION')) {
+    $version = file_get_contents($directory . '/VERSION');
+    // Removing blank lines and white spaces.
+    $version = preg_replace("/(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+/", "\n", trim($version));
+    if (!empty($version)) {
+      return $version;
+    }
+    return false;
+  }
+  return false;
+}

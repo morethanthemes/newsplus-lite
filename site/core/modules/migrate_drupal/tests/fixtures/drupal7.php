@@ -1,4 +1,5 @@
 <?php
+// @codingStandardsIgnoreFile
 /**
  * @file
  * A database agnostic dump for testing purposes.
@@ -4330,6 +4331,33 @@ $connection->schema()->createTable('field_data_field_file', array(
   'mysql_character_set' => 'utf8',
 ));
 
+$connection->insert('field_data_field_file')
+->fields(array(
+  'entity_type',
+  'bundle',
+  'deleted',
+  'entity_id',
+  'revision_id',
+  'language',
+  'delta',
+  'field_file_fid',
+  'field_file_display',
+  'field_file_description',
+))
+->values(array(
+  'entity_type' => 'node',
+  'bundle' => 'test_content_type',
+  'deleted' => '0',
+  'entity_id' => '1',
+  'revision_id' => '1',
+  'language' => 'und',
+  'delta' => '0',
+  'field_file_fid' => '2',
+  'field_file_display' => '1',
+  'field_file_description' => 'file desc',
+))
+->execute();
+
 $connection->schema()->createTable('field_data_field_float', array(
   'fields' => array(
     'entity_type' => array(
@@ -6065,6 +6093,33 @@ $connection->schema()->createTable('field_revision_field_file', array(
   'mysql_character_set' => 'utf8',
 ));
 
+$connection->insert('field_revision_field_file')
+->fields(array(
+  'entity_type',
+  'bundle',
+  'deleted',
+  'entity_id',
+  'revision_id',
+  'language',
+  'delta',
+  'field_file_fid',
+  'field_file_display',
+  'field_file_description',
+))
+->values(array(
+  'entity_type' => 'node',
+  'bundle' => 'test_content_type',
+  'deleted' => '0',
+  'entity_id' => '1',
+  'revision_id' => '1',
+  'language' => 'und',
+  'delta' => '0',
+  'field_file_fid' => '2',
+  'field_file_display' => '1',
+  'field_file_description' => 'file desc',
+))
+->execute();
+
 $connection->schema()->createTable('field_revision_field_float', array(
   'fields' => array(
     'entity_type' => array(
@@ -7334,6 +7389,13 @@ $connection->insert('file_usage')
 ))
 ->values(array(
   'fid' => '1',
+  'module' => 'file',
+  'type' => 'node',
+  'id' => '1',
+  'count' => '2',
+))
+->values(array(
+  'fid' => '2',
   'module' => 'file',
   'type' => 'node',
   'id' => '1',
@@ -40727,7 +40789,7 @@ $connection->insert('users')
 ->values(array(
   'uid' => '2',
   'name' => 'Odo',
-  'pass' => '$S$DZ4P7zZOh92vgrgZDBbv8Pu6lQB337OJ1wsOy21602G4A5F7.M9K',
+  'pass' => '$S$DGFZUE.FhrXbe4y52eC7p0ZVRGD/gOPtVctDlmC89qkujnBokAlJ',
   'mail' => 'odo@local.host',
   'theme' => '',
   'signature' => '',
@@ -41259,6 +41321,10 @@ $connection->insert('variable')
 ->values(array(
   'name' => 'language_content_type_test_content_type',
   'value' => 's:1:"0";',
+))
+->values(array(
+  'name' => 'i18n_node_options_blog',
+  'value' => 'a:2:{i:0;s:8:"required";i:1;s:4:"lock";}',
 ))
 ->values(array(
   'name' => 'language_count',

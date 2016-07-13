@@ -1,4 +1,8 @@
-/* Quickedit reset styles */
+/**
+ * @file
+ * Visual styles for Newsplus Lite's quickedit powered elements.
+ */
+
 .quickedit-form input,
 .quickedit-form select.form-select,
 .quickedit-form select,

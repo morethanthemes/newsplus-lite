@@ -1,0 +1,9 @@
+# Schema for the Superfish module settings form.
+
+superfish.settings:
+  type: mapping
+  label: 'Superfish'
+  mapping:
+    superfish_library:
+      type: string
+      label: 'Library path'

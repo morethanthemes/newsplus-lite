@@ -80,13 +80,15 @@
     {% block above_header %}
     {% endblock %}
     <header>
-      {{ title_prefix }}
-      {% if not page %}
-        <h2{{ title_attributes.addClass('node__title title') }}>
-          <a href="{{ url }}" rel="bookmark">{{ label }}</a>
-        </h2>
-      {% endif %}
-      {{ title_suffix }}
+      {% block title_area %}
+        {{ title_prefix }}
+        {% if not page %}
+          <h2{{ title_attributes.addClass('node__title title') }}>
+            <a href="{{ url }}" rel="bookmark">{{ label }}</a>
+          </h2>
+        {% endif %}
+        {{ title_suffix }}
+      {% endblock %}
       {% block meta_area %}
         {% if display_submitted %}
           <div class="node__meta">

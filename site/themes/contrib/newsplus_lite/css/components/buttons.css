@@ -2,6 +2,7 @@
  * @file
  * Styles for Newsplus Lite's buttons.
  */
+
 a.button,
 input[type="submit"],
 input[type="reset"],
@@ -9,7 +10,6 @@ input[type="button"] {
   font-size: 13px;
   text-transform: uppercase;
   padding: 15px;
-  background-color: #c0273c;
   color: #ffffff;
   display: inline-block;
   line-height: 1;
@@ -26,12 +26,6 @@ input[type="button"] {
   -webkit-border-radius: 0px;
   -moz-border-radius: 0px;
   border-radius: 0px;
-}
-.pre-header-area a.button,
-.pre-header-area input[type="submit"],
-.header-top-area a.button,
-.header-top-area input[type="submit"] {
-  background-color: #c0273c!important;
 }
 input[type="submit"],
 input[type="reset"],
@@ -51,7 +45,6 @@ input[type="submit"]:focus,
 input[type="reset"]:focus,
 input[type="button"]:focus {
   text-decoration: none;
-  background-color: #ea2d49;
   color: #ffffff;
 }
 span.button-operator {

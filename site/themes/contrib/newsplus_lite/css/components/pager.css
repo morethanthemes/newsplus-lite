@@ -1,6 +1,6 @@
 /**
  * @file
- * Styles for Bartik's pagination.
+ * Visual styles for Newsplus Lite's pager.
  */
 
 /* Using .pager selector on the first one to override .region-content ul. */
@@ -28,14 +28,11 @@ li.pager__item > a {
 li.pager__item > a:hover {
   background-color: transparent;
   color: #ffffff;
-  background-color: #ea2d49;
 }
 li.pager__item > a:focus {
   background-color: #dddddd;
-  color: #ea2d49;
 }
 li.pager__item.is-active > a {
   color: #ffffff;
-  background-color: #ea2d49;
   line-height: 1;
 }

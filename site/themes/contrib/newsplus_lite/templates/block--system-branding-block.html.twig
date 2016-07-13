@@ -15,21 +15,21 @@
 #}
 {% set attributes = attributes.addClass('site-branding') %}
 {% block content %}
-  <div id="logo-and-site-name-wrapper" class="clearfix">
+  <div class="logo-and-site-name-wrapper clearfix">
     {% if site_logo %}
-      <div id="logo">
+      <div class="logo">
         <a href="{{ path('<front>') }}" title="{{ 'Home'|t }}" rel="home" class="site-branding__logo">
           <img src="{{ site_logo }}" alt="{{ 'Home'|t }}" />
         </a>
       </div>
     {% endif %}
     {% if site_name %}
-      <div id="site-name" class="site-branding__name">
+      <div class="site-name site-branding__name">
         <a href="{{ path('<front>') }}" title="{{ 'Home'|t }}" rel="home">{{ site_name }}</a>
       </div>
     {% endif %}
     {% if site_slogan %}
-      <div id="site-slogan" class="site-branding__slogan">{{ site_slogan }}</div>
+      <div class="site-slogan site-branding__slogan">{{ site_slogan }}</div>
     {% endif %}
   </div>
 {% endblock %}

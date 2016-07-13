@@ -19,9 +19,11 @@ libraries-extend:
     - classy/dialog
   file/drupal.file:
     - classy/file
+  core/drupal.progress:
+    - classy/progress
 
-# Information added by Drupal.org packaging script on 2016-01-06
-version: '8.0.2'
+# Information added by Drupal.org packaging script on 2016-07-11
+version: '8.1.6'
 core: '8.x'
 project: 'drupal'
-datestamp: 1452121068
+datestamp: 1468243401

@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\system\Tests\System\ThemeTest.
- */
-
 namespace Drupal\system\Tests\System;
 
 use Drupal\Core\StreamWrapper\PublicStream;
@@ -65,27 +60,27 @@ class ThemeTest extends WebTestBase {
       // Raw stream wrapper URI.
       $file->uri => array(
         'form' => file_uri_target($file->uri),
-        'src' => file_create_url($file->uri),
+        'src' => file_url_transform_relative(file_create_url($file->uri)),
       ),
       // Relative path within the public filesystem.
       file_uri_target($file->uri) => array(
         'form' => file_uri_target($file->uri),
-        'src' => file_create_url($file->uri),
+        'src' => file_url_transform_relative(file_create_url($file->uri)),
       ),
       // Relative path to a public file.
       $file_relative => array(
         'form' => $file_relative,
-        'src' => file_create_url($file->uri),
+        'src' => file_url_transform_relative(file_create_url($file->uri)),
       ),
       // Relative path to an arbitrary file.
       'core/misc/druplicon.png' => array(
         'form' => 'core/misc/druplicon.png',
-        'src' => $GLOBALS['base_url'] . '/' . 'core/misc/druplicon.png',
+        'src' => base_path() . 'core/misc/druplicon.png',
       ),
       // Relative path to a file in a theme.
       $default_theme_path . '/logo.svg' => array(
         'form' => $default_theme_path . '/logo.svg',
-        'src' => $GLOBALS['base_url'] . '/' . $default_theme_path . '/logo.svg',
+        'src' => base_path() . $default_theme_path . '/logo.svg',
       ),
     );
     foreach ($supported_paths as $input => $expected) {
@@ -186,7 +181,7 @@ class ThemeTest extends WebTestBase {
         ':rel' => 'home',
       )
     );
-    $this->assertEqual($elements[0]['src'], file_create_url($uploaded_filename));
+    $this->assertEqual($elements[0]['src'], file_url_transform_relative(file_create_url($uploaded_filename)));
 
     $this->container->get('theme_handler')->install(array('bartik'));
 
@@ -206,6 +201,18 @@ class ThemeTest extends WebTestBase {
     $this->assertLink($theme_handler->getName('stable'));
     $this->drupalGet('admin/appearance/settings/stable');
     $this->assertResponse(200, 'The theme settings form URL for a hidden theme that is the admin theme is available.');
+
+    // Ensure default logo and favicons are not triggering custom path
+    // validation errors if their custom paths are set on the form.
+    $edit = [
+      'default_logo' => TRUE,
+      'logo_path' => 'public://whatever.png',
+      'default_favicon' => TRUE,
+      'favicon_path' => 'public://whatever.ico',
+    ];
+    $this->drupalPostForm('admin/appearance/settings', $edit, 'Save configuration');
+    $this->assertNoText('The custom logo path is invalid.');
+    $this->assertNoText('The custom favicon path is invalid.');
   }
 
   /**
@@ -319,6 +326,9 @@ class ThemeTest extends WebTestBase {
 
   /**
    * Test themes can't be installed when the base theme or engine is missing.
+   *
+   * Include test for themes that have a missing base theme somewhere further up
+   * the chain than the immediate base theme.
    */
   function testInvalidTheme() {
     // theme_page_test_system_info_alter() un-hides all hidden themes.
@@ -327,6 +337,7 @@ class ThemeTest extends WebTestBase {
     $this->container->get('theme_handler')->reset();
     $this->drupalGet('admin/appearance');
     $this->assertText(t('This theme requires the base theme @base_theme to operate correctly.', array('@base_theme' => 'not_real_test_basetheme')));
+    $this->assertText(t('This theme requires the base theme @base_theme to operate correctly.', array('@base_theme' => 'test_invalid_basetheme')));
     $this->assertText(t('This theme requires the theme engine @theme_engine to operate correctly.', array('@theme_engine' => 'not_real_engine')));
     // Check for the error text of a theme with the wrong core version.
     $this->assertText("This theme is not compatible with Drupal 8.x. Check that the .info.yml file contains the correct 'core' value.");

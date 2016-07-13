@@ -8,15 +8,29 @@ bootstrap:
   dependencies:
     - core/jquery
 
+bootstrap-cdn:
+  version: 3.3.6
+  remote: //maxcdn.bootstrapcdn.com/bootstrap/3.3.6
+  css:
+    base:
+      //maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css: { weight: 0 }
+  js:
+    //maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js: {}
+  license:
+    name: The MIT License (MIT)
+    url: //github.com/twbs/bootstrap/blob/master/LICENSE
+    gpl-compatible: true
+  dependencies:
+    - core/jquery
+
 global-styling:
   version: VERSION
   css:
     base:
       css/base/elements.css: { weight: 1 }
-      css/base/layout.css: {}
-      css/base/font.css: {}
+      css/base/layout.css: { weight: 1 }
+      css/base/font.css: { weight: 1 }
     component:
-      css/components/sidebar.css: {}
       css/components/site-branding.css: {}
       css/components/page-title.css: {}
       css/components/breadcrumb.css: {}
@@ -39,6 +53,8 @@ global-styling:
       css/components/tables.css: {}
       css/components/to-top.css: {}
       css/components/quickedit.css: {}
+    theme:
+      css/theme/color-default.css: {}
 
 messages:
   version: VERSION
@@ -68,8 +84,8 @@ maintenance_page:
 magnific-popup:
   version: VERSION
   css:
-    base:
-      js/magnific-popup/magnific-popup.css: { weight: 0 }
+    component:
+      js/magnific-popup/magnific-popup.css: {}
   js:
     js/magnific-popup/jquery.magnific-popup.min.js: {}
   dependencies:
@@ -124,7 +140,7 @@ fixed-header:
     component:
       css/components/fixed-header.css: {}
   js:
-    js/custom/fixed-header.js: { scope: 'footer' }
+    js/custom/fixed-header.js: { scope: 'footer', weight: -1 }
   dependencies:
     - core/jquery
 

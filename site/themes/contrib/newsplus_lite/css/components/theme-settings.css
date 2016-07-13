@@ -1,3 +1,13 @@
+/**
+ * @file
+ * Visual styles for Newsplus Lite's theme settins page.
+ */
+
 .theme-settings-title {
-  font-weight:bold;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+.theme-settings-image-wrapper img {
+  max-width: 100%;
+  height: auto;
 }

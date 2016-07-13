@@ -56,12 +56,12 @@
 {% endif %}
 {% if label_hidden %}
   {% if multiple %}
-    <div class="image-popup">
-      <div{{ attributes.addClass(classes, 'field__items') }}>
-        <div class="images-container clearfix">
-          <div class="image-preview clearfix">
-            <div class="image-wrapper clearfix">
-              <div{{ items[0].attributes.addClass('field__item') }}>{{ items[0].content }}</div>
+    <div{{ attributes.addClass(classes, 'field__items') }}>
+      <div class="images-container clearfix">
+        <div class="image-preview clearfix">
+          <div class="image-wrapper clearfix">
+            <div{{ items[0].attributes.addClass('field__item') }}>
+              {{ items[0].content }}
             </div>
           </div>
         </div>
@@ -80,14 +80,10 @@
     </div>
   {% else %}
     {% for item in items %}
-      <div class="image-popup">
-        <div{{ attributes.addClass(classes, 'field__items') }}>
-          <div class="images-container clearfix">
-            <div class="image-preview clearfix">
-              <div class="image-wrapper clearfix">
-                <div{{ attributes.addClass(classes, 'field__item') }}>{{ item.content }}</div>
-              </div>
-            </div>
+      <div class="images-container clearfix">
+        <div class="image-preview clearfix">
+          <div class="image-wrapper clearfix">
+            <div{{ attributes.addClass(classes, 'field__item') }}>{{ item.content }}</div>
           </div>
         </div>
       </div>
@@ -97,12 +93,12 @@
   <div{{ attributes.addClass(classes) }}>
     <div{{ title_attributes.addClass(title_classes) }}>{{ label }}</div>
     {% if multiple %}
-      <div class="image-popup">
-        <div{{ attributes.addClass(classes, 'field__items') }}>
-          <div class="images-container clearfix">
-            <div class="image-preview clearfix">
-              <div class="image-wrapper clearfix">
-                <div{{ items[0].attributes.addClass('field__item') }}>{{ items[0].content }}</div>
+      <div{{ attributes.addClass(classes, 'field__items') }}>
+        <div class="images-container clearfix">
+          <div class="image-preview clearfix">
+            <div class="image-wrapper clearfix">
+              <div{{ items[0].attributes.addClass('field__item') }}>
+                {{ items[0].content }}
               </div>
             </div>
           </div>
@@ -121,14 +117,10 @@
       </div>
     {% else %}
       {% for item in items %}
-        <div class="image-popup">
-          <div{{ attributes.addClass(classes, 'field__items') }}>
-            <div class="images-container clearfix">
-              <div class="image-preview clearfix">
-                <div class="image-wrapper clearfix">
-                  <div{{ attributes.addClass(classes, 'field__item') }}>{{ item.content }}</div>
-                </div>
-              </div>
+        <div class="images-container clearfix">
+          <div class="image-preview clearfix">
+            <div class="image-wrapper clearfix">
+              <div{{ attributes.addClass(classes, 'field__item') }}>{{ item.content }}</div>
             </div>
           </div>
         </div>

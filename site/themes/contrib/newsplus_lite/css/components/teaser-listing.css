@@ -15,7 +15,8 @@
   margin-bottom: 15px;
   max-width: 190px;
 }
- /*styles to prevent image wrap*/
+
+ /* styles to prevent image wrap */
 .view-taxonomy-term .with-image,
 .view-frontpage .with-image {
   margin-right: 220px;
@@ -26,7 +27,8 @@
     margin-left: 68px;
     max-width: 275px;
   }
-   /*styles to prevent image wrap*/
+
+   /* styles to prevent image wrap */
   .view-taxonomy-term .with-image,
   .view-frontpage .with-image {
     margin-right: 343px;
@@ -38,7 +40,8 @@
     max-width: 190px;
     margin-left: 25px;
   }
-   /*styles to prevent image wrap*/
+
+   /* styles to prevent image wrap */
   .two-sidebars .view-taxonomy-term .with-image,
   .two-sidebars .view-frontpage .with-image {
     margin-right: 215px;
@@ -52,7 +55,8 @@
     max-width: 100%;
     margin-right: 0!important;
   }
-   /*styles to prevent image wrap*/
+
+   /* styles to prevent image wrap */
   .view-taxonomy-term .with-image,
   .view-frontpage .with-image {
     margin-right: 0;

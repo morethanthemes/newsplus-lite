@@ -43,10 +43,6 @@ select {
 .form-type-password-confirm input.form-text {
   width: 50%;
 }
-input.form-text:focus,
-textarea:focus {
-  border-color: #ea2d49;
-}
 .colored-area input.form-text,
 .colored-area textarea,
 .colored-area input.form-text:focus,

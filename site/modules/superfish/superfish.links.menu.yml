@@ -1,0 +1,5 @@
+superfish.settings:
+  title: Superfish
+  description: 'Configure Superfish library.'
+  route_name: superfish.settings
+  parent: system.admin_config_ui
