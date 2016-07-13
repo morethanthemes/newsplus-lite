@@ -9,7 +9,7 @@ dependencies:
 id: newsplus_lite_content
 theme: newsplus_lite
 region: content
-weight: 0
+weight: -8
 provider: null
 plugin: system_main_block
 settings:

@@ -9,7 +9,7 @@ dependencies:
 id: newsplus_lite_messages
 theme: newsplus_lite
 region: top_content
-weight: -6
+weight: -13
 provider: null
 plugin: system_messages_block
 settings:

@@ -8,8 +8,8 @@ dependencies:
     - newsplus_lite
 id: newsplus_lite_breadcrumbs
 theme: newsplus_lite
-region: breadcrumb
-weight: 0
+region: content
+weight: -13
 provider: null
 plugin: system_breadcrumb_block
 settings:

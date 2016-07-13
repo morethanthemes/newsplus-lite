@@ -7,7 +7,7 @@ dependencies:
 id: newsplus_lite_local_actions
 theme: newsplus_lite
 region: content
-weight: -7
+weight: -10
 provider: null
 plugin: local_actions_block
 settings:

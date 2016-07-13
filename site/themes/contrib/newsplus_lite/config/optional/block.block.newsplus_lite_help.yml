@@ -9,7 +9,7 @@ dependencies:
 id: newsplus_lite_help
 theme: newsplus_lite
 region: content
-weight: -7
+weight: -12
 provider: null
 plugin: help_block
 settings:
