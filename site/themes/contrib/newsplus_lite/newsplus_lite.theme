@@ -45,11 +45,18 @@ function newsplus_lite_preprocess_html(&$variables) {
 }
 
 function newsplus_lite_preprocess_breadcrumb(&$variables){
-  if(($node = \Drupal::routeMatch()->getParameter('node')) && $variables['breadcrumb']){
-    $variables['breadcrumb'][] = array(
-      'text' => $node->getTitle()
-    );
-   }
+  if($variables['breadcrumb']){
+    $request = \Drupal::request();
+    $route_match = \Drupal::routeMatch();
+    $page_title = \Drupal::service('title_resolver')->getTitle($request, $route_match->getRouteObject());
+    if (!empty($page_title)) {
+      $variables['breadcrumb'][] = array(
+        'text' => $page_title
+      );
+      // Add cache context based on url.
+      $variables['#cache']['contexts'][] = 'url';
+    }
+  }
 }
 
 /**
