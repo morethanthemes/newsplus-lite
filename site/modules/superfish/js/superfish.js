@@ -18,7 +18,7 @@
   Drupal.behaviors.superfish = {
     attach: function (context, drupalSettings) {
       // Take a look at each menu to apply Superfish to.
-      $.each(drupalSettings.superfish || {}, function(index, options) {
+      $.each(drupalSettings.superfish || {}, function (index, options) {
         var $menu = $('ul#' + options.id, context);
 
         // Check if we are to apply the Supersubs plug-in to it.

@@ -1,7 +1,0 @@
-superfish.settings:
-  path: '/admin/config/user-interface/superfish'
-  defaults:
-    _form: '\Drupal\superfish\Form\SuperfishSettingsForm'
-    _title: 'Superfish'
-  requirements:
-    _permission: 'administer superfish'
