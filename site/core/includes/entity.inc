@@ -80,7 +80,7 @@ function entity_get_bundles($entity_type = NULL) {
 function entity_load($entity_type, $id, $reset = FALSE) {
   $controller = \Drupal::entityManager()->getStorage($entity_type);
   if ($reset) {
-    $controller->resetCache(array($id));
+    $controller->resetCache([$id]);
   }
   return $controller->load($id);
 }
@@ -305,7 +305,7 @@ function entity_delete_multiple($entity_type, array $ids) {
  * @see \Drupal\Core\Entity\EntityTypeManagerInterface::getStorage()
  * @see \Drupal\Core\Entity\EntityStorageInterface::create()
  */
-function entity_create($entity_type, array $values = array()) {
+function entity_create($entity_type, array $values = []) {
   return \Drupal::entityManager()
     ->getStorage($entity_type)
     ->create($values);
@@ -464,7 +464,7 @@ function entity_view_multiple(array $entities, $view_mode, $langcode = NULL, $re
  *     'bundle' => $bundle,
  *     'mode' => $view_mode,
  *     'status' => TRUE,
- *   ));
+ *   );
  *   \Drupal::entityTypeManager()
  *     ->getStorage('entity_view_display')
  *     ->create($values);
@@ -475,7 +475,7 @@ function entity_view_multiple(array $entities, $view_mode, $langcode = NULL, $re
  */
 function entity_get_display($entity_type, $bundle, $view_mode) {
   // Try loading the display from configuration.
-  $display = entity_load('entity_view_display', $entity_type . '.' . $bundle . '.' . $view_mode);
+  $display = EntityViewDisplay::load($entity_type . '.' . $bundle . '.' . $view_mode);
 
   // If not found, create a fresh display object. We do not preemptively create
   // new entity_view_display configuration entries for each existing entity type
@@ -483,12 +483,12 @@ function entity_get_display($entity_type, $bundle, $view_mode) {
   // configuration entries are only created when a display object is explicitly
   // configured and saved.
   if (!$display) {
-    $display = EntityViewDisplay::create(array(
+    $display = EntityViewDisplay::create([
       'targetEntityType' => $entity_type,
       'bundle' => $bundle,
       'mode' => $view_mode,
       'status' => TRUE,
-    ));
+    ]);
   }
 
   return $display;
@@ -514,7 +514,7 @@ function entity_get_display($entity_type, $bundle, $view_mode) {
  *     'weight' => 1,
  *   ))
  *   ->setComponent('field_image', array(
- *     'type' => 'hidden',
+ *     'region' => 'hidden',
  *   ))
  *   ->save();
  * @endcode
@@ -531,31 +531,31 @@ function entity_get_display($entity_type, $bundle, $view_mode) {
  *
  * @deprecated as of Drupal 8.0.x, will be removed before Drupal 9.0.0.
  *   If the entity form display is available in configuration use:
- * @code
- *   \Drupal::entityTypeManager()
- *     ->getStorage('entity_form_display')
- *     ->load($entity_type . '.' . $bundle . '.' . $form_mode);
- * @endcode
+ *   @code
+ *     \Drupal::entityTypeManager()
+ *       ->getStorage('entity_form_display')
+ *       ->load($entity_type . '.' . $bundle . '.' . $form_mode);
+ *   @endcode
  *   When the entity form display is not available in configuration, you can
  *   create a new EntityFormDisplay object using:
- * @code
- * $values = ('entity_form_display', array(
- *  'targetEntityType' => $entity_type,
- *  'bundle' => $bundle,
- *  'mode' => $form_mode,
- *  'status' => TRUE,
- * ));
- * \Drupal::entityTypeManager()
- *   ->getStorage('entity_form_display')
- *   ->create($values);
- * @endcode
+ *   @code
+ *   $values = array(
+ *    'targetEntityType' => $entity_type,
+ *    'bundle' => $bundle,
+ *    'mode' => $form_mode,
+ *    'status' => TRUE,
+ *   );
+ *   \Drupal::entityTypeManager()
+ *     ->getStorage('entity_form_display')
+ *     ->create($values);
+ *   @endcode
  *
  * @see \Drupal\Core\Entity\EntityStorageInterface::create()
  * @see \Drupal\Core\Entity\EntityStorageInterface::load()
  */
 function entity_get_form_display($entity_type, $bundle, $form_mode) {
   // Try loading the entity from configuration.
-  $entity_form_display = entity_load('entity_form_display', $entity_type . '.' . $bundle . '.' . $form_mode);
+  $entity_form_display = EntityFormDisplay::load($entity_type . '.' . $bundle . '.' . $form_mode);
 
   // If not found, create a fresh entity object. We do not preemptively create
   // new entity form display configuration entries for each existing entity type
@@ -563,12 +563,12 @@ function entity_get_form_display($entity_type, $bundle, $form_mode) {
   // configuration entries are only created when an entity form display is
   // explicitly configured and saved.
   if (!$entity_form_display) {
-    $entity_form_display = EntityFormDisplay::create(array(
+    $entity_form_display = EntityFormDisplay::create([
       'targetEntityType' => $entity_type,
       'bundle' => $bundle,
       'mode' => $form_mode,
       'status' => TRUE,
-    ));
+    ]);
   }
 
   return $entity_form_display;

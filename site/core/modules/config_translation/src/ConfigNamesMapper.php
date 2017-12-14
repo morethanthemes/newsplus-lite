@@ -2,6 +2,7 @@
 
 namespace Drupal\config_translation;
 
+use Drupal\config_translation\Exception\ConfigMapperLanguageException;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Config\TypedConfigManagerInterface;
 use Drupal\Core\Language\LanguageInterface;
@@ -60,7 +61,7 @@ class ConfigNamesMapper extends PluginBase implements ConfigMapperInterface, Con
   /**
    * The base route object that the mapper is attached to.
    *
-   * @return \Symfony\Component\Routing\Route
+   * @var \Symfony\Component\Routing\Route
    */
   protected $baseRoute;
 
@@ -108,7 +109,7 @@ class ConfigNamesMapper extends PluginBase implements ConfigMapperInterface, Con
    *   The locale configuration manager.
    * @param \Drupal\config_translation\ConfigMapperManagerInterface $config_mapper_manager
    *   The mapper plugin discovery service.
-   * @param \Drupal\Core\Routing\RouteProviderInterface
+   * @param \Drupal\Core\Routing\RouteProviderInterface $route_provider
    *   The route provider.
    * @param \Drupal\Core\StringTranslation\TranslationInterface $string_translation
    *   The string translation manager.
@@ -179,7 +180,7 @@ class ConfigNamesMapper extends PluginBase implements ConfigMapperInterface, Con
    * {@inheritdoc}
    */
   public function getBaseRouteParameters() {
-    return array();
+    return [];
   }
 
   /**
@@ -230,11 +231,11 @@ class ConfigNamesMapper extends PluginBase implements ConfigMapperInterface, Con
   public function getOverviewRoute() {
     $route = new Route(
       $this->getBaseRoute()->getPath() . '/translate',
-      array(
+      [
         '_controller' => '\Drupal\config_translation\Controller\ConfigTranslationController::itemPage',
         'plugin_id' => $this->getPluginId(),
-      ),
-      array('_config_translation_overview_access' => 'TRUE')
+      ],
+      ['_config_translation_overview_access' => 'TRUE']
     );
     $this->processRoute($route);
     return $route;
@@ -271,11 +272,11 @@ class ConfigNamesMapper extends PluginBase implements ConfigMapperInterface, Con
   public function getAddRoute() {
     $route = new Route(
       $this->getBaseRoute()->getPath() . '/translate/{langcode}/add',
-      array(
+      [
         '_form' => '\Drupal\config_translation\Form\ConfigTranslationAddForm',
         'plugin_id' => $this->getPluginId(),
-      ),
-      array('_config_translation_form_access' => 'TRUE')
+      ],
+      ['_config_translation_form_access' => 'TRUE']
     );
     $this->processRoute($route);
     return $route;
@@ -301,11 +302,11 @@ class ConfigNamesMapper extends PluginBase implements ConfigMapperInterface, Con
   public function getEditRoute() {
     $route = new Route(
       $this->getBaseRoute()->getPath() . '/translate/{langcode}/edit',
-      array(
+      [
         '_form' => '\Drupal\config_translation\Form\ConfigTranslationEditForm',
         'plugin_id' => $this->getPluginId(),
-      ),
-      array('_config_translation_form_access' => 'TRUE')
+      ],
+      ['_config_translation_form_access' => 'TRUE']
     );
     $this->processRoute($route);
     return $route;
@@ -331,11 +332,11 @@ class ConfigNamesMapper extends PluginBase implements ConfigMapperInterface, Con
   public function getDeleteRoute() {
     $route = new Route(
       $this->getBaseRoute()->getPath() . '/translate/{langcode}/delete',
-      array(
+      [
         '_form' => '\Drupal\config_translation\Form\ConfigTranslationDeleteForm',
         'plugin_id' => $this->getPluginId(),
-      ),
-      array('_config_translation_form_access' => 'TRUE')
+      ],
+      ['_config_translation_form_access' => 'TRUE']
     );
     $this->processRoute($route);
     return $route;
@@ -380,20 +381,24 @@ class ConfigNamesMapper extends PluginBase implements ConfigMapperInterface, Con
    * {@inheritdoc}
    */
   public function getLangcode() {
-    $config_factory = $this->configFactory;
-    $langcodes = array_map(function($name) use ($config_factory) {
-      // Default to English if no language code was provided in the file.
-      // Although it is a best practice to include a language code, if the
-      // developer did not think about a multilingual use-case, we fall back
-      // on assuming the file is English.
-      return $config_factory->get($name)->get('langcode') ?: 'en';
-    }, $this->getConfigNames());
+    $langcodes = array_map([$this, 'getLangcodeFromConfig'], $this->getConfigNames());
 
     if (count(array_unique($langcodes)) > 1) {
-      throw new \RuntimeException('A config mapper can only contain configuration for a single language.');
+      throw new ConfigMapperLanguageException('A config mapper can only contain configuration for a single language.');
     }
 
     return reset($langcodes);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getLangcodeFromConfig($config_name) {
+    // Default to English if no language code was provided in the file.
+    // Although it is a best practice to include a language code, if the
+    // developer did not think about a multilingual use case, we fall back
+    // on assuming the file is English.
+    return $this->configFactory->get($config_name)->get('langcode') ?: 'en';
   }
 
   /**
@@ -408,7 +413,7 @@ class ConfigNamesMapper extends PluginBase implements ConfigMapperInterface, Con
    * {@inheritdoc}
    */
   public function getConfigData() {
-    $config_data = array();
+    $config_data = [];
     foreach ($this->getConfigNames() as $name) {
       $config_data[$name] = $this->configFactory->getEditable($name)->get();
     }
@@ -462,12 +467,12 @@ class ConfigNamesMapper extends PluginBase implements ConfigMapperInterface, Con
    * {@inheritdoc}
    */
   public function getOperations() {
-    return array(
-      'translate' => array(
+    return [
+      'translate' => [
         'title' => $this->t('Translate'),
         'url' => Url::fromRoute($this->getOverviewRouteName(), $this->getOverviewRouteParameters()),
-      ),
-    );
+      ],
+    ];
   }
 
   /**

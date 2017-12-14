@@ -18,6 +18,9 @@ class EntityFieldInstance extends EntityConfigBase {
     $ids['entity_type']['type'] = 'string';
     $ids['bundle']['type'] = 'string';
     $ids['field_name']['type'] = 'string';
+    if ($this->isTranslationDestination()) {
+      $ids['langcode']['type'] = 'string';
+    }
     return $ids;
   }
 

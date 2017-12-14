@@ -17,14 +17,14 @@ class ConfigCollectionInfo extends Event {
    *
    * @var array
    */
-  protected $collections = array();
+  protected $collections = [];
 
   /**
    * Adds a collection to the list of possible collections.
    *
    * @param string $collection
    *   Collection name to add.
-   * @param \Drupal\Core\Config\ConfigFactoryOverrideInterface
+   * @param \Drupal\Core\Config\ConfigFactoryOverrideInterface $override_service
    *   (optional) The configuration factory override service responsible for the
    *   collection.
    *
@@ -63,7 +63,7 @@ class ConfigCollectionInfo extends Event {
    * @param string $collection
    *   The configuration collection.
    *
-   * @return \Drupal\Core\Config\ConfigFactoryOverrideInterface|NULL
+   * @return \Drupal\Core\Config\ConfigFactoryOverrideInterface|null
    *   The override service responsible for the collection if one exists. NULL
    *   if not.
    */

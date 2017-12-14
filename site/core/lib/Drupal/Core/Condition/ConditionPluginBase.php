@@ -5,6 +5,7 @@ namespace Drupal\Core\Condition;
 use Drupal\Core\Executable\ExecutableManagerInterface;
 use Drupal\Core\Executable\ExecutablePluginBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Form\SubformStateInterface;
 use Drupal\Core\Plugin\ContextAwarePluginAssignmentTrait;
 
 /**
@@ -47,13 +48,16 @@ abstract class ConditionPluginBase extends ExecutablePluginBase implements Condi
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
+    if ($form_state instanceof SubformStateInterface) {
+      $form_state = $form_state->getCompleteFormState();
+    }
     $contexts = $form_state->getTemporaryValue('gathered_contexts') ?: [];
     $form['context_mapping'] = $this->addContextAssignmentElement($this, $contexts);
-    $form['negate'] = array(
+    $form['negate'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Negate the condition'),
       '#default_value' => $this->configuration['negate'],
-    );
+    ];
     return $form;
   }
 
@@ -68,6 +72,9 @@ abstract class ConditionPluginBase extends ExecutablePluginBase implements Condi
    */
   public function submitConfigurationForm(array &$form, FormStateInterface $form_state) {
     $this->configuration['negate'] = $form_state->getValue('negate');
+    if ($form_state->hasValue('context_mapping')) {
+      $this->setContextMapping($form_state->getValue('context_mapping'));
+    }
   }
 
   /**
@@ -81,9 +88,9 @@ abstract class ConditionPluginBase extends ExecutablePluginBase implements Condi
    * {@inheritdoc}
    */
   public function getConfiguration() {
-    return array(
+    return [
       'id' => $this->getPluginId(),
-    ) + $this->configuration;
+    ] + $this->configuration;
   }
 
   /**
@@ -98,16 +105,16 @@ abstract class ConditionPluginBase extends ExecutablePluginBase implements Condi
    * {@inheritdoc}
    */
   public function defaultConfiguration() {
-    return array(
+    return [
       'negate' => FALSE,
-    );
+    ];
   }
 
   /**
    * {@inheritdoc}
    */
   public function calculateDependencies() {
-    return array();
+    return [];
   }
 
   /**

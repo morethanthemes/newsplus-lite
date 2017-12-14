@@ -11,6 +11,8 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class FormState implements FormStateInterface {
 
+  use FormStateValuesTrait;
+
   /**
    * Tracks if any errors have been set on any form.
    *
@@ -61,10 +63,10 @@ class FormState implements FormStateInterface {
    *
    * @var array
    */
-  protected $build_info = array(
-    'args' => array(),
-    'files' => array(),
-  );
+  protected $build_info = [
+    'args' => [],
+    'files' => [],
+  ];
 
   /**
    * Similar to self::$build_info, but pertaining to
@@ -74,7 +76,7 @@ class FormState implements FormStateInterface {
    *
    * @var array
    */
-  protected $rebuild_info = array();
+  protected $rebuild_info = [];
 
   /**
    * Normally, after the entire form processing is completed and submit handlers
@@ -214,7 +216,7 @@ class FormState implements FormStateInterface {
    *
    * @var array
    */
-  protected $values = array();
+  protected $values = [];
 
   /**
    * An associative array of form value keys to be removed by cleanValues().
@@ -246,7 +248,8 @@ class FormState implements FormStateInterface {
    *
    * This property is uncacheable.
    *
-   * @var array
+   * @var array|null
+   *   The submitted user input array, or NULL if no input was submitted yet.
    */
   protected $input;
 
@@ -345,7 +348,7 @@ class FormState implements FormStateInterface {
    *
    * @var array
    */
-  protected $groups = array();
+  protected $groups = [];
 
   /**
    * This is not a special key, and no specific support is provided for it in
@@ -365,7 +368,7 @@ class FormState implements FormStateInterface {
    *
    * @var array
    */
-  protected $storage = array();
+  protected $storage = [];
 
   /**
    * A list containing copies of all submit and button elements in the form.
@@ -374,7 +377,7 @@ class FormState implements FormStateInterface {
    *
    * @var array
    */
-  protected $buttons = array();
+  protected $buttons = [];
 
   /**
    * Holds temporary data accessible during the current page request only.
@@ -410,7 +413,7 @@ class FormState implements FormStateInterface {
    *
    * @var array
    */
-  protected $errors = array();
+  protected $errors = [];
 
   /**
    * Stores which errors should be limited during validation.
@@ -615,7 +618,7 @@ class FormState implements FormStateInterface {
    * @see \Symfony\Component\HttpFoundation\Request::isMethodSafe()
    */
   protected function isRequestMethodSafe() {
-    return in_array($this->requestMethod, array('GET', 'HEAD'));
+    return in_array($this->requestMethod, ['GET', 'HEAD']);
   }
 
   /**
@@ -645,7 +648,7 @@ class FormState implements FormStateInterface {
    * {@inheritdoc}
    */
   public function isRedirectDisabled() {
-   return $this->no_redirect;
+    return $this->no_redirect;
   }
 
   /**
@@ -859,11 +862,11 @@ class FormState implements FormStateInterface {
     if (!isset($build_info['files']["$module:$name.$type"])) {
       // Only add successfully included files to the form state.
       if ($result = $this->moduleLoadInclude($module, $type, $name)) {
-        $build_info['files']["$module:$name.$type"] = array(
+        $build_info['files']["$module:$name.$type"] = [
           'type' => $type,
           'module' => $module,
           'name' => $name,
-        );
+        ];
         $this->setBuildInfo($build_info);
         return $result;
       }
@@ -980,67 +983,6 @@ class FormState implements FormStateInterface {
   /**
    * {@inheritdoc}
    */
-  public function &getValue($key, $default = NULL) {
-    $exists = NULL;
-    $value = &NestedArray::getValue($this->getValues(), (array) $key, $exists);
-    if (!$exists) {
-      $value = $default;
-    }
-    return $value;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setValues(array $values) {
-    $this->values = $values;
-    return $this;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setValue($key, $value) {
-    NestedArray::setValue($this->getValues(), (array) $key, $value, TRUE);
-    return $this;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function unsetValue($key) {
-    NestedArray::unsetValue($this->getValues(), (array) $key);
-    return $this;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function hasValue($key) {
-    $exists = NULL;
-    $value = NestedArray::getValue($this->getValues(), (array) $key, $exists);
-    return $exists && isset($value);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function isValueEmpty($key) {
-    $exists = NULL;
-    $value = NestedArray::getValue($this->getValues(), (array) $key, $exists);
-    return !$exists || empty($value);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setValueForElement(array $element, $value) {
-    return $this->setValue($element['#parents'], $value);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function setResponse(Response $response) {
     $this->response = $response;
     return $this;
@@ -1056,7 +998,7 @@ class FormState implements FormStateInterface {
   /**
    * {@inheritdoc}
    */
-  public function setRedirect($route_name, array $route_parameters = array(), array $options = array()) {
+  public function setRedirect($route_name, array $route_parameters = [], array $options = []) {
     $url = new Url($route_name, $route_parameters, $options);
     return $this->setRedirectUrl($url);
   }
@@ -1166,7 +1108,7 @@ class FormState implements FormStateInterface {
    */
   public function getError(array $element) {
     if ($errors = $this->getErrors()) {
-      $parents = array();
+      $parents = [];
       foreach ($element['#parents'] as $parent) {
         $parents[] = $parent;
         $key = implode('][', $parents);
@@ -1244,7 +1186,7 @@ class FormState implements FormStateInterface {
    */
   public function addCleanValueKey($cleanValueKey) {
     $keys = $this->getCleanValueKeys();
-    $this->setCleanValueKeys(array_merge((array)$keys, [$cleanValueKey]));
+    $this->setCleanValueKeys(array_merge((array) $keys, [$cleanValueKey]));
     return $this;
   }
 

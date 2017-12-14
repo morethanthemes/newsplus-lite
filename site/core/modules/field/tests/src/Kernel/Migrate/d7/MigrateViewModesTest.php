@@ -13,7 +13,7 @@ use Drupal\Tests\migrate_drupal\Kernel\d7\MigrateDrupal7TestBase;
  */
 class MigrateViewModesTest extends MigrateDrupal7TestBase {
 
-  public static $modules = ['comment', 'node'];
+  public static $modules = ['comment', 'node', 'taxonomy'];
 
   /**
    * {@inheritdoc}
@@ -34,8 +34,6 @@ class MigrateViewModesTest extends MigrateDrupal7TestBase {
    *   The expected label of the view mode.
    * @param string $entity_type
    *   The expected entity type ID which owns the view mode.
-   * @param bool $status
-   *   The expected status of the view mode.
    */
   protected function assertEntity($id, $label, $entity_type) {
     /** @var \Drupal\Core\Entity\EntityViewModeInterface $view_mode */
@@ -52,6 +50,7 @@ class MigrateViewModesTest extends MigrateDrupal7TestBase {
     $this->assertEntity('comment.full', 'Full', 'comment');
     $this->assertEntity('node.teaser', 'Teaser', 'node');
     $this->assertEntity('node.full', 'Full', 'node');
+    $this->assertEntity('node.custom', 'custom', 'node');
     $this->assertEntity('user.full', 'Full', 'user');
   }
 

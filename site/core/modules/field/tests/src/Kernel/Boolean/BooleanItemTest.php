@@ -23,11 +23,11 @@ class BooleanItemTest extends FieldKernelTestBase {
     parent::setUp();
 
     // Create a boolean field and storage for validation.
-    FieldStorageConfig::create(array(
+    FieldStorageConfig::create([
       'field_name' => 'field_boolean',
       'entity_type' => 'entity_test',
       'type' => 'boolean',
-    ))->save();
+    ])->save();
     FieldConfig::create([
       'entity_type' => 'entity_test',
       'field_name' => 'field_boolean',
@@ -36,9 +36,9 @@ class BooleanItemTest extends FieldKernelTestBase {
 
     // Create a form display for the default form mode.
     entity_get_form_display('entity_test', 'entity_test', 'default')
-      ->setComponent('field_boolean', array(
+      ->setComponent('field_boolean', [
         'type' => 'boolean_checkbox',
-      ))
+      ])
       ->save();
   }
 
@@ -55,7 +55,7 @@ class BooleanItemTest extends FieldKernelTestBase {
 
     // Verify entity has been created properly.
     $id = $entity->id();
-    $entity = entity_load('entity_test', $id);
+    $entity = EntityTest::load($id);
     $this->assertTrue($entity->field_boolean instanceof FieldItemListInterface, 'Field implements interface.');
     $this->assertTrue($entity->field_boolean[0] instanceof FieldItemInterface, 'Field item implements interface.');
     $this->assertEqual($entity->field_boolean->value, $value);
@@ -68,7 +68,7 @@ class BooleanItemTest extends FieldKernelTestBase {
 
     // Read changed entity and assert changed values.
     $entity->save();
-    $entity = entity_load('entity_test', $id);
+    $entity = EntityTest::load($id);
     $this->assertEqual($entity->field_boolean->value, $new_value);
 
     // Test sample item generation.

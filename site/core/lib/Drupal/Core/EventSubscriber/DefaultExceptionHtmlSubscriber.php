@@ -80,6 +80,18 @@ class DefaultExceptionHtmlSubscriber extends HttpExceptionSubscriberBase {
   }
 
   /**
+   * Handles a 4xx error for HTML.
+   *
+   * @param \Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent $event
+   *   The event to process.
+   */
+  public function on4xx(GetResponseForExceptionEvent $event) {
+    if (($exception = $event->getException()) && $exception instanceof HttpExceptionInterface) {
+      $this->makeSubrequest($event, '/system/4xx', $exception->getStatusCode());
+    }
+  }
+
+  /**
    * Handles a 401 error for HTML.
    *
    * @param \Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent $event
@@ -133,6 +145,14 @@ class DefaultExceptionHtmlSubscriber extends HttpExceptionSubscriberBase {
       // would execute a subrequest with the 404 route's URL, then it'd be
       // generated for *that* URL, not the *original* URL.
       $sub_request = clone $request;
+
+      // The routing to the 404 page should be done as GET request because it is
+      // restricted to GET and POST requests only. Otherwise a DELETE request
+      // would for example trigger a method not allowed exception.
+      $request_context = clone ($this->accessUnawareRouter->getContext());
+      $request_context->setMethod('GET');
+      $this->accessUnawareRouter->setContext($request_context);
+
       $sub_request->attributes->add($this->accessUnawareRouter->match($url));
 
       // Add to query (GET) or request (POST) parameters:

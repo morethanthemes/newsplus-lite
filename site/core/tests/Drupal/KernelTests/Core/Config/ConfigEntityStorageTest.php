@@ -18,7 +18,7 @@ class ConfigEntityStorageTest extends KernelTestBase {
    *
    * @var array
    */
-  public static $modules = array('config_test');
+  public static $modules = ['config_test'];
 
   /**
    * Tests creating configuration entities with changed UUIDs.
@@ -27,11 +27,10 @@ class ConfigEntityStorageTest extends KernelTestBase {
     $entity_type = 'config_test';
     $id = 'test_1';
     // Load the original configuration entity.
-    $this->container->get('entity_type.manager')
-      ->getStorage($entity_type)
-      ->create(array('id' => $id))
-      ->save();
-    $entity = entity_load($entity_type, $id);
+    $storage = $this->container->get('entity_type.manager')
+      ->getStorage($entity_type);
+    $storage->create(['id' => $id])->save();
+    $entity = $storage->load($id);
 
     $original_properties = $entity->toArray();
 
@@ -44,12 +43,26 @@ class ConfigEntityStorageTest extends KernelTestBase {
       $this->fail('Exception thrown when attempting to save a configuration entity with a UUID that does not match the existing UUID.');
     }
     catch (ConfigDuplicateUUIDException $e) {
-      $this->pass(format_string('Exception thrown when attempting to save a configuration entity with a UUID that does not match existing data: %e.', array('%e' => $e)));
+      $this->pass(format_string('Exception thrown when attempting to save a configuration entity with a UUID that does not match existing data: %e.', ['%e' => $e]));
     }
 
     // Ensure that the config entity was not corrupted.
     $entity = entity_load('config_test', $entity->id(), TRUE);
     $this->assertIdentical($entity->toArray(), $original_properties);
+  }
+
+  /**
+   * Tests the hasData() method for config entity storage.
+   *
+   * @covers \Drupal\Core\Config\Entity\ConfigEntityStorage::hasData
+   */
+  public function testHasData() {
+    $storage = \Drupal::entityTypeManager()->getStorage('config_test');
+    $this->assertFalse($storage->hasData());
+
+    // Add a test config entity and check again.
+    $storage->create(['id' => $this->randomMachineName()])->save();
+    $this->assertTrue($storage->hasData());
   }
 
 }

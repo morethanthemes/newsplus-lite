@@ -58,8 +58,7 @@ class InstallStorage extends FileStorage {
    *   default collection.
    */
   public function __construct($directory = self::CONFIG_INSTALL_DIRECTORY, $collection = StorageInterface::DEFAULT_COLLECTION) {
-    $this->directory = $directory;
-    $this->collection = $collection;
+    parent::__construct($directory, $collection);
   }
 
   /**
@@ -132,9 +131,9 @@ class InstallStorage extends FileStorage {
       return $names;
     }
     else {
-      $return = array();
+      $return = [];
       foreach ($names as $index => $name) {
-        if (strpos($name, $prefix) === 0 ) {
+        if (strpos($name, $prefix) === 0) {
           $return[$index] = $names[$index];
         }
       }
@@ -150,7 +149,7 @@ class InstallStorage extends FileStorage {
    */
   protected function getAllFolders() {
     if (!isset($this->folders)) {
-      $this->folders = array();
+      $this->folders = [];
       $this->folders += $this->getCoreNames();
       // Perform an ExtensionDiscovery scan as we cannot use drupal_get_path()
       // yet because the system module may not yet be enabled during install.
@@ -164,7 +163,7 @@ class InstallStorage extends FileStorage {
           // during the module scan.
           // @todo Remove as part of https://www.drupal.org/node/2186491
           drupal_get_filename('profile', $profile, $profile_list[$profile]->getPathname());
-          $this->folders += $this->getComponentNames(array($profile_list[$profile]));
+          $this->folders += $this->getComponentNames([$profile_list[$profile]]);
         }
       }
       // @todo Remove as part of https://www.drupal.org/node/2186491
@@ -186,7 +185,7 @@ class InstallStorage extends FileStorage {
   public function getComponentNames(array $list) {
     $extension = '.' . $this->getFileExtension();
     $pattern = '/' . preg_quote($extension, '/') . '$/';
-    $folders = array();
+    $folders = [];
     foreach ($list as $extension_object) {
       // We don't have to use ExtensionDiscovery here because our list of
       // extensions was already obtained through an ExtensionDiscovery scan.
@@ -217,7 +216,7 @@ class InstallStorage extends FileStorage {
   public function getCoreNames() {
     $extension = '.' . $this->getFileExtension();
     $pattern = '/' . preg_quote($extension, '/') . '$/';
-    $folders = array();
+    $folders = [];
     $directory = $this->getCoreFolder();
     if (is_dir($directory)) {
       // glob() directly calls into libc glob(), which is not aware of PHP

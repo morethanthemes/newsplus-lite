@@ -6,8 +6,8 @@
  * upgrade path of https://www.drupal.org/node/2354889.
  */
 
-use Drupal\Component\Serialization\Yaml;
 use Drupal\Core\Database\Database;
+use Drupal\Core\Serialization\Yaml;
 
 $connection = Database::getConnection();
 
@@ -23,16 +23,16 @@ $block_configs[] = Yaml::decode(file_get_contents(__DIR__ . '/block.block.thirdt
 
 foreach ($block_configs as $block_config) {
   $connection->insert('config')
-    ->fields(array(
+    ->fields([
       'collection',
       'name',
       'data',
-    ))
-    ->values(array(
+    ])
+    ->values([
       'collection' => '',
       'name' => 'block.block.' . $block_config['id'],
       'data' => serialize($block_config),
-    ))
+    ])
     ->execute();
 }
 

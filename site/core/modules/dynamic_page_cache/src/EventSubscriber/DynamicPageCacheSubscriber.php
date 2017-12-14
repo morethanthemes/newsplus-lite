@@ -82,7 +82,7 @@ class DynamicPageCacheSubscriber implements EventSubscriberInterface {
         // may be returning a domain object that a KernelEvents::VIEW subscriber
         // must turn into an actual response, but perhaps a format is being
         // requested that the subscriber does not support.
-        // @see \Drupal\Core\EventSubscriber\AcceptNegotiation406::onViewDetect406()
+        // @see \Drupal\Core\EventSubscriber\RenderArrayNonHtmlSubscriber::onResponse()
         'request_format',
       ],
       'bin' => 'dynamic_page_cache',
@@ -124,8 +124,8 @@ class DynamicPageCacheSubscriber implements EventSubscriberInterface {
    */
   public function onRouteMatch(GetResponseEvent $event) {
     // Don't cache the response if the Dynamic Page Cache request policies are
-    // not met. Store the result in a request attribute, so that onResponse()
-    // does not have to redo the request policy check.
+    // not met. Store the result in a static keyed by current request, so that
+    // onResponse() does not have to redo the request policy check.
     $request = $event->getRequest();
     $request_policy_result = $this->requestPolicy->check($request);
     $this->requestPolicyResults[$request] = $request_policy_result;

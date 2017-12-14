@@ -58,7 +58,7 @@ class Date extends NumericDate implements ContainerFactoryPluginInterface {
    *   The plugin implementation definition.
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date formatter service.
-   * @param \Symfony\Component\HttpFoundation\RequestStack
+   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    *   The request stack used to determine the current time.
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition, DateFormatterInterface $date_formatter, RequestStack $request_stack) {
@@ -95,7 +95,6 @@ class Date extends NumericDate implements ContainerFactoryPluginInterface {
     $b = intval(strtotime($this->value['max'], $origin));
 
     // Formatting will vary on date storage.
-
 
     // Convert to ISO format and format for query. UTC timezone is used since
     // dates are stored in UTC.

@@ -87,12 +87,12 @@ class CacheableMetadataTest extends UnitTestCase {
   public function testAddCacheTags() {
     $metadata = new CacheableMetadata();
     $add_expected = [
-      [ [], [] ],
-      [ ['foo:bar'], ['foo:bar'] ],
-      [ ['foo:baz'], ['foo:bar', 'foo:baz'] ],
-      [ ['axx:first', 'foo:baz'], ['axx:first', 'foo:bar', 'foo:baz'] ],
-      [ [], ['axx:first', 'foo:bar', 'foo:baz'] ],
-      [ ['axx:first'], ['axx:first', 'foo:bar', 'foo:baz'] ],
+      [[], []],
+      [['foo:bar'], ['foo:bar']],
+      [['foo:baz'], ['foo:bar', 'foo:baz']],
+      [['axx:first', 'foo:baz'], ['axx:first', 'foo:bar', 'foo:baz']],
+      [[], ['axx:first', 'foo:bar', 'foo:baz']],
+      [['axx:first'], ['axx:first', 'foo:bar', 'foo:baz']],
     ];
 
     foreach ($add_expected as $data) {
@@ -121,14 +121,14 @@ class CacheableMetadataTest extends UnitTestCase {
    * Data provider for testSetCacheMaxAge.
    */
   public function providerSetCacheMaxAge() {
-   return [
-     [0 , FALSE],
-     ['http', TRUE],
-     ['0', TRUE],
-     [new \stdClass(), TRUE],
-     [300, FALSE],
-     [[], TRUE],
-     [8.0, TRUE]
+    return [
+      [0 , FALSE],
+      ['http', TRUE],
+      ['0', TRUE],
+      [new \stdClass(), TRUE],
+      [300, FALSE],
+      [[], TRUE],
+      [8.0, TRUE]
    ];
   }
 

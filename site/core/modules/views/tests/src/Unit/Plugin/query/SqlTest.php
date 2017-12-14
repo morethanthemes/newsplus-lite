@@ -139,7 +139,7 @@ class SqlTest extends UnitTestCase {
    *
    * @param \Drupal\Core\Entity\EntityInterface[][] $entities_by_type
    *   Test entities keyed by entity type and entity ID.
-   * @param \Drupal\Core\Entity\EntityInterface[][] $entities_by_type
+   * @param \Drupal\Core\Entity\EntityInterface[][] $entity_revisions_by_type
    *   Test entities keyed by entity type and revision ID.
    *
    * @return \Prophecy\Prophecy\ObjectProphecy
@@ -202,6 +202,12 @@ class SqlTest extends UnitTestCase {
         'entity revision' => TRUE,
       ],
     ]);
+    $views_data->get('entity_first_field_data')->willReturn([
+      'table' => [
+        'entity type' => 'first',
+        'entity revision' => FALSE,
+      ],
+    ]);
     $this->setupViewsData($views_data->reveal());
 
     // Setup the loading of entities and entity revisions.
@@ -233,7 +239,7 @@ class SqlTest extends UnitTestCase {
 
   /**
    * @covers ::loadEntities
-   * @covers ::_assignEntitiesToResult
+   * @covers ::assignEntitiesToResult
    */
   public function testLoadEntitiesWithEmptyResult() {
     $view = $this->prophesize('Drupal\views\ViewExecutable')->reveal();
@@ -255,7 +261,7 @@ class SqlTest extends UnitTestCase {
 
   /**
    * @covers ::loadEntities
-   * @covers ::_assignEntitiesToResult
+   * @covers ::assignEntitiesToResult
    */
   public function testLoadEntitiesWithNoRelationshipAndNoRevision() {
     $view = $this->prophesize('Drupal\views\ViewExecutable')->reveal();
@@ -311,7 +317,7 @@ class SqlTest extends UnitTestCase {
 
   /**
    * @covers ::loadEntities
-   * @covers ::_assignEntitiesToResult
+   * @covers ::assignEntitiesToResult
    */
   public function testLoadEntitiesWithRelationship() {
     // We don't use prophecy, because prophecy enforces methods.
@@ -369,7 +375,56 @@ class SqlTest extends UnitTestCase {
 
   /**
    * @covers ::loadEntities
-   * @covers ::_assignEntitiesToResult
+   * @covers ::assignEntitiesToResult
+   */
+  public function testLoadEntitiesWithNonEntityRelationship() {
+    // We don't use prophecy, because prophecy enforces methods.
+    $view = $this->getMockBuilder(ViewExecutable::class)->disableOriginalConstructor()->getMock();
+    $this->setupViewWithRelationships($view, 'entity_first_field_data');
+
+    $view_entity = $this->prophesize(ViewEntityInterface::class);
+    $view_entity->get('base_table')->willReturn('entity_first');
+    $view_entity->get('base_field')->willReturn('id');
+    $view->storage = $view_entity->reveal();
+
+    $entities = [
+      'first' => [
+        1 => $this->prophesize(EntityInterface::class)->reveal(),
+        2 => $this->prophesize(EntityInterface::class)->reveal(),
+      ],
+    ];
+    $entity_type_manager = $this->setupEntityTypes($entities);
+
+    $query = new Sql([], 'sql', [], $entity_type_manager->reveal());
+    $query->view = $view;
+
+    $result = [];
+    $result[] = new ResultRow([
+      'id' => 1,
+    ]);
+    $result[] = new ResultRow([
+      'id' => 2,
+    ]);
+
+    $query->addField('entity_first', 'id', 'id');
+    $query->loadEntities($result);
+    $entity_information = $query->getEntityTableInfo();
+
+    $this->assertSame($entities['first'][1], $result[0]->_entity);
+    $this->assertSame($entities['first'][2], $result[1]->_entity);
+
+    $this->assertEquals([], $result[0]->_relationship_entities);
+    $this->assertEquals([], $result[1]->_relationship_entities);
+
+    // This is an entity table and should be in $entity_information.
+    $this->assertContains('first', array_keys($entity_information));
+    // This is not an entity table and should not be in $entity_information.
+    $this->assertNotContains('entity_first_field_data__entity_first_field_data', array_keys($entity_information));
+  }
+
+  /**
+   * @covers ::loadEntities
+   * @covers ::assignEntitiesToResult
    */
   public function testLoadEntitiesWithRevision() {
     // We don't use prophecy, because prophecy enforces methods.
@@ -414,7 +469,7 @@ class SqlTest extends UnitTestCase {
 
   /**
    * @covers ::loadEntities
-   * @covers ::_assignEntitiesToResult
+   * @covers ::assignEntitiesToResult
    */
   public function testLoadEntitiesWithRevisionOfSameEntityType() {
     // We don't use prophecy, because prophecy enforces methods.
@@ -474,7 +529,7 @@ class SqlTest extends UnitTestCase {
 
   /**
    * @covers ::loadEntities
-   * @covers ::_assignEntitiesToResult
+   * @covers ::assignEntitiesToResult
    */
   public function testLoadEntitiesWithRelationshipAndRevision() {
     // We don't use prophecy, because prophecy enforces methods.

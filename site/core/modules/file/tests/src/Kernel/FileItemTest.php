@@ -23,7 +23,7 @@ class FileItemTest extends FieldKernelTestBase {
    *
    * @var array
    */
-  public static $modules = array('file');
+  public static $modules = ['file'];
 
   /**
    * Created file entity.
@@ -43,20 +43,20 @@ class FileItemTest extends FieldKernelTestBase {
     parent::setUp();
 
     $this->installEntitySchema('file');
-    $this->installSchema('file', array('file_usage'));
+    $this->installSchema('file', ['file_usage']);
 
-    FieldStorageConfig::create(array(
+    FieldStorageConfig::create([
       'field_name' => 'file_test',
       'entity_type' => 'entity_test',
       'type' => 'file',
       'cardinality' => FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED,
-    ))->save();
+    ])->save();
     $this->directory = $this->getRandomGenerator()->name(8);
     FieldConfig::create([
       'entity_type' => 'entity_test',
       'field_name' => 'file_test',
       'bundle' => 'entity_test',
-      'settings' => array('file_directory' => $this->directory),
+      'settings' => ['file_directory' => $this->directory],
     ])->save();
     file_put_contents('public://example.txt', $this->randomMachineName());
     $this->file = File::create([
@@ -83,7 +83,7 @@ class FileItemTest extends FieldKernelTestBase {
     $entity->name->value = $this->randomMachineName();
     $entity->save();
 
-    $entity = entity_load('entity_test', $entity->id());
+    $entity = EntityTest::load($entity->id());
     $this->assertTrue($entity->file_test instanceof FieldItemListInterface, 'Field implements interface.');
     $this->assertTrue($entity->file_test[0] instanceof FieldItemInterface, 'Field item implements interface.');
     $this->assertEqual($entity->file_test->target_id, $this->file->id());
@@ -131,7 +131,7 @@ class FileItemTest extends FieldKernelTestBase {
       'weight' => 1,
     ])->save();
     $entity = EntityTest::create();
-    $entity->file_test = array('entity' => $file3);
+    $entity->file_test = ['entity' => $file3];
     $uri = $file3->getFileUri();
     $output = entity_view($entity, 'default');
     \Drupal::service('renderer')->renderRoot($output);

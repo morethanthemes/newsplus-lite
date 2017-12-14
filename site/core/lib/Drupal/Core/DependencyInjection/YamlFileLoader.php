@@ -4,7 +4,7 @@
 namespace Drupal\Core\DependencyInjection;
 
 use Drupal\Component\FileCache\FileCacheFactory;
-use Drupal\Component\Serialization\Yaml;
+use Drupal\Core\Serialization\Yaml;
 use Symfony\Component\DependencyInjection\Alias;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Definition;
@@ -111,7 +111,16 @@ class YamlFileLoader
             throw new InvalidArgumentException(sprintf('The "services" key should contain an array in %s. Check your YAML syntax.', $file));
         }
 
+        // Some extensions split up their dependencies into multiple files.
+        if (isset($content['_provider'])) {
+            $provider = $content['_provider'];
+        }
+        else {
+            $basename = basename($file);
+            list($provider, ) = explode('.', $basename, 2);
+        }
         foreach ($content['services'] as $id => $service) {
+            $service['tags'][] = ['name' => '_provider', 'provider' => $provider];
             $this->parseDefinition($id, $service, $file);
         }
     }
@@ -159,19 +168,8 @@ class YamlFileLoader
             $definition->setShared($service['shared']);
         }
 
-        if (isset($service['scope'])) {
-            if ('request' !== $id) {
-                @trigger_error(sprintf('The "scope" key of service "%s" in file "%s" is deprecated since version 2.8 and will be removed in 3.0.', $id, $file), E_USER_DEPRECATED);
-            }
-            $definition->setScope($service['scope'], false);
-        }
-
         if (isset($service['synthetic'])) {
             $definition->setSynthetic($service['synthetic']);
-        }
-
-        if (isset($service['synchronized'])) {
-            $definition->setSynchronized($service['synchronized'], 'request' !== $id);
         }
 
         if (isset($service['lazy'])) {
@@ -204,15 +202,15 @@ class YamlFileLoader
         }
 
         if (isset($service['factory_class'])) {
-            $definition->setFactoryClass($service['factory_class']);
+            $definition->setFactory($service['factory_class']);
         }
 
         if (isset($service['factory_method'])) {
-            $definition->setFactoryMethod($service['factory_method']);
+            $definition->setFactory($service['factory_method']);
         }
 
         if (isset($service['factory_service'])) {
-            $definition->setFactoryService($service['factory_service']);
+            $definition->setFactory($service['factory_service']);
         }
 
         if (isset($service['file'])) {

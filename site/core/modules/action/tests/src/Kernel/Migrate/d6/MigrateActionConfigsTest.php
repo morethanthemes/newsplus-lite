@@ -2,7 +2,7 @@
 
 namespace Drupal\Tests\action\Kernel\Migrate\d6;
 
-use Drupal\config\Tests\SchemaCheckTestTrait;
+use Drupal\Tests\SchemaCheckTestTrait;
 use Drupal\Tests\migrate_drupal\Kernel\d6\MigrateDrupal6TestBase;
 
 /**
@@ -24,7 +24,7 @@ class MigrateActionConfigsTest extends MigrateDrupal6TestBase {
    */
   protected function setUp() {
     parent::setUp();
-    $this->executeMigration('d6_action_settings');
+    $this->executeMigration('action_settings');
   }
 
   /**

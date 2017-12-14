@@ -22,6 +22,14 @@ system.404:
   requirements:
     _access: 'TRUE'
 
+system.4xx:
+  path: '/system/4xx'
+  defaults:
+    _controller: '\Drupal\system\Controller\Http4xxController:on4xx'
+    _title: 'Client error'
+  requirements:
+    _access: 'TRUE'
+
 system.admin:
   path: '/admin'
   defaults:
@@ -397,6 +405,13 @@ system.theme_settings_theme:
   requirements:
     _access: 'TRUE'
 
+'<nolink>':
+  path: ''
+  options:
+    _no_path: TRUE
+  requirements:
+    _access: 'TRUE'
+
 '<current>':
   path: '<current>'
 
@@ -413,6 +428,14 @@ system.modules_uninstall_confirm:
   defaults:
     _form: 'Drupal\system\Form\ModulesUninstallConfirmForm'
     _title: 'Confirm uninstall'
+  requirements:
+    _permission: 'administer modules'
+
+system.prepare_modules_entity_uninstall:
+  path: '/admin/modules/uninstall/entity/{entity_type_id}'
+  defaults:
+    _form: '\Drupal\system\Form\PrepareModulesEntityUninstallForm'
+    _title_callback: '\Drupal\system\Form\PrepareModulesEntityUninstallForm::formTitle'
   requirements:
     _permission: 'administer modules'
 
@@ -445,8 +468,6 @@ system.batch_page.html:
     _format: 'html'
   options:
     _admin_route: TRUE
-    # @todo Remove the '_no_big_pipe' route option when https://www.drupal.org/node/2589967 lands.
-    _no_big_pipe: TRUE
 
 system.batch_page.json:
   path: '/batch'
@@ -483,5 +504,12 @@ system.entity_autocomplete:
   path: '/entity_reference_autocomplete/{target_type}/{selection_handler}/{selection_settings_key}'
   defaults:
     _controller: '\Drupal\system\Controller\EntityAutocompleteController::handleAutocomplete'
+  requirements:
+    _access: 'TRUE'
+
+system.csrftoken:
+  path: '/session/token'
+  defaults:
+    _controller: '\Drupal\system\Controller\CsrfTokenController::csrfToken'
   requirements:
     _access: 'TRUE'

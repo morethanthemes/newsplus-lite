@@ -39,12 +39,10 @@ class EntityUser extends EntityContentBase {
    *   The plugin implementation definition.
    * @param \Drupal\migrate\Plugin\MigrationInterface $migration
    *   The migration.
-   * @param EntityStorageInterface $storage
+   * @param \Drupal\Core\Entity\EntityStorageInterface $storage
    *   The storage for this entity type.
    * @param array $bundles
    *   The list of bundles this entity type has.
-   * @param \Drupal\migrate\Plugin\MigratePluginManager $plugin_manager
-   *   The migrate plugin manager.
    * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
    *   The entity manager service.
    * @param \Drupal\Core\Field\FieldTypePluginManagerInterface $field_type_manager
@@ -79,7 +77,7 @@ class EntityUser extends EntityContentBase {
    * {@inheritdoc}
    * @throws \Drupal\migrate\MigrateException
    */
-  public function import(Row $row, array $old_destination_id_values = array()) {
+  public function import(Row $row, array $old_destination_id_values = []) {
     // Do not overwrite the root account password.
     if ($row->getDestinationProperty('uid') == 1) {
       $row->removeDestinationProperty('pass');
@@ -90,7 +88,7 @@ class EntityUser extends EntityContentBase {
   /**
    * {@inheritdoc}
    */
-  protected function save(ContentEntityInterface $entity, array $old_destination_id_values = array()) {
+  protected function save(ContentEntityInterface $entity, array $old_destination_id_values = []) {
     // Do not overwrite the root account password.
     if ($entity->id() != 1) {
       // Set the pre_hashed password so that the PasswordItem field does not hash

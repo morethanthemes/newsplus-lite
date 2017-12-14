@@ -3,10 +3,11 @@
 namespace Drupal\FunctionalJavascriptTests;
 
 use Drupal\Tests\BrowserTestBase;
+use Zumba\GastonJS\Exception\DeadClient;
 use Zumba\Mink\Driver\PhantomJSDriver;
 
 /**
- * Runs a browser test using PhantomJS.
+ * Runs a browser test using a driver that supports Javascript.
  *
  * Base class for testing browser interaction implemented in JavaScript.
  */
@@ -30,23 +31,34 @@ abstract class JavascriptTestBase extends BrowserTestBase {
     if (!file_exists($path)) {
       mkdir($path);
     }
-    return parent::initMink();
+
+    try {
+      return parent::initMink();
+    }
+    catch (DeadClient $e) {
+      $this->markTestSkipped('PhantomJS is either not installed or not running. Start it via phantomjs --ssl-protocol=any --ignore-ssl-errors=true vendor/jcalderonzumba/gastonjs/src/Client/main.js 8510 1024 768&');
+    }
+    catch (\Exception $e) {
+      $this->markTestSkipped('An unexpected error occurred while starting Mink: ' . $e->getMessage());
+    }
   }
 
   /**
    * {@inheritdoc}
    */
   protected function tearDown() {
-    // Wait for all requests to finish. It is possible that an AJAX request is
-    // still on-going.
-    $result = $this->getSession()->wait(5000, '(typeof(jQuery)=="undefined" || (0 === jQuery.active && 0 === jQuery(\':animated\').length))');
-    if (!$result) {
-      // If the wait is unsuccessful, there may still be an AJAX request in
-      // progress. If we tear down now, then this AJAX request may fail with
-      // missing database tables, because tear down will have removed them. Rather
-      // than allow it to fail, throw an explicit exception now explaining what
-      // the problem is.
-      throw new \RuntimeException('Unfinished AJAX requests whilst tearing down a test');
+    if ($this->mink) {
+      // Wait for all requests to finish. It is possible that an AJAX request is
+      // still on-going.
+      $result = $this->getSession()->wait(5000, '(typeof(jQuery)=="undefined" || (0 === jQuery.active && 0 === jQuery(\':animated\').length))');
+      if (!$result) {
+        // If the wait is unsuccessful, there may still be an AJAX request in
+        // progress. If we tear down now, then this AJAX request may fail with
+        // missing database tables, because tear down will have removed them.
+        // Rather than allow it to fail, throw an explicit exception now
+        // explaining what the problem is.
+        throw new \RuntimeException('Unfinished AJAX requests while tearing down a test');
+      }
     }
     parent::tearDown();
   }
@@ -87,7 +99,7 @@ abstract class JavascriptTestBase extends BrowserTestBase {
    * @param string $condition
    *   JS condition to wait until it becomes TRUE.
    * @param int $timeout
-   *   (Optional) Timeout in milliseconds, defaults to 1000.
+   *   (Optional) Timeout in milliseconds, defaults to 10000.
    * @param string $message
    *   (optional) A message to display with the assertion. If left blank, a
    *   default message will be displayed.
@@ -96,17 +108,65 @@ abstract class JavascriptTestBase extends BrowserTestBase {
    *
    * @see \Behat\Mink\Driver\DriverInterface::evaluateScript()
    */
-  protected function assertJsCondition($condition, $timeout = 1000, $message = '') {
+  protected function assertJsCondition($condition, $timeout = 10000, $message = '') {
     $message = $message ?: "Javascript condition met:\n" . $condition;
     $result = $this->getSession()->getDriver()->wait($timeout, $condition);
     $this->assertTrue($result, $message);
   }
 
   /**
+   * Creates a screenshot.
+   *
+   * @param string $filename
+   *   The file name of the resulting screenshot. If using the default phantomjs
+   *   driver then this should be a JPG filename.
+   * @param bool $set_background_color
+   *   (optional) By default this method will set the background color to white.
+   *   Set to FALSE to override this behaviour.
+   *
+   * @throws \Behat\Mink\Exception\UnsupportedDriverActionException
+   *   When operation not supported by the driver.
+   * @throws \Behat\Mink\Exception\DriverException
+   *   When the operation cannot be done.
+   */
+  protected function createScreenshot($filename, $set_background_color = TRUE) {
+    $session = $this->getSession();
+    if ($set_background_color) {
+      $session->executeScript("document.body.style.backgroundColor = 'white';");
+    }
+    $image = $session->getScreenshot();
+    file_put_contents($filename, $image);
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function assertSession($name = NULL) {
-    return new JSWebAssert($this->getSession($name), $this->baseUrl);
+    return new WebDriverWebAssert($this->getSession($name), $this->baseUrl);
+  }
+
+  /**
+   * Gets the current Drupal javascript settings and parses into an array.
+   *
+   * Unlike BrowserTestBase::getDrupalSettings(), this implementation reads the
+   * current values of drupalSettings, capturing all changes made via javascript
+   * after the page was loaded.
+   *
+   * @return array
+   *   The Drupal javascript settings array.
+   *
+   * @see \Drupal\Tests\BrowserTestBase::getDrupalSettings()
+   */
+  protected function getDrupalSettings() {
+    $script = <<<EndOfScript
+(function () {
+  if (typeof drupalSettings !== 'undefined') {
+    return drupalSettings;
+  }
+})();
+EndOfScript;
+
+    return $this->getSession()->evaluateScript($script) ?: [];
   }
 
 }

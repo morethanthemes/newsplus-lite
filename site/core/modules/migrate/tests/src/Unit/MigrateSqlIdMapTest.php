@@ -130,11 +130,11 @@ class MigrateSqlIdMapTest extends MigrateTestCase {
    *   - hash
    */
   protected function idMapDefaults() {
-    $defaults = array(
+    $defaults = [
       'source_row_status' => MigrateIdMapInterface::STATUS_IMPORTED,
       'rollback_action' => MigrateIdMapInterface::ROLLBACK_DELETE,
       'hash' => '',
-    );
+    ];
     // By default, the PDO SQLite driver strongly prefers to return strings
     // from SELECT queries. Even for columns that don't store strings. Even
     // if the connection's STRINGIFY_FETCHES attribute is FALSE. This can cause
@@ -157,9 +157,9 @@ class MigrateSqlIdMapTest extends MigrateTestCase {
    * - updating work.
    */
   public function testSaveIdMapping() {
-    $source = array(
+    $source = [
       'source_id_property' => 'source_value',
-    );
+    ];
     $row = new Row($source, ['source_id_property' => []]);
     $id_map = $this->getIdMap();
     $id_map->saveIdMapping($row, ['destination_id_property' => 2]);
@@ -638,6 +638,35 @@ class MigrateSqlIdMapTest extends MigrateTestCase {
     // Test for a miss.
     $source_id = $id_map->lookupSourceID($nonexistent_id_values);
     $this->assertSame(0, count($source_id));
+  }
+
+  /**
+   * Tests currentDestination() and currentSource().
+   */
+  public function testCurrentDestinationAndSource() {
+    // Simple map with one source and one destination ID.
+    $id_map = $this->setupRows(['nid'], ['nid'], [
+      [1, 101],
+      [2, 102],
+      [3, 103],
+      // Mock a failed row by setting the destination ID to NULL.
+      [4, NULL],
+    ]);
+
+    // The rows are ordered by destination ID so the failed row should be first.
+    $id_map->rewind();
+    $this->assertEquals([], $id_map->currentDestination());
+    $this->assertEquals(['nid' => 4], $id_map->currentSource());
+    $id_map->next();
+    $this->assertEquals(['nid' => 101], $id_map->currentDestination());
+    $this->assertEquals(['nid' => 1], $id_map->currentSource());
+    $id_map->next();
+    $this->assertEquals(['nid' => 102], $id_map->currentDestination());
+    $this->assertEquals(['nid' => 2], $id_map->currentSource());
+    $id_map->next();
+    $this->assertEquals(['nid' => 103], $id_map->currentDestination());
+    $this->assertEquals(['nid' => 3], $id_map->currentSource());
+    $id_map->next();
   }
 
   /**

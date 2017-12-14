@@ -82,7 +82,7 @@ class EntityReferenceEntityFormatter extends EntityReferenceFormatterBase implem
    *   The view mode.
    * @param array $third_party_settings
    *   Any third party settings settings.
-   * @param LoggerChannelFactoryInterface $logger_factory
+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
    *   The logger factory.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
@@ -118,23 +118,23 @@ class EntityReferenceEntityFormatter extends EntityReferenceFormatterBase implem
    * {@inheritdoc}
    */
   public static function defaultSettings() {
-    return array(
+    return [
       'view_mode' => 'default',
       'link' => FALSE,
-    ) + parent::defaultSettings();
+    ] + parent::defaultSettings();
   }
 
   /**
    * {@inheritdoc}
    */
   public function settingsForm(array $form, FormStateInterface $form_state) {
-    $elements['view_mode'] = array(
+    $elements['view_mode'] = [
       '#type' => 'select',
       '#options' => $this->entityDisplayRepository->getViewModeOptions($this->getFieldSetting('target_type')),
       '#title' => t('View mode'),
       '#default_value' => $this->getSetting('view_mode'),
       '#required' => TRUE,
-    );
+    ];
 
     return $elements;
   }
@@ -143,11 +143,11 @@ class EntityReferenceEntityFormatter extends EntityReferenceFormatterBase implem
    * {@inheritdoc}
    */
   public function settingsSummary() {
-    $summary = array();
+    $summary = [];
 
     $view_modes = $this->entityDisplayRepository->getViewModeOptions($this->getFieldSetting('target_type'));
     $view_mode = $this->getSetting('view_mode');
-    $summary[] = t('Rendered as @mode', array('@mode' => isset($view_modes[$view_mode]) ? $view_modes[$view_mode] : $view_mode));
+    $summary[] = t('Rendered as @mode', ['@mode' => isset($view_modes[$view_mode]) ? $view_modes[$view_mode] : $view_mode]);
 
     return $summary;
   }
@@ -157,51 +157,49 @@ class EntityReferenceEntityFormatter extends EntityReferenceFormatterBase implem
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
     $view_mode = $this->getSetting('view_mode');
-    $elements = array();
+    $elements = [];
 
     foreach ($this->getEntitiesToView($items, $langcode) as $delta => $entity) {
-      if ($entity->id()) {
-        // Due to render caching and delayed calls, the viewElements() method
-        // will be called later in the rendering process through a '#pre_render'
-        // callback, so we need to generate a counter that takes into account
-        // all the relevant information about this field and the referenced
-        // entity that is being rendered.
-        $recursive_render_id = $items->getFieldDefinition()->getTargetEntityTypeId()
-          . $items->getFieldDefinition()->getTargetBundle()
-          . $items->getName()
-          . $entity->id();
+      // Due to render caching and delayed calls, the viewElements() method
+      // will be called later in the rendering process through a '#pre_render'
+      // callback, so we need to generate a counter that takes into account
+      // all the relevant information about this field and the referenced
+      // entity that is being rendered.
+      $recursive_render_id = $items->getFieldDefinition()->getTargetEntityTypeId()
+        . $items->getFieldDefinition()->getTargetBundle()
+        . $items->getName()
+        // We include the referencing entity, so we can render default images
+        // without hitting recursive protections.
+        . $items->getEntity()->id()
+        . $entity->getEntityTypeId()
+        . $entity->id();
 
-        if (isset(static::$recursiveRenderDepth[$recursive_render_id])) {
-          static::$recursiveRenderDepth[$recursive_render_id]++;
-        }
-        else {
-          static::$recursiveRenderDepth[$recursive_render_id] = 1;
-        }
-
-        // Protect ourselves from recursive rendering.
-        if (static::$recursiveRenderDepth[$recursive_render_id] > static::RECURSIVE_RENDER_LIMIT) {
-          $this->loggerFactory->get('entity')->error('Recursive rendering detected when rendering entity %entity_type: %entity_id, using the %field_name field on the %bundle_name bundle. Aborting rendering.', [
-            '%entity_type' => $entity->getEntityTypeId(),
-            '%entity_id' => $entity->id(),
-            '%field_name' => $items->getName(),
-            '%bundle_name' => $items->getFieldDefinition()->getTargetBundle(),
-          ]);
-          return $elements;
-        }
-
-        $view_builder = $this->entityTypeManager->getViewBuilder($entity->getEntityTypeId());
-        $elements[$delta] = $view_builder->view($entity, $view_mode, $entity->language()->getId());
-
-        // Add a resource attribute to set the mapping property's value to the
-        // entity's url. Since we don't know what the markup of the entity will
-        // be, we shouldn't rely on it for structured data such as RDFa.
-        if (!empty($items[$delta]->_attributes)) {
-          $items[$delta]->_attributes += array('resource' => $entity->url());
-        }
+      if (isset(static::$recursiveRenderDepth[$recursive_render_id])) {
+        static::$recursiveRenderDepth[$recursive_render_id]++;
       }
       else {
-        // This is an "auto_create" item.
-        $elements[$delta] = array('#markup' => $entity->label());
+        static::$recursiveRenderDepth[$recursive_render_id] = 1;
+      }
+
+      // Protect ourselves from recursive rendering.
+      if (static::$recursiveRenderDepth[$recursive_render_id] > static::RECURSIVE_RENDER_LIMIT) {
+        $this->loggerFactory->get('entity')->error('Recursive rendering detected when rendering entity %entity_type: %entity_id, using the %field_name field on the %bundle_name bundle. Aborting rendering.', [
+          '%entity_type' => $entity->getEntityTypeId(),
+          '%entity_id' => $entity->id(),
+          '%field_name' => $items->getName(),
+          '%bundle_name' => $items->getFieldDefinition()->getTargetBundle(),
+        ]);
+        return $elements;
+      }
+
+      $view_builder = $this->entityTypeManager->getViewBuilder($entity->getEntityTypeId());
+      $elements[$delta] = $view_builder->view($entity, $view_mode, $entity->language()->getId());
+
+      // Add a resource attribute to set the mapping property's value to the
+      // entity's url. Since we don't know what the markup of the entity will
+      // be, we shouldn't rely on it for structured data such as RDFa.
+      if (!empty($items[$delta]->_attributes) && !$entity->isNew() && $entity->hasLinkTemplate('canonical')) {
+        $items[$delta]->_attributes += ['resource' => $entity->toUrl()->toString()];
       }
     }
 

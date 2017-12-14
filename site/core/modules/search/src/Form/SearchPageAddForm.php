@@ -24,7 +24,7 @@ class SearchPageAddForm extends SearchPageFormBase {
    */
   protected function actions(array $form, FormStateInterface $form_state) {
     $actions = parent::actions($form, $form_state);
-    $actions['submit']['#value'] = $this->t('Add search page');
+    $actions['submit']['#value'] = $this->t('Save');
     return $actions;
   }
 
@@ -39,7 +39,7 @@ class SearchPageAddForm extends SearchPageFormBase {
 
     parent::save($form, $form_state);
 
-    drupal_set_message($this->t('The %label search page has been added.', array('%label' => $this->entity->label())));
+    drupal_set_message($this->t('The %label search page has been added.', ['%label' => $this->entity->label()]));
   }
 
 }

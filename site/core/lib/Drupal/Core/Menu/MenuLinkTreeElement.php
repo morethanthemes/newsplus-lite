@@ -68,7 +68,7 @@ class MenuLinkTreeElement {
    * If the value is NULL the access was not determined yet, if an access result
    * object, it was determined already.
    *
-   * @var \Drupal\Core\Access\AccessResultInterface|NULL
+   * @var \Drupal\Core\Access\AccessResultInterface|null
    */
   public $access;
 
@@ -79,7 +79,7 @@ class MenuLinkTreeElement {
    * \Drupal\Core\Menu\MenuLinkInterface::getOptions(), to allow menu link tree
    * manipulators to add or override link options.
    */
-  public $options = array();
+  public $options = [];
 
   /**
    * Constructs a new \Drupal\Core\Menu\MenuLinkTreeElement.

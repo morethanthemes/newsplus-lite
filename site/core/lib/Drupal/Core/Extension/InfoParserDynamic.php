@@ -2,8 +2,8 @@
 
 namespace Drupal\Core\Extension;
 
-use Drupal\Component\Serialization\Yaml;
 use Drupal\Component\Serialization\Exception\InvalidDataTypeException;
+use Drupal\Core\Serialization\Yaml;
 
 /**
  * Parses dynamic .info.yml files that might change during the page request.
@@ -15,7 +15,7 @@ class InfoParserDynamic implements InfoParserInterface {
    */
   public function parse($filename) {
     if (!file_exists($filename)) {
-      $parsed_info = array();
+      $parsed_info = [];
     }
     else {
       try {
@@ -42,7 +42,7 @@ class InfoParserDynamic implements InfoParserInterface {
    *   An array of required keys.
    */
   protected function getRequiredKeys() {
-    return array('type', 'core', 'name');
+    return ['type', 'core', 'name'];
   }
 
 }

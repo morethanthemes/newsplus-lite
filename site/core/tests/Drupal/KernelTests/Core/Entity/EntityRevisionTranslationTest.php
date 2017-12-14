@@ -87,4 +87,74 @@ class EntityRevisionTranslationTest extends EntityKernelTestBase {
     $this->assertFalse($entity->hasTranslation('de'));
   }
 
+  /**
+   * Tests the translation values when saving a pending revision.
+   */
+  public function testTranslationValuesWhenSavingPendingRevisions() {
+    $user = $this->createUser();
+    $storage = $this->entityManager->getStorage('entity_test_mulrev');
+
+    // Create a test entity and a translation for it.
+    $entity = EntityTestMulRev::create([
+      'name' => 'default revision - en',
+      'user_id' => $user->id(),
+      'language' => 'en',
+    ]);
+    $entity->addTranslation('de', ['name' => 'default revision - de']);
+    $entity->save();
+
+    // Create a pending revision for the entity and change a field value for
+    // both languages.
+    $pending_revision = $this->reloadEntity($entity);
+
+    $pending_revision->setNewRevision();
+    $pending_revision->isDefaultRevision(FALSE);
+
+    $pending_revision->name = 'pending revision - en';
+    $pending_revision->save();
+
+    $pending_revision_translation = $pending_revision->getTranslation('de');
+    $pending_revision_translation->name = 'pending revision - de';
+    $pending_revision_translation->save();
+
+    $pending_revision_id = $pending_revision->getRevisionId();
+    $pending_revision = $storage->loadRevision($pending_revision_id);
+
+    // Change the value of the field in the default language, save the pending
+    // revision and check that the value of the field in the second language is
+    // also taken from the pending revision, *not* from the default revision.
+    $pending_revision->name = 'updated pending revision - en';
+    $pending_revision->save();
+
+    $pending_revision = $storage->loadRevision($pending_revision_id);
+
+    $this->assertEquals($pending_revision->name->value, 'updated pending revision - en');
+    $this->assertEquals($pending_revision->getTranslation('de')->name->value, 'pending revision - de');
+  }
+
+  /**
+   * Tests changing the default revision flag is propagated to all translations.
+   */
+  public function testDefaultRevision() {
+    // Create a test entity with a translation, which will internally trigger
+    // entity cloning for the new translation and create references for some of
+    // the entity properties.
+    $entity = EntityTestMulRev::create([
+      'name' => 'original',
+      'language' => 'en',
+    ]);
+    $translation = $entity->addTranslation('de');
+    $entity->save();
+
+    // Assert that the entity is in the default revision.
+    $this->assertTrue($entity->isDefaultRevision());
+    $this->assertTrue($translation->isDefaultRevision());
+
+    // Change the default revision flag on one of the entity translations and
+    // assert that the change is propagated to all entity translation objects.
+    $translation->isDefaultRevision(FALSE);
+    $this->assertFalse($entity->isDefaultRevision());
+    $this->assertFalse($translation->isDefaultRevision());
+  }
+
 }

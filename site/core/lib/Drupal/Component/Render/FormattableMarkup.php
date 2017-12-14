@@ -147,7 +147,7 @@ class FormattableMarkup implements MarkupInterface, \Countable {
    *     A call like:
    *     @code
    *       $string = "%output_text";
-   *       $arguments = ['output_text' => 'text output here.'];
+   *       $arguments = ['%output_text' => 'text output here.'];
    *       $this->placeholderFormat($string, $arguments);
    *     @endcode
    *     makes the following HTML code:
@@ -227,11 +227,18 @@ class FormattableMarkup implements MarkupInterface, \Countable {
         default:
           // We do not trigger an error for placeholder that start with an
           // alphabetic character.
+          // @todo https://www.drupal.org/node/2807743 Change to an exception
+          //   and always throw regardless of the first character.
           if (!ctype_alpha($key[0])) {
             // We trigger an error as we may want to introduce new placeholders
             // in the future without breaking backward compatibility.
             trigger_error('Invalid placeholder (' . $key . ') in string: ' . $string, E_USER_ERROR);
           }
+          elseif (strpos($string, $key) !== FALSE) {
+            trigger_error('Invalid placeholder (' . $key . ') in string: ' . $string, E_USER_DEPRECATED);
+          }
+          // No replacement possible therefore we can discard the argument.
+          unset($args[$key]);
           break;
       }
     }

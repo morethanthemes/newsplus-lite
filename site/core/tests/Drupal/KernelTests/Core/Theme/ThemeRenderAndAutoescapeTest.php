@@ -53,7 +53,7 @@ class ThemeRenderAndAutoescapeTest extends KernelTestBase {
     $renderer = \Drupal::service('renderer');
     $output = $renderer->executeInRenderContext($context, $theme_render_and_autoescape);
     $this->assertEquals($expected, $output);
-    $this-> assertInternalType('string', $output);
+    $this->assertInternalType('string', $output);
   }
 
   /**
@@ -82,10 +82,9 @@ class ThemeRenderAndAutoescapeTest extends KernelTestBase {
 
   /**
    * Ensures invalid content is handled correctly.
-   *
-   * @expectedException \Exception
    */
   public function testThemeEscapeAndRenderNotPrintable() {
+    $this->setExpectedException(\Exception::class);
     theme_render_and_autoescape(new NonPrintable());
   }
 
@@ -135,4 +134,4 @@ class ThemeRenderAndAutoescapeTest extends KernelTestBase {
 
 }
 
-class NonPrintable { }
+class NonPrintable {}

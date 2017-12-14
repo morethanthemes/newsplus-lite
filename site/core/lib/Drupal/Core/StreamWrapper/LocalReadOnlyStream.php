@@ -16,41 +16,23 @@ namespace Drupal\Core\StreamWrapper;
 abstract class LocalReadOnlyStream extends LocalStream {
 
   /**
-   * Support for fopen(), file_get_contents(), etc.
-   *
-   * Any write modes will be rejected, as this is a read-only stream wrapper.
-   *
-   * @param string $uri
-   *   A string containing the URI to the file to open.
-   * @param int $mode
-   *   The file mode, only strict readonly modes are supported.
-   * @param int $options
-   *   A bit mask of STREAM_USE_PATH and STREAM_REPORT_ERRORS.
-   * @param string $opened_path
-   *   A string containing the path actually opened.
-   *
-   * @return bool
-   *   TRUE if $mode denotes a readonly mode and the file was opened
-   *   successfully, FALSE otherwise.
-   *
-   * @see http://php.net/manual/streamwrapper.stream-open.php
+   * {@inheritdoc}
+   */
+  public static function getType() {
+    return StreamWrapperInterface::READ_VISIBLE | StreamWrapperInterface::LOCAL;
+  }
+
+  /**
+   * {@inheritdoc}
    */
   public function stream_open($uri, $mode, $options, &$opened_path) {
-    if (!in_array($mode, array('r', 'rb', 'rt'))) {
+    if (!in_array($mode, ['r', 'rb', 'rt'])) {
       if ($options & STREAM_REPORT_ERRORS) {
         trigger_error('stream_open() write modes not supported for read-only stream wrappers', E_USER_WARNING);
       }
       return FALSE;
     }
-
-    $this->uri = $uri;
-    $path = $this->getLocalPath();
-    $this->handle = ($options & STREAM_REPORT_ERRORS) ? fopen($path, $mode) : @fopen($path, $mode);
-    if ($this->handle !== FALSE && ($options & STREAM_USE_PATH)) {
-      $opened_path = $path;
-    }
-
-    return (bool) $this->handle;
+    return parent::stream_open($uri, $mode, $options, $opened_path);
   }
 
   /**
@@ -76,11 +58,11 @@ abstract class LocalReadOnlyStream extends LocalStream {
    */
   public function stream_lock($operation) {
     // Disallow exclusive lock or non-blocking lock requests
-    if (in_array($operation, array(LOCK_EX, LOCK_EX | LOCK_NB))) {
+    if (in_array($operation, [LOCK_EX, LOCK_EX | LOCK_NB])) {
       trigger_error('stream_lock() exclusive lock operations not supported for read-only stream wrappers', E_USER_WARNING);
       return FALSE;
     }
-    if (in_array($operation, array(LOCK_SH, LOCK_UN, LOCK_SH | LOCK_NB))) {
+    if (in_array($operation, [LOCK_SH, LOCK_UN, LOCK_SH | LOCK_NB])) {
       return flock($this->handle, $operation);
     }
 
@@ -165,7 +147,7 @@ abstract class LocalReadOnlyStream extends LocalStream {
    *
    * The file will not be renamed as this is a read-only stream wrapper.
    *
-   * @param string $from_uri,
+   * @param string $from_uri
    *   The uri to the file to rename.
    * @param string $to_uri
    *   The new uri for file.

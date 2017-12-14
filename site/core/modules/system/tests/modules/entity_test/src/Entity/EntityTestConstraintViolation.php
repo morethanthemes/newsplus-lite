@@ -15,7 +15,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
  *       "default" = "Drupal\entity_test\EntityTestForm"
  *     }
  *   },
- *   base_table = "entity_test",
+ *   base_table = "entity_test_constraint_violation",
  *   persistent_cache = FALSE,
  *   entity_keys = {
  *     "id" = "id",
@@ -33,11 +33,11 @@ class EntityTestConstraintViolation extends EntityTest {
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     $fields = parent::baseFieldDefinitions($entity_type);
 
-    $fields['name']->setDisplayOptions('form', array(
+    $fields['name']->setDisplayOptions('form', [
       'type' => 'string',
       'weight' => 0,
-    ));
-    $fields['name']->addConstraint('FieldWidgetConstraint', array());
+    ]);
+    $fields['name']->addConstraint('FieldWidgetConstraint', []);
 
     return $fields;
   }

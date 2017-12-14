@@ -2,8 +2,8 @@
 
 namespace Drupal\config\Tests;
 
-use Drupal\Component\Serialization\Yaml;
 use Drupal\Core\Config\InstallStorage;
+use Drupal\Core\Serialization\Yaml;
 use Drupal\simpletest\InstallerTestBase;
 
 /**
@@ -90,7 +90,7 @@ class ConfigInstallProfileUnmetDependenciesTest extends InstallerTestBase {
     else {
       $this->fail('Expected Drupal\Core\Config\UnmetDependenciesException exception thrown');
     }
-    $this->assertErrorLogged('Configuration objects (system.action.user_block_user_action) provided by user have unmet dependencies in');
+    $this->assertErrorLogged('Configuration objects provided by <em class="placeholder">user</em> have unmet dependencies: <em class="placeholder">system.action.user_block_user_action (action)</em>');
   }
 
 }

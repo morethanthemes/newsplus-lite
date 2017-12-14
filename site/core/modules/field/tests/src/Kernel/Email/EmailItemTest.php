@@ -20,11 +20,11 @@ class EmailItemTest extends FieldKernelTestBase {
     parent::setUp();
 
     // Create an email field storage and field for validation.
-    FieldStorageConfig::create(array(
+    FieldStorageConfig::create([
       'field_name' => 'field_email',
       'entity_type' => 'entity_test',
       'type' => 'email',
-    ))->save();
+    ])->save();
     FieldConfig::create([
       'entity_type' => 'entity_test',
       'field_name' => 'field_email',
@@ -33,9 +33,9 @@ class EmailItemTest extends FieldKernelTestBase {
 
     // Create a form display for the default form mode.
     entity_get_form_display('entity_test', 'entity_test', 'default')
-      ->setComponent('field_email', array(
+      ->setComponent('field_email', [
         'type' => 'email_default',
-      ))
+      ])
       ->save();
   }
 
@@ -52,7 +52,7 @@ class EmailItemTest extends FieldKernelTestBase {
 
     // Verify entity has been created properly.
     $id = $entity->id();
-    $entity = entity_load('entity_test', $id);
+    $entity = EntityTest::load($id);
     $this->assertTrue($entity->field_email instanceof FieldItemListInterface, 'Field implements interface.');
     $this->assertTrue($entity->field_email[0] instanceof FieldItemInterface, 'Field item implements interface.');
     $this->assertEqual($entity->field_email->value, $value);
@@ -65,7 +65,7 @@ class EmailItemTest extends FieldKernelTestBase {
 
     // Read changed entity and assert changed values.
     $entity->save();
-    $entity = entity_load('entity_test', $id);
+    $entity = EntityTest::load($id);
     $this->assertEqual($entity->field_email->value, $new_value);
 
     // Test sample item generation.

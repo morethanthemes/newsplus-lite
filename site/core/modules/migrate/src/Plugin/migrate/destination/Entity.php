@@ -45,9 +45,9 @@ abstract class Entity extends DestinationBase implements ContainerFactoryPluginI
    *   The plugin_id for the plugin instance.
    * @param mixed $plugin_definition
    *   The plugin implementation definition.
-   * @param MigrationInterface $migration
+   * @param \Drupal\migrate\Plugin\MigrationInterface $migration
    *   The migration.
-   * @param EntityStorageInterface $storage
+   * @param \Drupal\Core\Entity\EntityStorageInterface $storage
    *   The storage for this entity type.
    * @param array $bundles
    *   The list of bundles this entity type has.
@@ -124,7 +124,8 @@ abstract class Entity extends DestinationBase implements ContainerFactoryPluginI
   protected function getEntity(Row $row, array $old_destination_id_values) {
     $entity_id = reset($old_destination_id_values) ?: $this->getEntityId($row);
     if (!empty($entity_id) && ($entity = $this->storage->load($entity_id))) {
-      $this->updateEntity($entity, $row);
+      // Allow updateEntity() to change the entity.
+      $entity = $this->updateEntity($entity, $row) ?: $entity;
     }
     else {
       // Attempt to ensure we always have a bundle.

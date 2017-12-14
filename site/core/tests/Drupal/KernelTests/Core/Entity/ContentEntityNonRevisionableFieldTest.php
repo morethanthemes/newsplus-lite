@@ -57,21 +57,21 @@ class ContentEntityNonRevisionableFieldTest extends EntityKernelTestBase {
     $user2 = $this->createUser();
 
     // Create a test entity.
-    $entity = EntityTestMulRev::create(array(
+    $entity = EntityTestMulRev::create([
       'name' => $this->randomString(),
       'user_id' => $user1->id(),
       'language' => 'en',
       'non_rev_field' => 'Huron',
-    ));
+    ]);
     $entity->save();
 
     // Create a test entity.
-    $entity2 = EntityTestMulRev::create(array(
+    $entity2 = EntityTestMulRev::create([
       'name' => $this->randomString(),
       'user_id' => $user1->id(),
       'language' => 'en',
       'non_rev_field' => 'Michigan',
-    ));
+    ]);
     $entity2->save();
 
     $this->assertEquals('Huron', $entity->get('non_rev_field')->value, 'Huron found on entity 1');
@@ -123,19 +123,19 @@ class ContentEntityNonRevisionableFieldTest extends EntityKernelTestBase {
     $user2 = $this->createUser();
 
     // Create a test entity.
-    $entity = EntityTestRev::create(array(
+    $entity = EntityTestRev::create([
       'name' => $this->randomString(),
       'user_id' => $user1->id(),
       'non_rev_field' => 'Superior',
-    ));
+    ]);
     $entity->save();
 
     // Create a test entity.
-    $entity2 = EntityTestRev::create(array(
+    $entity2 = EntityTestRev::create([
       'name' => $this->randomString(),
       'user_id' => $user1->id(),
       'non_rev_field' => 'Ontario',
-    ));
+    ]);
     $entity2->save();
 
     $this->assertEquals('Superior', $entity->get('non_rev_field')->value, 'Superior found on entity 1');
@@ -172,6 +172,39 @@ class ContentEntityNonRevisionableFieldTest extends EntityKernelTestBase {
       ->sort('revision_id', 'DESC')
       ->execute();
     $this->assertEquals($expected_non_rev_field_revision_ids, $non_rev_field_revision_ids, 'Revision ids found');
+  }
+
+  /**
+   * Tests multi column non revisionable base field for revisionable entity.
+   */
+  public function testMultiColumnNonRevisionableBaseField() {
+    \Drupal::state()->set('entity_test.multi_column', TRUE);
+    \Drupal::entityDefinitionUpdateManager()->applyUpdates();
+    // Refresh the storage.
+    $this->mulRev = $this->entityManager->getStorage('entity_test_mulrev');
+    $user1 = $this->createUser();
+
+    // Create a test entity.
+    $entity = EntityTestMulRev::create([
+      'name' => $this->randomString(),
+      'user_id' => $user1->id(),
+      'language' => 'en',
+      'non_rev_field' => 'Huron',
+      'description' => [
+        'shape' => 'shape',
+        'color' => 'color',
+      ],
+    ]);
+    $entity->save();
+    $entity = $this->mulRev->loadUnchanged($entity->id());
+    $expected = [
+      [
+        'shape' => 'shape',
+        'color' => 'color',
+      ],
+    ];
+    $this->assertEquals('Huron', $entity->get('non_rev_field')->value, 'Huron found on entity 1');
+    $this->assertEquals($expected, $entity->description->getValue());
   }
 
 }

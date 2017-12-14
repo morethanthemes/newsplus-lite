@@ -6,7 +6,7 @@ use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\ViewExecutable;
 
 /**
- * Abstract argument handler for simple formulae.
+ * Argument handler for simple formulae.
  *
  * Child classes of this object should implement summaryArgument, at least.
  *
@@ -59,9 +59,9 @@ class Formula extends ArgumentPluginBase {
     // Now that our table is secure, get our formula.
     $placeholder = $this->placeholder();
     $formula = $this->getFormula() . ' = ' . $placeholder;
-    $placeholders = array(
+    $placeholders = [
       $placeholder => $this->argument,
-    );
+    ];
     $this->query->addWhere(0, $formula, $placeholders, 'formula');
   }
 

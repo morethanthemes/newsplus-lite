@@ -17,7 +17,7 @@ class ConfigEntityStaticCacheTest extends KernelTestBase {
    *
    * @var array
    */
-  public static $modules = array('config_test', 'config_entity_static_cache_test');
+  public static $modules = ['config_test', 'config_entity_static_cache_test'];
 
   /**
    * The type ID of the entity under test.
@@ -42,7 +42,7 @@ class ConfigEntityStaticCacheTest extends KernelTestBase {
     $this->entityId = 'test_1';
     $this->container->get('entity_type.manager')
       ->getStorage($this->entityTypeId)
-      ->create(array('id' => $this->entityId, 'label' => 'Original label'))
+      ->create(['id' => $this->entityId, 'label' => 'Original label'])
       ->save();
   }
 
@@ -50,31 +50,35 @@ class ConfigEntityStaticCacheTest extends KernelTestBase {
    * Tests that the static cache is working.
    */
   public function testCacheHit() {
-    $entity_1 = entity_load($this->entityTypeId, $this->entityId);
-    $entity_2 = entity_load($this->entityTypeId, $this->entityId);
+    $storage = $this->container->get('entity_type.manager')
+      ->getStorage($this->entityTypeId);
+    $entity_1 = $storage->load($this->entityId);
+    $entity_2 = $storage->load($this->entityId);
     // config_entity_static_cache_test_config_test_load() sets _loadStamp to a
     // random string. If they match, it means $entity_2 was retrieved from the
     // static cache rather than going through a separate load sequence.
-    $this->assertIdentical($entity_1->_loadStamp, $entity_2->_loadStamp);
+    $this->assertSame($entity_1->_loadStamp, $entity_2->_loadStamp);
   }
 
   /**
    * Tests that the static cache is reset on entity save and delete.
    */
   public function testReset() {
-    $entity = entity_load($this->entityTypeId, $this->entityId);
+    $storage = $this->container->get('entity_type.manager')
+      ->getStorage($this->entityTypeId);
+    $entity = $storage->load($this->entityId);
 
     // Ensure loading after a save retrieves the updated entity rather than an
     // obsolete cached one.
     $entity->label = 'New label';
     $entity->save();
-    $entity = entity_load($this->entityTypeId, $this->entityId);
+    $entity = $storage->load($this->entityId);
     $this->assertIdentical($entity->label, 'New label');
 
     // Ensure loading after a delete retrieves NULL rather than an obsolete
     // cached one.
     $entity->delete();
-    $this->assertNull(entity_load($this->entityTypeId, $this->entityId));
+    $this->assertNull($storage->load($this->entityId));
   }
 
   /**

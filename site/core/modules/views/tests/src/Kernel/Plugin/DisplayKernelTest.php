@@ -6,7 +6,7 @@ use Drupal\views\Views;
 use Drupal\Tests\views\Kernel\ViewsKernelTestBase;
 use Drupal\views\Plugin\views\style\StylePluginBase;
 use Drupal\views\Plugin\views\access\AccessPluginBase;
-use Drupal\views\Plugin\views\exposed_form\ExposedFormPluginBase;
+use Drupal\views\Plugin\views\exposed_form\ExposedFormPluginInterface;
 use Drupal\views\Plugin\views\pager\PagerPluginBase;
 use Drupal\views\Plugin\views\query\QueryPluginBase;
 use Drupal\views\Plugin\views\cache\CachePluginBase;
@@ -24,14 +24,14 @@ class DisplayKernelTest extends ViewsKernelTestBase {
    *
    * @var array
    */
-  public static $modules = array('block', 'node', 'field', 'user');
+  public static $modules = ['block', 'node', 'field', 'user'];
 
   /**
    * Views plugin types to test.
    *
    * @var array
    */
-  protected $pluginTypes = array(
+  protected $pluginTypes = [
     'access',
     'cache',
     'query',
@@ -39,24 +39,24 @@ class DisplayKernelTest extends ViewsKernelTestBase {
     'pager',
     'style',
     'row',
-  );
+  ];
 
   /**
    * Views handler types to test.
    *
    * @var array
    */
-  protected $handlerTypes = array(
+  protected $handlerTypes = [
     'fields',
     'sorts',
-  );
+  ];
 
   /**
    * Views used by this test.
    *
    * @var array
    */
-  public static $testViews = array('test_display_defaults');
+  public static $testViews = ['test_display_defaults'];
 
   /**
    * Tests the default display options.
@@ -96,7 +96,7 @@ class DisplayKernelTest extends ViewsKernelTestBase {
 
     $this->assertTrue($display_handler->getPlugin('access') instanceof AccessPluginBase, 'An access plugin instance was returned.');
     $this->assertTrue($display_handler->getPlugin('cache') instanceof CachePluginBase, 'A cache plugin instance was returned.');
-    $this->assertTrue($display_handler->getPlugin('exposed_form') instanceof ExposedFormPluginBase, 'An exposed_form plugin instance was returned.');
+    $this->assertTrue($display_handler->getPlugin('exposed_form') instanceof ExposedFormPluginInterface, 'An exposed_form plugin instance was returned.');
     $this->assertTrue($display_handler->getPlugin('pager') instanceof PagerPluginBase, 'A pager plugin instance was returned.');
     $this->assertTrue($display_handler->getPlugin('query') instanceof QueryPluginBase, 'A query plugin instance was returned.');
     $this->assertTrue($display_handler->getPlugin('row') instanceof RowPluginBase, 'A row plugin instance was returned.');
