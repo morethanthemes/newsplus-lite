@@ -42,6 +42,12 @@ function newsplus_lite_preprocess_html(&$variables) {
     $variables['#attached']['library'][] = 'newsplus_lite/bootstrap-cdn';
   }
 
+  //Load fixed-header library
+  $fixed_header = theme_get_setting('fixed_header');
+  if ($fixed_header) {
+    $variables['attributes']['class'][] = 'fixed-header-enabled';
+    $variables['#attached']['library'][] = 'newsplus_lite/fixed-header';
+  }
 }
 
 function newsplus_lite_preprocess_breadcrumb(&$variables){
@@ -149,12 +155,6 @@ function newsplus_lite_preprocess_page(&$variables) {
     $variables['footer_grid_class'] = 'col-sm-6';
   } else {
     $variables['footer_grid_class'] = 'col-sm-12';
-  }
-
-  //Load fixed-header library
-  $fixed_header = theme_get_setting('fixed_header');
-  if ($fixed_header) {
-    $variables['#attached']['library'][] = 'newsplus_lite/fixed-header';
   }
 
   //Load to-top library

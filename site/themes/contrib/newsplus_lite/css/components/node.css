@@ -146,6 +146,9 @@
   position: absolute;
   width: 60px;
 }
+.affix .submitted-info {
+  padding-top: 15px;
+}
 
 /* Node type: Article - Node info */
 .node-info {

@@ -2,10 +2,10 @@
   * Add Javascript - Fixed Header
   */
 jQuery(document).ready(function($) {
-  var preHeaderHeight = $("#pre-header").outerHeight(),
-  headerTopHeight = $("#header-top").outerHeight(),
-  headerHeight = $("#header").outerHeight();
-  $(window).load(function() {
+  var preHeaderHeight = $("#pre-header").outerHeight() || 0,
+  headerTopHeight = $("#header-top").outerHeight() || 0,
+  headerHeight = $("#header").outerHeight() || 0;
+  $(window).on("load", function (e) {
     if(($(window).width() > 767)) {
       $("body").addClass("fixed-header-enabled");
     } else {

@@ -97,6 +97,8 @@ magnific-popup-init:
     js/init/magnific-popup-init.js: { scope: 'footer' }
   dependencies:
     - newsplus_lite/magnific-popup
+    - core/drupal
+    - core/jquery.once
 
 fontawesome:
   version: 4.5.0
