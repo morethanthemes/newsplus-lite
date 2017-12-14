@@ -101,11 +101,10 @@ magnific-popup-init:
     - core/jquery.once
 
 fontawesome:
-  version: 4.5.0
-  remote: //maxcdn.bootstrapcdn.com/font-awesome/4.5.0/
-  css:
-    theme:
-      //maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css: {}
+  version: 4.7.0
+  remote: //use.fontawesome.com/
+  js:
+    //use.fontawesome.com/f479fb1064.js: {}
   license:
     name: MIT
     url: //opensource.org/licenses/mit-license.html
