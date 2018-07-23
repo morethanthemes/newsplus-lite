@@ -3,7 +3,7 @@ News+ Lite
 
 This repository contains the Drupal installation that runs at [drupalizing.com](http://drupalizing.com) and demonstrates the ["News+ Lite"](https://drupal.org/project/newsplus_lite) Drupal theme. We use this repository in order to maintain the above mentioned site and develop the corresponding theme. 
 
-You are welcome however to grab this code and have the demonstration site running on your end. By doing this you have the chance to see the ["News+ Lite" theme in action](http://demo.drupalizing.com/?theme=newsplus-lite) exactly the way it looks like on our demo.
+You are welcome however to grab this code and have the demonstration site running on your end. By doing this you have the chance to see the ["News+ Lite" theme in action](http://demo.drupalizing.com/newsplus-lite) exactly the way it looks like on our demo.
 
 Installation instructions
 --------------
