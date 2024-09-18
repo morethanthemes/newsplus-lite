@@ -8,6 +8,7 @@ use Drupal\entity_test\Entity\EntityTest;
  * Tests RDFa output by text field formatters.
  *
  * @group rdf
+ * @group legacy
  */
 class TextFieldRdfaTest extends FieldRdfaTestBase {
 
@@ -33,9 +34,12 @@ class TextFieldRdfaTest extends FieldRdfaTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['text', 'filter'];
+  protected static $modules = ['text', 'filter'];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installConfig(['filter']);

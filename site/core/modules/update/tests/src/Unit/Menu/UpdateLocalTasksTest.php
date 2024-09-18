@@ -11,7 +11,10 @@ use Drupal\Tests\Core\Menu\LocalTaskIntegrationTestBase;
  */
 class UpdateLocalTasksTest extends LocalTaskIntegrationTestBase {
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     $this->directoryList = ['update' => 'core/modules/update'];
     parent::setUp();
   }
@@ -47,7 +50,6 @@ class UpdateLocalTasksTest extends LocalTaskIntegrationTestBase {
     $this->assertLocalTasks($route, [
       0 => ['update.module_update'],
     ]);
-    ;
   }
 
   /**
@@ -68,7 +70,6 @@ class UpdateLocalTasksTest extends LocalTaskIntegrationTestBase {
     $this->assertLocalTasks($route, [
       0 => ['update.theme_update'],
     ]);
-    ;
   }
 
   /**

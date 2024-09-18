@@ -2,15 +2,17 @@
 
 namespace Drupal\comment\Plugin\Field\FieldType;
 
+use Drupal\comment\CommentInterface;
 use Drupal\comment\CommentManagerInterface;
 use Drupal\comment\Entity\CommentType;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Routing\UrlGeneratorTrait;
 use Drupal\Core\TypedData\DataDefinition;
 use Drupal\Core\Field\FieldItemBase;
 use Drupal\Core\Session\AnonymousUserSession;
+use Drupal\Core\Url;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Plugin implementation of the 'comment' field type.
@@ -26,7 +28,6 @@ use Drupal\Core\Session\AnonymousUserSession;
  * )
  */
 class CommentItem extends FieldItemBase implements CommentItemInterface {
-  use UrlGeneratorTrait;
 
   /**
    * {@inheritdoc}
@@ -45,7 +46,7 @@ class CommentItem extends FieldItemBase implements CommentItemInterface {
       'default_mode' => CommentManagerInterface::COMMENT_MODE_THREADED,
       'per_page' => 50,
       'form_location' => CommentItemInterface::FORM_BELOW,
-      'anonymous' => COMMENT_ANONYMOUS_MAYNOT_CONTACT,
+      'anonymous' => CommentInterface::ANONYMOUS_MAYNOT_CONTACT,
       'preview' => DRUPAL_OPTIONAL,
     ] + parent::defaultFieldSettings();
   }
@@ -55,26 +56,26 @@ class CommentItem extends FieldItemBase implements CommentItemInterface {
    */
   public static function propertyDefinitions(FieldStorageDefinitionInterface $field_definition) {
     $properties['status'] = DataDefinition::create('integer')
-      ->setLabel(t('Comment status'))
+      ->setLabel(new TranslatableMarkup('Comment status'))
       ->setRequired(TRUE);
 
     $properties['cid'] = DataDefinition::create('integer')
-      ->setLabel(t('Last comment ID'));
+      ->setLabel(new TranslatableMarkup('Last comment ID'));
 
     $properties['last_comment_timestamp'] = DataDefinition::create('integer')
-      ->setLabel(t('Last comment timestamp'))
-      ->setDescription(t('The time that the last comment was created.'));
+      ->setLabel(new TranslatableMarkup('Last comment timestamp'))
+      ->setDescription(new TranslatableMarkup('The time that the last comment was created.'));
 
     $properties['last_comment_name'] = DataDefinition::create('string')
-      ->setLabel(t('Last comment name'))
-      ->setDescription(t('The name of the user posting the last comment.'));
+      ->setLabel(new TranslatableMarkup('Last comment name'))
+      ->setDescription(new TranslatableMarkup('The name of the user posting the last comment.'));
 
     $properties['last_comment_uid'] = DataDefinition::create('integer')
-      ->setLabel(t('Last comment user ID'));
+      ->setLabel(new TranslatableMarkup('Last comment user ID'));
 
     $properties['comment_count'] = DataDefinition::create('integer')
-      ->setLabel(t('Number of comments'))
-      ->setDescription(t('The number of comments.'));
+      ->setLabel(new TranslatableMarkup('Number of comments'))
+      ->setDescription(new TranslatableMarkup('The number of comments.'));
 
     return $properties;
   }
@@ -108,43 +109,42 @@ class CommentItem extends FieldItemBase implements CommentItemInterface {
 
     $element['default_mode'] = [
       '#type' => 'checkbox',
-      '#title' => t('Threading'),
+      '#title' => $this->t('Threading'),
       '#default_value' => $settings['default_mode'],
-      '#description' => t('Show comment replies in a threaded list.'),
+      '#description' => $this->t('Show comment replies in a threaded list.'),
     ];
     $element['per_page'] = [
       '#type' => 'number',
-      '#title' => t('Comments per page'),
+      '#title' => $this->t('Comments per page'),
       '#default_value' => $settings['per_page'],
       '#required' => TRUE,
-      '#min' => 10,
+      '#min' => 1,
       '#max' => 1000,
-      '#step' => 10,
     ];
     $element['anonymous'] = [
       '#type' => 'select',
-      '#title' => t('Anonymous commenting'),
+      '#title' => $this->t('Anonymous commenting'),
       '#default_value' => $settings['anonymous'],
       '#options' => [
-        COMMENT_ANONYMOUS_MAYNOT_CONTACT => t('Anonymous posters may not enter their contact information'),
-        COMMENT_ANONYMOUS_MAY_CONTACT => t('Anonymous posters may leave their contact information'),
-        COMMENT_ANONYMOUS_MUST_CONTACT => t('Anonymous posters must leave their contact information'),
+        CommentInterface::ANONYMOUS_MAYNOT_CONTACT => $this->t('Anonymous posters may not enter their contact information'),
+        CommentInterface::ANONYMOUS_MAY_CONTACT => $this->t('Anonymous posters may leave their contact information'),
+        CommentInterface::ANONYMOUS_MUST_CONTACT => $this->t('Anonymous posters must leave their contact information'),
       ],
       '#access' => $anonymous_user->hasPermission('post comments'),
     ];
     $element['form_location'] = [
       '#type' => 'checkbox',
-      '#title' => t('Show reply form on the same page as comments'),
+      '#title' => $this->t('Show reply form on the same page as comments'),
       '#default_value' => $settings['form_location'],
     ];
     $element['preview'] = [
       '#type' => 'radios',
-      '#title' => t('Preview comment'),
+      '#title' => $this->t('Preview comment'),
       '#default_value' => $settings['preview'],
       '#options' => [
-        DRUPAL_DISABLED => t('Disabled'),
-        DRUPAL_OPTIONAL => t('Optional'),
-        DRUPAL_REQUIRED => t('Required'),
+        DRUPAL_DISABLED => $this->t('Disabled'),
+        DRUPAL_OPTIONAL => $this->t('Optional'),
+        DRUPAL_REQUIRED => $this->t('Required'),
       ],
     ];
 
@@ -186,10 +186,10 @@ class CommentItem extends FieldItemBase implements CommentItemInterface {
     }
     $element['comment_type'] = [
       '#type' => 'select',
-      '#title' => t('Comment type'),
+      '#title' => $this->t('Comment type'),
       '#options' => $options,
       '#required' => TRUE,
-      '#description' => $this->t('Select the Comment type to use for this comment field. Manage the comment types from the <a href=":url">administration overview page</a>.', [':url' => $this->url('entity.comment_type.collection')]),
+      '#description' => $this->t('Select the Comment type to use for this comment field. Manage the comment types from the <a href=":url">administration overview page</a>.', [':url' => Url::fromRoute('entity.comment_type.collection')->toString()]),
       '#default_value' => $this->getSetting('comment_type'),
       '#disabled' => $has_data,
     ];

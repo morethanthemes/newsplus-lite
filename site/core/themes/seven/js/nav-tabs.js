@@ -4,17 +4,14 @@
 * https://www.drupal.org/node/2815083
 * @preserve
 **/
-
 (function ($, Drupal) {
-  function init(i, tab) {
+  function init(tab) {
     var $tab = $(tab);
     var $target = $tab.find('[data-drupal-nav-tabs-target]');
     var isCollapsible = $tab.hasClass('is-collapsible');
-
     function openMenu(e) {
       $target.toggleClass('is-open');
     }
-
     function handleResize(e) {
       $tab.addClass('is-horizontal');
       var $tabs = $tab.find('.tabs');
@@ -27,21 +24,15 @@
         $target.removeClass('is-open');
       }
     }
-
     $tab.addClass('position-container is-horizontal-enabled');
-
     $tab.on('click.tabs', '[data-drupal-nav-tabs-trigger]', openMenu);
     $(window).on('resize.tabs', Drupal.debounce(handleResize, 150)).trigger('resize.tabs');
   }
-
   Drupal.behaviors.navTabs = {
     attach: function attach(context, settings) {
-      var $tabs = $(context).find('[data-drupal-nav-tabs]');
-      if ($tabs.length) {
-        var notSmartPhone = window.matchMedia('(min-width: 300px)');
-        if (notSmartPhone.matches) {
-          $tabs.once('nav-tabs').each(init);
-        }
+      var notSmartPhone = window.matchMedia('(min-width: 300px)');
+      if (notSmartPhone.matches) {
+        once('nav-tabs', '[data-drupal-nav-tabs]', context).forEach(init);
       }
     }
   };

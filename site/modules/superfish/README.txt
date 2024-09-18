@@ -1,80 +1,79 @@
-Superfish module
+CONTENTS OF THIS FILE
+---------------------
 
-About
------
-This module allows for integration of jQuery Superfish plug-in with Drupal CMS.
-
-
-Requirement
------------
-- Superfish library.
-  Link: https://github.com/mehrpadin/Superfish-for-Drupal/
+ * Introduction
+ * Requirements
+ * Recommended Modules
+ * Installation
+ * Configuration
+ * Maintainers
 
 
-Installation instructions (composer)
-------------------------------------
-0. You can skip this step if you use the popular
-   https://github.com/drupal-composer/drupal-project.
-   Otherwise check that your composer.json file has directives to install
-   libraries in the libraries directory like this:
-
-    "require": {
-      "composer/installers": "^1.0",
-    },
-    "extra": {
-        "installer-paths": {
-            "web/libraries/{$name}": ["type:drupal-library"]
-        }
-    }
-
-    This assumes that your drupal root resides in the "web" direectory.
-    If it is in another directory (e.g. "docroot"), change accordingly.
-
-1. Require the module
-
-    $ composer require drupal/superfish
-
-   Composer will then put the module *and* its library into the right places.
-
-2. Go to "Administer" -> "Modules" and enable the module.
-
-3. Go to "Administer" -> "Structure" -> "Block layout" -> click a "Place block"
-   button to add a Superfish block to a region.
-
-
-Installation instructions (manual)
-----------------------------------
-1. Download and extract the Superfish library into the libraries directory
-   (usually "DRUPAL_ROOT/libraries").
-   Link: https://github.com/mehrpadin/Superfish-for-Drupal/zipball/2.x
-
-2. Download and extract the Superfish module into the modules directory
-   (usually "DRUPAL_ROOT/modules").
-   Link: http://drupal.org/project/superfish
-
-3. Go to "Administer" -> "Modules" and enable the module.
-
-4. Go to "Administer" -> "Structure" -> "Block layout" -> click a "Place block"
-   button to add a Superfish block to a region.
-
-
-How to style
+INTRODUCTION
 ------------
 
-Here are some tips and tricks:
+This module allows for integration of jQuery Superfish plug-in with Drupal CMS.
 
-A) Utilise the "Default" style as reference.
+ * For a full description of the module, visit the project page:
+   https://www.drupal.org/project/superfish
 
-B) Always use a DOM inspector utility (such as Firebug).
-
-C) Set the "Menu delay" option in the block configuration to a very high number
-   such as 99999999 while creating your own CSS. This will give you enough time
-   to work with sub-menus.
-
-C) If your theme supports the Superfish module, set the "Style" option in the
-   block configuration to "None".
+ * To submit bug reports and feature suggestions, or to track changes:
+   https://www.drupal.org/project/issues/superfish
 
 
-Support requests
-----------------
-You can request support here: http://drupal.org/project/issues/superfish
+REQUIREMENTS
+------------
+
+This module requires the following outside of Drupal core:
+
+ * Superfish library - https://github.com/mehrpadin/Superfish-for-Drupal/
+
+
+RECOMMENDED MODULES
+-------------------
+
+ * Libraries API - https://www.drupal.org/project/libraries
+ * jQuery Easing plugin - https://www.drupal.org/project/jqeasing
+
+
+INSTALLATION
+------------
+
+ * Install the Superfish module as you would normally install a contributed
+   Drupal module. Visit
+   https://www.drupal.org/node/1897420 for further information.
+
+
+CONFIGURATION
+-------------
+
+    1. Navigate to Administration > Extend and enable the module.
+    2. Go to Administation > Structure > Block layout > select a Place block
+       button to add a Superfish block to a region.
+    3. Use the "Configure" link of the block to configure it accordingly to your
+       needs.
+
+How to style:
+    1. In the block configuration page, set the Style to None
+    2. Copy one of the Superfish sample styles, for example default.css from
+       sites/all/libraries/superfish/style to your theme; either as a separate
+       CSS file or part of the main CSS file of your theme.
+    3. Rename the selectors .sf-style-default to .sf-style-none or remove
+       them altogether.
+    4. You are now ready to unleash your CSS artistry :)
+
+Some design tips:
+ * Utilize a DOM inspector (such as Firefox Developer Tools) for temporarily
+   modifying live code in real time.
+ * Set the Mouse delay of the block settings to 99999999 so the sub-menus will
+   stay open for a longer time giving you more time to work with them in the
+   DOM inspector etc.
+   Useful links:
+	 https://docs.acquia.com/resource/browser-tool/
+	 https://www.drupal.org/node/147789#web-browser-tools
+
+
+MAINTAINERS
+-----------
+
+ * mehrpadin - https://www.drupal.org/u/mehrpadin

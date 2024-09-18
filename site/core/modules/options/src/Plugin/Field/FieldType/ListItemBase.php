@@ -2,20 +2,18 @@
 
 namespace Drupal\options\Plugin\Field\FieldType;
 
-use Drupal\Core\Field\AllowedTagsXssTrait;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\OptGroup;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\TypedData\OptionsProviderInterface;
 
 /**
  * Plugin base class inherited by the options field types.
  */
 abstract class ListItemBase extends FieldItemBase implements OptionsProviderInterface {
-
-  use AllowedTagsXssTrait;
 
   /**
    * {@inheritdoc}
@@ -67,6 +65,10 @@ abstract class ListItemBase extends FieldItemBase implements OptionsProviderInte
    */
   public static function generateSampleValue(FieldDefinitionInterface $field_definition) {
     $allowed_options = options_allowed_values($field_definition->getFieldStorageDefinition());
+    if (empty($allowed_options)) {
+      $values['value'] = NULL;
+      return $values;
+    }
     $values['value'] = array_rand($allowed_options);
     return $values;
   }
@@ -87,11 +89,11 @@ abstract class ListItemBase extends FieldItemBase implements OptionsProviderInte
 
     $element['allowed_values'] = [
       '#type' => 'textarea',
-      '#title' => t('Allowed values list'),
+      '#title' => $this->t('Allowed values list'),
       '#default_value' => $this->allowedValuesString($allowed_values),
       '#rows' => 10,
       '#access' => empty($allowed_values_function),
-      '#element_validate' => [[get_class($this), 'validateAllowedValues']],
+      '#element_validate' => [[static::class, 'validateAllowedValues']],
       '#field_has_data' => $has_data,
       '#field_name' => $this->getFieldDefinition()->getName(),
       '#entity_type' => $this->getEntity()->getEntityTypeId(),
@@ -102,8 +104,8 @@ abstract class ListItemBase extends FieldItemBase implements OptionsProviderInte
 
     $element['allowed_values_function'] = [
       '#type' => 'item',
-      '#title' => t('Allowed values list'),
-      '#markup' => t('The value of this field is being determined by the %function function and may not be changed.', ['%function' => $allowed_values_function]),
+      '#title' => $this->t('Allowed values list'),
+      '#markup' => $this->t('The value of this field is being determined by the %function function and may not be changed.', ['%function' => $allowed_values_function]),
       '#access' => !empty($allowed_values_function),
       '#value' => $allowed_values_function,
     ];
@@ -134,7 +136,7 @@ abstract class ListItemBase extends FieldItemBase implements OptionsProviderInte
     $values = static::extractAllowedValues($element['#value'], $element['#field_has_data']);
 
     if (!is_array($values)) {
-      $form_state->setError($element, t('Allowed values list: invalid input.'));
+      $form_state->setError($element, new TranslatableMarkup('Allowed values list: invalid input.'));
     }
     else {
       // Check that keys are valid for the field type.
@@ -149,7 +151,7 @@ abstract class ListItemBase extends FieldItemBase implements OptionsProviderInte
       if ($element['#field_has_data']) {
         $lost_keys = array_keys(array_diff_key($element['#allowed_values'], $values));
         if (_options_values_in_use($element['#entity_type'], $element['#field_name'], $lost_keys)) {
-          $form_state->setError($element, t('Allowed values list: some values are being removed while currently in use.'));
+          $form_state->setError($element, new TranslatableMarkup('Allowed values list: some values are being removed while currently in use.'));
         }
       }
 

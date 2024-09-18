@@ -4,8 +4,7 @@
 * https://www.drupal.org/node/2815083
 * @preserve
 **/
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
+function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
 (function (Drupal, Backbone) {
   Drupal.quickedit.BaseModel = Backbone.Model.extend({
     initialize: function initialize(options) {
@@ -14,7 +13,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     },
     set: function set(key, val, options) {
       if (this.__initialized) {
-        if ((typeof key === 'undefined' ? 'undefined' : _typeof(key)) === 'object') {
+        if (_typeof(key) === 'object') {
           key.validate = true;
         } else {
           if (!options) {

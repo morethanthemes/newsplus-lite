@@ -3,6 +3,7 @@
 namespace Drupal\Core\Entity;
 
 use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Access\AccessResultReasonInterface;
 use Drupal\Core\Routing\Access\AccessInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Session\AccountInterface;
@@ -35,7 +36,7 @@ class EntityCreateAnyAccessCheck implements AccessInterface {
   protected $requirementsKey = '_entity_create_any_access';
 
   /**
-   * Constructs a EntityCreateAnyAccessCheck object.
+   * Constructs an EntityCreateAnyAccessCheck object.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
@@ -78,23 +79,30 @@ class EntityCreateAnyAccessCheck implements AccessInterface {
     if ($entity_type->getBundleEntityType()) {
       $access->addCacheTags($this->entityTypeManager->getDefinition($entity_type->getBundleEntityType())->getListCacheTags());
 
-      // Check if the user is allowed to create new bundles. If so, allow
-      // access, so the add page can show a link to create one.
-      // @see \Drupal\Core\Entity\Controller\EntityController::addPage()
-      $bundle_access_control_handler = $this->entityTypeManager->getAccessControlHandler($entity_type->getBundleEntityType());
-      $access = $access->orIf($bundle_access_control_handler->createAccess(NULL, $account, [], TRUE));
-      if ($access->isAllowed()) {
-        return $access;
+      if (empty($route->getOption('_ignore_create_bundle_access'))) {
+        // Check if the user is allowed to create new bundles. If so, allow
+        // access, so the add page can show a link to create one.
+        // @see \Drupal\Core\Entity\Controller\EntityController::addPage()
+        $bundle_access_control_handler = $this->entityTypeManager->getAccessControlHandler($entity_type->getBundleEntityType());
+        $access = $access->orIf($bundle_access_control_handler->createAccess(NULL, $account, [], TRUE));
+        if ($access->isAllowed()) {
+          return $access;
+        }
       }
     }
 
     // Check whether an entity of any bundle may be created.
     foreach ($bundles as $bundle) {
-      $access = $access->orIf($access_control_handler->createAccess($bundle, $account, [], TRUE));
-      // In case there is a least one bundle user can create entities for,
+      $bundle_access = $access_control_handler->createAccess($bundle, $account, [], TRUE);
+      $access->inheritCacheability($bundle_access);
+      if ($bundle_access instanceof AccessResultReasonInterface && $bundle_access->getReason() !== "" && $access->getReason() === "") {
+        $access->setReason($bundle_access->getReason());
+      }
+
+      // In case there is at least one bundle the user can create entities for,
       // access is allowed.
-      if ($access->isAllowed()) {
-        break;
+      if ($bundle_access->isAllowed()) {
+        return AccessResult::allowed()->inheritCacheability($access);
       }
     }
 

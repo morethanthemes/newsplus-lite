@@ -19,7 +19,7 @@ class LanguageDomainsTest extends MigrateProcessTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     $configuration = [
       'key' => 'language',
       'value' => 'domain',
@@ -32,7 +32,7 @@ class LanguageDomainsTest extends MigrateProcessTestCase {
     // to return TRUE to be able to test the process.
     $this->row->expects($this->once())
       ->method('getSourceProperty')
-      ->will($this->returnValue(TRUE));
+      ->willReturn(TRUE);
 
     // The language_domains plugin use $base_url to fill empty domains.
     global $base_url;
@@ -55,7 +55,7 @@ class LanguageDomainsTest extends MigrateProcessTestCase {
       'es' => 'es.example.com',
       'hu' => 'hu.example.com',
     ];
-    $value = $this->plugin->transform($source, $this->migrateExecutable, $this->row, 'destinationproperty');
+    $value = $this->plugin->transform($source, $this->migrateExecutable, $this->row, 'destination_property');
     $this->assertSame($value, $expected);
   }
 

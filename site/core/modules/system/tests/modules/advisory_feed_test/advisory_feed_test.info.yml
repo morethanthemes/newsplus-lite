@@ -1,0 +1,9 @@
+name: 'Advisory feed test'
+type: module
+description: 'Support module for advisory feed testing.'
+package: Testing
+
+# Information added by Drupal.org packaging script on 2023-09-20
+version: '9.5.11'
+project: 'drupal'
+datestamp: 1695228127

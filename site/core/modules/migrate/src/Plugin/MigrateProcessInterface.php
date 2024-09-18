@@ -9,11 +9,9 @@ use Drupal\migrate\Row;
 /**
  * An interface for migrate process plugins.
  *
- * A process plugin can use any number of methods instead of (but not in
- * addition to) transform with the same arguments and then the plugin
- * configuration needs to provide the name of the method to be called via the
- * "method" key. See \Drupal\migrate\Plugin\migrate\process\SkipOnEmpty and
- * migrate.migration.d6_field_instance_widget_settings.yml for examples.
+ * Migrate process plugins transform the input value.For example, transform a
+ * human provided name into a machine name, look up an identifier in a previous
+ * migration and so on.
  *
  * @see \Drupal\migrate\Plugin\MigratePluginManager
  * @see \Drupal\migrate\ProcessPluginBase
@@ -39,7 +37,7 @@ interface MigrateProcessInterface extends PluginInspectionInterface {
    *   The destination property currently worked on. This is only used together
    *   with the $row above.
    *
-   * @return string|array
+   * @return mixed
    *   The newly transformed value.
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property);

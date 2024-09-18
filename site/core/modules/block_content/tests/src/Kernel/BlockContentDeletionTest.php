@@ -6,6 +6,7 @@ use Drupal\block_content\Entity\BlockContent;
 use Drupal\block_content\Entity\BlockContentType;
 use Drupal\Component\Plugin\PluginBase;
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\Tests\block\Traits\BlockCreationTrait;
 
 /**
  * Tests that deleting a block clears the cached definitions.
@@ -14,17 +15,18 @@ use Drupal\KernelTests\KernelTestBase;
  */
 class BlockContentDeletionTest extends KernelTestBase {
 
-  /**
-   * {@inheritdoc}
-   */
-  public static $modules = ['block', 'block_content', 'system', 'user'];
+  use BlockCreationTrait;
 
   /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  protected static $modules = ['block', 'block_content', 'system', 'user'];
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUp(): void {
     parent::setUp();
-    $this->installSchema('system', ['sequence']);
     $this->installEntitySchema('user');
     $this->installEntitySchema('block_content');
   }
@@ -58,6 +60,24 @@ class BlockContentDeletionTest extends KernelTestBase {
     $block_content->delete();
     // The plugin should no longer exist.
     $this->assertFalse($block_manager->hasDefinition($plugin_id));
+
+    // Create another block content entity.
+    $block_content = BlockContent::create([
+      'info' => 'Spiffy prototype',
+      'type' => 'spiffy',
+    ]);
+    $block_content->save();
+
+    $plugin_id = 'block_content' . PluginBase::DERIVATIVE_SEPARATOR . $block_content->uuid();
+    $block = $this->placeBlock($plugin_id, ['region' => 'content']);
+
+    // Delete it via storage.
+    $storage = $this->container->get('entity_type.manager')->getStorage('block_content');
+    $storage->delete([$block_content]);
+    // The plugin should no longer exist.
+    $this->assertFalse($block_manager->hasDefinition($plugin_id));
+
+    $this->assertNull($this->container->get('entity_type.manager')->getStorage('block')->loadUnchanged($block->id()));
   }
 
 }

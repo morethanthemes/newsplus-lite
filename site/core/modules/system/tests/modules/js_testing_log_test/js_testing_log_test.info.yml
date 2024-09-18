@@ -1,0 +1,10 @@
+name: 'JS Deprecation log test'
+description: 'Stores all JS deprecation calls to allow JS tests to determine if they have been called.'
+type: module
+package: Testing
+# version: VERSION
+
+# Information added by Drupal.org packaging script on 2023-09-20
+version: '9.5.11'
+project: 'drupal'
+datestamp: 1695228127

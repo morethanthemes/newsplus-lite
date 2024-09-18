@@ -17,7 +17,7 @@ use Drupal\serialization\Encoder\XmlEncoder;
 use Drupal\Tests\UnitTestCase;
 use Prophecy\Argument;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Serializer\Serializer;
@@ -39,7 +39,7 @@ class ResourceResponseSubscriberTest extends UnitTestCase {
 
     $handler_response = new ResourceResponse($data);
     $resource_response_subscriber = $this->getFunctioningResourceResponseSubscriber($route_match);
-    $event = new FilterResponseEvent(
+    $event = new ResponseEvent(
       $this->prophesize(HttpKernelInterface::class)->reveal(),
       $request,
       HttpKernelInterface::MASTER_REQUEST,
@@ -57,6 +57,7 @@ class ResourceResponseSubscriberTest extends UnitTestCase {
       'default' => [NULL, ''],
       'empty string' => [''],
       'simple string' => ['string'],
+      // cSpell:disable-next-line
       'complex string' => ['Complex \ string $%^&@ with unicode ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΣὨ'],
       'empty array' => [[]],
       'numeric array' => [['test']],
@@ -135,14 +136,14 @@ class ResourceResponseSubscriberTest extends UnitTestCase {
       $route_match = new RouteMatch('test', new Route('/rest/test', ['_rest_resource_config' => $this->randomMachineName()], $route_requirements));
 
       // The RequestHandler must return a ResourceResponseInterface object.
-      $handler_response = new ResourceResponse($method !== 'DELETE' ? ['REST' => 'Drupal'] : NULL);
+      $handler_response = new ResourceResponse(['REST' => 'Drupal']);
       $this->assertInstanceOf(ResourceResponseInterface::class, $handler_response);
       $this->assertInstanceOf(CacheableResponseInterface::class, $handler_response);
 
       // The ResourceResponseSubscriber must then generate a response body and
       // transform it to a plain CacheableResponse object.
       $resource_response_subscriber = $this->getFunctioningResourceResponseSubscriber($route_match);
-      $event = new FilterResponseEvent(
+      $event = new ResponseEvent(
         $this->prophesize(HttpKernelInterface::class)->reveal(),
         $request,
         HttpKernelInterface::MASTER_REQUEST,
@@ -185,14 +186,14 @@ class ResourceResponseSubscriberTest extends UnitTestCase {
       $route_match = new RouteMatch('test', new Route('/rest/test', ['_rest_resource_config' => $this->randomMachineName()], $route_requirements));
 
       // The RequestHandler must return a ResourceResponseInterface object.
-      $handler_response = new ModifiedResourceResponse($method !== 'DELETE' ? ['REST' => 'Drupal'] : NULL);
+      $handler_response = new ModifiedResourceResponse(['REST' => 'Drupal']);
       $this->assertInstanceOf(ResourceResponseInterface::class, $handler_response);
       $this->assertNotInstanceOf(CacheableResponseInterface::class, $handler_response);
 
       // The ResourceResponseSubscriber must then generate a response body and
       // transform it to a plain Response object.
       $resource_response_subscriber = $this->getFunctioningResourceResponseSubscriber($route_match);
-      $event = new FilterResponseEvent(
+      $event = new ResponseEvent(
         $this->prophesize(HttpKernelInterface::class)->reveal(),
         $request,
         HttpKernelInterface::MASTER_REQUEST,
@@ -343,7 +344,7 @@ class ResourceResponseSubscriberTest extends UnitTestCase {
     ];
 
     $unsafe_method_bodyless_test_cases = [
-      'unsafe methods without response bodies (DELETE): client requested no format, response should have no format' => [
+      'unsafe methods without request bodies (DELETE): client requested no format, response should have the first acceptable format' => [
         ['DELETE'],
         ['xml', 'json'],
         ['xml', 'json'],
@@ -351,10 +352,10 @@ class ResourceResponseSubscriberTest extends UnitTestCase {
         ['Content-Type' => 'application/json'],
         NULL,
         'xml',
-        NULL,
-        '',
+        'text/xml',
+        $xml_encoded,
       ],
-      'unsafe methods without response bodies (DELETE): client requested format (XML), response should have no format' => [
+      'unsafe methods without request bodies (DELETE): client requested format (XML), response should have xml format' => [
         ['DELETE'],
         ['xml', 'json'],
         ['xml', 'json'],
@@ -362,10 +363,10 @@ class ResourceResponseSubscriberTest extends UnitTestCase {
         ['Content-Type' => 'application/json'],
         NULL,
         'xml',
-        NULL,
-        '',
+        'text/xml',
+        $xml_encoded,
       ],
-      'unsafe methods without response bodies (DELETE): client requested format (JSON), response should have no format' => [
+      'unsafe methods without request bodies (DELETE): client requested format (JSON), response should have json format' => [
         ['DELETE'],
         ['xml', 'json'],
         ['xml', 'json'],
@@ -373,8 +374,8 @@ class ResourceResponseSubscriberTest extends UnitTestCase {
         ['Content-Type' => 'application/json'],
         NULL,
         'json',
-        NULL,
-        '',
+        'application/json',
+        $json_encoded,
       ],
     ];
 

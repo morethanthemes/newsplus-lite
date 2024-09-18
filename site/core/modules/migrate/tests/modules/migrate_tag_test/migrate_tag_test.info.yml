@@ -1,0 +1,12 @@
+name: Migration Tag Test
+type: module
+description: Provide migrations for testing 'migration_tags' property
+package: Testing
+# version: VERSION
+dependencies:
+  - drupal:migrate
+
+# Information added by Drupal.org packaging script on 2023-09-20
+version: '9.5.11'
+project: 'drupal'
+datestamp: 1695228127

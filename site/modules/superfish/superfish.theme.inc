@@ -9,7 +9,8 @@ use Drupal\Core\Url;
 use Drupal\Core\Menu\InaccessibleMenuLink;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Component\Utility\Html;
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Render\FormattableMarkup;
+use Drupal\Core\Template\Attribute;
 
 /**
  * Prepares variables for the Superfish menu template.
@@ -54,7 +55,7 @@ function template_preprocess_superfish(array &$variables) {
   else {
     $menu_classes[] = Html::cleanCssIdentifier($element['#settings']['ulclass']);
   }
-  $menu_classes = implode(' ', sf_array_filter($menu_classes));
+  $menu_classes = implode(' ', superfish_array_filter($menu_classes));
 
   $variables['id'] = $element['#html_id'];
   $variables['menu_classes'] = $menu_classes;
@@ -100,13 +101,13 @@ function template_preprocess_superfish_menu_items(array &$variables) {
   $active_trails = \Drupal::service('menu.active_trail')
     ->getActiveTrailIds($element['#menu_name']);
 
-  foreach ($menu as $key => $menu_item) {
+  foreach ($menu as $menu_item) {
 
     if (NULL !== $menu_item->link &&
         !($menu_item->link instanceof InaccessibleMenuLink)) {
 
       $item_class = $link_class = [];
-      $multicolumn_wrapper = $multicolumn_column = $multicolumn_content = FALSE;
+      $multicolumn_wrapper = $multicolumn_column = $multicolumn_content = $nolink = FALSE;
 
       // Menu link properties.
       $link = $menu_item->link->getPluginDefinition();
@@ -125,17 +126,24 @@ function template_preprocess_superfish_menu_items(array &$variables) {
         'inActiveTrail' => $menu_item->inActiveTrail,
       ];
 
-      if ($menu_item->link->getUrlObject()->isRouted()) {
+      if ($item['url']->isRouted()) {
         // Adding the "is-active" class.
         $host = \Drupal::request()->getHttpHost();
         $request_uri = \Drupal::request()->getRequestUri();
         $current_url = Url::fromRoute('<current>');
         $current_path = $current_url->toString();
         $link_url = $item['url']->toString();
+        // Anchor links.
+        if (strpos($link_url, '#') !== FALSE) {
+          $link_url = explode('#', $link_url);
+          $link_url = $link_url[0];
+        }
+
         if ($link_url == $current_path || $link_url == $request_uri ||
             $link_url == $host . $request_uri) {
           $link_class[] = 'is-active';
         }
+        $nolink = $item['url']->getRouteName() === '<nolink>' ? TRUE : FALSE;
       }
 
       // Adding the necessary "active-trail" class.
@@ -228,7 +236,7 @@ function template_preprocess_superfish_menu_items(array &$variables) {
 
         // sfTouchscreen.
         // Preparing the cloned parent links to be added to the sub-menus.
-        if ($settings['clone_parent'] && $item['subtree']) {
+        if ($settings['clone_parent'] && $item['subtree'] && !$nolink) {
           $cloned_parent = $menu_item;
           $cloned_parent->subtree = [];
         }
@@ -257,7 +265,7 @@ function template_preprocess_superfish_menu_items(array &$variables) {
       }
 
       // Preparing <li> classes for the theme.
-      $item_class = implode(' ', sf_array_filter($item_class));
+      $item_class = implode(' ', superfish_array_filter($item_class));
 
       // Merging link classes.
       if (isset($item['options']['attributes']['class'])) {
@@ -267,31 +275,51 @@ function template_preprocess_superfish_menu_items(array &$variables) {
         }
         $link_class = array_merge(
           $link_class_current,
-          sf_array_filter($link_class)
+          superfish_array_filter($link_class)
         );
       }
-      $item['options']['attributes']['class'] = sf_array_filter($link_class);
+      $item['options']['attributes']['class'] = superfish_array_filter($link_class);
 
       // Dirty fix! to only add a "menuparent" class.
       $item['options_menuparent'] = $item['options'];
       $item['options_menuparent']['attributes']['class'][] = 'menuparent';
+      if ($nolink) {
+        $item['options_menuparent']['attributes']['class'][] = 'nolink';
+      }
       $link_element = [
         '#type' => 'link',
-        '#title' => SafeMarkup::format($link_text, $link_text_replace),
+        '#title' => new FormattableMarkup($link_text, $link_text_replace),
         '#url' => $item['url'],
         '#options' => $item['options'],
       ];
       $link_element_menuparent = [
         '#type' => 'link',
-        '#title' => SafeMarkup::format($link_text, $link_text_replace),
+        '#title' => new FormattableMarkup($link_text, $link_text_replace),
         '#url' => $item['url'],
         '#options' => $item['options_menuparent'],
       ];
 
-      $id = $element['#menu_name'] . '-' . $item['id'];
+      $item_attributes = new Attribute();
+      if (isset($item['options']['item_attributes'])) {
+        foreach ($item['options']['item_attributes'] as $name => $value) {
+          $value = trim($value);
+          if ($value) {
+            $item_attributes->offsetSet($name, $value);
+          }
+        }
+      }
+
+      $id = Html::getUniqueId($element['#menu_name'] . '-' . $item['id']);
+      if (!$item_attributes->offsetGet('id')) {
+        $item_attributes->offsetSet('id', $id);
+      }
+
+      if ($item_class) {
+        $item_attributes->offsetSet('class', trim($item_attributes->offsetGet('class') . ' ' . $item_class));
+      }
+
       $variables['menu_items'][] = [
-        'id'                  => Html::getUniqueId($id),
-        'item_class'          => $item_class,
+        'attributes'          => $item_attributes,
         'link'                => $link_element,
         'link_menuparent'     => $link_element_menuparent,
         'children'            => $children,

@@ -6,7 +6,6 @@ use Drupal\Component\Plugin\Exception\PluginNotFoundException;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Entity\DynamicallyFieldableEntityStorageInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
@@ -60,7 +59,7 @@ class FieldDefinitionListenerTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->keyValueFactory = $this->prophesize(KeyValueFactoryInterface::class);
@@ -72,21 +71,17 @@ class FieldDefinitionListenerTest extends UnitTestCase {
   }
 
   /**
-   * Sets up the entity manager to be tested.
+   * Sets up the entity type manager to be tested.
    *
    * @param \Drupal\Core\Entity\EntityTypeInterface[]|\Prophecy\Prophecy\ProphecyInterface[] $definitions
    *   (optional) An array of entity type definitions.
    */
-  protected function setUpEntityManager($definitions = []) {
-    $class = $this->getMockClass(EntityInterface::class);
+  protected function setUpEntityTypeManager($definitions = []) {
     foreach ($definitions as $key => $entity_type) {
       // \Drupal\Core\Entity\EntityTypeInterface::getLinkTemplates() is called
-      // by \Drupal\Core\Entity\EntityManager::processDefinition() so it must
+      // by \Drupal\Core\Entity\EntityTypeManager::processDefinition() so it must
       // always be mocked.
       $entity_type->getLinkTemplates()->willReturn([]);
-
-      // Give the entity type a legitimate class to return.
-      $entity_type->getClass()->willReturn($class);
 
       $definitions[$key] = $entity_type->reveal();
     }
@@ -123,7 +118,7 @@ class FieldDefinitionListenerTest extends UnitTestCase {
     $this->entityTypeManager->getStorage('test_entity_type')->willReturn($storage->reveal());
 
     $entity = $this->prophesize(EntityTypeInterface::class);
-    $this->setUpEntityManager(['test_entity_type' => $entity]);
+    $this->setUpEntityTypeManager(['test_entity_type' => $entity]);
 
     // Set up the stored bundle field map.
     $key_value_store = $this->prophesize(KeyValueStoreInterface::class);
@@ -153,7 +148,7 @@ class FieldDefinitionListenerTest extends UnitTestCase {
     $this->entityTypeManager->getStorage('test_entity_type')->willReturn($storage->reveal());
 
     $entity = $this->prophesize(EntityTypeInterface::class);
-    $this->setUpEntityManager(['test_entity_type' => $entity]);
+    $this->setUpEntityTypeManager(['test_entity_type' => $entity]);
 
     // Set up the stored bundle field map.
     $key_value_store = $this->prophesize(KeyValueStoreInterface::class);
@@ -187,7 +182,7 @@ class FieldDefinitionListenerTest extends UnitTestCase {
     $this->entityTypeManager->getStorage('test_entity_type')->willReturn($storage->reveal());
 
     $entity = $this->prophesize(EntityTypeInterface::class);
-    $this->setUpEntityManager(['test_entity_type' => $entity]);
+    $this->setUpEntityTypeManager(['test_entity_type' => $entity]);
 
     $this->fieldDefinitionListener->onFieldDefinitionUpdate($field_definition->reveal(), $field_definition->reveal());
   }
@@ -206,7 +201,7 @@ class FieldDefinitionListenerTest extends UnitTestCase {
     $this->entityTypeManager->getStorage('test_entity_type')->willReturn($storage->reveal());
 
     $entity = $this->prophesize(EntityTypeInterface::class);
-    $this->setUpEntityManager(['test_entity_type' => $entity]);
+    $this->setUpEntityTypeManager(['test_entity_type' => $entity]);
 
     // Set up the stored bundle field map.
     $key_value_store = $this->prophesize(KeyValueStoreInterface::class);
@@ -232,7 +227,6 @@ class FieldDefinitionListenerTest extends UnitTestCase {
     $this->fieldDefinitionListener->onFieldDefinitionDelete($field_definition->reveal());
   }
 
-
   /**
    * @covers ::onFieldDefinitionDelete
    */
@@ -247,7 +241,7 @@ class FieldDefinitionListenerTest extends UnitTestCase {
     $this->entityTypeManager->getStorage('test_entity_type')->willReturn($storage->reveal());
 
     $entity = $this->prophesize(EntityTypeInterface::class);
-    $this->setUpEntityManager(['test_entity_type' => $entity]);
+    $this->setUpEntityTypeManager(['test_entity_type' => $entity]);
 
     // Set up the stored bundle field map.
     $key_value_store = $this->prophesize(KeyValueStoreInterface::class);

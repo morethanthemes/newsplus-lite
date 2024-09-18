@@ -1,9 +1,11 @@
 name: Classy
 type: theme
+base theme: stable
+lifecycle: deprecated
+lifecycle_link: https://drupal.org/node/3223395#s-classy
 description: 'A base theme with sensible default CSS classes added. Learn how to use Classy as a base theme in the <a href="https://www.drupal.org/docs/8/theming">Drupal 8 Theming Guide</a>.'
 package: Core
 # version: VERSION
-# core: 8.x
 hidden: true
 
 libraries:
@@ -22,9 +24,17 @@ libraries-extend:
     - classy/file
   core/drupal.progress:
     - classy/progress
+  media/media_embed_ckeditor_theme:
+    - classy/media_embed_ckeditor_theme
+  media_library/view:
+    - classy/media_library
+  media_library/widget:
+    - classy/media_library
 
-# Information added by Drupal.org packaging script on 2018-06-06
-version: '8.5.4'
-core: '8.x'
+ckeditor_stylesheets:
+  - css/components/media-embed-error.css
+
+# Information added by Drupal.org packaging script on 2023-09-20
+version: '9.5.11'
 project: 'drupal'
-datestamp: 1528319624
+datestamp: 1695228127

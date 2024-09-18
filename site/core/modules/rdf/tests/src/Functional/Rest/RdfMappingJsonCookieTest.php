@@ -6,6 +6,7 @@ use Drupal\Tests\rest\Functional\CookieResourceTestTrait;
 
 /**
  * @group rest
+ * @group legacy
  */
 class RdfMappingJsonCookieTest extends RdfMappingResourceTestBase {
 
@@ -25,5 +26,10 @@ class RdfMappingJsonCookieTest extends RdfMappingResourceTestBase {
    * {@inheritdoc}
    */
   protected static $auth = 'cookie';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
 }

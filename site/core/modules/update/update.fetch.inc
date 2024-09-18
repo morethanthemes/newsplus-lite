@@ -5,6 +5,8 @@
  * Code required only when fetching information about available updates.
  */
 
+use Drupal\update\UpdateManagerInterface;
+
 /**
  * Performs any notifications that should be done once cron fetches new data.
  *
@@ -16,14 +18,14 @@
  */
 function _update_cron_notify() {
   $update_config = \Drupal::config('update.settings');
-  module_load_install('update');
+  \Drupal::moduleHandler()->loadInclude('update', 'install');
   $status = update_requirements('runtime');
   $params = [];
   $notify_all = ($update_config->get('notification.threshold') == 'all');
   foreach (['core', 'contrib'] as $report_type) {
     $type = 'update_' . $report_type;
     if (isset($status[$type]['severity'])
-        && ($status[$type]['severity'] == REQUIREMENT_ERROR || ($notify_all && $status[$type]['reason'] == UPDATE_NOT_CURRENT))) {
+        && ($status[$type]['severity'] == REQUIREMENT_ERROR || ($notify_all && $status[$type]['reason'] == UpdateManagerInterface::NOT_CURRENT))) {
       $params[$report_type] = $status[$type]['reason'];
     }
   }
@@ -31,6 +33,7 @@ function _update_cron_notify() {
     $notify_list = $update_config->get('notification.emails');
     if (!empty($notify_list)) {
       $default_langcode = \Drupal::languageManager()->getDefaultLanguage()->getId();
+      $request_time = \Drupal::time()->getRequestTime();
       foreach ($notify_list as $target) {
         if ($target_user = user_load_by_mail($target)) {
           $target_langcode = $target_user->getPreferredLangcode();
@@ -42,7 +45,7 @@ function _update_cron_notify() {
         // Track when the last mail was successfully sent to avoid sending
         // too many emails.
         if ($message['result']) {
-          \Drupal::state()->set('update.last_email_notification', REQUEST_TIME);
+          \Drupal::state()->set('update.last_email_notification', $request_time);
         }
       }
     }

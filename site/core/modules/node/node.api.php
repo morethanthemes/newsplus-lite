@@ -8,7 +8,6 @@
 use Drupal\node\NodeInterface;
 use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\Xss;
-use Drupal\Core\Access\AccessResult;
 
 /**
  * @addtogroup hooks
@@ -23,11 +22,8 @@ use Drupal\Core\Access\AccessResult;
  * "realms". In hook_node_access_records(), the realms and grant IDs are
  * associated with permission to view, edit, and delete individual nodes.
  *
- * The realms and grant IDs can be arbitrarily defined by your node access
- * module; it is common to use role IDs as grant IDs, but that is not required.
- * Your module could instead maintain its own list of users, where each list has
- * an ID. In that case, the return value of this hook would be an array of the
- * list IDs that this user is a member of.
+ * Grant IDs can be arbitrarily defined by a node access module using a list of
+ * integer IDs associated with users.
  *
  * A node access module may implement as many realms as necessary to properly
  * define the access privileges for the nodes. Note that the system makes no
@@ -51,7 +47,7 @@ use Drupal\Core\Access\AccessResult;
  *   'grant_update' => 0,
  *   'grant_delete' => 0,
  * );
- * db_insert('node_access')->fields($record)->execute();
+ * \Drupal::database()->insert('node_access')->fields($record)->execute();
  * @endcode
  * And then in its hook_node_grants() implementation, it would need to return:
  * @code
@@ -63,8 +59,6 @@ use Drupal\Core\Access\AccessResult;
  * will erase any node ID 0 entry when it is called, so you will need to make
  * sure to restore your {node_access} record after node_access_rebuild() is
  * called.
- *
- * For a detailed example, see node_access_example.module.
  *
  * @param \Drupal\Core\Session\AccountInterface $account
  *   The account object whose grants are requested.
@@ -148,7 +142,7 @@ function hook_node_grants(\Drupal\Core\Session\AccountInterface $account, $op) {
  * @param \Drupal\node\NodeInterface $node
  *   The node that has just been saved.
  *
- * @return
+ * @return array|null
  *   An array of grants as defined above.
  *
  * @see hook_node_access_records_alter()
@@ -169,13 +163,13 @@ function hook_node_access_records(\Drupal\node\NodeInterface $node) {
         'grant_view' => 1,
         'grant_update' => 0,
         'grant_delete' => 0,
-        'langcode' => 'ca'
+        'langcode' => 'ca',
       ];
     }
     // For the example_author array, the GID is equivalent to a UID, which
     // means there are many groups of just 1 user.
-    // Note that an author can always view his or her nodes, even if they
-    // have status unpublished.
+    // Note that an author can always view nodes they own, even if they have
+    // status unpublished.
     if ($node->getOwnerId()) {
       $grants[] = [
         'realm' => 'example_author',
@@ -183,7 +177,7 @@ function hook_node_access_records(\Drupal\node\NodeInterface $node) {
         'grant_view' => 1,
         'grant_update' => 1,
         'grant_delete' => 1,
-        'langcode' => 'ca'
+        'langcode' => 'ca',
       ];
     }
 
@@ -222,7 +216,7 @@ function hook_node_access_records(\Drupal\node\NodeInterface $node) {
  * @see hook_node_grants_alter()
  * @ingroup node_access
  */
-function hook_node_access_records_alter(&$grants, Drupal\node\NodeInterface $node) {
+function hook_node_access_records_alter(&$grants, \Drupal\node\NodeInterface $node) {
   // Our module allows editors to mark specific articles with the 'is_preview'
   // field. If the node being saved has a TRUE value for that field, then only
   // our grants are retained, and other grants are removed. Doing so ensures
@@ -287,73 +281,6 @@ function hook_node_grants_alter(&$grants, \Drupal\Core\Session\AccountInterface 
 }
 
 /**
- * Controls access to a node.
- *
- * Modules may implement this hook if they want to have a say in whether or not
- * a given user has access to perform a given operation on a node.
- *
- * The administrative account (user ID #1) always passes any access check, so
- * this hook is not called in that case. Users with the "bypass node access"
- * permission may always view and edit content through the administrative
- * interface.
- *
- * Note that not all modules will want to influence access on all node types. If
- * your module does not want to explicitly allow or forbid access, return an
- * AccessResultInterface object with neither isAllowed() nor isForbidden()
- * equaling TRUE. Blindly returning an object with isForbidden() equaling TRUE
- * will break other node access modules.
- *
- * Also note that this function isn't called for node listings (e.g., RSS feeds,
- * the default home page at path 'node', a recent content block, etc.) See
- * @link node_access Node access rights @endlink for a full explanation.
- *
- * @param \Drupal\node\NodeInterface|string $node
- *   Either a node entity or the machine name of the content type on which to
- *   perform the access check.
- * @param string $op
- *   The operation to be performed. Possible values:
- *   - "create"
- *   - "delete"
- *   - "update"
- *   - "view"
- * @param \Drupal\Core\Session\AccountInterface $account
- *   The user object to perform the access check operation on.
- *
- * @return \Drupal\Core\Access\AccessResultInterface
- *   The access result.
- *
- * @ingroup node_access
- */
-function hook_node_access(\Drupal\node\NodeInterface $node, $op, \Drupal\Core\Session\AccountInterface $account) {
-  $type = $node->bundle();
-
-  switch ($op) {
-    case 'create':
-      return AccessResult::allowedIfHasPermission($account, 'create ' . $type . ' content');
-
-    case 'update':
-      if ($account->hasPermission('edit any ' . $type . ' content', $account)) {
-        return AccessResult::allowed()->cachePerPermissions();
-      }
-      else {
-        return AccessResult::allowedIf($account->hasPermission('edit own ' . $type . ' content', $account) && ($account->id() == $node->getOwnerId()))->cachePerPermissions()->cachePerUser()->addCacheableDependency($node);
-      }
-
-    case 'delete':
-      if ($account->hasPermission('delete any ' . $type . ' content', $account)) {
-        return AccessResult::allowed()->cachePerPermissions();
-      }
-      else {
-        return AccessResult::allowedIf($account->hasPermission('delete own ' . $type . ' content', $account) && ($account->id() == $node->getOwnerId()))->cachePerPermissions()->cachePerUser()->addCacheableDependency($node);
-      }
-
-    default:
-      // No opinion.
-      return AccessResult::neutral();
-  }
-}
-
-/**
  * Act on a node being displayed as a search result.
  *
  * This hook is invoked from the node search plugin during search execution,
@@ -374,7 +301,7 @@ function hook_node_access(\Drupal\node\NodeInterface $node, $op, \Drupal\Core\Se
  * @ingroup entity_crud
  */
 function hook_node_search_result(\Drupal\node\NodeInterface $node) {
-  $rating = db_query('SELECT SUM(points) FROM {my_rating} WHERE nid = :nid', ['nid' => $node->id()])->fetchField();
+  $rating = \Drupal::database()->query('SELECT SUM([points]) FROM {my_rating} WHERE [nid] = :nid', ['nid' => $node->id()])->fetchField();
   return ['rating' => \Drupal::translation()->formatPlural($rating, '1 point', '@count points')];
 }
 
@@ -394,7 +321,7 @@ function hook_node_search_result(\Drupal\node\NodeInterface $node) {
  */
 function hook_node_update_index(\Drupal\node\NodeInterface $node) {
   $text = '';
-  $ratings = db_query('SELECT title, description FROM {my_ratings} WHERE nid = :nid', [':nid' => $node->id()]);
+  $ratings = \Drupal::database()->query('SELECT [title], [description] FROM {my_ratings} WHERE [nid] = :nid', [':nid' => $node->id()]);
   foreach ($ratings as $rating) {
     $text .= '<h2>' . Html::escape($rating->title) . '</h2>' . Xss::filter($rating->description);
   }

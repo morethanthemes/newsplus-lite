@@ -1,0 +1,11 @@
+name: 'Configuration Storage Transformer Test'
+type: module
+package: Testing
+# version: VERSION
+dependencies:
+  - drupal:config
+
+# Information added by Drupal.org packaging script on 2023-09-20
+version: '9.5.11'
+project: 'drupal'
+datestamp: 1695228127

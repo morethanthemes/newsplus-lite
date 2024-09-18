@@ -4,15 +4,23 @@
 * https://www.drupal.org/node/2815083
 * @preserve
 **/
-
 if (window.jQuery) {
   jQuery.noConflict();
 }
-
 document.documentElement.className += ' js';
-
-(function (domready, Drupal, drupalSettings) {
-  domready(function () {
+(function (Drupal, drupalSettings) {
+  var domReady = function domReady(callback) {
+    var listener = function listener() {
+      callback();
+      document.removeEventListener('DOMContentLoaded', listener);
+    };
+    if (document.readyState !== 'loading') {
+      setTimeout(callback, 0);
+    } else {
+      document.addEventListener('DOMContentLoaded', listener);
+    }
+  };
+  domReady(function () {
     Drupal.attachBehaviors(document, drupalSettings);
   });
-})(domready, Drupal, window.drupalSettings);
+})(Drupal, window.drupalSettings);

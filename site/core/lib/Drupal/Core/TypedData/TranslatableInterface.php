@@ -4,6 +4,21 @@ namespace Drupal\Core\TypedData;
 
 /**
  * Interface for translatable data.
+ *
+ * Classes implementing this interface do not necessarily support translations.
+ *
+ * To detect whether an entity type supports translation, call
+ * EntityTypeInterface::isTranslatable().
+ *
+ * Many entity interfaces are composed of numerous other interfaces such as this
+ * one, which allow implementations to pick and choose which features to support
+ * through stub implementations of various interface methods. This means that
+ * even if an entity class implements TranslatableInterface, it might only have
+ * a stub implementation and not a functional one.
+ *
+ * @see \Drupal\Core\Entity\EntityTypeInterface::isTranslatable()
+ * @see https://www.drupal.org/docs/8/api/entity-api/structure-of-an-entity-annotation
+ * @see https://www.drupal.org/docs/8/api/entity-api/entity-translation-api
  */
 interface TranslatableInterface {
 
@@ -54,7 +69,7 @@ interface TranslatableInterface {
    *   LanguageInterface::LANGCODE_DEFAULT
    *   to get the data in default language.
    *
-   * @return $this
+   * @return \Drupal\Core\Entity\ContentEntityInterface
    *   A typed data object for the translated data.
    *
    * @throws \InvalidArgumentException
@@ -63,9 +78,9 @@ interface TranslatableInterface {
   public function getTranslation($langcode);
 
   /**
-   * Returns the translatable object referring to the original language.
+   * Returns the translatable object in the language it was created.
    *
-   * @return $this
+   * @return \Drupal\Core\Entity\ContentEntityInterface
    *   The translation object referring to the original language.
    */
   public function getUntranslated();
@@ -84,13 +99,19 @@ interface TranslatableInterface {
   /**
    * Adds a new translation to the translatable object.
    *
+   * To create a translation of an entity prefilled with the original data:
+   * @code
+   *   $entity->addTranslation($langcode, $entity->toArray())
+   * @endcode
+   *
    * @param string $langcode
    *   The language code identifying the translation.
    * @param array $values
    *   (optional) An array of initial values to be assigned to the translatable
    *   fields. Defaults to none.
    *
-   * @return $this
+   * @return \Drupal\Core\Entity\ContentEntityInterface
+   *   A new entity translation object.
    *
    * @throws \InvalidArgumentException
    *   If an invalid or existing translation language is specified.

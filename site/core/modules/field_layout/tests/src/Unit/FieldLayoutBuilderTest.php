@@ -46,7 +46,7 @@ class FieldLayoutBuilderTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->pluginDefinition = new LayoutDefinition([
@@ -143,7 +143,10 @@ class FieldLayoutBuilderTest extends UnitTestCase {
             '#markup' => 'Test1',
           ],
         ],
-        '#settings' => [],
+        '#in_preview' => FALSE,
+        '#settings' => [
+          'label' => '',
+        ],
         '#layout' => $this->pluginDefinition,
         '#theme' => 'layout__twocol',
         '#attached' => [
@@ -241,7 +244,10 @@ class FieldLayoutBuilderTest extends UnitTestCase {
           '#process' => ['\Drupal\Core\Render\Element\RenderElement::processGroup'],
           '#pre_render' => ['\Drupal\Core\Render\Element\RenderElement::preRenderGroup'],
         ],
-        '#settings' => [],
+        '#in_preview' => FALSE,
+        '#settings' => [
+          'label' => '',
+        ],
         '#layout' => $this->pluginDefinition,
         '#theme' => 'layout__twocol',
         '#attached' => [

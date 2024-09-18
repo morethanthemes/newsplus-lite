@@ -1,4 +1,4 @@
-All Drupal code is Copyright 2001 - 2013 by the original authors.
+All Drupal code is Copyright 2001 - 2020 by the original authors.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,49 +20,58 @@ Drupal includes works under other copyright notices and distributed
 according to the terms of the GNU General Public License or a compatible
 license, including:
 
-Javascript
+JavaScript
+
+  Backbone - Copyright (c) 2010 Jeremy Ashkenas and DocumentCloud
+
+  CKEditor - Copyright (c) 2003 CKSource Holding sp. z o.o.
+
+  CKEditor5 - Copyright (c) 2003 CKSource Holding sp. z o.o.
+
+  CSS.escape polyfill - Copyright (c) Mathias Bynens
+
+  ES6-Promise - Copyright (c) 2014 Yehuda Katz, Tom Dale, Stefan Penner and contributors
 
   Farbtastic - Copyright (c) 2010 Matt Farina
 
-  HTML5 Shiv - Copyright (c) 2012  Alexander Farkas, Jonathan Neal, Paul Irish,
-    and John-David Dalton
+  JavaScript Cookie - Copyright (c) 2006 Klaus Hartl & Fagner Brack
 
-  jQuery - Copyright (c) 2011 John Resig
+  jQuery - Copyright (c) OpenJS Foundation and other contributors
 
-  jQuery Bgiframe - Copyright (c) 2010 Brandon Aaron (http://brandonaaron.net)
+  jQuery Form - Copyright (c) 2017 Kevin Morris
 
-  jQuery BBQ - Copyright (c) 2010 "Cowboy" Ben Alman
+  jQuery Joyride - Copyright (c) 2013 ZURB
 
-  jQuery Cookie - Copyright (c) 2010 Klaus Hartl
+  jQuery Once - Copyright (c) 2016 Rob Loach
 
-  jQuery Form - Copyright (c) 2011 Mike Alsup
+  jQuery UI - Copyright (c) OpenJS Foundation and other contributors
 
-  jQuery Globalize - Copyright (c) 2012 Software Freedom Conservancy, Inc.
+  LoadJS - Copyright (c) 2015 Andres Morey
 
-  jQuery Mousewheel - Copyright (c) 2010 Brandon Aaron
-    (http://brandonaaron.net)
+  Modernizr - Copyright (c) 2021 The Modernizr Team
 
-  jQuery Metadata - Copyright (c) 2006 John Resig, Yehuda Katz, Jörn Zaefferer,
-    Paul McLanahan
+  Picturefill -  Copyright (c) 2014 Filament Group
 
-  jQuery Once - Copyright (c) 2009 Konstantin Käfer
+  Popperjs - Copyright (c) 2019 Federico Zivolo
 
-  jQuery UI - Copyright (c) 2012 by the original authors
-    (http://jqueryui.com/about)
+  Shepherd - Copyright (c) 2021
 
-  Sizzle.js - Copyright (c) 2011 The Dojo Foundation (http://sizzlejs.com/)
+  Sortable - Copyright (c) 2019 All contributors to Sortable
+
+  Tabbable - Copyright (c) 2015 David Clark
+
+  Underscore - Copyright (c) 2009 Jeremy Ashkenas, Julian Gonggrijp, and DocumentCloud and Investigative Reporters & Editors
+
+CSS
+
+  Normalize.css - Copyright (c) Nicolas Gallagher and Jonathan Neal
 
 PHP
 
-  ArchiveTar - Copyright (c) 1997 - 2008 Vincent Blavet
+  Drupal depends on numerous PHP Composer packages. All Composer packages
+    retain the copyright of the authors.
 
-  Doctrine Common - Copyright (c) 2006 - 2012 Alexander Mols, Benjamin Eberlei,
-    Fabio B. Silva, Guilherme Blanco, Johannes M. Schmitt, Jonathan Wage,
-    Lukas K. Smith, Marco Pivetta et al.
+Brand materials
 
-  Symfony2 - Copyright (c) 2004 - 2012 Fabien Potencier
-    - YUI - Copyright (c) 2010 Yahoo! Inc.
-    - Zend Framework (1.10dev - 2010-01-24) - Copyright (c) 2005-2010 Zend
-      Technologies USA Inc. (http://www.zend.com)
-
-  Twig - Copyright (c) 2009 Twig Team
+  Drupal brand materials under core/misc/logo have a dedicated license. See
+  core/misc/logo/LICENSE.txt.

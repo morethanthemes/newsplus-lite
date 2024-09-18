@@ -4,11 +4,9 @@
 * https://www.drupal.org/node/2815083
 * @preserve
 **/
-
 (function ($, Backbone, Drupal) {
   Drupal.quickedit.FieldDecorationView = Backbone.View.extend({
     _widthAttributeIsEmpty: null,
-
     events: {
       'mouseenter.quickedit': 'onMouseEnter',
       'mouseleave.quickedit': 'onMouseLeave',
@@ -16,10 +14,8 @@
       'tabIn.quickedit': 'onMouseEnter',
       'tabOut.quickedit': 'onMouseLeave'
     },
-
     initialize: function initialize(options) {
       this.editorView = options.editorView;
-
       this.listenTo(this.model, 'change:state', this.stateChange);
       this.listenTo(this.model, 'change:isChanged change:inTempStore', this.renderChanged);
     },
@@ -34,7 +30,6 @@
         case 'inactive':
           this.undecorate();
           break;
-
         case 'candidate':
           this.decorate();
           if (from !== 'inactive') {
@@ -46,15 +41,12 @@
           }
           this._unpad();
           break;
-
         case 'highlighted':
           this.startHighlight();
           break;
-
         case 'activating':
           this.prepareEdit();
           break;
-
         case 'active':
           if (from !== 'activating') {
             this.prepareEdit();
@@ -63,17 +55,13 @@
             this._pad();
           }
           break;
-
         case 'changed':
           this.model.set('isChanged', true);
           break;
-
         case 'saving':
           break;
-
         case 'saved':
           break;
-
         case 'invalid':
           break;
       }
@@ -88,7 +76,9 @@
     },
     onMouseLeave: function onMouseLeave(event) {
       var that = this;
-      that.model.set('state', 'candidate', { reason: 'mouseleave' });
+      that.model.set('state', 'candidate', {
+        reason: 'mouseleave'
+      });
       event.stopPropagation();
     },
     onClick: function onClick(event) {
@@ -104,7 +94,6 @@
     },
     startHighlight: function startHighlight() {
       var that = this;
-
       that.$el.addClass('quickedit-highlighted');
     },
     stopHighlight: function stopHighlight() {
@@ -112,18 +101,15 @@
     },
     prepareEdit: function prepareEdit() {
       this.$el.addClass('quickedit-editing');
-
       if (this.editorView.getQuickEditUISettings().popup) {
         this.$el.addClass('quickedit-editor-is-popup');
       }
     },
     stopEdit: function stopEdit() {
       this.$el.removeClass('quickedit-highlighted quickedit-editing');
-
       if (this.editorView.getQuickEditUISettings().popup) {
         this.$el.removeClass('quickedit-editor-is-popup');
       }
-
       $('.quickedit-candidate').addClass('quickedit-editable');
     },
     _pad: function _pad() {
@@ -131,25 +117,22 @@
         return;
       }
       var self = this;
-
       if (this.$el[0].style.width === '') {
         this._widthAttributeIsEmpty = true;
         this.$el.addClass('quickedit-animate-disable-width').css('width', this.$el.width());
       }
-
       var posProp = this._getPositionProperties(this.$el);
       setTimeout(function () {
         self.$el.removeClass('quickedit-animate-disable-width');
-
         self.$el.css({
           position: 'relative',
-          top: posProp.top - 5 + 'px',
-          left: posProp.left - 5 + 'px',
-          'padding-top': posProp['padding-top'] + 5 + 'px',
-          'padding-left': posProp['padding-left'] + 5 + 'px',
-          'padding-right': posProp['padding-right'] + 5 + 'px',
-          'padding-bottom': posProp['padding-bottom'] + 5 + 'px',
-          'margin-bottom': posProp['margin-bottom'] - 10 + 'px'
+          top: "".concat(posProp.top - 5, "px"),
+          left: "".concat(posProp.left - 5, "px"),
+          'padding-top': "".concat(posProp['padding-top'] + 5, "px"),
+          'padding-left': "".concat(posProp['padding-left'] + 5, "px"),
+          'padding-right': "".concat(posProp['padding-right'] + 5, "px"),
+          'padding-bottom': "".concat(posProp['padding-bottom'] + 5, "px"),
+          'margin-bottom': "".concat(posProp['margin-bottom'] - 10, "px")
         }).data('quickedit-padded', true);
       }, 0);
     },
@@ -158,34 +141,29 @@
         return;
       }
       var self = this;
-
       if (this._widthAttributeIsEmpty) {
         this.$el.addClass('quickedit-animate-disable-width').css('width', '');
       }
-
       var posProp = this._getPositionProperties(this.$el);
       setTimeout(function () {
         self.$el.removeClass('quickedit-animate-disable-width');
-
         self.$el.css({
           position: 'relative',
-          top: posProp.top + 5 + 'px',
-          left: posProp.left + 5 + 'px',
-          'padding-top': posProp['padding-top'] - 5 + 'px',
-          'padding-left': posProp['padding-left'] - 5 + 'px',
-          'padding-right': posProp['padding-right'] - 5 + 'px',
-          'padding-bottom': posProp['padding-bottom'] - 5 + 'px',
-          'margin-bottom': posProp['margin-bottom'] + 10 + 'px'
+          top: "".concat(posProp.top + 5, "px"),
+          left: "".concat(posProp.left + 5, "px"),
+          'padding-top': "".concat(posProp['padding-top'] - 5, "px"),
+          'padding-left': "".concat(posProp['padding-left'] - 5, "px"),
+          'padding-right': "".concat(posProp['padding-right'] - 5, "px"),
+          'padding-bottom': "".concat(posProp['padding-bottom'] - 5, "px"),
+          'margin-bottom': "".concat(posProp['margin-bottom'] + 10, "px")
         });
       }, 0);
-
       this.$el.removeData('quickedit-padded');
     },
     _getPositionProperties: function _getPositionProperties($e) {
-      var p = void 0;
+      var p;
       var r = {};
       var props = ['top', 'left', 'bottom', 'right', 'padding-top', 'padding-left', 'padding-right', 'padding-bottom', 'margin-bottom'];
-
       var propCount = props.length;
       for (var i = 0; i < propCount; i++) {
         p = props[i];

@@ -10,6 +10,7 @@ use Drupal\KernelTests\KernelTestBase;
  * @coversDefaultClass \Drupal\ckeditor\Plugin\CKEditorPlugin\Internal
  *
  * @group ckeditor
+ * @group legacy
  */
 class InternalTest extends KernelTestBase {
 
@@ -18,7 +19,7 @@ class InternalTest extends KernelTestBase {
    *
    * @var array
    */
-  public static $modules = [
+  protected static $modules = [
     'ckeditor',
     'ckeditor_test',
     'filter',
@@ -49,7 +50,7 @@ class InternalTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installEntitySchema('editor');
     $this->installEntitySchema('filter_format');
@@ -84,7 +85,7 @@ class InternalTest extends KernelTestBase {
   }
 
   /**
-   * Test the format tags settings.
+   * Tests the format tags settings.
    *
    * @dataProvider formatTagsSettingsTestCases
    */

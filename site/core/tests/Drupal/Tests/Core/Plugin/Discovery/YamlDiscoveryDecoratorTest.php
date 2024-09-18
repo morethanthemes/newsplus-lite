@@ -33,7 +33,10 @@ class YamlDiscoveryDecoratorTest extends UnitTestCase {
     'decorated_2' => 'decorated_test_2',
   ];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $base_path = __DIR__ . '/Fixtures';
@@ -56,10 +59,10 @@ class YamlDiscoveryDecoratorTest extends UnitTestCase {
       ],
     ];
 
-    $decorated = $this->getMock('Drupal\Component\Plugin\Discovery\DiscoveryInterface');
+    $decorated = $this->createMock('Drupal\Component\Plugin\Discovery\DiscoveryInterface');
     $decorated->expects($this->once())
       ->method('getDefinitions')
-      ->will($this->returnValue($definitions));
+      ->willReturn($definitions);
 
     $this->discoveryDecorator = new YamlDiscoveryDecorator($decorated, 'test', $directories);
   }
@@ -70,7 +73,7 @@ class YamlDiscoveryDecoratorTest extends UnitTestCase {
   public function testGetDefinitions() {
     $definitions = $this->discoveryDecorator->getDefinitions();
 
-    $this->assertInternalType('array', $definitions);
+    $this->assertIsArray($definitions);
     $this->assertCount(6, $definitions);
 
     foreach ($this->expectedKeys as $expected_key) {

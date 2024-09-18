@@ -14,7 +14,7 @@
     "issues": "https://www.drupal.org/project/superfish",
     "source": "https://cgit.drupalcode.org/superfish"
   },
-  "license": "GPL-2.0+",
+  "license": "GPL-2.0-or-later",
   "require": {
     "mehrpadin/superfish": "~2.0"
   }

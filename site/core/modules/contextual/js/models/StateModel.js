@@ -4,21 +4,15 @@
 * https://www.drupal.org/node/2815083
 * @preserve
 **/
-
 (function (Drupal, Backbone) {
   Drupal.contextual.StateModel = Backbone.Model.extend({
     defaults: {
       title: '',
-
       regionIsHovered: false,
-
       hasFocus: false,
-
       isOpen: false,
-
       isLocked: false
     },
-
     toggleOpen: function toggleOpen() {
       var newIsOpen = !this.get('isOpen');
       this.set('isOpen', newIsOpen);

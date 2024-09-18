@@ -1,0 +1,12 @@
+name: 'Content moderation test re-save'
+type: module
+description: 'Re-saves moderated entities for testing purposes.'
+package: Testing
+# version: VERSION
+dependencies:
+  - drupal:content_moderation
+
+# Information added by Drupal.org packaging script on 2023-09-20
+version: '9.5.11'
+project: 'drupal'
+datestamp: 1695228127

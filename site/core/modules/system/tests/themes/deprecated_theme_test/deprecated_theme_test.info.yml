@@ -1,0 +1,12 @@
+name: 'Deprecated theme test'
+type: theme
+description: 'Deprecated test theme.'
+# version: VERSION
+lifecycle: deprecated
+lifecycle_link: 'https://example.com/deprecated'
+base theme: false
+
+# Information added by Drupal.org packaging script on 2023-09-20
+version: '9.5.11'
+project: 'drupal'
+datestamp: 1695228127

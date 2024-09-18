@@ -2,14 +2,15 @@
 
 namespace Drupal\workflows;
 
-use Drupal\Component\Plugin\ConfigurablePluginInterface;
+use Drupal\Component\Plugin\ConfigurableInterface;
+use Drupal\Component\Plugin\DependentPluginInterface;
 use Drupal\Component\Plugin\DerivativeInspectionInterface;
 use Drupal\Core\Plugin\PluginWithFormsInterface;
 
 /**
  * An interface for Workflow type plugins.
  */
-interface WorkflowTypeInterface extends PluginWithFormsInterface, DerivativeInspectionInterface, ConfigurablePluginInterface {
+interface WorkflowTypeInterface extends PluginWithFormsInterface, DerivativeInspectionInterface, ConfigurableInterface, DependentPluginInterface {
 
   /**
    * The key of the global workflow plugin form.
@@ -175,7 +176,7 @@ interface WorkflowTypeInterface extends PluginWithFormsInterface, DerivativeInsp
    * @param string $state_id
    *   The state ID to delete.
    *
-   * @return \Drupal\workflows\WorkflowTypeInterface
+   * @return $this
    *   The workflow type plugin.
    *
    * @throws \InvalidArgumentException
@@ -243,7 +244,7 @@ interface WorkflowTypeInterface extends PluginWithFormsInterface, DerivativeInsp
   public function getTransitions(array $transition_ids = NULL);
 
   /**
-   * Gets the transition IDs for a state for the provided direction.
+   * Gets the transitions for a state for the provided direction.
    *
    * @param $state_id
    *   The state to get transitions for.
@@ -252,8 +253,9 @@ interface WorkflowTypeInterface extends PluginWithFormsInterface, DerivativeInsp
    *   TransitionInterface::DIRECTION_FROM. Possible values are:
    *   TransitionInterface::DIRECTION_FROM or TransitionInterface::DIRECTION_TO.
    *
-   * @return array
-   *   The transition IDs for a state for the provided direction.
+   * @return \Drupal\workflows\TransitionInterface[]
+   *   An array of the transition objects for the state in the given direction,
+   *   keyed by transition ID.
    *
    * @see \Drupal\workflows\TransitionInterface::DIRECTION_FROM
    * @see \Drupal\workflows\TransitionInterface::DIRECTION_TO

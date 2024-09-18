@@ -15,7 +15,12 @@ class ContentTranslationRevisionTranslationDeletionTest extends ContentTranslati
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
     $this->enableContentModeration();
   }
@@ -56,7 +61,8 @@ class ContentTranslationRevisionTranslationDeletionTest extends ContentTranslati
 
     // Add a draft translation and check that it is available only in the latest
     // revision.
-    $add_translation_url = Url::fromRoute("entity.{$this->entityTypeId}.content_translation_add", [
+    $add_translation_url = Url::fromRoute("entity.{$this->entityTypeId}.content_translation_add",
+      [
         $entity->getEntityTypeId() => $id,
         'source' => 'en',
         'target' => 'it',
@@ -72,7 +78,7 @@ class ContentTranslationRevisionTranslationDeletionTest extends ContentTranslati
       'title[0][value]' => "Test $index.2 IT",
       'moderation_state[0][state]' => 'draft',
     ];
-    $this->drupalPostForm(NULL, $edit, t('Save (this translation)'));
+    $this->submitForm($edit, 'Save (this translation)');
     $entity = $this->storage->loadUnchanged($id);
     $this->assertFalse($entity->hasTranslation('it'));
     $it_revision = $this->loadRevisionTranslation($entity, 'it');
@@ -85,7 +91,7 @@ class ContentTranslationRevisionTranslationDeletionTest extends ContentTranslati
     $it_delete_href = $it_delete_url->toString();
     $this->assertSession()->linkByHrefNotExists($it_delete_href);
     $warning = 'The "Delete translation" action is only available for published translations.';
-    $this->assertSession()->pageTextContains($warning);
+    $this->assertSession()->statusMessageContains($warning, 'warning');
     $this->drupalGet($this->getEditUrl($it_revision));
     $this->assertSession()->buttonNotExists('Delete translation');
 
@@ -94,14 +100,14 @@ class ContentTranslationRevisionTranslationDeletionTest extends ContentTranslati
       'title[0][value]' => "Test $index.3 IT",
       'moderation_state[0][state]' => 'published',
     ];
-    $this->drupalPostForm(NULL, $edit, t('Save (this translation)'));
+    $this->submitForm($edit, 'Save (this translation)');
     $entity = $this->storage->loadUnchanged($id);
     $this->assertTrue($entity->hasTranslation('it'));
     $it_revision = $this->loadRevisionTranslation($entity, 'it');
     $this->assertTrue($it_revision->hasTranslation('it'));
     $this->drupalGet($overview_url);
     $this->assertSession()->linkByHrefExists($it_delete_href);
-    $this->assertSession()->pageTextNotContains($warning);
+    $this->assertSession()->statusMessageNotContains($warning);
     $this->drupalGet($this->getEditUrl($it_revision));
     $this->assertSession()->buttonExists('Delete translation');
 
@@ -114,7 +120,7 @@ class ContentTranslationRevisionTranslationDeletionTest extends ContentTranslati
       'title[0][value]' => "Test $index.4 EN",
       'moderation_state[0][state]' => 'draft',
     ];
-    $this->drupalPostForm(NULL, $edit, t('Save (this translation)'));
+    $this->submitForm($edit, 'Save (this translation)');
     $entity = $this->storage->loadUnchanged($id);
     $this->assertTrue($entity->hasTranslation('it'));
     $en_revision = $this->loadRevisionTranslation($entity, 'en');
@@ -124,13 +130,13 @@ class ContentTranslationRevisionTranslationDeletionTest extends ContentTranslati
     // Delete the translation and verify that it is actually gone and that it is
     // possible to create it again.
     $this->drupalGet($it_delete_url);
-    $this->drupalPostForm(NULL, [], 'Delete Italian translation');
+    $this->submitForm([], 'Delete Italian translation');
     $entity = $this->storage->loadUnchanged($id);
     $this->assertFalse($entity->hasTranslation('it'));
     $it_revision = $this->loadRevisionTranslation($entity, 'it');
     $this->assertTrue($it_revision->wasDefaultRevision());
     $this->assertTrue($it_revision->hasTranslation('it'));
-    $this->assertTrue($it_revision->getRevisionId() < $entity->getRevisionId());
+    $this->assertLessThan($entity->getRevisionId(), $it_revision->getRevisionId());
     $this->drupalGet($overview_url);
     $this->assertSession()->linkByHrefNotExists($this->getEditUrl($it_revision)->toString());
     $this->assertSession()->linkByHrefExists($add_translation_href);
@@ -144,7 +150,7 @@ class ContentTranslationRevisionTranslationDeletionTest extends ContentTranslati
       'title[0][value]' => "Test $index.6 EN",
       'moderation_state[0][state]' => 'published',
     ];
-    $this->drupalPostForm(NULL, $edit, t('Save'));
+    $this->submitForm($edit, 'Save');
     $entity = $this->storage->loadUnchanged($id);
     $this->assertFalse($entity->hasTranslation('it'));
     $this->drupalLogin($this->currentAccount);
@@ -155,7 +161,7 @@ class ContentTranslationRevisionTranslationDeletionTest extends ContentTranslati
       'title[0][value]' => "Test $index.7 IT",
       'moderation_state[0][state]' => 'published',
     ];
-    $this->drupalPostForm(NULL, $edit, t('Save (this translation)'));
+    $this->submitForm($edit, 'Save (this translation)');
     $entity = $this->storage->loadUnchanged($id);
     $this->assertTrue($entity->hasTranslation('it'));
     $it_revision = $this->loadRevisionTranslation($entity, 'it');
@@ -169,7 +175,7 @@ class ContentTranslationRevisionTranslationDeletionTest extends ContentTranslati
       'title[0][value]' => "Test $index.8 IT",
       'moderation_state[0][state]' => 'draft',
     ];
-    $this->drupalPostForm(NULL, $edit, t('Save (this translation)'));
+    $this->submitForm($edit, 'Save (this translation)');
     $entity = $this->storage->loadUnchanged($id);
     $this->assertTrue($entity->hasTranslation('it'));
     $it_revision = $this->loadRevisionTranslation($entity, 'it');
@@ -181,7 +187,8 @@ class ContentTranslationRevisionTranslationDeletionTest extends ContentTranslati
     // again, since the active revision is now a default revision.
     $this->drupalLogin($this->editor);
     $this->drupalGet($it_revision->toUrl('version-history'));
-    $revision_deletion_url = Url::fromRoute('node.revision_delete_confirm', [
+    $revision_deletion_url = Url::fromRoute('node.revision_delete_confirm',
+      [
         'node' => $id,
         'node_revision' => $it_revision->getRevisionId(),
       ],
@@ -192,20 +199,20 @@ class ContentTranslationRevisionTranslationDeletionTest extends ContentTranslati
     );
     $revision_deletion_href = $revision_deletion_url->toString();
     $this->getSession()->getDriver()->click("//a[@href='$revision_deletion_href']");
-    $this->drupalPostForm(NULL, [], 'Delete');
+    $this->submitForm([], 'Delete');
     $this->drupalLogin($this->currentAccount);
     $this->drupalGet($overview_url);
     $this->assertSession()->linkByHrefExists($it_delete_href);
 
     // Verify that now the translation can be deleted.
     $this->drupalGet($it_delete_url);
-    $this->drupalPostForm(NULL, [], 'Delete Italian translation');
+    $this->submitForm([], 'Delete Italian translation');
     $entity = $this->storage->loadUnchanged($id);
     $this->assertFalse($entity->hasTranslation('it'));
     $it_revision = $this->loadRevisionTranslation($entity, 'it');
     $this->assertTrue($it_revision->wasDefaultRevision());
     $this->assertTrue($it_revision->hasTranslation('it'));
-    $this->assertTrue($it_revision->getRevisionId() < $entity->getRevisionId());
+    $this->assertLessThan($entity->getRevisionId(), $it_revision->getRevisionId());
     $this->drupalGet($overview_url);
     $this->assertSession()->linkByHrefNotExists($this->getEditUrl($it_revision)->toString());
     $this->assertSession()->linkByHrefExists($add_translation_href);

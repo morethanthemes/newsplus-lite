@@ -20,11 +20,14 @@ class PagerPluginBaseTest extends UnitTestCase {
   /**
    * The mock pager plugin instance.
    *
-   * @var \Drupal\views\Plugin\views\pager\PagerPluginBase|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\views\Plugin\views\pager\PagerPluginBase|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $pager;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     $this->pager = $this->getMockBuilder('Drupal\views\Plugin\views\pager\PagerPluginBase')
       ->disableOriginalConstructor()
       ->getMockForAbstractClass();
@@ -196,7 +199,7 @@ class PagerPluginBaseTest extends UnitTestCase {
       // Now we are on the second page, which has just a single one left.
       [5, 6, 1, FALSE],
       // Increase the total items, so we have some available on the third page.
-      [5, 12, 1, TRUE]
+      [5, 12, 1, TRUE],
     ];
   }
 
@@ -206,11 +209,11 @@ class PagerPluginBaseTest extends UnitTestCase {
    * @see \Drupal\views\Plugin\views\pager\PagerPluginBase::executeCountQuery()
    */
   public function testExecuteCountQueryWithoutOffset() {
-    $statement = $this->getMock('\Drupal\Tests\views\Unit\Plugin\pager\TestStatementInterface');
+    $statement = $this->createMock('\Drupal\Tests\views\Unit\Plugin\pager\TestStatementInterface');
 
     $statement->expects($this->once())
       ->method('fetchField')
-      ->will($this->returnValue(3));
+      ->willReturn(3);
 
     $query = $this->getMockBuilder('\Drupal\Core\Database\Query\Select')
       ->disableOriginalConstructor()
@@ -218,7 +221,7 @@ class PagerPluginBaseTest extends UnitTestCase {
 
     $query->expects($this->once())
       ->method('execute')
-      ->will($this->returnValue($statement));
+      ->willReturn($statement);
 
     $this->pager->setOffset(0);
     $this->assertEquals(3, $this->pager->executeCountQuery($query));
@@ -230,11 +233,11 @@ class PagerPluginBaseTest extends UnitTestCase {
    * @see \Drupal\views\Plugin\views\pager\PagerPluginBase::executeCountQuery()
    */
   public function testExecuteCountQueryWithOffset() {
-    $statement = $this->getMock('\Drupal\Tests\views\Unit\Plugin\pager\TestStatementInterface');
+    $statement = $this->createMock('\Drupal\Tests\views\Unit\Plugin\pager\TestStatementInterface');
 
     $statement->expects($this->once())
       ->method('fetchField')
-      ->will($this->returnValue(3));
+      ->willReturn(3);
 
     $query = $this->getMockBuilder('\Drupal\Core\Database\Query\Select')
       ->disableOriginalConstructor()
@@ -242,7 +245,7 @@ class PagerPluginBaseTest extends UnitTestCase {
 
     $query->expects($this->once())
       ->method('execute')
-      ->will($this->returnValue($statement));
+      ->willReturn($statement);
 
     $this->pager->setOffset(2);
     $this->assertEquals(1, $this->pager->executeCountQuery($query));
@@ -254,11 +257,11 @@ class PagerPluginBaseTest extends UnitTestCase {
    * @see \Drupal\views\Plugin\views\pager\PagerPluginBase::executeCountQuery()
    */
   public function testExecuteCountQueryWithOffsetLargerThanResult() {
-    $statement = $this->getMock(TestStatementInterface::class);
+    $statement = $this->createMock(TestStatementInterface::class);
 
     $statement->expects($this->once())
       ->method('fetchField')
-      ->will($this->returnValue(2));
+      ->willReturn(2);
 
     $query = $this->getMockBuilder(Select::class)
       ->disableOriginalConstructor()
@@ -266,7 +269,7 @@ class PagerPluginBaseTest extends UnitTestCase {
 
     $query->expects($this->once())
       ->method('execute')
-      ->will($this->returnValue($statement));
+      ->willReturn($statement);
 
     $this->pager->setOffset(3);
     $this->assertEquals(0, $this->pager->executeCountQuery($query));
@@ -275,6 +278,8 @@ class PagerPluginBaseTest extends UnitTestCase {
 }
 
 /**
+ * Creates StatementInterface for testing.
+ *
  * As StatementInterface extends \Traversable, which though always needs
  * an additional interface. The Statement class itself can't be mocked because
  * of its __wakeup function.

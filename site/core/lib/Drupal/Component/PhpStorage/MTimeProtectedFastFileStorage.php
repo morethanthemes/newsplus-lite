@@ -185,8 +185,7 @@ class MTimeProtectedFastFileStorage extends FileStorage {
   }
 
   /**
-   * Gets the full path of the containing directory where the file is or should
-   * be stored.
+   * Gets the full path of the file storage directory's parent.
    *
    * @param string $name
    *   The virtual file name. Can be a relative path.
@@ -222,6 +221,7 @@ class MTimeProtectedFastFileStorage extends FileStorage {
    *   The directory where the temporary filename will be created.
    * @param $prefix
    *   The prefix of the generated temporary filename.
+   *
    * @return string
    *   Returns the new temporary filename (with path), or FALSE on failure.
    */

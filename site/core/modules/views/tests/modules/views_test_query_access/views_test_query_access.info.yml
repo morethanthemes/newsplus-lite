@@ -1,0 +1,12 @@
+name: 'Views test query access'
+type: module
+description: 'Module to test entity query access in Views.'
+package: Testing
+# version: VERSION
+dependencies:
+  - drupal:views
+
+# Information added by Drupal.org packaging script on 2023-09-20
+version: '9.5.11'
+project: 'drupal'
+datestamp: 1695228127

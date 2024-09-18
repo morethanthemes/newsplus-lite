@@ -5,7 +5,7 @@ namespace Drupal\views\Plugin\views\cache;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\views\Plugin\views\PluginBase;
-use Drupal\Core\Database\Query\Select;
+use Drupal\Core\Database\Query\SelectInterface;
 use Drupal\views\ResultRow;
 
 /**
@@ -62,8 +62,7 @@ abstract class CachePluginBase extends PluginBase {
   }
 
   /**
-   * Return a string to display as the clickable title for the
-   * access control.
+   * Returns a string to display as the clickable title for the access control.
    */
   public function summaryTitle() {
     return $this->t('Unknown');
@@ -81,13 +80,14 @@ abstract class CachePluginBase extends PluginBase {
   }
 
   /**
-   * Determine expiration time in the cache table of the cache type
-   * or CACHE_PERMANENT if item shouldn't be removed automatically from cache.
+   * Determine cache expiration time.
    *
-   * Plugins must override this to implement expiration in the cache table.
+   * Plugins must override this to implement expiration in the cache table. The
+   * default is CACHE_PERMANENT, indicating that the item will not be removed
+   * automatically from cache.
    *
-   * @param $type
-   *   The cache type, either 'query', 'result'.
+   * @param string $type
+   *   The cache type.
    */
   protected function cacheSetMaxAge($type) {
     return Cache::PERMANENT;
@@ -97,16 +97,20 @@ abstract class CachePluginBase extends PluginBase {
    * Save data to the cache.
    *
    * A plugin should override this to provide specialized caching behavior.
+   *
+   * @param $type
+   *   The cache type, either 'query', 'result'.
    */
   public function cacheSet($type) {
     switch ($type) {
       case 'query':
         // Not supported currently, but this is certainly where we'd put it.
         break;
+
       case 'results':
         $data = [
           'result' => $this->prepareViewResult($this->view->result),
-          'total_rows' => isset($this->view->total_rows) ? $this->view->total_rows : 0,
+          'total_rows' => $this->view->total_rows ?? 0,
           'current_page' => $this->view->getCurrentPage(),
         ];
         $expire = ($this->cacheSetMaxAge($type) === Cache::PERMANENT) ? Cache::PERMANENT : (int) $this->view->getRequest()->server->get('REQUEST_TIME') + $this->cacheSetMaxAge($type);
@@ -119,6 +123,12 @@ abstract class CachePluginBase extends PluginBase {
    * Retrieve data from the cache.
    *
    * A plugin should override this to provide specialized caching behavior.
+   *
+   * @param $type
+   *   The cache type, either 'query', 'result'.
+   *
+   * @return bool
+   *   TRUE if data has been taken from the cache, otherwise FALSE.
    */
   public function cacheGet($type) {
     $cutoff = $this->cacheExpire($type);
@@ -126,6 +136,7 @@ abstract class CachePluginBase extends PluginBase {
       case 'query':
         // Not supported currently, but this is certainly where we'd put it.
         return FALSE;
+
       case 'results':
         // Values to set: $view->result, $view->total_rows, $view->execute_time,
         // $view->current_page.
@@ -154,19 +165,22 @@ abstract class CachePluginBase extends PluginBase {
   /**
    * Post process any rendered data.
    *
-   * This can be valuable to be able to cache a view and still have some level of
-   * dynamic output. In an ideal world, the actual output will include HTML
+   * This can be valuable to be able to cache a view and still have some level
+   * of dynamic output. In an ideal world, the actual output will include HTML
    * comment based tokens, and then the post process can replace those tokens.
    *
    * Example usage. If it is known that the view is a node view and that the
    * primary field will be a nid, you can do something like this:
-   *
-   * <!--post-FIELD-NID-->
+   * @code
+   *   <!--post-FIELD-NID-->
+   * @endcode
    *
    * And then in the post render, create an array with the text that should
    * go there:
    *
-   * strtr($output, array('<!--post-FIELD-1-->', 'output for FIELD of nid 1');
+   * @code
+   *   strtr($output, array('<!--post-FIELD-1-->', 'output for FIELD of nid 1');
+   * @endcode
    *
    * All of the cached result data will be available in $view->result, as well,
    * so all ids used in the query should be discoverable.
@@ -186,7 +200,7 @@ abstract class CachePluginBase extends PluginBase {
       foreach (['query', 'count_query'] as $index) {
         // If the default query back-end is used generate SQL query strings from
         // the query objects.
-        if ($build_info[$index] instanceof Select) {
+        if ($build_info[$index] instanceof SelectInterface) {
           $query = clone $build_info[$index];
           $query->preExecute();
           $build_info[$index] = [
@@ -200,7 +214,7 @@ abstract class CachePluginBase extends PluginBase {
         'build_info' => $build_info,
       ];
       // @todo https://www.drupal.org/node/2433591 might solve it to not require
-      //    the pager information here.
+      //   the pager information here.
       $key_data['pager'] = [
         'page' => $this->view->getCurrentPage(),
         'items_per_page' => $this->view->getItemsPerPage(),
@@ -228,8 +242,8 @@ abstract class CachePluginBase extends PluginBase {
 
     if (!empty($entity_information)) {
       // Add the list cache tags for each entity type used by this view.
-      foreach ($entity_information as $table => $metadata) {
-        $tags = Cache::mergeTags($tags, \Drupal::entityManager()->getDefinition($metadata['entity_type'])->getListCacheTags());
+      foreach ($entity_information as $metadata) {
+        $tags = Cache::mergeTags($tags, \Drupal::entityTypeManager()->getDefinition($metadata['entity_type'])->getListCacheTags());
       }
     }
 

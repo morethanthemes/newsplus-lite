@@ -20,8 +20,22 @@ use Drupal\views\Plugin\views\PluginBase;
 function views_views_query_substitutions(ViewExecutable $view) {
   $substitutions = [
     '***CURRENT_VERSION***' => \Drupal::VERSION,
-    '***CURRENT_TIME***' => REQUEST_TIME,
+    '***CURRENT_TIME***' => \Drupal::time()->getRequestTime(),
   ] + PluginBase::queryLanguageSubstitutions();
 
   return $substitutions;
+}
+
+/**
+ * Implements hook_views_form_substitutions().
+ */
+function views_views_form_substitutions() {
+  $select_all = [
+    '#type' => 'checkbox',
+    '#default_value' => FALSE,
+    '#attributes' => ['class' => ['action-table-select-all']],
+  ];
+  return [
+    '<!--action-bulk-form-select-all-->' => \Drupal::service('renderer')->render($select_all),
+  ];
 }

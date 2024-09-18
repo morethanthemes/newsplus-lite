@@ -8,8 +8,8 @@ source:
   constants:
     target_type: 'node'
 process:
-# Ignore i18n_node_options_[node_type] options not available in Drupal 8,
-# i18n_required_node and i18n_newnode_current
+  # Ignore i18n_node_options_[node_type] options not available in Drupal 8,
+  # i18n_required_node and i18n_newnode_current
   target_bundle: type
   target_entity_type_id: 'constants/target_type'
   default_langcode:
@@ -20,6 +20,8 @@ process:
         0: NULL
         1: 'current_interface'
         2: 'current_interface'
+        4: 'und'
+      default_value: NULL
     -
       plugin: skip_on_empty
       method: row
@@ -38,10 +40,10 @@ process:
       0: NULL
       1: false
       2: true
+      4: true
 destination:
   plugin: entity:language_content_settings
-  content_translation_update_definitions:
-    - node
 migration_dependencies:
   required:
+    - language
     - d7_node_type

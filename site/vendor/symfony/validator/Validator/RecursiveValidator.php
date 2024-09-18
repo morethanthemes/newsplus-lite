@@ -32,16 +32,9 @@ class RecursiveValidator implements ValidatorInterface
     /**
      * Creates a new validator.
      *
-     * @param ExecutionContextFactoryInterface    $contextFactory     The factory for
-     *                                                                creating new contexts
-     * @param MetadataFactoryInterface            $metadataFactory    The factory for
-     *                                                                fetching the metadata
-     *                                                                of validated objects
-     * @param ConstraintValidatorFactoryInterface $validatorFactory   The factory for creating
-     *                                                                constraint validators
-     * @param ObjectInitializerInterface[]        $objectInitializers The object initializers
+     * @param ObjectInitializerInterface[] $objectInitializers The object initializers
      */
-    public function __construct(ExecutionContextFactoryInterface $contextFactory, MetadataFactoryInterface $metadataFactory, ConstraintValidatorFactoryInterface $validatorFactory, array $objectInitializers = array())
+    public function __construct(ExecutionContextFactoryInterface $contextFactory, MetadataFactoryInterface $metadataFactory, ConstraintValidatorFactoryInterface $validatorFactory, array $objectInitializers = [])
     {
         $this->contextFactory = $contextFactory;
         $this->metadataFactory = $metadataFactory;
@@ -117,7 +110,7 @@ class RecursiveValidator implements ValidatorInterface
     public function validatePropertyValue($objectOrClass, $propertyName, $value, $groups = null)
     {
         // If a class name is passed, take $value as root
-        return $this->startContext(is_object($objectOrClass) ? $objectOrClass : $value)
+        return $this->startContext(\is_object($objectOrClass) ? $objectOrClass : $value)
             ->validatePropertyValue($objectOrClass, $propertyName, $value, $groups)
             ->getViolations();
     }

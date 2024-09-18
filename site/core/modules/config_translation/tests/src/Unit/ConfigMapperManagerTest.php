@@ -26,26 +26,29 @@ class ConfigMapperManagerTest extends UnitTestCase {
   /**
    * The typed configuration manager used for testing.
    *
-   * @var \Drupal\Core\Config\TypedConfigManagerInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Config\TypedConfigManagerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $typedConfigManager;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     $language = new Language(['id' => 'en']);
-    $language_manager = $this->getMock('Drupal\Core\Language\LanguageManagerInterface');
+    $language_manager = $this->createMock('Drupal\Core\Language\LanguageManagerInterface');
     $language_manager->expects($this->once())
       ->method('getCurrentLanguage')
       ->with(LanguageInterface::TYPE_INTERFACE)
-      ->will($this->returnValue($language));
+      ->willReturn($language);
 
     $this->typedConfigManager = $this->getMockBuilder('Drupal\Core\Config\TypedConfigManagerInterface')
       ->getMock();
 
-    $module_handler = $this->getMock('Drupal\Core\Extension\ModuleHandlerInterface');
-    $theme_handler = $this->getMock('Drupal\Core\Extension\ThemeHandlerInterface');
+    $module_handler = $this->createMock('Drupal\Core\Extension\ModuleHandlerInterface');
+    $theme_handler = $this->createMock('Drupal\Core\Extension\ThemeHandlerInterface');
 
     $this->configMapperManager = new ConfigMapperManager(
-      $this->getMock('Drupal\Core\Cache\CacheBackendInterface'),
+      $this->createMock('Drupal\Core\Cache\CacheBackendInterface'),
       $language_manager,
       $module_handler,
       $this->typedConfigManager,
@@ -68,7 +71,7 @@ class ConfigMapperManagerTest extends UnitTestCase {
       ->expects($this->once())
       ->method('get')
       ->with('test')
-      ->will($this->returnValue($element));
+      ->willReturn($element);
 
     $result = $this->configMapperManager->hasTranslatable('test');
     $this->assertSame($expected, $result);
@@ -118,7 +121,7 @@ class ConfigMapperManagerTest extends UnitTestCase {
             $this->getElement(['iii' => 'jjj']),
           ]),
         ]),
-        FALSE
+        FALSE,
       ],
       [
         $this->getNestedElement([
@@ -148,10 +151,10 @@ class ConfigMapperManagerTest extends UnitTestCase {
    */
   protected function getElement(array $definition) {
     $data_definition = new DataDefinition($definition);
-    $element = $this->getMock('Drupal\Core\TypedData\TypedDataInterface');
+    $element = $this->createMock('Drupal\Core\TypedData\TypedDataInterface');
     $element->expects($this->any())
       ->method('getDataDefinition')
-      ->will($this->returnValue($data_definition));
+      ->willReturn($data_definition);
     return $element;
   }
 
@@ -176,7 +179,7 @@ class ConfigMapperManagerTest extends UnitTestCase {
       ->getMock();
     $nested_element->expects($this->once())
       ->method('getIterator')
-      ->will($this->returnValue(new \ArrayIterator($elements)));
+      ->willReturn(new \ArrayIterator($elements));
     return $nested_element;
   }
 

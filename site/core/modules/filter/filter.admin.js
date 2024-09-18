@@ -4,19 +4,15 @@
 * https://www.drupal.org/node/2815083
 * @preserve
 **/
-
 (function ($, Drupal) {
   Drupal.behaviors.filterStatus = {
     attach: function attach(context, settings) {
       var $context = $(context);
-      $context.find('#filters-status-wrapper input.form-checkbox').once('filter-status').each(function () {
-        var $checkbox = $(this);
-
-        var $row = $context.find('#' + $checkbox.attr('id').replace(/-status$/, '-weight')).closest('tr');
-
-        var $filterSettings = $context.find('#' + $checkbox.attr('id').replace(/-status$/, '-settings'));
+      once('filter-status', '#filters-status-wrapper input.form-checkbox', context).forEach(function (checkbox) {
+        var $checkbox = $(checkbox);
+        var $row = $context.find("#".concat($checkbox.attr('id').replace(/-status$/, '-weight'))).closest('tr');
+        var $filterSettings = $context.find("[data-drupal-selector='".concat($checkbox.attr('id').replace(/-status$/, '-settings'), "']"));
         var filterSettingsTab = $filterSettings.data('verticalTab');
-
         $checkbox.on('click.filterUpdate', function () {
           if ($checkbox.is(':checked')) {
             $row.show();
@@ -33,16 +29,13 @@
               $filterSettings.hide();
             }
           }
-
           Drupal.tableDrag['filter-order'].restripeTable();
         });
-
         if (filterSettingsTab) {
           filterSettingsTab.details.drupalSetSummary(function () {
             return $checkbox.is(':checked') ? Drupal.t('Enabled') : Drupal.t('Disabled');
           });
         }
-
         $checkbox.triggerHandler('click.filterUpdate');
       });
     }

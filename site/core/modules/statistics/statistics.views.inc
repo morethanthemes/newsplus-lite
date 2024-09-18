@@ -9,7 +9,7 @@
  * Implements hook_views_data().
  */
 function statistics_views_data() {
-  $data['node_counter']['table']['group']  = t('Content statistics');
+  $data['node_counter']['table']['group'] = t('Content statistics');
 
   $data['node_counter']['table']['join'] = [
     'node_field_data' => [
@@ -24,7 +24,7 @@ function statistics_views_data() {
     'field' => [
       'id' => 'statistics_numeric',
       'click sortable' => TRUE,
-     ],
+    ],
     'filter' => [
       'id' => 'numeric',
     ],
@@ -42,7 +42,7 @@ function statistics_views_data() {
     'field' => [
       'id' => 'statistics_numeric',
       'click sortable' => TRUE,
-     ],
+    ],
     'filter' => [
       'id' => 'numeric',
     ],

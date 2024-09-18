@@ -23,6 +23,8 @@ use Drupal\views\Views;
  */
 
 /**
+ * Relationship plugin base.
+ *
  * Simple relationship handler that allows a new version of the primary table
  * to be linked in.
  *
@@ -125,6 +127,10 @@ abstract class RelationshipPluginBase extends HandlerBase {
    * {@inheritdoc}
    */
   public function query() {
+    if (!empty($this->definition['deprecated'])) {
+      @trigger_error($this->definition['deprecated'], E_USER_DEPRECATED);
+    }
+
     // Figure out what base table this relationship brings to the party.
     $table_data = Views::viewsData()->get($this->definition['base']);
     $base_field = empty($this->definition['base field']) ? $table_data['table']['base']['field'] : $this->definition['base field'];

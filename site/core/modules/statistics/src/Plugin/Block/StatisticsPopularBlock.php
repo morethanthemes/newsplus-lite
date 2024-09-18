@@ -50,7 +50,7 @@ class StatisticsPopularBlock extends BlockBase implements ContainerFactoryPlugin
   protected $renderer;
 
   /**
-   * Constructs an StatisticsPopularBlock object.
+   * Constructs a StatisticsPopularBlock object.
    *
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.
@@ -64,6 +64,8 @@ class StatisticsPopularBlock extends BlockBase implements ContainerFactoryPlugin
    *   The entity repository service
    * @param \Drupal\statistics\StatisticsStorageInterface $statistics_storage
    *   The storage for statistics.
+   * @param \Drupal\Core\Render\RendererInterface $renderer
+   *   The renderer configuration array.
    */
   public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entity_type_manager, EntityRepositoryInterface $entity_repository, StatisticsStorageInterface $statistics_storage, RendererInterface $renderer) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
@@ -95,7 +97,7 @@ class StatisticsPopularBlock extends BlockBase implements ContainerFactoryPlugin
     return [
       'top_day_num' => 0,
       'top_all_num' => 0,
-      'top_last_num' => 0
+      'top_last_num' => 0,
     ];
   }
 
@@ -114,11 +116,11 @@ class StatisticsPopularBlock extends BlockBase implements ContainerFactoryPlugin
     $numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 40];
     $numbers = ['0' => $this->t('Disabled')] + array_combine($numbers, $numbers);
     $form['statistics_block_top_day_num'] = [
-     '#type' => 'select',
-     '#title' => $this->t("Number of day's top views to display"),
-     '#default_value' => $this->configuration['top_day_num'],
-     '#options' => $numbers,
-     '#description' => $this->t('How many content items to display in "day" list.'),
+      '#type' => 'select',
+      '#title' => $this->t("Number of day's top views to display"),
+      '#default_value' => $this->configuration['top_day_num'],
+      '#options' => $numbers,
+      '#description' => $this->t('How many content items to display in "day" list.'),
     ];
     $form['statistics_block_top_all_num'] = [
       '#type' => 'select',

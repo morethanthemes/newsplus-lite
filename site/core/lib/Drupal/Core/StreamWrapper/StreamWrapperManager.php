@@ -2,6 +2,7 @@
 
 namespace Drupal\Core\StreamWrapper;
 
+use Drupal\Core\Site\Settings;
 use Symfony\Component\DependencyInjection\ContainerAwareInterface;
 use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 
@@ -100,7 +101,7 @@ class StreamWrapperManager implements ContainerAwareInterface, StreamWrapperMana
    * {@inheritdoc}
    */
   public function getViaUri($uri) {
-    $scheme = file_uri_scheme($uri);
+    $scheme = static::getScheme($uri);
     return $this->getWrapper($scheme, $uri);
   }
 
@@ -174,7 +175,7 @@ class StreamWrapperManager implements ContainerAwareInterface, StreamWrapperMana
    */
   public function unregister() {
     // Normally, there are definitely wrappers set for the ALL filter. However,
-    // in some cases involving many container rebuilds (e.g. WebTestBase),
+    // in some cases involving many container rebuilds (e.g. BrowserTestBase),
     // $this->wrappers may be empty although wrappers are still registered
     // globally. Thus an isset() check is needed before iterating.
     if (isset($this->wrappers[StreamWrapperInterface::ALL])) {
@@ -206,6 +207,107 @@ class StreamWrapperManager implements ContainerAwareInterface, StreamWrapperMana
     if (($type & StreamWrapperInterface::WRITE_VISIBLE) == StreamWrapperInterface::WRITE_VISIBLE) {
       $this->wrappers[StreamWrapperInterface::WRITE_VISIBLE][$scheme] = $info;
     }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getTarget($uri) {
+    // Remove the scheme from the URI and remove erroneous leading or trailing,
+    // forward-slashes and backslashes.
+    $target = trim(preg_replace('/^[\w\-]+:\/\/|^data:/', '', $uri), '\/');
+
+    // If nothing was replaced, the URI doesn't have a valid scheme.
+    return $target !== $uri ? $target : FALSE;
+  }
+
+  /**
+   * Normalizes a URI by making it syntactically correct.
+   *
+   * A stream is referenced as "scheme://target".
+   *
+   * The following actions are taken:
+   * - Remove trailing slashes from target
+   * - Trim erroneous leading slashes from target. e.g. ":///" becomes "://".
+   *
+   * @param string $uri
+   *   String reference containing the URI to normalize.
+   *
+   * @return string
+   *   The normalized URI.
+   */
+  public function normalizeUri($uri) {
+    $scheme = $this->getScheme($uri);
+
+    if ($this->isValidScheme($scheme)) {
+      $target = $this->getTarget($uri);
+
+      if ($target !== FALSE) {
+
+        if (!in_array($scheme, Settings::get('file_sa_core_2023_005_schemes', []))) {
+          $class = $this->getClass($scheme);
+          $is_local = is_subclass_of($class, LocalStream::class);
+          if ($is_local) {
+            $target = str_replace(DIRECTORY_SEPARATOR, '/', $target);
+          }
+
+          $parts = explode('/', $target);
+          $normalized_parts = [];
+          while ($parts) {
+            $part = array_shift($parts);
+            if ($part === '' || $part === '.') {
+              continue;
+            }
+            elseif ($part === '..' && $is_local && $normalized_parts === []) {
+              $normalized_parts[] = $part;
+              break;
+            }
+            elseif ($part === '..') {
+              array_pop($normalized_parts);
+            }
+            else {
+              $normalized_parts[] = $part;
+            }
+          }
+
+          $target = implode('/', array_merge($normalized_parts, $parts));
+        }
+
+        $uri = $scheme . '://' . $target;
+      }
+    }
+
+    return $uri;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getScheme($uri) {
+    if (preg_match('/^([\w\-]+):\/\/|^(data):/', $uri, $matches)) {
+      // The scheme will always be the last element in the matches array.
+      return array_pop($matches);
+    }
+
+    return FALSE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isValidScheme($scheme) {
+    if (!$scheme) {
+      return FALSE;
+    }
+    return class_exists($this->getClass($scheme));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isValidUri($uri) {
+    // Assert that the URI has an allowed scheme. Bare paths are not allowed.
+    return $this->isValidScheme($this->getScheme($uri));
   }
 
 }

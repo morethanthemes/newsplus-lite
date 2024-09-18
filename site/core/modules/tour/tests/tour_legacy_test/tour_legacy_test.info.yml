@@ -1,0 +1,13 @@
+name: Tour legacy plugin tests
+type: module
+description: Tests related to deprecated plugins.
+package: Testing
+# version: VERSION
+dependencies:
+  - drupal:tour
+  - drupal:tour_test
+
+# Information added by Drupal.org packaging script on 2023-09-20
+version: '9.5.11'
+project: 'drupal'
+datestamp: 1695228127

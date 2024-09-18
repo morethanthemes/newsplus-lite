@@ -3,15 +3,43 @@
 namespace Drupal\system;
 
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\StreamWrapper\StreamWrapperManagerInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * System file controller.
  */
 class FileDownloadController extends ControllerBase {
+
+  /**
+   * The stream wrapper manager.
+   *
+   * @var \Drupal\Core\StreamWrapper\StreamWrapperManagerInterface
+   */
+  protected $streamWrapperManager;
+
+  /**
+   * FileDownloadController constructor.
+   *
+   * @param \Drupal\Core\StreamWrapper\StreamWrapperManagerInterface $streamWrapperManager
+   *   The stream wrapper manager.
+   */
+  public function __construct(StreamWrapperManagerInterface $streamWrapperManager) {
+    $this->streamWrapperManager = $streamWrapperManager;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('stream_wrapper_manager')
+    );
+  }
 
   /**
    * Handles private file transfers.
@@ -41,9 +69,9 @@ class FileDownloadController extends ControllerBase {
   public function download(Request $request, $scheme = 'private') {
     $target = $request->query->get('file');
     // Merge remaining path arguments into relative file path.
-    $uri = $scheme . '://' . $target;
+    $uri = $this->streamWrapperManager->normalizeUri($scheme . '://' . $target);
 
-    if (file_stream_wrapper_valid_scheme($scheme) && file_exists($uri)) {
+    if ($this->streamWrapperManager->isValidScheme($scheme) && is_file($uri)) {
       // Let other modules provide headers and controls access to the file.
       $headers = $this->moduleHandler()->invokeAll('file_download', [$uri]);
 

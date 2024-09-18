@@ -23,6 +23,8 @@ use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigura
  */
 class PhpFileLoader extends FileLoader
 {
+    protected $autoRegisterAliasesForSinglyImplementedInterfaces = false;
+
     /**
      * {@inheritdoc}
      */
@@ -33,7 +35,7 @@ class PhpFileLoader extends FileLoader
         $loader = $this;
 
         $path = $this->locator->locate($resource);
-        $this->setCurrentDir(dirname($path));
+        $this->setCurrentDir(\dirname($path));
         $this->container->fileExists($path);
 
         // the closure forbids access to the private scope in the included file
@@ -41,10 +43,15 @@ class PhpFileLoader extends FileLoader
             return include $path;
         }, $this, ProtectedPhpFileLoader::class);
 
-        $callback = $load($path);
+        try {
+            $callback = $load($path);
 
-        if ($callback instanceof \Closure) {
-            $callback(new ContainerConfigurator($this->container, $this, $this->instanceof, $path, $resource), $this->container, $this);
+            if (\is_object($callback) && \is_callable($callback)) {
+                $callback(new ContainerConfigurator($this->container, $this, $this->instanceof, $path, $resource), $this->container, $this);
+            }
+        } finally {
+            $this->instanceof = [];
+            $this->registerAliasesForSinglyImplementedInterfaces();
         }
     }
 
@@ -53,11 +60,11 @@ class PhpFileLoader extends FileLoader
      */
     public function supports($resource, $type = null)
     {
-        if (!is_string($resource)) {
+        if (!\is_string($resource)) {
             return false;
         }
 
-        if (null === $type && 'php' === pathinfo($resource, PATHINFO_EXTENSION)) {
+        if (null === $type && 'php' === pathinfo($resource, \PATHINFO_EXTENSION)) {
             return true;
         }
 

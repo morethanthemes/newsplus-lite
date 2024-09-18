@@ -1,0 +1,13 @@
+name: 'Text Editor Private test'
+type: module
+description: 'Support module for the Text Editor Private module tests.'
+package: Testing
+# version: VERSION
+dependencies:
+  - drupal:filter
+  - drupal:editor_test
+
+# Information added by Drupal.org packaging script on 2023-09-20
+version: '9.5.11'
+project: 'drupal'
+datestamp: 1695228127

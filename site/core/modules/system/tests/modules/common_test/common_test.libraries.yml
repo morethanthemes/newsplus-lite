@@ -1,12 +1,7 @@
-jquery.farbtastic:
+loadjs:
   version: 0.1
   js:
-    assets/vendor/farbtastic/farbtastic.js: {}
-  css:
-    component:
-      assets/vendor/farbtastic/farbtastic.css: {}
-  dependencies:
-    - core/jquery
+    assets/vendor/loadjs/loadjs.min.js: { }
 
 # Library to test CSS and JS file assets.
 files:
@@ -96,6 +91,14 @@ weight:
     first.js: {}
     lighter.js: { weight: -1 }
     before-jquery.js: { weight: -21 }
+
+# Library to test hook_js_alter().
+hook_js_alter:
+  version: VERSION
+  js:
+    alter.js: {}
+  dependencies:
+    - core/drupal.tableselect
 
 browsers:
   js:

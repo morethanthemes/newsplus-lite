@@ -10,8 +10,10 @@ use Drupal\Core\StringTranslation\TranslationInterface;
 use Drupal\taxonomy\VocabularyInterface;
 
 /**
- * Prevents forum module from being uninstalled whilst any forum nodes exist
- * or there are any terms in the forum vocabulary.
+ * Prevents forum module from being uninstalled under certain conditions.
+ *
+ * These conditions are when any forum nodes exist or there are any terms in the
+ * forum vocabulary.
  */
 class ForumUninstallValidator implements ModuleUninstallValidatorInterface {
 
@@ -58,16 +60,16 @@ class ForumUninstallValidator implements ModuleUninstallValidatorInterface {
       }
 
       $vocabulary = $this->getForumVocabulary();
-      if ($this->hasTermsForVocabulary($vocabulary)) {
+      if (!empty($vocabulary) && $this->hasTermsForVocabulary($vocabulary)) {
         if ($vocabulary->access('view')) {
           $reasons[] = $this->t('To uninstall Forum, first delete all <a href=":url">%vocabulary</a> terms', [
             '%vocabulary' => $vocabulary->label(),
-            ':url' => $vocabulary->url('overview-form'),
+            ':url' => $vocabulary->toUrl('overview-form')->toString(),
           ]);
         }
         else {
           $reasons[] = $this->t('To uninstall Forum, first delete all %vocabulary terms', [
-            '%vocabulary' => $vocabulary->label()
+            '%vocabulary' => $vocabulary->label(),
           ]);
         }
       }
@@ -117,7 +119,12 @@ class ForumUninstallValidator implements ModuleUninstallValidatorInterface {
    */
   protected function getForumVocabulary() {
     $vid = $this->configFactory->get('forum.settings')->get('vocabulary');
-    return $this->entityTypeManager->getStorage('taxonomy_vocabulary')->load($vid);
+    if (!empty($vid)) {
+      return $this->entityTypeManager->getStorage('taxonomy_vocabulary')->load($vid);
+    }
+    else {
+      return NULL;
+    }
   }
 
 }

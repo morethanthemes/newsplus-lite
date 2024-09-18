@@ -7,7 +7,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\TypedData\TranslatableInterface;
-use Drupal\user\UserInterface;
+use Drupal\user\EntityOwnerTrait;
 
 /**
  * Defines the Content moderation state entity.
@@ -37,6 +37,7 @@ use Drupal\user\UserInterface;
  *     "revision" = "revision_id",
  *     "uuid" = "uuid",
  *     "uid" = "uid",
+ *     "owner" = "uid",
  *     "langcode" = "langcode",
  *   }
  * )
@@ -48,18 +49,18 @@ use Drupal\user\UserInterface;
  */
 class ContentModerationState extends ContentEntityBase implements ContentModerationStateInterface {
 
+  use EntityOwnerTrait;
+
   /**
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     $fields = parent::baseFieldDefinitions($entity_type);
+    $fields += static::ownerBaseFieldDefinitions($entity_type);
 
-    $fields['uid'] = BaseFieldDefinition::create('entity_reference')
+    $fields['uid']
       ->setLabel(t('User'))
       ->setDescription(t('The username of the entity creator.'))
-      ->setSetting('target_type', 'user')
-      ->setDefaultValueCallback('Drupal\content_moderation\Entity\ContentModerationState::getCurrentUserId')
-      ->setTranslatable(TRUE)
       ->setRevisionable(TRUE);
 
     $fields['workflow'] = BaseFieldDefinition::create('entity_reference')
@@ -99,36 +100,6 @@ class ContentModerationState extends ContentEntityBase implements ContentModerat
   }
 
   /**
-   * {@inheritdoc}
-   */
-  public function getOwner() {
-    return $this->get('uid')->entity;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getOwnerId() {
-    return $this->getEntityKey('uid');
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setOwnerId($uid) {
-    $this->set('uid', $uid);
-    return $this;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setOwner(UserInterface $account) {
-    $this->set('uid', $account->id());
-    return $this;
-  }
-
-  /**
    * Creates or updates an entity's moderation state whilst saving that entity.
    *
    * @param \Drupal\content_moderation\Entity\ContentModerationState $content_moderation_state
@@ -163,11 +134,17 @@ class ContentModerationState extends ContentEntityBase implements ContentModerat
       /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
       $storage = \Drupal::entityTypeManager()->getStorage('content_moderation_state');
 
+      // New entities may not have a loaded revision ID at this point, but the
+      // creation of a content moderation state entity may have already been
+      // triggered elsewhere. In this case we have to match on the revision ID
+      // (instead of the loaded revision ID).
+      $revision_id = $entity->getLoadedRevisionId() ?: $entity->getRevisionId();
       $ids = $storage->getQuery()
+        ->accessCheck(FALSE)
         ->condition('content_entity_type_id', $entity->getEntityTypeId())
         ->condition('content_entity_id', $entity->id())
         ->condition('workflow', $moderation_info->getWorkflowForEntity($entity)->id())
-        ->condition('content_entity_revision_id', $entity->getLoadedRevisionId())
+        ->condition('content_entity_revision_id', $revision_id)
         ->allRevisions()
         ->execute();
 
@@ -178,18 +155,6 @@ class ContentModerationState extends ContentEntityBase implements ContentModerat
     }
 
     return $content_moderation_state;
-  }
-
-  /**
-   * Default value callback for the 'uid' base field definition.
-   *
-   * @see \Drupal\content_moderation\Entity\ContentModerationState::baseFieldDefinitions()
-   *
-   * @return array
-   *   An array of default values.
-   */
-  public static function getCurrentUserId() {
-    return [\Drupal::currentUser()->id()];
   }
 
   /**

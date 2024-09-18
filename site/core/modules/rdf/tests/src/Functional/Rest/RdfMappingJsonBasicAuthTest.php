@@ -6,6 +6,7 @@ use Drupal\Tests\rest\Functional\BasicAuthResourceTestTrait;
 
 /**
  * @group rest
+ * @group legacy
  */
 class RdfMappingJsonBasicAuthTest extends RdfMappingResourceTestBase {
 
@@ -14,7 +15,12 @@ class RdfMappingJsonBasicAuthTest extends RdfMappingResourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['basic_auth'];
+  protected static $modules = ['basic_auth'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

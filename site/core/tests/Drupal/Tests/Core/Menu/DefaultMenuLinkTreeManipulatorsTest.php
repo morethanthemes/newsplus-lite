@@ -24,21 +24,21 @@ class DefaultMenuLinkTreeManipulatorsTest extends UnitTestCase {
   /**
    * The mocked access manager.
    *
-   * @var \Drupal\Core\Access\AccessManagerInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Access\AccessManagerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $accessManager;
 
   /**
    * The mocked current user.
    *
-   * @var \Drupal\Core\Session\AccountInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Session\AccountInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $currentUser;
 
   /**
    * The mocked entity type manager.
    *
-   * @var \Drupal\Core\Entity\EntityTypeManagerInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $entityTypeManager;
 
@@ -50,6 +50,13 @@ class DefaultMenuLinkTreeManipulatorsTest extends UnitTestCase {
   protected $defaultMenuTreeManipulators;
 
   /**
+   * Mock cache context manager.
+   *
+   * @var \Drupal\Core\Cache\Context\CacheContextsManager|\Prophecy\Prophecy\ObjectProphecy
+   */
+  protected $cacheContextManager;
+
+  /**
    * The original menu tree build in mockTree().
    *
    * @var \Drupal\Core\Menu\MenuLinkTreeElement[]
@@ -57,7 +64,7 @@ class DefaultMenuLinkTreeManipulatorsTest extends UnitTestCase {
   protected $originalTree = [];
 
   /**
-   * Array of menu link instances
+   * Array of menu link instances.
    *
    * @var \Drupal\Core\Menu\MenuLinkInterface[]
    */
@@ -66,23 +73,20 @@ class DefaultMenuLinkTreeManipulatorsTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
-    $this->accessManager = $this->getMock('\Drupal\Core\Access\AccessManagerInterface');
-    $this->currentUser = $this->getMock('Drupal\Core\Session\AccountInterface');
+    $this->accessManager = $this->createMock('\Drupal\Core\Access\AccessManagerInterface');
+    $this->currentUser = $this->createMock('Drupal\Core\Session\AccountInterface');
     $this->currentUser->method('isAuthenticated')
       ->willReturn(TRUE);
-    $this->entityTypeManager = $this->getMock(EntityTypeManagerInterface::class);
+    $this->entityTypeManager = $this->createMock(EntityTypeManagerInterface::class);
 
     $this->defaultMenuTreeManipulators = new DefaultMenuLinkTreeManipulators($this->accessManager, $this->currentUser, $this->entityTypeManager);
 
-    $cache_contexts_manager = $this->prophesize(CacheContextsManager::class);
-    $cache_contexts_manager->assertValidTokens()->willReturn(TRUE);
-    $cache_contexts_manager->reveal();
-
+    $this->cacheContextManager = $this->prophesize(CacheContextsManager::class);
     $container = new Container();
-    $container->set('cache_contexts_manager', $cache_contexts_manager);
+    $container->set('cache_contexts_manager', $this->cacheContextManager->reveal());
     \Drupal::setContainer($container);
   }
 
@@ -163,18 +167,32 @@ class DefaultMenuLinkTreeManipulatorsTest extends UnitTestCase {
     // performed. 9 routes, but 1 is external, 2 already have their 'access'
     // property set, and 1 is a child if an inaccessible menu link, so only 5
     // calls will be made.
+    $this->cacheContextManager->assertValidTokens(['user.permissions'])->shouldBeCalled()->willReturn(TRUE);
     $this->accessManager->expects($this->exactly(5))
       ->method('checkNamedRoute')
-      ->will($this->returnValueMap([
+      ->willReturnMap([
         ['example1', [], $this->currentUser, TRUE, AccessResult::forbidden()],
-        ['example2', ['foo' => 'bar'], $this->currentUser, TRUE, AccessResult::allowed()->cachePerPermissions()],
-        ['example3', ['baz' => 'qux'], $this->currentUser, TRUE, AccessResult::neutral()],
+        [
+          'example2',
+          ['foo' => 'bar'],
+          $this->currentUser,
+          TRUE,
+          AccessResult::allowed()->cachePerPermissions(),
+        ],
+        [
+          'example3',
+          ['baz' => 'qux'],
+          $this->currentUser,
+          TRUE,
+          AccessResult::neutral(),
+        ],
         ['example5', [], $this->currentUser, TRUE, AccessResult::allowed()],
         ['user.logout', [], $this->currentUser, TRUE, AccessResult::allowed()],
-      ]));
+      ]);
 
     $this->mockTree();
     $this->originalTree[5]->subtree[7]->access = AccessResult::neutral();
+    $this->cacheContextManager->assertValidTokens(['user'])->shouldBeCalled()->willReturn(TRUE);
     $this->originalTree[8]->access = AccessResult::allowed()->cachePerUser();
 
     // Since \Drupal\Core\Menu\DefaultMenuLinkTreeManipulators::checkAccess()
@@ -200,7 +218,7 @@ class DefaultMenuLinkTreeManipulatorsTest extends UnitTestCase {
     $this->assertInstanceOf('\Drupal\Core\Menu\InaccessibleMenuLink', $element->link);
     // Menu link 4: child of menu link 3, which was AccessResult::neutral(),
     // hence menu link 3's subtree is removed, of which this menu link is one.
-    $this->assertFalse(array_key_exists(4, $tree[2]->subtree[3]->subtree));
+    $this->assertArrayNotHasKey(4, $tree[2]->subtree[3]->subtree);
     // Menu link 5: no route name, treated as external, hence access granted.
     $element = $tree[5];
     $this->assertEquals(AccessResult::allowed()->cachePerPermissions(), $element->access);
@@ -238,6 +256,7 @@ class DefaultMenuLinkTreeManipulatorsTest extends UnitTestCase {
       ->willReturn(TRUE);
 
     $this->mockTree();
+    $this->cacheContextManager->assertValidTokens(['user.permissions'])->shouldBeCalled()->willReturn(TRUE);
     $this->defaultMenuTreeManipulators->checkAccess($this->originalTree);
 
     $expected_access_result = AccessResult::allowed()->cachePerPermissions();
@@ -290,17 +309,20 @@ class DefaultMenuLinkTreeManipulatorsTest extends UnitTestCase {
       6 => new MenuLinkTreeElement($links[6], FALSE, 2, FALSE, []),
     ]);
 
-    $query = $this->getMock('Drupal\Core\Entity\Query\QueryInterface');
-    $query->expects($this->at(0))
+    $query = $this->createMock('Drupal\Core\Entity\Query\QueryInterface');
+    $query->expects($this->once())
+      ->method('accessCheck')
+      ->with(TRUE);
+    $query->expects($this->exactly(2))
       ->method('condition')
-      ->with('nid', [1, 2, 3, 4]);
-    $query->expects($this->at(1))
-      ->method('condition')
-      ->with('status', NodeInterface::PUBLISHED);
+      ->withConsecutive(
+        ['nid', [1, 2, 3, 4]],
+        ['status', NodeInterface::PUBLISHED],
+      );
     $query->expects($this->once())
       ->method('execute')
       ->willReturn([1, 2, 4]);
-    $storage = $this->getMock(EntityStorageInterface::class);
+    $storage = $this->createMock(EntityStorageInterface::class);
     $storage->expects($this->once())
       ->method('getQuery')
       ->willReturn($query);
@@ -309,6 +331,8 @@ class DefaultMenuLinkTreeManipulatorsTest extends UnitTestCase {
       ->with('node')
       ->willReturn($storage);
 
+    $this->cacheContextManager->assertValidTokens(['user.permissions'])->shouldBeCalled()->willReturn(TRUE);
+    $this->cacheContextManager->assertValidTokens(['user.permissions', 'user.node_grants:view'])->shouldBeCalled()->willReturn(TRUE);
     $node_access_result = AccessResult::allowed()->cachePerPermissions()->addCacheContexts(['user.node_grants:view']);
 
     $tree = $this->defaultMenuTreeManipulators->checkNodeAccess($tree);
@@ -325,14 +349,13 @@ class DefaultMenuLinkTreeManipulatorsTest extends UnitTestCase {
     // access checkers.
 
     // Ensure that the access manager is just called for the non-node routes.
-    $this->accessManager->expects($this->at(0))
+    $this->accessManager->expects($this->exactly(2))
       ->method('checkNamedRoute')
       ->with('test_route', [], $this->currentUser, TRUE)
-      ->willReturn(AccessResult::allowed());
-    $this->accessManager->expects($this->at(1))
-      ->method('checkNamedRoute')
-      ->with('test_route', [], $this->currentUser, TRUE)
-      ->willReturn(AccessResult::neutral());
+      ->willReturnOnConsecutiveCalls(
+        AccessResult::allowed(),
+        AccessResult::neutral(),
+      );
     $tree = $this->defaultMenuTreeManipulators->checkAccess($tree);
 
     $this->assertEquals($node_access_result, $tree[1]->access);

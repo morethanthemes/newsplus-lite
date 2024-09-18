@@ -1,0 +1,11 @@
+name: 'Theme test subtheme'
+type: theme
+description: 'Test theme which uses test_basetheme as the base theme.'
+# version: VERSION
+base theme: stark
+package: Testing
+
+# Information added by Drupal.org packaging script on 2023-09-20
+version: '9.5.11'
+project: 'drupal'
+datestamp: 1695228127

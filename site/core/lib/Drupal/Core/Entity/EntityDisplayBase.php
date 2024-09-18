@@ -13,8 +13,7 @@ use Drupal\Core\Entity\Display\EntityDisplayInterface;
 abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDisplayInterface {
 
   /**
-   * The 'mode' for runtime EntityDisplay objects used to render entities with
-   * arbitrary display options rather than a configured view mode or form mode.
+   * The mode used to render entities with arbitrary display options.
    *
    * @todo Prevent creation of a mode with this ID
    *   https://www.drupal.org/node/2410727
@@ -57,8 +56,10 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
   protected $mode = self::CUSTOM_MODE;
 
   /**
-   * Whether this display is enabled or not. If the entity (form) display
-   * is disabled, we'll fall back to the 'default' display.
+   * Whether this display is enabled or not.
+   *
+   * If the entity (form) display is disabled, we'll fall back to the 'default'
+   * display.
    *
    * @var bool
    */
@@ -79,8 +80,10 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
   protected $hidden = [];
 
   /**
-   * The original view or form mode that was requested (case of view/form modes
-   * being configured to fall back to the 'default' display).
+   * The original view or form mode that was requested.
+   *
+   * Case of view/form modes being configured to fall back to the 'default'
+   * display.
    *
    * @var string
    */
@@ -157,18 +160,18 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
       $default_region = $this->getDefaultRegion();
       // Fill in defaults for extra fields.
       $context = $this->displayContext == 'view' ? 'display' : $this->displayContext;
-      $extra_fields = \Drupal::entityManager()->getExtraFields($this->targetEntityType, $this->bundle);
-      $extra_fields = isset($extra_fields[$context]) ? $extra_fields[$context] : [];
+      $extra_fields = \Drupal::service('entity_field.manager')->getExtraFields($this->targetEntityType, $this->bundle);
+      $extra_fields = $extra_fields[$context] ?? [];
       foreach ($extra_fields as $name => $definition) {
         if (!isset($this->content[$name]) && !isset($this->hidden[$name])) {
           // Extra fields are visible by default unless they explicitly say so.
           if (!isset($definition['visible']) || $definition['visible'] == TRUE) {
-            $this->content[$name] = [
-              'weight' => $definition['weight']
-            ];
+            $this->setComponent($name, [
+              'weight' => $definition['weight'],
+            ]);
           }
           else {
-            $this->hidden[$name] = TRUE;
+            $this->removeComponent($name);
           }
         }
         // Ensure extra fields have a 'region'.
@@ -182,12 +185,6 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
       foreach ($fields as $name => $definition) {
         if (!$definition->isDisplayConfigurable($this->displayContext) || (!isset($this->content[$name]) && !isset($this->hidden[$name]))) {
           $options = $definition->getDisplayOptions($this->displayContext);
-
-          // @todo Remove handling of 'type' in https://www.drupal.org/node/2799641.
-          if (!isset($options['region']) && !empty($options['type']) && $options['type'] === 'hidden') {
-            $options['region'] = 'hidden';
-            @trigger_error("Specifying 'type' => 'hidden' is deprecated, use 'region' => 'hidden' instead.", E_USER_DEPRECATED);
-          }
 
           if (!empty($options['region']) && $options['region'] === 'hidden') {
             $this->removeComponent($name);
@@ -253,7 +250,6 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
   public function preSave(EntityStorageInterface $storage) {
     // Ensure that a region is set on each component.
     foreach ($this->getComponents() as $name => $component) {
-      $this->handleHiddenType($name, $component);
       // Ensure that a region is set.
       if (isset($this->content[$name]) && !isset($component['region'])) {
         // Directly set the component to bypass other changes in setComponent().
@@ -267,29 +263,11 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
   }
 
   /**
-   * Handles a component type of 'hidden'.
-   *
-   * @deprecated This method exists only for backwards compatibility.
-   *
-   * @todo Remove this in https://www.drupal.org/node/2799641.
-   *
-   * @param string $name
-   *   The name of the component.
-   * @param array $component
-   *   The component array.
-   */
-  protected function handleHiddenType($name, array $component) {
-    if (!isset($component['region']) && isset($component['type']) && $component['type'] === 'hidden') {
-      $this->removeComponent($name);
-    }
-  }
-
-  /**
    * {@inheritdoc}
    */
   public function calculateDependencies() {
     parent::calculateDependencies();
-    $target_entity_type = $this->entityManager()->getDefinition($this->targetEntityType);
+    $target_entity_type = $this->entityTypeManager()->getDefinition($this->targetEntityType);
 
     // Create dependency on the bundle.
     $bundle_config_dependency = $target_entity_type->getBundleConfigDependency($this->bundle);
@@ -300,8 +278,8 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
     // field overrides, since the field still exists without them.
     if (\Drupal::moduleHandler()->moduleExists('field')) {
       $components = $this->content + $this->hidden;
-      $field_definitions = $this->entityManager()->getFieldDefinitions($this->targetEntityType, $this->bundle);
-      foreach (array_intersect_key($field_definitions, $components) as $field_name => $field_definition) {
+      $field_definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions($this->targetEntityType, $this->bundle);
+      foreach (array_intersect_key($field_definitions, $components) as $field_definition) {
         if ($field_definition instanceof ConfigEntityInterface && $field_definition->getEntityTypeId() == 'field_config') {
           $this->addDependency('config', $field_definition->getConfigDependencyName());
         }
@@ -310,7 +288,7 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
 
     // Depend on configured modes.
     if ($this->mode != 'default') {
-      $mode_entity = $this->entityManager()->getStorage('entity_' . $this->displayContext . '_mode')->load($target_entity_type->id() . '.' . $this->mode);
+      $mode_entity = $this->entityTypeManager()->getStorage('entity_' . $this->displayContext . '_mode')->load($target_entity_type->id() . '.' . $this->mode);
       $this->addDependency('config', $mode_entity->getConfigDependencyName());
     }
     return $this;
@@ -353,7 +331,7 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
    * {@inheritdoc}
    */
   public function getComponent($name) {
-    return isset($this->content[$name]) ? $this->content[$name] : NULL;
+    return $this->content[$name] ?? NULL;
   }
 
   /**
@@ -416,7 +394,7 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
    */
   protected function getFieldDefinition($field_name) {
     $definitions = $this->getFieldDefinitions();
-    return isset($definitions[$field_name]) ? $definitions[$field_name] : NULL;
+    return $definitions[$field_name] ?? NULL;
   }
 
   /**
@@ -424,7 +402,7 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
    */
   protected function getFieldDefinitions() {
     if (!isset($this->fieldDefinitions)) {
-      $definitions = \Drupal::entityManager()->getFieldDefinitions($this->targetEntityType, $this->bundle);
+      $definitions = \Drupal::service('entity_field.manager')->getFieldDefinitions($this->targetEntityType, $this->bundle);
       // For "official" view modes and form modes, ignore fields whose
       // definition states they should not be displayed.
       if ($this->mode !== static::CUSTOM_MODE) {
@@ -441,6 +419,7 @@ abstract class EntityDisplayBase extends ConfigEntityBase implements EntityDispl
    *
    * @param \Drupal\Core\Field\FieldDefinitionInterface $definition
    *   A field definition.
+   *
    * @return array|null
    */
   private function fieldHasDisplayOptions(FieldDefinitionInterface $definition) {

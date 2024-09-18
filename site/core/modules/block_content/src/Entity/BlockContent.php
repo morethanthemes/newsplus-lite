@@ -2,6 +2,7 @@
 
 namespace Drupal\block_content\Entity;
 
+use Drupal\block_content\Access\RefinableDependentAccessTrait;
 use Drupal\Core\Entity\EditorialContentEntityBase;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
@@ -15,6 +16,13 @@ use Drupal\user\UserInterface;
  * @ContentEntityType(
  *   id = "block_content",
  *   label = @Translation("Custom block"),
+ *   label_collection = @Translation("Custom blocks"),
+ *   label_singular = @Translation("custom block"),
+ *   label_plural = @Translation("custom blocks"),
+ *   label_count = @PluralTranslation(
+ *     singular = "@count custom block",
+ *     plural = "@count custom blocks",
+ *   ),
  *   bundle_label = @Translation("Custom block type"),
  *   handlers = {
  *     "storage" = "Drupal\Core\Entity\Sql\SqlContentEntityStorage",
@@ -70,6 +78,8 @@ use Drupal\user\UserInterface;
  */
 class BlockContent extends EditorialContentEntityBase implements BlockContentInterface {
 
+  use RefinableDependentAccessTrait;
+
   /**
    * The theme the block is being created in.
    *
@@ -111,7 +121,23 @@ class BlockContent extends EditorialContentEntityBase implements BlockContentInt
    */
   public function postSave(EntityStorageInterface $storage, $update = TRUE) {
     parent::postSave($storage, $update);
-    static::invalidateBlockPluginCache();
+    if ($this->isReusable() || (isset($this->original) && $this->original->isReusable())) {
+      static::invalidateBlockPluginCache();
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function preDelete(EntityStorageInterface $storage, array $entities) {
+    parent::preDelete($storage, $entities);
+
+    /** @var \Drupal\block_content\BlockContentInterface $block */
+    foreach ($entities as $block) {
+      foreach ($block->getInstances() as $instance) {
+        $instance->delete();
+      }
+    }
   }
 
   /**
@@ -119,7 +145,14 @@ class BlockContent extends EditorialContentEntityBase implements BlockContentInt
    */
   public static function postDelete(EntityStorageInterface $storage, array $entities) {
     parent::postDelete($storage, $entities);
-    static::invalidateBlockPluginCache();
+    /** @var \Drupal\block_content\BlockContentInterface $block */
+    foreach ($entities as $block) {
+      if ($block->isReusable()) {
+        // If any deleted blocks are reusable clear the block cache.
+        static::invalidateBlockPluginCache();
+        return;
+      }
+    }
   }
 
   /**
@@ -141,16 +174,6 @@ class BlockContent extends EditorialContentEntityBase implements BlockContentInt
       // one.
       $record->revision_log = $this->original->getRevisionLogMessage();
     }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function delete() {
-    foreach ($this->getInstances() as $instance) {
-      $instance->delete();
-    }
-    parent::delete();
   }
 
   /**
@@ -193,14 +216,14 @@ class BlockContent extends EditorialContentEntityBase implements BlockContentInt
       ->setTranslatable(TRUE)
       ->setRevisionable(TRUE);
 
-    return $fields;
-  }
+    $fields['reusable'] = BaseFieldDefinition::create('boolean')
+      ->setLabel(t('Reusable'))
+      ->setDescription(t('A boolean indicating whether this block is reusable.'))
+      ->setTranslatable(FALSE)
+      ->setRevisionable(FALSE)
+      ->setDefaultValue(TRUE);
 
-  /**
-   * {@inheritdoc}
-   */
-  public function getRevisionLog() {
-    return $this->getRevisionLogMessage();
+    return $fields;
   }
 
   /**
@@ -209,13 +232,6 @@ class BlockContent extends EditorialContentEntityBase implements BlockContentInt
   public function setInfo($info) {
     $this->set('info', $info);
     return $this;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setRevisionLog($revision_log) {
-    return $this->setRevisionLogMessage($revision_log);
   }
 
   /**
@@ -273,6 +289,27 @@ class BlockContent extends EditorialContentEntityBase implements BlockContentInt
   public function setRevisionLogMessage($revision_log_message) {
     $this->set('revision_log', $revision_log_message);
     return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isReusable() {
+    return (bool) $this->get('reusable')->value;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setReusable() {
+    return $this->set('reusable', TRUE);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setNonReusable() {
+    return $this->set('reusable', FALSE);
   }
 
   /**

@@ -33,17 +33,6 @@ class EntityForm extends FormBase implements EntityFormInterface {
   protected $moduleHandler;
 
   /**
-   * The entity manager.
-   *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
-   *
-   * @deprecated in Drupal 8.0.0, will be removed before Drupal 9.0.0.
-   *
-   * @see https://www.drupal.org/node/2549139
-   */
-  protected $entityManager;
-
-  /**
    * The entity type manager.
    *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
@@ -221,6 +210,17 @@ class EntityForm extends FormBase implements EntityFormInterface {
   /**
    * Returns an array of supported actions for the current entity form.
    *
+   * This function generates a list of Form API elements which represent
+   * actions supported by the current entity form.
+   *
+   * @param array $form
+   *   An associative array containing the structure of the form.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   *
+   * @return array
+   *   An array of supported Form API action elements keyed by name.
+   *
    * @todo Consider introducing a 'preview' action here, since it is used by
    *   many entity types.
    */
@@ -235,7 +235,7 @@ class EntityForm extends FormBase implements EntityFormInterface {
     ];
 
     if (!$this->entity->isNew() && $this->entity->hasLinkTemplate('delete-form')) {
-      $route_info = $this->entity->urlInfo('delete-form');
+      $route_info = $this->entity->toUrl('delete-form');
       if ($this->getRequest()->query->has('destination')) {
         $query = $route_info->getOption('query');
         $query['destination'] = $this->getRequest()->query->get('destination');
@@ -304,7 +304,7 @@ class EntityForm extends FormBase implements EntityFormInterface {
   }
 
   /**
-   * Copies top-level form values to entity properties
+   * Copies top-level form values to entity properties.
    *
    * This should not change existing entity properties that are not being edited
    * by this form.
@@ -324,7 +324,7 @@ class EntityForm extends FormBase implements EntityFormInterface {
       $values = array_diff_key($values, $this->entity->getPluginCollections());
     }
 
-    // @todo: This relies on a method that only exists for config and content
+    // @todo This relies on a method that only exists for config and content
     //   entities, in a different way. Consider moving this logic to a config
     //   entity specific implementation.
     foreach ($values as $key => $value) {
@@ -387,16 +387,11 @@ class EntityForm extends FormBase implements EntityFormInterface {
    *   The current state of the form.
    */
   protected function prepareInvokeAll($hook, FormStateInterface $form_state) {
-    $implementations = $this->moduleHandler->getImplementations($hook);
-    foreach ($implementations as $module) {
-      $function = $module . '_' . $hook;
-      if (function_exists($function)) {
-        // Ensure we pass an updated translation object and form display at
-        // each invocation, since they depend on form state which is alterable.
-        $args = [$this->entity, $this->operation, &$form_state];
-        call_user_func_array($function, $args);
-      }
-    }
+    $this->moduleHandler->invokeAllWith($hook, function (callable $hook, string $module) use ($form_state) {
+      // Ensure we pass an updated translation object and form display at
+      // each invocation, since they depend on form state which is alterable.
+      $hook($this->entity, $this->operation, $form_state);
+    });
   }
 
   /**
@@ -411,14 +406,6 @@ class EntityForm extends FormBase implements EntityFormInterface {
    */
   public function setModuleHandler(ModuleHandlerInterface $module_handler) {
     $this->moduleHandler = $module_handler;
-    return $this;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setEntityManager(EntityManagerInterface $entity_manager) {
-    $this->entityManager = $entity_manager;
     return $this;
   }
 

@@ -30,7 +30,7 @@ class CollectRoutesTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $container = new ContainerBuilder();
@@ -39,17 +39,20 @@ class CollectRoutesTest extends UnitTestCase {
       ->disableOriginalConstructor()
       ->getMock();
 
-    $this->view = $this->getMock('\Drupal\views\Entity\View', ['initHandlers'], [
-      ['id' => 'test_view'],
-      'view',
-    ]);
+    $view = $this->getMockBuilder('\Drupal\views\Entity\View')
+      ->addMethods(['initHandlers'])
+      ->setConstructorArgs([['id' => 'test_view'], 'view'])
+      ->getMock();
 
-    $view_executable = $this->getMock('\Drupal\views\ViewExecutable', ['initHandlers', 'getTitle'], [], '', FALSE);
+    $view_executable = $this->getMockBuilder('\Drupal\views\ViewExecutable')
+      ->onlyMethods(['initHandlers', 'getTitle'])
+      ->disableOriginalConstructor()
+      ->getMock();
     $view_executable->expects($this->any())
       ->method('getTitle')
       ->willReturn('View title');
 
-    $view_executable->storage = $this->view;
+    $view_executable->storage = $view;
     $view_executable->argument = [];
 
     $display_manager = $this->getMockBuilder('\Drupal\views\Plugin\ViewsPluginManager')
@@ -69,20 +72,20 @@ class CollectRoutesTest extends UnitTestCase {
 
     $container->setParameter('authentication_providers', ['basic_auth' => 'basic_auth']);
 
-    $state = $this->getMock('\Drupal\Core\State\StateInterface');
+    $state = $this->createMock('\Drupal\Core\State\StateInterface');
     $container->set('state', $state);
 
     $style_manager = $this->getMockBuilder('\Drupal\views\Plugin\ViewsPluginManager')
       ->disableOriginalConstructor()
       ->getMock();
     $container->set('plugin.manager.views.style', $style_manager);
-    $container->set('renderer', $this->getMock('Drupal\Core\Render\RendererInterface'));
+    $container->set('renderer', $this->createMock('Drupal\Core\Render\RendererInterface'));
 
-    $authentication_collector = $this->getMock('\Drupal\Core\Authentication\AuthenticationCollectorInterface');
+    $authentication_collector = $this->createMock('\Drupal\Core\Authentication\AuthenticationCollectorInterface');
     $container->set('authentication_collector', $authentication_collector);
     $authentication_collector->expects($this->any())
       ->method('getSortedProviders')
-      ->will($this->returnValue(['basic_auth' => 'data', 'cookie' => 'data']));
+      ->willReturn(['basic_auth' => 'data', 'cookie' => 'data']);
 
     $container->setParameter('serializer.format_providers', ['json']);
 
@@ -102,7 +105,7 @@ class CollectRoutesTest extends UnitTestCase {
 
     $display_manager->expects($this->once())
       ->method('getDefinition')
-      ->will($this->returnValue(['id' => 'test', 'provider' => 'test']));
+      ->willReturn(['id' => 'test', 'provider' => 'test']);
 
     $none = $this->getMockBuilder('\Drupal\views\Plugin\views\access\None')
       ->disableOriginalConstructor()
@@ -110,28 +113,31 @@ class CollectRoutesTest extends UnitTestCase {
 
     $access_manager->expects($this->once())
       ->method('createInstance')
-      ->will($this->returnValue($none));
+      ->willReturn($none);
 
-    $style_plugin = $this->getMock('\Drupal\rest\Plugin\views\style\Serializer', ['getFormats', 'init'], [], '', FALSE);
+    $style_plugin = $this->getMockBuilder('\Drupal\rest\Plugin\views\style\Serializer')
+      ->onlyMethods(['getFormats', 'init'])
+      ->disableOriginalConstructor()
+      ->getMock();
 
     $style_plugin->expects($this->once())
       ->method('getFormats')
-      ->will($this->returnValue(['json']));
+      ->willReturn(['json']);
 
     $style_plugin->expects($this->once())
       ->method('init')
       ->with($view_executable)
-      ->will($this->returnValue(TRUE));
+      ->willReturn(TRUE);
 
     $style_manager->expects($this->once())
       ->method('createInstance')
-      ->will($this->returnValue($style_plugin));
+      ->willReturn($style_plugin);
 
     $this->routes = new RouteCollection();
     $this->routes->add('test_1', new Route('/test/1'));
     $this->routes->add('view.test_view.page_1', new Route('/test/2'));
 
-    $this->view->addDisplay('page', NULL, 'page_1');
+    $view->addDisplay('page', NULL, 'page_1');
   }
 
   /**
@@ -143,13 +149,13 @@ class CollectRoutesTest extends UnitTestCase {
     $requirements_1 = $this->routes->get('test_1')->getRequirements();
     $requirements_2 = $this->routes->get('view.test_view.page_1')->getRequirements();
 
-    $this->assertEquals(0, count($requirements_1), 'First route has no requirement.');
-    $this->assertEquals(1, count($requirements_2), 'Views route with rest export had the format requirement added.');
+    $this->assertCount(0, $requirements_1, 'First route has no requirement.');
+    $this->assertCount(1, $requirements_2, 'Views route with rest export had the format requirement added.');
 
     // Check auth options.
     $auth = $this->routes->get('view.test_view.page_1')->getOption('_auth');
-    $this->assertEquals(count($auth), 1, 'View route with rest export has an auth option added');
-    $this->assertEquals($auth[0], 'basic_auth', 'View route with rest export has the correct auth option added');
+    $this->assertCount(1, $auth, 'View route with rest export has an auth option added');
+    $this->assertEquals('basic_auth', $auth[0], 'View route with rest export has the correct auth option added');
   }
 
 }

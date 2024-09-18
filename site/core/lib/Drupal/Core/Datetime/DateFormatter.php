@@ -3,7 +3,7 @@
 namespace Drupal\Core\Datetime;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\StringTranslation\TranslationInterface;
@@ -78,8 +78,8 @@ class DateFormatter implements DateFormatterInterface {
   /**
    * Constructs a Date object.
    *
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager service.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The language manager.
    * @param \Drupal\Core\StringTranslation\TranslationInterface $translation
@@ -89,8 +89,8 @@ class DateFormatter implements DateFormatterInterface {
    * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    *   The request stack.
    */
-  public function __construct(EntityManagerInterface $entity_manager, LanguageManagerInterface $language_manager, TranslationInterface $translation, ConfigFactoryInterface $config_factory, RequestStack $request_stack) {
-    $this->dateFormatStorage = $entity_manager->getStorage('date_format');
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, LanguageManagerInterface $language_manager, TranslationInterface $translation, ConfigFactoryInterface $config_factory, RequestStack $request_stack) {
+    $this->dateFormatStorage = $entity_type_manager->getStorage('date_format');
     $this->languageManager = $language_manager;
     $this->stringTranslation = $translation;
     $this->configFactory = $config_factory;
@@ -315,8 +315,14 @@ class DateFormatter implements DateFormatterInterface {
   /**
    * Loads the given format pattern for the given langcode.
    *
-   * @param string $format
-   *   The machine name of the date format.
+   * @param string $type
+   *   The machine name of the date format type which is one of:
+   *   - One of the built-in date format types: 'short', 'medium',
+   *     'long', 'html_datetime', 'html_date', 'html_time',
+   *     'html_yearless_date', 'html_week', 'html_month', 'html_year'.
+   *   - The name of a date format type defined by a date format config entity.
+   *   - The machine name of an administrator-defined date format type.
+   *   - 'custom' for a custom date format type.
    * @param string $langcode
    *   The langcode of the language to use.
    *
@@ -324,14 +330,14 @@ class DateFormatter implements DateFormatterInterface {
    *   The configuration entity for the date format in the given language for
    *   non-custom formats, NULL otherwise.
    */
-  protected function dateFormat($format, $langcode) {
-    if (!isset($this->dateFormats[$format][$langcode])) {
+  protected function dateFormat($type, $langcode) {
+    if (!isset($this->dateFormats[$type][$langcode])) {
       $original_language = $this->languageManager->getConfigOverrideLanguage();
       $this->languageManager->setConfigOverrideLanguage(new Language(['id' => $langcode]));
-      $this->dateFormats[$format][$langcode] = $this->dateFormatStorage->load($format);
+      $this->dateFormats[$type][$langcode] = $this->dateFormatStorage->load($type);
       $this->languageManager->setConfigOverrideLanguage($original_language);
     }
-    return $this->dateFormats[$format][$langcode];
+    return $this->dateFormats[$type][$langcode];
   }
 
   /**

@@ -18,21 +18,22 @@ class LanguageNegotiationUrlTest extends UnitTestCase {
 
   protected $languageManager;
   protected $user;
+  protected $languages;
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
 
     // Set up some languages to be used by the language-based path processor.
-    $language_de = $this->getMock('\Drupal\Core\Language\LanguageInterface');
+    $language_de = $this->createMock('\Drupal\Core\Language\LanguageInterface');
     $language_de->expects($this->any())
       ->method('getId')
-      ->will($this->returnValue('de'));
-    $language_en = $this->getMock('\Drupal\Core\Language\LanguageInterface');
+      ->willReturn('de');
+    $language_en = $this->createMock('\Drupal\Core\Language\LanguageInterface');
     $language_en->expects($this->any())
       ->method('getId')
-      ->will($this->returnValue('en'));
+      ->willReturn('en');
     $languages = [
       'de' => $language_de,
       'en' => $language_en,
@@ -44,7 +45,7 @@ class LanguageNegotiationUrlTest extends UnitTestCase {
       ->getMock();
     $language_manager->expects($this->any())
       ->method('getLanguages')
-      ->will($this->returnValue($languages));
+      ->willReturn($languages);
     $this->languageManager = $language_manager;
 
     // Create a user stub.
@@ -61,14 +62,17 @@ class LanguageNegotiationUrlTest extends UnitTestCase {
   }
 
   /**
-   * Test path prefix language negotiation and outbound path processing.
+   * Tests path prefix language negotiation and outbound path processing.
    *
    * @dataProvider providerTestPathPrefix
    */
   public function testPathPrefix($prefix, $prefixes, $expected_langcode) {
     $this->languageManager->expects($this->any())
       ->method('getCurrentLanguage')
-      ->will($this->returnValue($this->languages[(in_array($expected_langcode, ['en', 'de'])) ? $expected_langcode : 'en']));
+      ->willReturn($this->languages[(in_array($expected_langcode, [
+        'en',
+        'de',
+      ])) ? $expected_langcode : 'en']);
 
     $config = $this->getConfigFactoryStub([
       'language.negotiation' => [
@@ -150,14 +154,14 @@ class LanguageNegotiationUrlTest extends UnitTestCase {
   }
 
   /**
-   * Test domain language negotiation and outbound path processing.
+   * Tests domain language negotiation and outbound path processing.
    *
    * @dataProvider providerTestDomain
    */
   public function testDomain($http_host, $domains, $expected_langcode) {
     $this->languageManager->expects($this->any())
       ->method('getCurrentLanguage')
-      ->will($this->returnValue($this->languages['en']));
+      ->willReturn($this->languages['en']);
 
     $config = $this->getConfigFactoryStub([
       'language.negotiation' => [
@@ -256,7 +260,9 @@ class LanguageNegotiationUrlTest extends UnitTestCase {
 namespace Drupal\language\Plugin\LanguageNegotiation;
 
 if (!function_exists('base_path')) {
+
   function base_path() {
     return '/';
   }
+
 }

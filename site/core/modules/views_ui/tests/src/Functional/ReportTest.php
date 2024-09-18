@@ -14,12 +14,17 @@ class ReportTest extends UITestBase {
    *
    * @var array
    */
-  public static $modules = ['views', 'views_ui'];
+  protected static $modules = ['views', 'views_ui'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Stores an admin user used by the different tests.
    *
-   * @var \Drupal\user\User
+   * @var \Drupal\user\Entity\User
    */
   protected $adminUser;
 
@@ -31,7 +36,7 @@ class ReportTest extends UITestBase {
 
     // Test the report page.
     $this->drupalGet('admin/reports/views-plugins');
-    $this->assertResponse(200, "Views report page exists");
+    $this->assertSession()->statusCodeEquals(200);
   }
 
 }

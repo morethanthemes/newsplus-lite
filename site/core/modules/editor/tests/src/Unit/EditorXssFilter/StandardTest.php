@@ -6,6 +6,10 @@ use Drupal\editor\EditorXssFilter\Standard;
 use Drupal\Tests\UnitTestCase;
 use Drupal\filter\Plugin\FilterInterface;
 
+// cspell:ignore ascript attributename bgsound bscript ckers cript datafld
+// cspell:ignore dataformatas datasrc dynsrc ession livescript msgbox nmouseover
+// cspell:ignore noxss pression ript scri scriptlet unicoded vbscript
+
 /**
  * @coversDefaultClass \Drupal\editor\EditorXssFilter\Standard
  * @group editor
@@ -15,11 +19,14 @@ class StandardTest extends UnitTestCase {
   /**
    * The mocked text format configuration entity.
    *
-   * @var \Drupal\filter\Entity\FilterFormat|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\filter\Entity\FilterFormat|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $format;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
 
     // Mock text format configuration entity object.
     $this->format = $this->getMockBuilder('\Drupal\filter\Entity\FilterFormat')
@@ -27,7 +34,7 @@ class StandardTest extends UnitTestCase {
       ->getMock();
     $this->format->expects($this->any())
       ->method('getFilterTypes')
-      ->will($this->returnValue([FilterInterface::TYPE_HTML_RESTRICTOR]));
+      ->willReturn([FilterInterface::TYPE_HTML_RESTRICTOR]);
     $restrictions = [
       'allowed' => [
         'p' => TRUE,
@@ -40,7 +47,7 @@ class StandardTest extends UnitTestCase {
     ];
     $this->format->expects($this->any())
       ->method('getHtmlRestrictions')
-      ->will($this->returnValue($restrictions));
+      ->willReturn($restrictions);
   }
 
   /**
@@ -100,7 +107,7 @@ class StandardTest extends UnitTestCase {
 
     // Default SRC tag by leaving it empty.
     // @see https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet#Default_SRC_tag_by_leaving_it_empty
-    $data[] = ['<IMG SRC= onmouseover="alert(\'xxs\')">', '<IMG nmouseover="alert(&#039;xxs&#039;)">'];
+    $data[] = ['<IMG SRC= onmouseover="alert(\'xxs\')">', '<IMG>'];
 
     // Default SRC tag by leaving it out entirely.
     // @see https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet#Default_SRC_tag_by_leaving_it_out_entirely
@@ -140,7 +147,7 @@ class StandardTest extends UnitTestCase {
 
     // Spaces and meta chars before the JavaScript in images for XSS.
     // @see https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet#Spaces_and_meta_chars_before_the_JavaScript_in_images_for_XSS
-    // @fixme This dataset currently fails under 5.4 because of
+    // @todo This dataset currently fails under 5.4 because of
     //   https://www.drupal.org/node/1210798. Restore after it's fixed.
     if (version_compare(PHP_VERSION, '5.4.0', '<')) {
       $data[] = ['<IMG SRC=" &#14;  javascript:alert(\'XSS\');">', '<IMG src="alert(&#039;XSS&#039;);">'];
@@ -171,7 +178,7 @@ class StandardTest extends UnitTestCase {
     // Double open angle brackets.
     // @see https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet#Double_open_angle_brackets
     // @see http://ha.ckers.org/blog/20060611/hotbot-xss-vulnerability/ to
-    //      understand why this is a vulnerability.
+    // understand why this is a vulnerability.
     $data[] = ['<iframe src=http://ha.ckers.org/scriptlet.html <', '<iframe src="http://ha.ckers.org/scriptlet.html">'];
 
     // Escaping JavaScript escapes.
@@ -464,6 +471,7 @@ xss:ex/*XSS*//*/*/pression(alert("XSS"))\'>',
 
     // You can EMBED SVG which can contain your XSS vector.
     // @see https://www.owasp.org/index.php/XSS_Filter_Evasion_Cheat_Sheet#You_can_EMBED_SVG_which_can_contain_your_XSS_vector
+    // cspell:disable-next-line
     $data[] = ['<EMBED SRC="data:image/svg+xml;base64,PHN2ZyB4bWxuczpzdmc9Imh0dH A6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcv MjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hs aW5rIiB2ZXJzaW9uPSIxLjAiIHg9IjAiIHk9IjAiIHdpZHRoPSIxOTQiIGhlaWdodD0iMjAw IiBpZD0ieHNzIj48c2NyaXB0IHR5cGU9InRleHQvZWNtYXNjcmlwdCI+YWxlcnQoIlh TUyIpOzwvc2NyaXB0Pjwvc3ZnPg==" type="image/svg+xml" AllowScriptAccess="always"></EMBED>', ''];
 
     // XML data island with CDATA obfuscation.
@@ -583,20 +591,20 @@ xss:ex/*XSS*//*/*/pression(alert("XSS"))\'>',
         '<unknown style="visibility:hidden">Pink Fairy Armadillo</unknown><video src="gerenuk.mp4"><script>alert(0)</script>',
         '<unknown>Pink Fairy Armadillo</unknown><video src="gerenuk.mp4">alert(0)',
         'Disallow only the script tag',
-        ['script']
+        ['script'],
       ],
       [
         '<unknown style="visibility:hidden">Pink Fairy Armadillo</unknown><video src="gerenuk.mp4"><script>alert(0)</script>',
         '<unknown>Pink Fairy Armadillo</unknown>alert(0)',
         'Disallow both the script and video tags',
-        ['script', 'video']
+        ['script', 'video'],
       ],
       // No real use case for this, but it is an edge case we must ensure works.
       [
         '<unknown style="visibility:hidden">Pink Fairy Armadillo</unknown><video src="gerenuk.mp4"><script>alert(0)</script>',
         '<unknown>Pink Fairy Armadillo</unknown><video src="gerenuk.mp4"><script>alert(0)</script>',
         'Disallow no tags',
-        []
+        [],
       ],
     ];
   }

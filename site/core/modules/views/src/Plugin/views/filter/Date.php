@@ -23,7 +23,7 @@ class Date extends NumericFilter {
   }
 
   /**
-   * Add a type selector to the value form
+   * Add a type selector to the value form.
    */
   protected function valueForm(&$form, FormStateInterface $form_state) {
     if (!$form_state->get('exposed')) {
@@ -148,11 +148,15 @@ class Date extends NumericFilter {
     }
 
     if ($operators[$operator]['values'] == 1) {
+      // When the operator is either <, <=, =, !=, >=, > or regular_expression
+      // the input contains only one value.
       if ($this->value['value'] == '') {
         return FALSE;
       }
     }
-    else {
+    elseif ($operators[$operator]['values'] == 2) {
+      // When the operator is either between or not between the input contains
+      // two values.
       if ($this->value['min'] == '' || $this->value['max'] == '') {
         return FALSE;
       }

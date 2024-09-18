@@ -14,12 +14,22 @@ class FieldLayoutTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['field_layout', 'field_ui', 'node', 'field_layout_test'];
+  protected static $modules = [
+    'field_layout',
+    'field_ui',
+    'node',
+    'field_layout_test',
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->createContentType([
@@ -50,7 +60,7 @@ class FieldLayoutTest extends BrowserTestBase {
     // By default, the one-column layout is used.
     $this->drupalGet('node/1');
     $this->assertSession()->elementExists('css', '.layout--onecol');
-    $this->assertSession()->elementExists('css', '.layout__region--content .field--name-body');
+    $this->assertSession()->elementTextContains('css', '.layout__region--content', 'The node body');
 
     $this->drupalGet('admin/structure/types/manage/article/display');
     $this->assertEquals(['Content', 'Disabled'], $this->getRegionTitles());

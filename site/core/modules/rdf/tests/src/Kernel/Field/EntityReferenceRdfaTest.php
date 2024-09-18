@@ -2,7 +2,7 @@
 
 namespace Drupal\Tests\rdf\Kernel\Field;
 
-use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
+use Drupal\Tests\field\Traits\EntityReferenceTestTrait;
 use Drupal\user\Entity\Role;
 use Drupal\user\RoleInterface;
 
@@ -10,6 +10,7 @@ use Drupal\user\RoleInterface;
  * Tests the RDFa output of the entity reference field formatter.
  *
  * @group rdf
+ * @group legacy
  */
 class EntityReferenceRdfaTest extends FieldRdfaTestBase {
 
@@ -44,9 +45,12 @@ class EntityReferenceRdfaTest extends FieldRdfaTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['text', 'filter'];
+  protected static $modules = ['text', 'filter'];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installEntitySchema('entity_test_rev');

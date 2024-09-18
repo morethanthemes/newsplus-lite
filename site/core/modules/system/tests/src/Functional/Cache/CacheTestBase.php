@@ -22,7 +22,8 @@ abstract class CacheTestBase extends BrowserTestBase {
    *   The variable the cache should contain.
    * @param $bin
    *   The bin the cache item was stored in.
-   * @return
+   *
+   * @return bool
    *   TRUE on pass, FALSE on fail.
    */
   protected function checkCacheExists($cid, $var, $bin = NULL) {

@@ -31,28 +31,28 @@ class ConditionAccessResolverTraitTest extends UnitTestCase {
   public function providerTestResolveConditions() {
     $data = [];
 
-    $condition_true = $this->getMock('Drupal\Core\Condition\ConditionInterface');
+    $condition_true = $this->createMock('Drupal\Core\Condition\ConditionInterface');
     $condition_true->expects($this->any())
       ->method('execute')
-      ->will($this->returnValue(TRUE));
-    $condition_false = $this->getMock('Drupal\Core\Condition\ConditionInterface');
+      ->willReturn(TRUE);
+    $condition_false = $this->createMock('Drupal\Core\Condition\ConditionInterface');
     $condition_false->expects($this->any())
       ->method('execute')
-      ->will($this->returnValue(FALSE));
-    $condition_exception = $this->getMock('Drupal\Core\Condition\ConditionInterface');
+      ->willReturn(FALSE);
+    $condition_exception = $this->createMock('Drupal\Core\Condition\ConditionInterface');
     $condition_exception->expects($this->any())
       ->method('execute')
       ->will($this->throwException(new ContextException()));
     $condition_exception->expects($this->atLeastOnce())
       ->method('isNegated')
-      ->will($this->returnValue(FALSE));
-    $condition_negated = $this->getMock('Drupal\Core\Condition\ConditionInterface');
+      ->willReturn(FALSE);
+    $condition_negated = $this->createMock('Drupal\Core\Condition\ConditionInterface');
     $condition_negated->expects($this->any())
       ->method('execute')
       ->will($this->throwException(new ContextException()));
     $condition_negated->expects($this->atLeastOnce())
       ->method('isNegated')
-      ->will($this->returnValue(TRUE));
+      ->willReturn(TRUE);
 
     $conditions = [];
     $data[] = [$conditions, 'and', TRUE];

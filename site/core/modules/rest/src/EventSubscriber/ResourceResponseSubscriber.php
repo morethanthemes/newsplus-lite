@@ -5,14 +5,13 @@ namespace Drupal\rest\EventSubscriber;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Cache\CacheableResponse;
 use Drupal\Core\Cache\CacheableResponseInterface;
-use Drupal\Core\Render\RenderContext;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\rest\ResourceResponseInterface;
 use Drupal\serialization\Normalizer\CacheableNormalizerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Serializer\SerializerInterface;
@@ -62,10 +61,10 @@ class ResourceResponseSubscriber implements EventSubscriberInterface {
   /**
    * Serializes ResourceResponse responses' data, and removes that data.
    *
-   * @param \Symfony\Component\HttpKernel\Event\FilterResponseEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\ResponseEvent $event
    *   The event to process.
    */
-  public function onResponse(FilterResponseEvent $event) {
+  public function onResponse(ResponseEvent $event) {
     $response = $event->getResponse();
     if (!$response instanceof ResourceResponseInterface) {
       return;
@@ -123,7 +122,7 @@ class ResourceResponseSubscriber implements EventSubscriberInterface {
       return $acceptable_formats[0];
     }
 
-    // Sometimes, there are no acceptable formats, e.g. DELETE routes.
+    // Sometimes, there are no acceptable formats.
     return NULL;
   }
 
@@ -135,15 +134,6 @@ class ResourceResponseSubscriber implements EventSubscriberInterface {
    * received context. This bubbled cacheability metadata will be applied to the
    * the response.
    *
-   * In versions of Drupal prior to 8.5, implicit bubbling of cacheability
-   * metadata was allowed because there was no explicit cacheability metadata
-   * bubbling API. To maintain backwards compatibility, we continue to support
-   * this, but support for this will be dropped in Drupal 9.0.0. This is
-   * especially useful when interacting with APIs that implicitly invoke
-   * rendering (for example: generating URLs): this allows those to "leak", and
-   * we collect their bubbled cacheability metadata automatically in a render
-   * context.
-   *
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The request object.
    * @param \Drupal\rest\ResourceResponseInterface $response
@@ -151,8 +141,7 @@ class ResourceResponseSubscriber implements EventSubscriberInterface {
    * @param \Symfony\Component\Serializer\SerializerInterface $serializer
    *   The serializer to use.
    * @param string|null $format
-   *   The response format, or NULL in case the response does not need a format,
-   *   for example for the response to a DELETE request.
+   *   The response format, or NULL in case the response does not need a format.
    *
    * @todo Add test coverage for language negotiation contexts in
    *   https://www.drupal.org/node/2135829.
@@ -167,19 +156,9 @@ class ResourceResponseSubscriber implements EventSubscriberInterface {
         CacheableNormalizerInterface::SERIALIZATION_CONTEXT_CACHEABILITY => new CacheableMetadata(),
       ];
 
-      // @deprecated In Drupal 8.5.0, will be removed before Drupal 9.0.0. Use
-      // explicit cacheability metadata bubbling instead. (The wrapping call to
-      // executeInRenderContext() will be removed before Drupal 9.0.0.)
-      $context = new RenderContext();
-      $output = $this->renderer
-        ->executeInRenderContext($context, function () use ($serializer, $data, $format, $serialization_context) {
-          return $serializer->serialize($data, $format, $serialization_context);
-        });
+      $output = $serializer->serialize($data, $format, $serialization_context);
+
       if ($response instanceof CacheableResponseInterface) {
-        if (!$context->isEmpty()) {
-          @trigger_error('Implicit cacheability metadata bubbling (onto the global render context) in normalizers is deprecated since Drupal 8.5.0 and will be removed in Drupal 9.0.0. Use the "cacheability" serialization context instead, for explicit cacheability metadata bubbling. See https://www.drupal.org/node/2918937', E_USER_DEPRECATED);
-          $response->addCacheableDependency($context->pop());
-        }
         $response->addCacheableDependency($serialization_context[CacheableNormalizerInterface::SERIALIZATION_CONTEXT_CACHEABILITY]);
       }
 
@@ -207,7 +186,9 @@ class ResourceResponseSubscriber implements EventSubscriberInterface {
     $final_response->setContent($response->getContent());
     $final_response->setStatusCode($response->getStatusCode());
     $final_response->setProtocolVersion($response->getProtocolVersion());
-    $final_response->setCharset($response->getCharset());
+    if ($response->getCharset()) {
+      $final_response->setCharset($response->getCharset());
+    }
     $final_response->headers = clone $response->headers;
     if ($final_response instanceof CacheableResponseInterface) {
       $final_response->addCacheableDependency($response->getCacheableMetadata());

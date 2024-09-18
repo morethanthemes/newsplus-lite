@@ -4,16 +4,12 @@
 * https://www.drupal.org/node/2815083
 * @preserve
 **/
-
 (function (Backbone, Drupal) {
   Drupal.quickedit.AppModel = Backbone.Model.extend({
     defaults: {
       highlightedField: null,
-
       activeField: null,
-
       activeModal: null
     }
-
   });
 })(Backbone, Drupal);

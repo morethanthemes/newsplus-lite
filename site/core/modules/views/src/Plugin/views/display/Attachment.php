@@ -149,6 +149,7 @@ class Attachment extends DisplayPluginBase {
           '#default_value' => $this->getOption('inherit_arguments'),
         ];
         break;
+
       case 'inherit_exposed_filters':
         $form['#title'] .= $this->t('Inherit exposed filters');
         $form['inherit_exposed_filters'] = [
@@ -158,6 +159,7 @@ class Attachment extends DisplayPluginBase {
           '#default_value' => $this->getOption('inherit_exposed_filters'),
         ];
         break;
+
       case 'inherit_pager':
         $form['#title'] .= $this->t('Inherit pager');
         $form['inherit_pager'] = [
@@ -167,6 +169,7 @@ class Attachment extends DisplayPluginBase {
           '#default_value' => $this->getOption('inherit_pager'),
         ];
         break;
+
       case 'render_pager':
         $form['#title'] .= $this->t('Render pager');
         $form['render_pager'] = [
@@ -176,6 +179,7 @@ class Attachment extends DisplayPluginBase {
           '#default_value' => $this->getOption('render_pager'),
         ];
         break;
+
       case 'attachment_position':
         $form['#title'] .= $this->t('Position');
         $form['attachment_position'] = [
@@ -186,6 +190,7 @@ class Attachment extends DisplayPluginBase {
           '#default_value' => $this->getOption('attachment_position'),
         ];
         break;
+
       case 'displays':
         $form['#title'] .= $this->t('Attach to');
         $displays = [];
@@ -207,6 +212,7 @@ class Attachment extends DisplayPluginBase {
 
   /**
    * Perform any necessary changes to the form values prior to storage.
+   *
    * There is no need for this function to actually store the data.
    */
   public function submitOptionsForm(&$form, FormStateInterface $form_state) {
@@ -254,9 +260,11 @@ class Attachment extends DisplayPluginBase {
       case 'before':
         $this->view->attachment_before[] = $attachment;
         break;
+
       case 'after':
         $this->view->attachment_after[] = $attachment;
         break;
+
       case 'both':
         $this->view->attachment_before[] = $attachment;
         $this->view->attachment_after[] = $attachment;
@@ -266,11 +274,11 @@ class Attachment extends DisplayPluginBase {
   }
 
   /**
-   * Attachment displays only use exposed widgets if
-   * they are set to inherit the exposed filter settings
-   * of their parent display.
+   * {@inheritdoc}
    */
   public function usesExposed() {
+    // Attachment displays only use exposed widgets if they are set to inherit
+    // the exposed filter settings of their parent display.
     if (!empty($this->options['inherit_exposed_filters']) && parent::usesExposed()) {
       return TRUE;
     }
@@ -278,11 +286,12 @@ class Attachment extends DisplayPluginBase {
   }
 
   /**
-   * If an attachment is set to inherit the exposed filter
-   * settings from its parent display, then don't render and
-   * display a second set of exposed filter widgets.
+   * {@inheritdoc}
    */
   public function displaysExposed() {
+    // If an attachment is set to inherit the exposed filter settings from its
+    // parent display, then don't render and display a second set of exposed
+    // filter widgets.
     return $this->options['inherit_exposed_filters'] ? FALSE : TRUE;
   }
 

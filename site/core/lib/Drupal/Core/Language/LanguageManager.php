@@ -33,6 +33,11 @@ class LanguageManager implements LanguageManagerInterface {
   protected $defaultLanguage;
 
   /**
+   * Information about all defined language types.
+   */
+  protected $definedLanguageTypesInfo;
+
+  /**
    * Constructs the language manager.
    *
    * @param \Drupal\Core\Language\LanguageDefault $default_language
@@ -149,7 +154,7 @@ class LanguageManager implements LanguageManagerInterface {
    */
   public function getLanguage($langcode) {
     $languages = $this->getLanguages(LanguageInterface::STATE_ALL);
-    return isset($languages[$langcode]) ? $languages[$langcode] : NULL;
+    return $languages[$langcode] ?? NULL;
   }
 
   /**
@@ -215,7 +220,7 @@ class LanguageManager implements LanguageManagerInterface {
    * {@inheritdoc}
    */
   public function getLanguageSwitchLinks($type, Url $url) {
-    return [];
+    return NULL;
   }
 
   /**
@@ -229,6 +234,7 @@ class LanguageManager implements LanguageManagerInterface {
     // The "Left-to-right marker" comments and the enclosed UTF-8 markers are to
     // make otherwise strange looking PHP syntax natural (to not be displayed in
     // right to left). See https://www.drupal.org/node/128866#comment-528929.
+    // cSpell:disable
     return [
       'af' => ['Afrikaans', 'Afrikaans'],
       'am' => ['Amharic', 'አማርኛ'],
@@ -326,20 +332,21 @@ class LanguageManager implements LanguageManagerInterface {
       'zh-hans' => ['Chinese, Simplified', '简体中文'],
       'zh-hant' => ['Chinese, Traditional', '繁體中文'],
     ];
+    // cSpell:enable
   }
 
   /**
    * The 6 official languages used at the United Nations.
    *
-   * This list is based on
-   * http://www.un.org/en/sections/about-un/official-languages/index.html and it
-   * uses the same format as getStandardLanguageList().
+   * This list is based on https://www.un.org/en/our-work/official-languages
+   * and it uses the same format as getStandardLanguageList().
    *
    * @return array
    *   An array with language codes as keys, and English and native language
    *   names as values.
    */
   public static function getUnitedNationsLanguageList() {
+    // cSpell:disable
     return [
       'ar' => ['Arabic', /* Left-to-right marker "‭" */ 'العربية', LanguageInterface::DIRECTION_RTL],
       'zh-hans' => ['Chinese, Simplified', '简体中文'],
@@ -348,6 +355,7 @@ class LanguageManager implements LanguageManagerInterface {
       'ru' => ['Russian', 'Русский'],
       'es' => ['Spanish', 'Español'],
     ];
+    // cSpell:enable
   }
 
   /**

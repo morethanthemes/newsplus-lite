@@ -115,18 +115,19 @@ class Views {
    * @param string $id
    *   The view ID to load.
    *
-   * @return \Drupal\views\ViewExecutable
-   *   A view executable instance, from the loaded entity.
+   * @return \Drupal\views\ViewExecutable|null
+   *   A view executable instance or NULL if the view does not exist.
    */
   public static function getView($id) {
-    $view = \Drupal::service('entity.manager')->getStorage('view')->load($id);
+    $view = \Drupal::entityTypeManager()->getStorage('view')->load($id);
     if ($view) {
       return static::executableFactory()->get($view);
     }
+    return NULL;
   }
 
   /**
-   * Fetches a list of all base tables available
+   * Fetches a list of all base tables available.
    *
    * @param string $type
    *   Either 'display', 'style' or 'row'.
@@ -136,7 +137,7 @@ class Views {
    * @param array $base
    *   An array of possible base tables.
    *
-   * @return
+   * @return array
    *   A keyed array of in the form of 'base_table' => 'Description'.
    */
   public static function fetchPluginNames($type, $key = NULL, array $base = []) {
@@ -187,6 +188,8 @@ class Views {
   }
 
   /**
+   * Gets view and display IDs for a given setting in display plugin settings.
+   *
    * Return a list of all view IDs and display IDs that have a particular
    * setting in their display's plugin settings.
    *
@@ -195,6 +198,7 @@ class Views {
    *
    * @return array
    *   A list of arrays containing the $view_id and $display_id.
+   *
    * @code
    * array(
    *   array($view_id, $display_id),
@@ -242,7 +246,7 @@ class Views {
    *   An array of loaded view entities.
    */
   public static function getAllViews() {
-    return \Drupal::entityManager()->getStorage('view')->loadMultiple();
+    return \Drupal::entityTypeManager()->getStorage('view')->loadMultiple();
   }
 
   /**
@@ -256,7 +260,7 @@ class Views {
       ->condition('status', TRUE)
       ->execute();
 
-    return \Drupal::entityManager()->getStorage('view')->loadMultiple($query);
+    return \Drupal::entityTypeManager()->getStorage('view')->loadMultiple($query);
   }
 
   /**
@@ -270,24 +274,25 @@ class Views {
       ->condition('status', FALSE)
       ->execute();
 
-    return \Drupal::entityManager()->getStorage('view')->loadMultiple($query);
+    return \Drupal::entityTypeManager()->getStorage('view')->loadMultiple($query);
   }
 
   /**
-   * Returns an array of view as options array, that can be used by select,
-   * checkboxes and radios as #options.
+   * Returns an array of view as options array.
+   *
+   * This array can be used by select, checkboxes and radios as #options.
    *
    * @param bool $views_only
    *   If TRUE, only return views, not displays.
    * @param string $filter
    *   Filters the views on status. Can either be 'all' (default), 'enabled' or
    *   'disabled'
-   * @param mixed $exclude_view
+   * @param \Drupal\views\ViewExecutable|string $exclude_view
    *   View or current display to exclude.
    *   Either a:
-   *   - views object (containing $exclude_view->storage->name and $exclude_view->current_display)
-   *   - views name as string:  e.g. my_view
-   *   - views name and display id (separated by ':'): e.g. my_view:default
+   *   - Views executable object
+   *   - views name, for example 'my_view'
+   *   - views name and display ID separated by ':', for example 'my_view:page'
    * @param bool $optgroup
    *   If TRUE, returns an array with optgroups for each view (will be ignored for
    *   $views_only = TRUE). Can be used by select
@@ -296,7 +301,7 @@ class Views {
    *
    * @return array
    *   An associative array for use in select.
-   *   - key: view name and display id separated by ':', or the view name only.
+   *   - key: view name and display ID separated by ':', or the view name only.
    */
   public static function getViewsAsOptions($views_only = FALSE, $filter = 'all', $exclude_view = NULL, $optgroup = FALSE, $sort = FALSE) {
 
@@ -306,8 +311,9 @@ class Views {
       case 'disabled':
       case 'enabled':
         $filter = ucfirst($filter);
-        $views = call_user_func("static::get{$filter}Views");
+        $views = call_user_func(static::class . "::get{$filter}Views");
         break;
+
       default:
         return [];
     }
@@ -324,7 +330,7 @@ class Views {
     else {
       // Append a ':' to the $exclude_view string so we always have more than one
       // item to explode.
-      list($exclude_view_name, $exclude_view_display) = explode(':', "$exclude_view:");
+      [$exclude_view_name, $exclude_view_display] = explode(':', "$exclude_view:");
     }
 
     $options = [];
@@ -406,8 +412,9 @@ class Views {
   }
 
   /**
-   * Provide a list of views handler types used in a view, with some information
-   * about them.
+   * Provide a list of views handler types used in a view.
+   *
+   * Also provides some information about them.
    *
    * @return array
    *   An array of associative arrays containing:

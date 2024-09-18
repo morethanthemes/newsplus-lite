@@ -4,8 +4,11 @@ namespace Drupal\views_ui;
 
 use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\Timer;
+use Drupal\Component\Utility\Xss;
 use Drupal\Core\EventSubscriber\AjaxResponseSubscriber;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Link;
+use Drupal\Core\TempStore\Lock;
 use Drupal\views\Views;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\views\ViewExecutable;
@@ -14,13 +17,14 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\views\Plugin\views\query\Sql;
 use Drupal\views\Entity\View;
 use Drupal\views\ViewEntityInterface;
-use Symfony\Cmf\Component\Routing\RouteObjectInterface;
+use Drupal\Core\Routing\RouteObjectInterface;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Stores UI related temporary settings.
  */
+#[\AllowDynamicProperties]
 class ViewUI implements ViewEntityInterface {
 
   /**
@@ -48,12 +52,11 @@ class ViewUI implements ViewEntityInterface {
    * If this view is locked for editing.
    *
    * If this view is locked it will contain the result of
-   * \Drupal\Core\TempStore\SharedTempStore::getMetadata(). Which can be a stdClass or
-   * NULL.
+   * \Drupal\Core\TempStore\SharedTempStore::getMetadata().
    *
-   * @var stdClass
+   * @var \Drupal\Core\TempStore\Lock|null
    */
-  public $lock;
+  private $lock;
 
   /**
    * If this view has been changed.
@@ -120,8 +123,9 @@ class ViewUI implements ViewEntityInterface {
   ];
 
   /**
-   * Whether the config is being created, updated or deleted through the
-   * import process.
+   * Whether the config is being synced through the import process.
+   *
+   * This is the case with create, update or delete.
    *
    * @var bool
    */
@@ -133,6 +137,11 @@ class ViewUI implements ViewEntityInterface {
    * @var bool
    */
   private $isUninstalling = FALSE;
+
+  /**
+   * The entity type.
+   */
+  protected $entityType;
 
   /**
    * Constructs a View UI object.
@@ -153,7 +162,7 @@ class ViewUI implements ViewEntityInterface {
       return $this->storage->get($property_name, $langcode);
     }
 
-    return isset($this->{$property_name}) ? $this->{$property_name} : NULL;
+    return $this->{$property_name} ?? NULL;
   }
 
   /**
@@ -214,7 +223,7 @@ class ViewUI implements ViewEntityInterface {
     // Determine whether the values the user entered are intended to apply to
     // the current display or the default display.
 
-    list($was_defaulted, $is_defaulted, $revert) = $this->getOverrideValues($form, $form_state);
+    [$was_defaulted, $is_defaulted, $revert] = $this->getOverrideValues($form, $form_state);
 
     // Based on the user's choice in the display dropdown, determine which display
     // these changes apply to.
@@ -256,7 +265,7 @@ class ViewUI implements ViewEntityInterface {
   }
 
   /**
-   * Submit handler for cancel button
+   * Submit handler for cancel button.
    */
   public function standardCancel($form, FormStateInterface $form_state) {
     if (!empty($this->changed) && isset($this->form_cache)) {
@@ -264,13 +273,14 @@ class ViewUI implements ViewEntityInterface {
       $this->cacheSet();
     }
 
-    $form_state->setRedirectUrl($this->urlInfo('edit-form'));
+    $form_state->setRedirectUrl($this->toUrl('edit-form'));
   }
 
   /**
-   * Provide a standard set of Apply/Cancel/OK buttons for the forms. Also provide
-   * a hidden op operator because the forms plugin doesn't seem to properly
-   * provide which button was clicked.
+   * Provides a standard set of Apply/Cancel/OK buttons for the forms.
+   *
+   * This will also provide a hidden op operator because the forms plugin
+   * doesn't seem to properly provide which button was clicked.
    *
    * TODO: Is the hidden op operator still here somewhere, or is that part of the
    * docblock outdated?
@@ -372,8 +382,9 @@ class ViewUI implements ViewEntityInterface {
   }
 
   /**
-   * Add another form to the stack; clicking 'apply' will go to this form
-   * rather than closing the ajax popup.
+   * Adds another form to the stack.
+   *
+   * Clicking 'apply' will go to this form rather than closing the ajax popup.
    */
   public function addFormToStack($key, $display_id, $type, $id = NULL, $top = FALSE, $rebuild_keys = FALSE) {
     // Reset the cache of IDs. Drupal rather aggressively prevents ID
@@ -428,7 +439,7 @@ class ViewUI implements ViewEntityInterface {
     $display_id = $form_state->get('display_id');
 
     // Handle the override select.
-    list($was_defaulted, $is_defaulted) = $this->getOverrideValues($form, $form_state);
+    [$was_defaulted, $is_defaulted] = $this->getOverrideValues($form, $form_state);
     if ($was_defaulted && !$is_defaulted) {
       // We were using the default display's values, but we're now overriding
       // the default display and saving values specific to this display.
@@ -449,7 +460,7 @@ class ViewUI implements ViewEntityInterface {
     if (!$form_state->isValueEmpty('name') && is_array($form_state->getValue('name'))) {
       // Loop through each of the items that were checked and add them to the view.
       foreach (array_keys(array_filter($form_state->getValue('name'))) as $field) {
-        list($table, $field) = explode('.', $field, 2);
+        [$table, $field] = explode('.', $field, 2);
 
         if ($cut = strpos($field, '$')) {
           $field = substr($field, 0, $cut);
@@ -535,7 +546,6 @@ class ViewUI implements ViewEntityInterface {
     $errors = $executable->validate();
     $executable->destroy();
     if (empty($errors)) {
-      $this->ajax = TRUE;
       $executable->live_preview = TRUE;
 
       // AJAX happens via HTTP POST but everything expects exposed data to
@@ -610,7 +620,7 @@ class ViewUI implements ViewEntityInterface {
 
       // Prepare the query information and statistics to show either above or
       // below the view preview.
-      // Initialise the empty rows arrays so we can safely merge them later.
+      // Initialize the empty rows arrays so we can safely merge them later.
       $rows['query'] = [];
       $rows['statistics'] = [];
       if ($show_info || $show_query || $show_stats) {
@@ -672,9 +682,9 @@ class ViewUI implements ViewEntityInterface {
                 [
                   'data' => [
                     '#prefix' => '<pre>',
-                     'queries' => $queries,
-                     '#suffix' => '</pre>',
-                    ],
+                    'queries' => $queries,
+                    '#suffix' => '</pre>',
+                  ],
                 ],
               ];
             }
@@ -690,13 +700,14 @@ class ViewUI implements ViewEntityInterface {
               [
                 'data' => [
                   '#markup' => $executable->getTitle(),
+                  '#allowed_tags' => Xss::getHtmlTagList(),
                 ],
               ],
             ];
             if (isset($path)) {
               // @todo Views should expect and store a leading /. See:
               //   https://www.drupal.org/node/2423913
-              $path = \Drupal::l($path->toString(), $path);
+              $path = Link::fromTextAndUrl($path->toString(), $path)->toString();
             }
             else {
               $path = t('This display has no path.');
@@ -713,7 +724,7 @@ class ViewUI implements ViewEntityInterface {
                 'data' => [
                   '#markup' => $path,
                 ],
-              ]
+              ],
             ];
           }
           if ($show_stats) {
@@ -790,7 +801,7 @@ class ViewUI implements ViewEntityInterface {
     else {
       foreach ($errors as $display_errors) {
         foreach ($display_errors as $error) {
-          drupal_set_message($error, 'error');
+          \Drupal::messenger()->addError($error);
         }
       }
       $preview = ['#markup' => t('Unable to preview due to validation errors.')];
@@ -829,7 +840,7 @@ class ViewUI implements ViewEntityInterface {
   /**
    * Get the user's current progress through the form stack.
    *
-   * @return
+   * @return array|bool
    *   FALSE if the user is not currently in a multiple-form stack. Otherwise,
    *   an associative array with the following keys:
    *   - current: The number of the current form on the stack.
@@ -859,7 +870,7 @@ class ViewUI implements ViewEntityInterface {
    */
   public function cacheSet() {
     if ($this->isLocked()) {
-      drupal_set_message(t('Changes cannot be made to a locked view.'), 'error');
+      \Drupal::messenger()->addError(t('Changes cannot be made to a locked view.'));
       return;
     }
 
@@ -888,7 +899,8 @@ class ViewUI implements ViewEntityInterface {
    *   TRUE if the view is locked, FALSE otherwise.
    */
   public function isLocked() {
-    return is_object($this->lock) && ($this->lock->owner != \Drupal::currentUser()->id());
+    $lock = $this->getLock();
+    return $lock && $lock->getOwnerId() != \Drupal::currentUser()->id();
   }
 
   /**
@@ -992,22 +1004,8 @@ class ViewUI implements ViewEntityInterface {
   /**
    * {@inheritdoc}
    */
-  public function urlInfo($rel = 'edit-form', array $options = []) {
-    return $this->storage->urlInfo($rel, $options);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function toUrl($rel = 'edit-form', array $options = []) {
     return $this->storage->toUrl($rel, $options);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function link($text = NULL, $rel = 'edit-form', array $options = []) {
-    return $this->storage->link($text, $rel, $options);
   }
 
   /**
@@ -1165,13 +1163,6 @@ class ViewUI implements ViewEntityInterface {
    */
   public function referencedEntities() {
     return $this->storage->referencedEntities();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function url($rel = 'edit-form', $options = []) {
-    return $this->storage->url($rel, $options);
   }
 
   /**
@@ -1349,6 +1340,39 @@ class ViewUI implements ViewEntityInterface {
    */
   public function addCacheTags(array $cache_tags) {
     return $this->storage->addCacheTags($cache_tags);
+  }
+
+  /**
+   * Gets the lock on this View.
+   *
+   * @return \Drupal\Core\TempStore\Lock|null
+   *   The lock, if one exists.
+   */
+  public function getLock() {
+    return $this->lock;
+  }
+
+  /**
+   * Sets a lock on this View.
+   *
+   * @param \Drupal\Core\TempStore\Lock $lock
+   *   The lock object.
+   *
+   * @return $this
+   */
+  public function setLock(Lock $lock) {
+    $this->lock = $lock;
+    return $this;
+  }
+
+  /**
+   * Unsets the lock on this View.
+   *
+   * @return $this
+   */
+  public function unsetLock() {
+    $this->lock = NULL;
+    return $this;
   }
 
 }

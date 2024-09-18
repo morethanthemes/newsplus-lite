@@ -3,6 +3,7 @@
 namespace Drupal\Tests\comment\Unit;
 
 use Drupal\comment\CommentStatistics;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -14,7 +15,7 @@ class CommentStatisticsUnitTest extends UnitTestCase {
   /**
    * Mock statement.
    *
-   * @var \Drupal\Core\Database\Statement
+   * @var \Drupal\Core\Database\StatementInterface
    */
   protected $statement;
 
@@ -49,14 +50,14 @@ class CommentStatisticsUnitTest extends UnitTestCase {
   /**
    * Sets up required mocks and the CommentStatistics service under test.
    */
-  protected function setUp() {
-    $this->statement = $this->getMockBuilder('Drupal\Core\Database\Driver\sqlite\Statement')
+  protected function setUp(): void {
+    $this->statement = $this->getMockBuilder('Drupal\sqlite\Driver\Database\sqlite\Statement')
       ->disableOriginalConstructor()
       ->getMock();
 
     $this->statement->expects($this->any())
       ->method('fetchObject')
-      ->will($this->returnCallback([$this, 'fetchObjectCallback']));
+      ->willReturnCallback([$this, 'fetchObjectCallback']);
 
     $this->select = $this->getMockBuilder('Drupal\Core\Database\Query\Select')
       ->disableOriginalConstructor()
@@ -72,7 +73,7 @@ class CommentStatisticsUnitTest extends UnitTestCase {
 
     $this->select->expects($this->any())
       ->method('execute')
-      ->will($this->returnValue($this->statement));
+      ->willReturn($this->statement);
 
     $this->database = $this->getMockBuilder('Drupal\Core\Database\Connection')
       ->disableOriginalConstructor()
@@ -80,9 +81,9 @@ class CommentStatisticsUnitTest extends UnitTestCase {
 
     $this->database->expects($this->once())
       ->method('select')
-      ->will($this->returnValue($this->select));
+      ->willReturn($this->select);
 
-    $this->commentStatistics = new CommentStatistics($this->database, $this->getMock('Drupal\Core\Session\AccountInterface'), $this->getMock('Drupal\Core\Entity\EntityManagerInterface'), $this->getMock('Drupal\Core\State\StateInterface'));
+    $this->commentStatistics = new CommentStatistics($this->database, $this->createMock('Drupal\Core\Session\AccountInterface'), $this->createMock(EntityTypeManagerInterface::class), $this->createMock('Drupal\Core\State\StateInterface'), $this->database);
   }
 
   /**
@@ -95,8 +96,8 @@ class CommentStatisticsUnitTest extends UnitTestCase {
    */
   public function testRead() {
     $this->calls_to_fetch = 0;
-    $results = $this->commentStatistics->read(['1' => 'boo', '2' => 'foo'], 'snafoos');
-    $this->assertEquals($results, ['something', 'something-else']);
+    $results = $this->commentStatistics->read(['1' => 'boo', '2' => 'foo'], 'snafus');
+    $this->assertEquals(['something', 'something-else'], $results);
   }
 
   /**

@@ -23,33 +23,32 @@
 {% spaceless %}
 {% for item in menu_items %}
 
-  {% if item['children'] is not empty %}
+  {% if item.children is not empty %}
     {% set item_class = item.item_class ~ ' menuparent' %}
-    {% if item['multicolumn_column'] %}
+    {% if item.multicolumn_column %}
       {% set item_class = item_class ~ ' sf-multicolumn-column' %}
     {% endif %}
   {% endif %}
 
-  <li id="{{ item.id }}"
-    {% if item['item_class'] %} class="{{ item['item_class'] }}"{% endif %}>
-    {% if item['multicolumn_column'] %}
+  <li{{ item.attributes }}>
+    {% if item.multicolumn_column %}
     <div class="sf-multicolumn-column">
     {% endif %}
-    {% if item['children'] is not empty %}
-      {{ item['link_menuparent'] }}
+    {% if item.children is not empty %}
+      {{ item.link_menuparent }}
     {% else %}
-      {{ item['link'] }}
+      {{ item.link }}
     {% endif %}
-    {% if item['multicolumn_wrapper'] %}<ul class="sf-multicolumn">
-    <li class="sf-multicolumn-wrapper {{ item['item_class'] }}">
+    {% if item.multicolumn_wrapper %}<ul class="sf-multicolumn">
+    <li class="sf-multicolumn-wrapper {{ item.item_class }}">
     {% endif %}
-    {% if item['children'] is not empty %}
-      {% if item['multicolumn_content'] %}<ol>{% else %}<ul>{% endif %}
-      {{ item['children'] }}
-      {% if item['multicolumn_content'] %}</ol>{% else %}</ul>{% endif %}
+    {% if item.children is not empty %}
+      {% if item.multicolumn_content %}<ol>{% else %}<ul>{% endif %}
+      {{ item.children }}
+      {% if item.multicolumn_content %}</ol>{% else %}</ul>{% endif %}
     {% endif %}
-    {% if item['multicolumn_wrapper'] %}</li></ul>{% endif %}
-    {% if item['multicolumn_column'] %}</div>{% endif %}
+    {% if item.multicolumn_wrapper %}</li></ul>{% endif %}
+    {% if item.multicolumn_column %}</div>{% endif %}
   </li>
 
 {% endfor %}

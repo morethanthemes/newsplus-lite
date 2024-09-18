@@ -32,14 +32,14 @@ class IniFileLoader extends FileLoader
 
         // first pass to catch parsing errors
         $result = parse_ini_file($path, true);
-        if (false === $result || array() === $result) {
+        if (false === $result || [] === $result) {
             throw new InvalidArgumentException(sprintf('The "%s" file is not valid.', $resource));
         }
 
         // real raw parsing
-        $result = parse_ini_file($path, true, INI_SCANNER_RAW);
+        $result = parse_ini_file($path, true, \INI_SCANNER_RAW);
 
-        if (isset($result['parameters']) && is_array($result['parameters'])) {
+        if (isset($result['parameters']) && \is_array($result['parameters'])) {
             foreach ($result['parameters'] as $key => $value) {
                 $this->container->setParameter($key, $this->phpize($value));
             }
@@ -51,11 +51,11 @@ class IniFileLoader extends FileLoader
      */
     public function supports($resource, $type = null)
     {
-        if (!is_string($resource)) {
+        if (!\is_string($resource)) {
             return false;
         }
 
-        if (null === $type && 'ini' === pathinfo($resource, PATHINFO_EXTENSION)) {
+        if (null === $type && 'ini' === pathinfo($resource, \PATHINFO_EXTENSION)) {
             return true;
         }
 
@@ -66,23 +66,27 @@ class IniFileLoader extends FileLoader
      * Note that the following features are not supported:
      *  * strings with escaped quotes are not supported "foo\"bar";
      *  * string concatenation ("foo" "bar").
+     *
+     * @return mixed
      */
-    private function phpize($value)
+    private function phpize(string $value)
     {
         // trim on the right as comments removal keep whitespaces
-        $value = rtrim($value);
+        if ($value !== $v = rtrim($value)) {
+            $value = '""' === substr_replace($v, '', 1, -1) ? substr($v, 1, -1) : $v;
+        }
         $lowercaseValue = strtolower($value);
 
         switch (true) {
-            case defined($value):
-                return constant($value);
+            case \defined($value):
+                return \constant($value);
             case 'yes' === $lowercaseValue || 'on' === $lowercaseValue:
                 return true;
             case 'no' === $lowercaseValue || 'off' === $lowercaseValue || 'none' === $lowercaseValue:
                 return false;
             case isset($value[1]) && (
-                ("'" === $value[0] && "'" === $value[strlen($value) - 1]) ||
-                ('"' === $value[0] && '"' === $value[strlen($value) - 1])
+                ("'" === $value[0] && "'" === $value[\strlen($value) - 1]) ||
+                ('"' === $value[0] && '"' === $value[\strlen($value) - 1])
             ):
                 // quoted string
                 return substr($value, 1, -1);

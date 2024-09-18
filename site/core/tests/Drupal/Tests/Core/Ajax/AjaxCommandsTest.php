@@ -2,6 +2,8 @@
 
 namespace Drupal\Tests\Core\Ajax;
 
+use Drupal\Core\Ajax\AnnounceCommand;
+use Drupal\Core\Asset\AttachedAssets;
 use Drupal\Tests\UnitTestCase;
 use Drupal\Core\Ajax\AddCssCommand;
 use Drupal\Core\Ajax\AfterCommand;
@@ -76,6 +78,61 @@ class AjaxCommandsTest extends UnitTestCase {
     ];
 
     $this->assertEquals($expected, $command->render());
+  }
+
+  /**
+   * @covers \Drupal\Core\Ajax\AnnounceCommand
+   *
+   * @dataProvider announceCommandProvider
+   */
+  public function testAnnounceCommand($message, $priority, array $expected) {
+    if ($priority === NULL) {
+      $command = new AnnounceCommand($message);
+    }
+    else {
+      $command = new AnnounceCommand($message, $priority);
+    }
+
+    $expected_assets = new AttachedAssets();
+    $expected_assets->setLibraries(['core/drupal.announce']);
+
+    $this->assertEquals($expected_assets, $command->getAttachedAssets());
+    $this->assertSame($expected, $command->render());
+  }
+
+  /**
+   * Data provider for testAnnounceCommand().
+   */
+  public function announceCommandProvider() {
+    return [
+      'no priority' => [
+        'Things are going to change!',
+        NULL,
+        [
+          'command' => 'announce',
+          'text' => 'Things are going to change!',
+        ],
+      ],
+      'polite priority' => [
+        'Things are going to change!',
+        'polite',
+        [
+          'command' => 'announce',
+          'text' => 'Things are going to change!',
+          'priority' => AnnounceCommand::PRIORITY_POLITE,
+        ],
+
+      ],
+      'assertive priority' => [
+        'Important!',
+        'assertive',
+        [
+          'command' => 'announce',
+          'text' => 'Important!',
+          'priority' => AnnounceCommand::PRIORITY_ASSERTIVE,
+        ],
+      ],
+    ];
   }
 
   /**
@@ -329,7 +386,7 @@ class AjaxCommandsTest extends UnitTestCase {
           'width' => 500,
         ],
       ])
-      ->setMethods(['getRenderedContent'])
+      ->onlyMethods(['getRenderedContent'])
       ->getMock();
 
     // This method calls the render service, which isn't available. We want it
@@ -428,7 +485,7 @@ class AjaxCommandsTest extends UnitTestCase {
    * @covers \Drupal\Core\Ajax\UpdateBuildIdCommand
    */
   public function testUpdateBuildIdCommand() {
-    $old = 'ThisStringisOld';
+    $old = 'ThisStringIsOld';
     $new = 'ThisStringIsNew';
     $command = new UpdateBuildIdCommand($old, $new);
     $expected = [

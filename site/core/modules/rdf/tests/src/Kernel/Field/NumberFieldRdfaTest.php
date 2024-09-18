@@ -8,6 +8,7 @@ use Drupal\entity_test\Entity\EntityTest;
  * Tests RDFa output by number field formatters.
  *
  * @group rdf
+ * @group legacy
  */
 class NumberFieldRdfaTest extends FieldRdfaTestBase {
 
@@ -23,15 +24,15 @@ class NumberFieldRdfaTest extends FieldRdfaTestBase {
 
     // Test that the content attribute is not created.
     $result = $this->xpathContent($this->getRawContent(), '//div[contains(@class, "field__items") and @content]');
-    $this->assertFalse($result);
+    $this->assertEmpty($result);
   }
 
   /**
    * Tests the integer formatter with settings.
    */
   public function testIntegerFormatterWithSettings() {
-    \Drupal::service('theme_handler')->install(['classy']);
-    $this->config('system.theme')->set('default', 'classy')->save();
+    \Drupal::service('theme_installer')->install(['starterkit_theme']);
+    $this->config('system.theme')->set('default', 'starterkit_theme')->save();
     $this->fieldType = 'integer';
     $formatter = [
       'type' => 'number_integer',
@@ -51,7 +52,7 @@ class NumberFieldRdfaTest extends FieldRdfaTestBase {
 
     // Test that the content attribute is created.
     $result = $this->xpathContent($this->getRawContent(), '//div[contains(@class, "field__item") and @content=:testValue]', [':testValue' => $testValue]);
-    $this->assertTrue($result);
+    $this->assertNotEmpty($result);
   }
 
   /**
@@ -66,15 +67,15 @@ class NumberFieldRdfaTest extends FieldRdfaTestBase {
 
     // Test that the content attribute is not created.
     $result = $this->xpathContent($this->getRawContent(), '//div[contains(@class, "field__items") and @content]');
-    $this->assertFalse($result);
+    $this->assertEmpty($result);
   }
 
   /**
    * Tests the float formatter with settings.
    */
   public function testFloatFormatterWithSettings() {
-    \Drupal::service('theme_handler')->install(['classy']);
-    $this->config('system.theme')->set('default', 'classy')->save();
+    \Drupal::service('theme_installer')->install(['starterkit_theme']);
+    $this->config('system.theme')->set('default', 'starterkit_theme')->save();
     $this->fieldType = 'float';
     $formatter = [
       'type' => 'number_decimal',
@@ -95,7 +96,7 @@ class NumberFieldRdfaTest extends FieldRdfaTestBase {
 
     // Test that the content attribute is created.
     $result = $this->xpathContent($this->getRawContent(), '//div[contains(@class, "field__item") and @content=:testValue]', [':testValue' => $testValue]);
-    $this->assertTrue($result);
+    $this->assertNotEmpty($result);
   }
 
   /**
@@ -116,15 +117,15 @@ class NumberFieldRdfaTest extends FieldRdfaTestBase {
 
     // Test that the content attribute is not created.
     $result = $this->xpathContent($this->getRawContent(), '//div[contains(@class, "field__items") and @content]');
-    $this->assertFalse($result);
+    $this->assertEmpty($result);
   }
 
   /**
    * Tests the float formatter with a scale. Scale is exercised.
    */
   public function testFloatFormatterWithScaleExercised() {
-    \Drupal::service('theme_handler')->install(['classy']);
-    $this->config('system.theme')->set('default', 'classy')->save();
+    \Drupal::service('theme_installer')->install(['starterkit_theme']);
+    $this->config('system.theme')->set('default', 'starterkit_theme')->save();
     $this->fieldType = 'float';
     $formatter = [
       'type' => 'number_decimal',
@@ -139,7 +140,7 @@ class NumberFieldRdfaTest extends FieldRdfaTestBase {
 
     // Test that the content attribute is created.
     $result = $this->xpathContent($this->getRawContent(), '//div[contains(@class, "field__item") and @content=:testValue]', [':testValue' => $testValue]);
-    $this->assertTrue($result);
+    $this->assertNotEmpty($result);
   }
 
   /**
@@ -154,15 +155,15 @@ class NumberFieldRdfaTest extends FieldRdfaTestBase {
 
     // Test that the content attribute is not created.
     $result = $this->xpathContent($this->getRawContent(), '//div[contains(@class, "field__items") and @content]');
-    $this->assertFalse($result);
+    $this->assertEmpty($result);
   }
 
   /**
    * Tests the decimal formatter with settings.
    */
   public function testDecimalFormatterWithSettings() {
-    \Drupal::service('theme_handler')->install(['classy']);
-    $this->config('system.theme')->set('default', 'classy')->save();
+    \Drupal::service('theme_installer')->install(['starterkit_theme']);
+    $this->config('system.theme')->set('default', 'starterkit_theme')->save();
     $this->fieldType = 'decimal';
     $formatter = [
       'type' => 'number_decimal',
@@ -183,7 +184,7 @@ class NumberFieldRdfaTest extends FieldRdfaTestBase {
 
     // Test that the content attribute is created.
     $result = $this->xpathContent($this->getRawContent(), '//div[contains(@class, "field__item") and @content=:testValue]', [':testValue' => $testValue]);
-    $this->assertTrue($result);
+    $this->assertNotEmpty($result);
   }
 
   /**

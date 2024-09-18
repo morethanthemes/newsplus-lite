@@ -22,10 +22,13 @@ class UnpublishByKeywordNode extends ConfigurableActionBase {
    * {@inheritdoc}
    */
   public function execute($node = NULL) {
+    $elements = \Drupal::entityTypeManager()
+      ->getViewBuilder('node')
+      ->view(clone $node);
+    $render = \Drupal::service('renderer')->render($elements);
     foreach ($this->configuration['keywords'] as $keyword) {
-      $elements = node_view(clone $node);
-      if (strpos(\Drupal::service('renderer')->render($elements), $keyword) !== FALSE || strpos($node->label(), $keyword) !== FALSE) {
-        $node->setPublished(FALSE);
+      if (strpos($render, $keyword) !== FALSE || strpos($node->label(), $keyword) !== FALSE) {
+        $node->setUnpublished();
         $node->save();
         break;
       }
@@ -46,9 +49,9 @@ class UnpublishByKeywordNode extends ConfigurableActionBase {
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form['keywords'] = [
-      '#title' => t('Keywords'),
+      '#title' => $this->t('Keywords'),
       '#type' => 'textarea',
-      '#description' => t('The content will be unpublished if it contains any of the phrases above. Use a case-sensitive, comma-separated list of phrases. Example: funny, bungee jumping, "Company, Inc."'),
+      '#description' => $this->t('The content will be unpublished if it contains any of the phrases above. Use a case-sensitive, comma-separated list of phrases. Example: funny, bungee jumping, "Company, Inc."'),
       '#default_value' => Tags::implode($this->configuration['keywords']),
     ];
     return $form;

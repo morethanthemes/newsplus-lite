@@ -8,6 +8,7 @@ use Drupal\entity_test\Entity\EntityTest;
  * Tests the placement of RDFa in link field formatters.
  *
  * @group rdf
+ * @group legacy
  */
 class LinkFieldRdfaTest extends FieldRdfaTestBase {
 
@@ -19,12 +20,12 @@ class LinkFieldRdfaTest extends FieldRdfaTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['link', 'text'];
+  protected static $modules = ['link', 'text'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->createTestField();

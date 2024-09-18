@@ -26,7 +26,9 @@ use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 use Symfony\Component\Routing\Matcher\RequestMatcherInterface;
 
 /**
- * Class to define the menu_link breadcrumb builder.
+ * Defines a class to build path-based breadcrumbs.
+ *
+ * @see \Drupal\Core\Breadcrumb\BreadcrumbBuilderInterface
  */
 class PathBasedBreadcrumbBuilder implements BreadcrumbBuilderInterface {
   use StringTranslationTrait;
@@ -39,7 +41,7 @@ class PathBasedBreadcrumbBuilder implements BreadcrumbBuilderInterface {
   protected $context;
 
   /**
-   * The menu link access service.
+   * The access check service.
    *
    * @var \Drupal\Core\Access\AccessManagerInterface
    */
@@ -100,7 +102,7 @@ class PathBasedBreadcrumbBuilder implements BreadcrumbBuilderInterface {
    * @param \Drupal\Core\Routing\RequestContext $context
    *   The router request context.
    * @param \Drupal\Core\Access\AccessManagerInterface $access_manager
-   *   The menu link access service.
+   *   The access check service.
    * @param \Symfony\Component\Routing\Matcher\RequestMatcherInterface $router
    *   The dynamic router service.
    * @param \Drupal\Core\PathProcessor\InboundPathProcessorInterface $path_processor
@@ -144,7 +146,7 @@ class PathBasedBreadcrumbBuilder implements BreadcrumbBuilderInterface {
 
     // Add the url.path.parent cache context. This code ignores the last path
     // part so the result only depends on the path parents.
-    $breadcrumb->addCacheContexts(['url.path.parent']);
+    $breadcrumb->addCacheContexts(['url.path.parent', 'url.path.is_front']);
 
     // Do not display a breadcrumb on the frontpage.
     if ($this->pathMatcher->isFrontPage()) {
@@ -207,8 +209,6 @@ class PathBasedBreadcrumbBuilder implements BreadcrumbBuilderInterface {
     if (!empty($exclude[$path])) {
       return NULL;
     }
-    // @todo Use the RequestHelper once https://www.drupal.org/node/2090293 is
-    //   fixed.
     $request = Request::create($path);
     // Performance optimization: set a short accept header to reduce overhead in
     // AcceptHeaderMatcher when matching the request.

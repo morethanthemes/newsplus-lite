@@ -1,0 +1,10 @@
+name: 'Modernizr deprecation test'
+type: module
+description: 'Test Modernizr deprecations via a basic page that loads a library based on the path.'
+package: Testing
+# version: VERSION
+
+# Information added by Drupal.org packaging script on 2023-09-20
+version: '9.5.11'
+project: 'drupal'
+datestamp: 1695228127

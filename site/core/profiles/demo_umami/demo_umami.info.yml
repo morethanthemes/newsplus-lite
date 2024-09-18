@@ -2,26 +2,26 @@ name: 'Demo: Umami Food Magazine (Experimental)'
 type: profile
 description: 'Install an example site that shows off some of Drupal’s capabilities.'
 # version: VERSION
-# core: 8.x
-hidden: true
-dependencies:
+install:
   - node
   - history
   - big_pipe
   - block
   - breakpoint
-  - ckeditor
-  - color
+  - ckeditor5
   - config
   - contextual
   - contact
+  - layout_builder
+  - layout_discovery
   - menu_link_content
   - datetime
   - block_content
-  - quickedit
   - editor
   - help
   - image
+  - media
+  - media_library
   - menu_ui
   - options
   - path
@@ -34,18 +34,23 @@ dependencies:
   - toolbar
   - field_ui
   - file
-  - rdf
   - views
   - views_ui
   - tour
   - automated_cron
   - responsive_image
+  - content_moderation
+  - workflows
+  - language
+  - locale
+  - config_translation
+  - content_translation
 themes:
-  - seven
+  - claro
   - umami
+keep_english: true
 
-# Information added by Drupal.org packaging script on 2018-06-06
-version: '8.5.4'
-core: '8.x'
+# Information added by Drupal.org packaging script on 2023-09-20
+version: '9.5.11'
 project: 'drupal'
-datestamp: 1528319624
+datestamp: 1695228127

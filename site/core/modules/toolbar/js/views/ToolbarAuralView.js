@@ -4,12 +4,10 @@
 * https://www.drupal.org/node/2815083
 * @preserve
 **/
-
 (function (Backbone, Drupal) {
   Drupal.toolbar.ToolbarAuralView = Backbone.View.extend({
     initialize: function initialize(options) {
       this.strings = options.strings;
-
       this.listenTo(this.model, 'change:orientation', this.onOrientationChange);
       this.listenTo(this.model, 'change:activeTray', this.onActiveTrayChange);
     },
@@ -20,19 +18,21 @@
     },
     onActiveTrayChange: function onActiveTrayChange(model, tray) {
       var relevantTray = tray === null ? model.previous('activeTray') : tray;
-
       if (!relevantTray) {
         return;
       }
       var action = tray === null ? Drupal.t('closed') : Drupal.t('opened');
       var trayNameElement = relevantTray.querySelector('.toolbar-tray-name');
-      var text = void 0;
+      var text;
       if (trayNameElement !== null) {
         text = Drupal.t('Tray "@tray" @action.', {
-          '@tray': trayNameElement.textContent, '@action': action
+          '@tray': trayNameElement.textContent,
+          '@action': action
         });
       } else {
-        text = Drupal.t('Tray @action.', { '@action': action });
+        text = Drupal.t('Tray @action.', {
+          '@action': action
+        });
       }
       Drupal.announce(text);
     }

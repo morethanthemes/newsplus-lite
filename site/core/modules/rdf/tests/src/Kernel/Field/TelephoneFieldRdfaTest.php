@@ -8,6 +8,7 @@ use Drupal\entity_test\Entity\EntityTest;
  * Tests RDFa output by telephone field formatters.
  *
  * @group rdf
+ * @group legacy
  */
 class TelephoneFieldRdfaTest extends FieldRdfaTestBase {
 
@@ -26,9 +27,12 @@ class TelephoneFieldRdfaTest extends FieldRdfaTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['telephone', 'text'];
+  protected static $modules = ['telephone', 'text'];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->createTestField();

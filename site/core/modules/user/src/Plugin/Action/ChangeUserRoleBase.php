@@ -41,7 +41,7 @@ abstract class ChangeUserRoleBase extends ConfigurableActionBase implements Cont
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('entity.manager')->getDefinition('user_role')
+      $container->get('entity_type.manager')->getDefinition('user_role')
     );
   }
 
@@ -62,7 +62,7 @@ abstract class ChangeUserRoleBase extends ConfigurableActionBase implements Cont
     unset($roles[RoleInterface::AUTHENTICATED_ID]);
     $form['rid'] = [
       '#type' => 'radios',
-      '#title' => t('Role'),
+      '#title' => $this->t('Role'),
       '#options' => $roles,
       '#default_value' => $this->configuration['rid'],
       '#required' => TRUE,

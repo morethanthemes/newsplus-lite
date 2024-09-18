@@ -10,6 +10,7 @@ use Drupal\Tests\UnitTestCase;
  * @coversDefaultClass \Drupal\ckeditor\CKEditorPluginManager
  *
  * @group ckeditor
+ * @group legacy
  */
 class CKEditorPluginManagerTest extends UnitTestCase {
 
@@ -20,7 +21,7 @@ class CKEditorPluginManagerTest extends UnitTestCase {
     return [
       'empty' => [
         [],
-        []
+        [],
       ],
       '1 row, 1 group' => [
         [
@@ -28,9 +29,9 @@ class CKEditorPluginManagerTest extends UnitTestCase {
           [
             // Group 1.
             ['name' => 'Formatting', 'items' => ['Bold', 'Italic']],
-          ]
+          ],
         ],
-        ['Bold', 'Italic']
+        ['Bold', 'Italic'],
       ],
       '1 row, >1 groups' => [
         [
@@ -42,7 +43,7 @@ class CKEditorPluginManagerTest extends UnitTestCase {
             ['name' => 'Linking', 'items' => ['Link']],
           ],
         ],
-        ['Bold', 'Italic', 'Link']
+        ['Bold', 'Italic', 'Link'],
       ],
       '2 rows, 1 group each' => [
         [
@@ -67,7 +68,7 @@ class CKEditorPluginManagerTest extends UnitTestCase {
             ['name' => 'Formatting', 'items' => ['Bold', 'Italic']],
             // Group 2.
             ['name' => 'Linking', 'items' => ['Link']],
-        ],
+          ],
           // Row 2.
           [
             // Group 1.
@@ -76,7 +77,7 @@ class CKEditorPluginManagerTest extends UnitTestCase {
             ['name' => 'Advanced', 'items' => ['Llama']],
           ],
         ],
-        ['Bold', 'Italic', 'Link', 'Source', 'Llama']
+        ['Bold', 'Italic', 'Link', 'Source', 'Llama'],
       ],
     ];
   }

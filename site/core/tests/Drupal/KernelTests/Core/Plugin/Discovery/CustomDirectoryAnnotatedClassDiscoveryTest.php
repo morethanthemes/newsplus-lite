@@ -3,16 +3,19 @@
 namespace Drupal\KernelTests\Core\Plugin\Discovery;
 
 use Drupal\Core\Plugin\Discovery\AnnotatedClassDiscovery;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
- * Tests that plugins in a custom directory are correctly discovered using
- * annotated classes.
+ * Tests discovery of annotated plugins in a custom directory.
  *
  * @group Plugin
  */
 class CustomDirectoryAnnotatedClassDiscoveryTest extends DiscoveryTestBase {
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->expectedDefinitions = [
@@ -40,7 +43,7 @@ class CustomDirectoryAnnotatedClassDiscoveryTest extends DiscoveryTestBase {
         'label' => 'Banana',
         'color' => 'yellow',
         'uses' => [
-          'bread' => t('Banana bread'),
+          'bread' => new TranslatableMarkup('Banana bread'),
           'loaf' => [
             'singular' => '@count loaf',
             'plural' => '@count loaves',
@@ -80,7 +83,7 @@ class CustomDirectoryAnnotatedClassDiscoveryTest extends DiscoveryTestBase {
       ],
     ];
 
-    $base_directory = \Drupal::root() . '/core/modules/system/tests/modules/plugin_test/src';
+    $base_directory = $this->root . '/core/modules/system/tests/modules/plugin_test/src';
     $namespaces = new \ArrayObject(['Drupal\plugin_test' => $base_directory]);
 
     $this->discovery = new AnnotatedClassDiscovery('', $namespaces);

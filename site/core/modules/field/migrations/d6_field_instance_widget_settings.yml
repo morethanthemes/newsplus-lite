@@ -1,10 +1,11 @@
+# cspell:ignore imagefield optionwidgets
 id: d6_field_instance_widget_settings
 label: Field instance widget configuration
 migration_tags:
   - Drupal 6
   - Configuration
 class: Drupal\migrate_drupal\Plugin\migrate\FieldMigration
-field_plugin_method: processFieldWidget
+field_plugin_method: alterFieldWidgetMigration
 source:
   plugin: d6_field_instance_per_form_display
   constants:
@@ -57,6 +58,7 @@ process:
         optionwidgets_buttons: options_buttons
         optionwidgets_select: options_select
         nodereference_select: options_select
+        nodereference_url: entity_reference_autocomplete
         nodereference_buttons: options_buttons
         nodereference_autocomplete: entity_reference_autocomplete_tags
         userreference_select: options_select

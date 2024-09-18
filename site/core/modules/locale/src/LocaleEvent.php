@@ -2,7 +2,7 @@
 
 namespace Drupal\locale;
 
-use Symfony\Component\EventDispatcher\Event;
+use Drupal\Component\EventDispatcher\Event;
 
 /**
  * Defines a Locale event.
@@ -21,7 +21,7 @@ class LocaleEvent extends Event {
    *
    * @var string[]
    */
-  protected $original;
+  protected $lids;
 
   /**
    * Constructs a new LocaleEvent.

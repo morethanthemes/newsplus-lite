@@ -1,0 +1,13 @@
+name: 'Views Test Modal'
+type: module
+description: 'Provides a test page that renders a View in a modal.'
+package: Testing
+# version: VERSION
+dependencies:
+  - drupal:node
+  - drupal:views
+
+# Information added by Drupal.org packaging script on 2023-09-20
+version: '9.5.11'
+project: 'drupal'
+datestamp: 1695228127

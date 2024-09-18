@@ -3,7 +3,6 @@
 namespace Drupal\Core\Entity\Query\Sql;
 
 use Drupal\Core\Database\Query\SelectInterface;
-use Drupal\Core\Database\Query\Condition as SqlCondition;
 use Drupal\Core\Entity\Query\ConditionBase;
 use Drupal\Core\Entity\Query\ConditionInterface;
 
@@ -27,6 +26,13 @@ class Condition extends ConditionBase {
   protected $query;
 
   /**
+   * The current SQL query, set by parent condition compile() method calls.
+   *
+   * @var \Drupal\Core\Database\Query\SelectInterface
+   */
+  protected $sqlQuery;
+
+  /**
    * {@inheritdoc}
    */
   public function compile($conditionContainer) {
@@ -36,13 +42,13 @@ class Condition extends ConditionBase {
     // SQL query object is only necessary to pass to Query::addField() so it
     // can join tables as necessary. On the other hand, conditions need to be
     // added to the $conditionContainer object to keep grouping.
-    $sql_query = $conditionContainer instanceof SelectInterface ? $conditionContainer : $conditionContainer->sqlQuery;
+    $sql_query = $conditionContainer instanceof SelectInterface ? $conditionContainer : $this->sqlQuery;
     $tables = $this->query->getTables($sql_query);
     foreach ($this->conditions as $condition) {
       if ($condition['field'] instanceof ConditionInterface) {
-        $sql_condition = new SqlCondition($condition['field']->getConjunction());
+        $sql_condition = $sql_query->getConnection()->condition($condition['field']->getConjunction());
         // Add the SQL query to the object before calling this method again.
-        $sql_condition->sqlQuery = $sql_query;
+        $condition['field']->sqlQuery = $sql_query;
         $condition['field']->nestedInsideOrCondition = $this->nestedInsideOrCondition || strtoupper($this->conjunction) === 'OR';
         $condition['field']->compile($sql_condition);
         $conditionContainer->condition($sql_condition);
@@ -50,6 +56,16 @@ class Condition extends ConditionBase {
       else {
         $type = $this->nestedInsideOrCondition || strtoupper($this->conjunction) === 'OR' || $condition['operator'] === 'IS NULL' ? 'LEFT' : 'INNER';
         $field = $tables->addField($condition['field'], $type, $condition['langcode']);
+        // If the field is trying to query on %delta for a single value field
+        // then the only supported delta is 0. No other value than 0 makes
+        // sense. \Drupal\Core\Entity\Query\Sql\Tables::addField() returns 0 as
+        // the field name for single value fields when querying on their %delta.
+        if ($field === 0) {
+          if ($condition['value'] != 0) {
+            $conditionContainer->alwaysFalse();
+          }
+          continue;
+        }
         $condition['real_field'] = $field;
         static::translateCondition($condition, $sql_query, $tables->isFieldCaseSensitive($condition['field']));
 
@@ -110,6 +126,7 @@ class Condition extends ConditionBase {
           $condition['operator'] = 'LIKE';
         }
         break;
+
       case '<>':
         // If a field explicitly requests that queries should not be case
         // sensitive, use the NOT LIKE operator, otherwise keep <>.
@@ -118,6 +135,7 @@ class Condition extends ConditionBase {
           $condition['operator'] = 'NOT LIKE';
         }
         break;
+
       case 'STARTS_WITH':
         if ($case_sensitive) {
           $condition['operator'] = 'LIKE BINARY';

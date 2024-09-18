@@ -5,9 +5,9 @@ namespace Drupal\views\Plugin\views\query;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Database\Database;
-use Drupal\Core\Database\Query\Condition;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\Core\Database\DatabaseExceptionWrapper;
 use Drupal\views\Plugin\views\join\JoinPluginBase;
@@ -36,35 +36,33 @@ class Sql extends QueryPluginBase {
   protected $tableQueue = [];
 
   /**
-   * Holds an array of tables and counts added so that we can create aliases
+   * Holds an array of tables and counts added so that we can create aliases.
    */
   public $tables = [];
 
   /**
-   * Holds an array of relationships, which are aliases of the primary
-   * table that represent different ways to join the same table in.
+   * Holds an array of relationships.
+   *
+   * These are aliases of the primary table that represent different ways to
+   * join the same table in.
    */
   public $relationships = [];
 
   /**
-   * An array of sections of the WHERE query. Each section is in itself
-   * an array of pieces and a flag as to whether or not it should be AND
-   * or OR.
+   * An array of sections of the WHERE query.
+   *
+   * Each section is in itself an array of pieces and a flag as to whether or
+   * not it should be AND or OR.
    */
+
   public $where = [];
   /**
-   * An array of sections of the HAVING query. Each section is in itself
-   * an array of pieces and a flag as to whether or not it should be AND
-   * or OR.
+   * An array of sections of the HAVING query.
+   *
+   * Each section is in itself an array of pieces and a flag as to whether or
+   * not it should be AND or OR.
    */
   public $having = [];
-  /**
-   * The default operator to use when connecting the WHERE groups. May be
-   * AND or OR.
-   *
-   * @var string
-   */
-  protected $groupOperator = 'AND';
 
   /**
    * A simple array of order by clauses.
@@ -131,6 +129,13 @@ class Sql extends QueryPluginBase {
   protected $dateSql;
 
   /**
+   * The messenger.
+   *
+   * @var \Drupal\Core\Messenger\MessengerInterface
+   */
+  protected $messenger;
+
+  /**
    * Constructs a Sql object.
    *
    * @param array $configuration
@@ -143,21 +148,31 @@ class Sql extends QueryPluginBase {
    *   The entity type manager.
    * @param \Drupal\views\Plugin\views\query\DateSqlInterface $date_sql
    *   The database-specific date handler.
+   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   *   The messenger.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entity_type_manager, DateSqlInterface $date_sql) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entity_type_manager, DateSqlInterface $date_sql, MessengerInterface $messenger) {
+    // By default, use AND operator to connect WHERE groups.
+    $this->groupOperator = 'AND';
+
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
     $this->entityTypeManager = $entity_type_manager;
     $this->dateSql = $date_sql;
+    $this->messenger = $messenger;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
     return new static(
       $configuration,
       $plugin_id,
       $plugin_definition,
       $container->get('entity_type.manager'),
-      $container->get('views.date_sql')
+      $container->get('views.date_sql'),
+      $container->get('messenger')
     );
   }
 
@@ -173,7 +188,7 @@ class Sql extends QueryPluginBase {
       'link' => NULL,
       'table' => $base_table,
       'alias' => $base_table,
-      'base' => $base_table
+      'base' => $base_table,
     ];
 
     // init the table queue with our primary table.
@@ -223,7 +238,7 @@ class Sql extends QueryPluginBase {
    * Set the view to be distinct (per base field).
    *
    * @param bool $value
-   *   Should the view be distincted.
+   *   Should the view be distinct.
    */
   protected function setDistinct($value = TRUE) {
     if (!(isset($this->noDistinct) && $value)) {
@@ -312,19 +327,27 @@ class Sql extends QueryPluginBase {
    */
   public function submitOptionsForm(&$form, FormStateInterface $form_state) {
     $element = ['#parents' => ['query', 'options', 'query_tags']];
-    $value = explode(',', NestedArray::getValue($form_state->getValues(), $element['#parents']));
-    $value = array_filter(array_map('trim', $value));
+    $value = NestedArray::getValue($form_state->getValues(), $element['#parents']);
+    // When toggling a display to override defaults or vice-versa the submit
+    // handler gets invoked twice, and we don't want to bash the values from the
+    // original call.
+    if (is_array($value)) {
+      return;
+    }
+    $value = array_filter(array_map('trim', explode(',', $value)));
     $form_state->setValueForElement($element, $value);
   }
 
   /**
+   * Adds a relationship to the query.
+   *
    * A relationship is an alternative endpoint to a series of table
    * joins. Relationships must be aliases of the primary table and
    * they must join either to the primary table or to a pre-existing
    * relationship.
    *
-   * An example of a relationship would be a nodereference table.
-   * If you have a nodereference named 'book_parent' which links to a
+   * An example of a relationship would be a node reference table.
+   * If you have a node reference named 'book_parent' which links to a
    * parent node, you could set up a relationship 'node_book_parent'
    * to 'node'. Then, anything that links to 'node' can link to
    * 'node_book_parent' instead, thus allowing all properties of
@@ -546,9 +569,11 @@ class Sql extends QueryPluginBase {
   }
 
   /**
-   * Ensure a table exists in the queue; if it already exists it won't
-   * do anything, but if it doesn't it will add the table queue. It will ensure
-   * a path leads back to the relationship table.
+   * Ensures a table exists in the queue.
+   *
+   * If it already exists it won't do anything, but if it doesn't it will add
+   * the table queue. It will ensure a path leads back to the relationship
+   * table.
    *
    * @param $table
    *   The unaliased name of the table to ensure.
@@ -559,7 +584,7 @@ class Sql extends QueryPluginBase {
    * @param \Drupal\views\Plugin\views\join\JoinPluginBase $join
    *   A Join object (or derived object) to join the alias in.
    *
-   * @return
+   * @return string|null
    *   The alias used to refer to this specific table, or NULL if the table
    *   cannot be ensured.
    */
@@ -636,11 +661,11 @@ class Sql extends QueryPluginBase {
   }
 
   /**
-   * Make sure that the specified table can be properly linked to the primary
-   * table in the JOINs. This function uses recursion. If the tables
-   * needed to complete the path back to the primary table are not in the
-   * query they will be added, but additional copies will NOT be added
-   * if the table is already there.
+   * Ensures the given table can be linked to the primary table in the JOINs.
+   *
+   * This function uses recursion. If the tables needed to complete the path
+   * back to the primary table are not in the query they will be added, but
+   * additional copies will NOT be added if the table is already there.
    */
   protected function ensurePath($table, $relationship = NULL, $join = NULL, $traced = [], $add = []) {
     if (!isset($relationship)) {
@@ -691,8 +716,10 @@ class Sql extends QueryPluginBase {
   }
 
   /**
-   * Fix a join to adhere to the proper relationship; the left table can vary
-   * based upon what relationship items are joined in on.
+   * Fixes a join to adhere to the proper relationship.
+   *
+   * The left table can vary based upon what relationship items are joined in
+   * on.
    */
   protected function adjustJoin($join, $relationship) {
     if (!empty($join->adjusted)) {
@@ -777,8 +804,9 @@ class Sql extends QueryPluginBase {
   }
 
   /**
-   * Add a field to the query table, possibly with an alias. This will
-   * automatically call ensureTable to make sure the required table
+   * Adds a field to the query table, possibly with an alias.
+   *
+   * This will automatically call ensureTable to make sure the required table
    * exists, *unless* $table is unset.
    *
    * @param $table
@@ -820,7 +848,7 @@ class Sql extends QueryPluginBase {
     $alias = $alias ? $alias : $field;
 
     // PostgreSQL truncates aliases to 63 characters:
-    //   https://www.drupal.org/node/571548.
+    // https://www.drupal.org/node/571548.
 
     // We limit the length of the original alias up to 60 characters
     // to get a unique alias later if its have duplicates
@@ -853,24 +881,27 @@ class Sql extends QueryPluginBase {
   }
 
   /**
-   * Remove all fields that may've been added; primarily used for summary
-   * mode where we're changing the query because we didn't get data we needed.
+   * Removes all fields that may have been added.
+   *
+   * Primarily used for summary mode where we're changing the query because
+   * we didn't get data we needed.
    */
   public function clearFields() {
     $this->fields = [];
   }
 
   /**
-   * Add a simple WHERE clause to the query. The caller is responsible for
-   * ensuring that all fields are fully qualified (TABLE.FIELD) and that
-   * the table already exists in the query.
+   * Adds a simple WHERE clause to the query.
+   *
+   * The caller is responsible for ensuring that all fields are fully qualified
+   * (TABLE.FIELD) and that the table already exists in the query.
    *
    * The $field, $value and $operator arguments can also be passed in with a
    * single DatabaseCondition object, like this:
    * @code
    * $this->query->addWhere(
    *   $this->options['group'],
-   *   (new Condition('OR'))
+   *   ($this->query->getConnection()->condition('OR'))
    *     ->condition($field, $value, 'NOT IN')
    *     ->condition($field, $value, 'IS NULL')
    * );
@@ -914,7 +945,7 @@ class Sql extends QueryPluginBase {
   }
 
   /**
-   * Add a complex WHERE clause to the query.
+   * Adds a complex WHERE clause to the query.
    *
    * The caller is responsible for ensuring that all fields are fully qualified
    * (TABLE.FIELD) and that the table already exists in the query.
@@ -953,6 +984,7 @@ class Sql extends QueryPluginBase {
 
   /**
    * Add a complex HAVING clause to the query.
+   *
    * The caller is responsible for ensuring that all fields are fully qualified
    * (TABLE.FIELD) and that the table and an appropriate GROUP BY already exist in the query.
    * Internally the dbtng method "having" is used.
@@ -1030,14 +1062,15 @@ class Sql extends QueryPluginBase {
 
     $this->orderby[] = [
       'field' => $as,
-      'direction' => strtoupper($order)
+      'direction' => strtoupper($order),
     ];
   }
 
   /**
-   * Add a simple GROUP BY clause to the query. The caller is responsible
-   * for ensuring that the fields are fully qualified and the table is properly
-   * added.
+   * Add a simple GROUP BY clause to the query.
+   *
+   * The caller is responsible for ensuring that the fields are fully qualified
+   * and the table is properly added.
    */
   public function addGroupBy($clause) {
     // Only add it if it's not already in there.
@@ -1054,7 +1087,7 @@ class Sql extends QueryPluginBase {
    * @see \Drupal\views\Plugin\views\query\Sql::addField
    */
   protected function getFieldAlias($table_alias, $field) {
-    return isset($this->fieldAliases[$table_alias][$field]) ? $this->fieldAliases[$table_alias][$field] : FALSE;
+    return $this->fieldAliases[$table_alias][$field] ?? FALSE;
   }
 
   /**
@@ -1096,13 +1129,16 @@ class Sql extends QueryPluginBase {
     $has_arguments = FALSE;
     $has_filter = FALSE;
 
-    $main_group = new Condition('AND');
-    $filter_group = $this->groupOperator == 'OR' ? new Condition('OR') : new Condition('AND');
+    /** @var \Drupal\Core\Database\Connection $connection */
+    $connection = $this->getConnection();
+
+    $main_group = $connection->condition('AND');
+    $filter_group = $this->groupOperator == 'OR' ? $connection->condition('OR') : $connection->condition('AND');
 
     foreach ($this->$where as $group => $info) {
 
       if (!empty($info['conditions'])) {
-        $sub_group = $info['type'] == 'OR' ? new Condition('OR') : new Condition('AND');
+        $sub_group = $info['type'] == 'OR' ? $connection->condition('OR') : $connection->condition('AND');
         foreach ($info['conditions'] as $clause) {
           if ($clause['operator'] == 'formula') {
             $has_condition = TRUE;
@@ -1234,8 +1270,25 @@ class Sql extends QueryPluginBase {
   }
 
   /**
-   * Generate a query and a countquery from all of the information supplied
-   * to the object.
+   * Gets the database connection to use for the view.
+   *
+   * The returned database connection does not have to be the default database
+   * connection. It can also be to another database connection when the view is
+   * to an external database or a replica database.
+   *
+   * @return \Drupal\Core\Database\Connection
+   *   The database connection to be used for the query.
+   */
+  public function getConnection() {
+    // Set the replica target if the replica option is set for the view.
+    $target = empty($this->options['replica']) ? 'default' : 'replica';
+    // Use an external database when the view configured to.
+    $key = $this->view->base_database ?? 'default';
+    return Database::getConnection($target, $key);
+  }
+
+  /**
+   * Generates a query and a countquery from all of the information supplied.
    *
    * @param $get_count
    *   Provide a countquery if this is true, otherwise provide a normal query.
@@ -1267,23 +1320,9 @@ class Sql extends QueryPluginBase {
       $this->getCountOptimized = TRUE;
     }
 
-    $options = [];
-    $target = 'default';
-    $key = 'default';
-    // Detect an external database and set the
-    if (isset($this->view->base_database)) {
-      $key = $this->view->base_database;
-    }
-
-    // Set the replica target if the replica option is set
-    if (!empty($this->options['replica'])) {
-      $target = 'replica';
-    }
-
     // Go ahead and build the query.
-    // db_select doesn't support to specify the key, so use getConnection directly.
-    $query = Database::getConnection($target, $key)
-      ->select($this->view->storage->get('base_table'), $this->view->storage->get('base_table'), $options)
+    $query = $this->getConnection()
+      ->select($this->view->storage->get('base_table'), $this->view->storage->get('base_table'))
       ->addTag('views')
       ->addTag('views_' . $this->view->storage->id());
 
@@ -1323,15 +1362,15 @@ class Sql extends QueryPluginBase {
     $entity_information = $this->getEntityTableInfo();
     if ($entity_information) {
       $params = [];
-      if ($groupby) {
+      if ($this->hasAggregate) {
         // Handle grouping, by retrieving the minimum entity_id.
         $params = [
           'function' => 'min',
         ];
       }
 
-      foreach ($entity_information as $entity_type_id => $info) {
-        $entity_type = \Drupal::entityManager()->getDefinition($info['entity_type']);
+      foreach ($entity_information as $info) {
+        $entity_type = \Drupal::entityTypeManager()->getDefinition($info['entity_type']);
         $base_field = !$info['revision'] ? $entity_type->getKey('id') : $entity_type->getKey('revision');
         $this->addField($info['alias'], $base_field, '', $params);
       }
@@ -1395,14 +1434,7 @@ class Sql extends QueryPluginBase {
    * Get the arguments attached to the WHERE and HAVING clauses of this query.
    */
   public function getWhereArgs() {
-    $args = [];
-    foreach ($this->where as $where) {
-      $args = array_merge($args, $where['args']);
-    }
-    foreach ($this->having as $having) {
-      $args = array_merge($args, $having['args']);
-    }
-    return $args;
+    return array_merge([], ...array_column($this->where, 'args'), ...array_column($this->having, 'args'));
   }
 
   /**
@@ -1434,8 +1466,7 @@ class Sql extends QueryPluginBase {
   }
 
   /**
-   * Executes the query and fills the associated view object with according
-   * values.
+   * Executes the query and fills associated view object with according values.
    *
    * Values to set: $view->result, $view->total_rows, $view->execute_time,
    * $view->current_page.
@@ -1470,8 +1501,7 @@ class Sql extends QueryPluginBase {
       // If not, then hook_query_node_access_alter() may munge the count by
       // adding a distinct against an empty query string
       // (e.g. COUNT DISTINCT(1) ...) and no pager will return.
-      // See pager.inc > PagerDefault::execute()
-      // http://api.drupal.org/api/drupal/includes--pager.inc/function/PagerDefault::execute/7
+      // See \Drupal\Core\Database\Query\PagerSelectExtender::execute()
       // See https://www.drupal.org/node/1046170.
       $count_query->preExecute();
 
@@ -1498,7 +1528,7 @@ class Sql extends QueryPluginBase {
 
         if (!empty($this->limit) || !empty($this->offset)) {
           // We can't have an offset without a limit, so provide a very large limit instead.
-          $limit  = intval(!empty($this->limit) ? $this->limit : 999999);
+          $limit = intval(!empty($this->limit) ? $this->limit : 999999);
           $offset = intval(!empty($this->offset) ? $this->offset : 0);
           $query->range($offset, $limit);
         }
@@ -1522,7 +1552,7 @@ class Sql extends QueryPluginBase {
       catch (DatabaseExceptionWrapper $e) {
         $view->result = [];
         if (!empty($view->live_preview)) {
-          drupal_set_message($e->getMessage(), 'error');
+          $this->messenger->addError($e->getMessage());
         }
         else {
           throw new DatabaseExceptionWrapper("Exception in {$view->storage->label()}[{$view->storage->id()}]: {$e->getMessage()}");
@@ -1538,7 +1568,7 @@ class Sql extends QueryPluginBase {
 
   /**
    * Loads all entities contained in the passed-in $results.
-   *.
+   *
    * If the entity belongs to the base table, then it gets stored in
    * $result->_entity. Otherwise, it gets stored in
    * $result->_relationship_entities[$relationship_id];
@@ -1778,7 +1808,7 @@ class Sql extends QueryPluginBase {
           'filter' => 'groupby_numeric',
           'sort' => 'groupby_numeric',
         ],
-      ]
+      ],
     ];
   }
 

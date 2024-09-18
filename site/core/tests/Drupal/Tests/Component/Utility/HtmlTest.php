@@ -7,6 +7,7 @@ use Drupal\Component\Render\MarkupTrait;
 use Drupal\Component\Utility\Html;
 use Drupal\Component\Utility\Random;
 use PHPUnit\Framework\TestCase;
+use Symfony\Bridge\PhpUnit\ExpectDeprecationTrait;
 
 /**
  * Tests \Drupal\Component\Utility\Html.
@@ -17,10 +18,12 @@ use PHPUnit\Framework\TestCase;
  */
 class HtmlTest extends TestCase {
 
+  use ExpectDeprecationTrait;
+
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $property = new \ReflectionProperty('Drupal\Component\Utility\Html', 'seenIdsInit');
@@ -127,6 +130,7 @@ class HtmlTest extends TestCase {
    *   Test data.
    */
   public function providerTestHtmlGetUniqueId() {
+    // cSpell:disable
     $id = 'abcdefghijklmnopqrstuvwxyz-0123456789';
     return [
       // Verify that letters, digits, and hyphens are not stripped from the ID.
@@ -140,6 +144,7 @@ class HtmlTest extends TestCase {
       ['test-unique-id--2', 'test-unique-id'],
       ['test-unique-id--3', 'test-unique-id'],
     ];
+    // cSpell:enable
   }
 
   /**
@@ -210,6 +215,7 @@ class HtmlTest extends TestCase {
    *   Test data.
    */
   public function providerTestHtmlGetId() {
+    // cSpell:disable
     $id = 'abcdefghijklmnopqrstuvwxyz-0123456789';
     return [
       // Verify that letters, digits, and hyphens are not stripped from the ID.
@@ -222,6 +228,7 @@ class HtmlTest extends TestCase {
       ['test-unique-id', 'test-unique-id'],
       ['test-unique-id', 'test-unique-id'],
     ];
+    // cSpell:enable
   }
 
   /**
@@ -343,12 +350,7 @@ class HtmlTest extends TestCase {
    * @dataProvider providerTestTransformRootRelativeUrlsToAbsoluteAssertion
    */
   public function testTransformRootRelativeUrlsToAbsoluteAssertion($scheme_and_host) {
-    if (method_exists($this, 'expectException')) {
-      $this->expectException(\AssertionError::class);
-    }
-    else {
-      $this->setExpectedException(\AssertionError::class);
-    }
+    $this->expectException(\AssertionError::class);
     Html::transformRootRelativeUrlsToAbsolute('', $scheme_and_host);
   }
 
@@ -404,6 +406,19 @@ class HtmlTest extends TestCase {
       'host and path' => ['example.com/llama'],
       'scheme, host and path' => ['http://example.com/llama'],
     ];
+  }
+
+  /**
+   * Test deprecations.
+   *
+   * @group legacy
+   */
+  public function testDeprecations(): void {
+    $this->expectDeprecation('Passing NULL to Drupal\Component\Utility\Html::decodeEntities is deprecated in drupal:9.5.0 and will trigger a PHP error from drupal:11.0.0. Pass a string instead. See https://www.drupal.org/node/3318826');
+    $this->assertSame('', Html::decodeEntities(NULL));
+
+    $this->expectDeprecation('Passing NULL to Drupal\Component\Utility\Html::escape is deprecated in drupal:9.5.0 and will trigger a PHP error from drupal:11.0.0. Pass a string instead. See https://www.drupal.org/node/3318826');
+    $this->assertSame('', Html::escape(NULL));
   }
 
 }

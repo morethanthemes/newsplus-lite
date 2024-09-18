@@ -1,0 +1,14 @@
+name: Workspaces
+type: module
+description: 'Allows users to stage content or preview a full site by using multiple workspaces on a single site.'
+# version: VERSION
+package: Core (Experimental)
+lifecycle: experimental
+configure: entity.workspace.collection
+dependencies:
+  - drupal:user
+
+# Information added by Drupal.org packaging script on 2023-09-20
+version: '9.5.11'
+project: 'drupal'
+datestamp: 1695228127

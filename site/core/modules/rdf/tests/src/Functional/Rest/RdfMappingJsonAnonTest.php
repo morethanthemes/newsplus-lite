@@ -6,6 +6,7 @@ use Drupal\Tests\rest\Functional\AnonResourceTestTrait;
 
 /**
  * @group rest
+ * @group legacy
  */
 class RdfMappingJsonAnonTest extends RdfMappingResourceTestBase {
 
@@ -20,5 +21,10 @@ class RdfMappingJsonAnonTest extends RdfMappingResourceTestBase {
    * {@inheritdoc}
    */
   protected static $mimeType = 'application/json';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
 }

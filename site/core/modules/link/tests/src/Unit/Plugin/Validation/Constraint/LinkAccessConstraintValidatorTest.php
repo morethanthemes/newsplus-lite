@@ -16,8 +16,7 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 class LinkAccessConstraintValidatorTest extends UnitTestCase {
 
   /**
-   * Tests the \Drupal\link\Plugin\Validation\Constraint\LinkAccessConstraintValidator::validate()
-   * method.
+   * Tests the access validation constraint for links.
    *
    * @param \Drupal\link\LinkItemInterface $value
    *   The link item.
@@ -30,7 +29,7 @@ class LinkAccessConstraintValidatorTest extends UnitTestCase {
    * @dataProvider providerValidate
    */
   public function testValidate($value, $user, $valid) {
-    $context = $this->getMock(ExecutionContextInterface::class);
+    $context = $this->createMock(ExecutionContextInterface::class);
 
     if ($valid) {
       $context->expects($this->never())
@@ -75,13 +74,13 @@ class LinkAccessConstraintValidatorTest extends UnitTestCase {
         ->method('access')
         ->willReturn($case['url_access']);
       // Mock a link object that returns the URL object.
-      $link = $this->getMock('Drupal\link\LinkItemInterface');
+      $link = $this->createMock('Drupal\link\LinkItemInterface');
       $link->expects($this->any())
         ->method('getUrl')
         ->willReturn($url);
       // Mock a user object that returns a boolean indicating user access to all
       // links.
-      $user = $this->getMock('Drupal\Core\Session\AccountProxyInterface');
+      $user = $this->createMock('Drupal\Core\Session\AccountProxyInterface');
       $user->expects($this->any())
         ->method('hasPermission')
         ->with($this->equalTo('link to any page'))

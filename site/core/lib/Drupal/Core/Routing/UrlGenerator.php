@@ -7,7 +7,6 @@ use Drupal\Core\Render\BubbleableMetadata;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\RequestContext as SymfonyRequestContext;
 use Symfony\Component\Routing\Route as SymfonyRoute;
-use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\PathProcessor\OutboundPathProcessorInterface;
 use Drupal\Core\RouteProcessor\OutboundRouteProcessorInterface;
@@ -164,12 +163,12 @@ class UrlGenerator implements UrlGeneratorInterface {
    *   The route name or other identifying string from ::getRouteDebugMessage().
    *
    * @return string
-   *   The url path, without any base path, without the query string, not URL
+   *   The URL path, without any base path, without the query string, not URL
    *   encoded.
    *
-   * @throws MissingMandatoryParametersException
+   * @throws \Symfony\Component\Routing\Exception\MissingMandatoryParametersException
    *   When some parameters are missing that are mandatory for the route.
-   * @throws InvalidParameterException
+   * @throws \Symfony\Component\Routing\Exception\InvalidParameterException
    *   When a parameter value for a placeholder is not correct because it does
    *   not match the requirement.
    */
@@ -254,7 +253,7 @@ class UrlGenerator implements UrlGeneratorInterface {
   /**
    * {@inheritdoc}
    */
-  public function generate($name, $parameters = [], $referenceType = self::ABSOLUTE_PATH) {
+  public function generate($name, $parameters = [], $referenceType = self::ABSOLUTE_PATH): string {
     $options['absolute'] = is_bool($referenceType) ? $referenceType : $referenceType === self::ABSOLUTE_URL;
     return $this->generateFromRoute($name, $parameters, $options);
   }
@@ -271,16 +270,15 @@ class UrlGenerator implements UrlGeneratorInterface {
     $route = $this->getRoute($name);
     $generated_url = $collect_bubbleable_metadata ? new GeneratedUrl() : NULL;
 
-    $fragment = '';
-    if (isset($options['fragment'])) {
-      if (($fragment = trim($options['fragment'])) != '') {
-        $fragment = '#' . $fragment;
-      }
-    }
-
     // Generate a relative URL having no path, just query string and fragment.
     if ($route->getOption('_no_path')) {
       $query = $options['query'] ? '?' . UrlHelper::buildQuery($options['query']) : '';
+      $fragment = '';
+      if (isset($options['fragment'])) {
+        if (($fragment = trim($options['fragment'])) != '') {
+          $fragment = '#' . $fragment;
+        }
+      }
       $url = $query . $fragment;
       return $collect_bubbleable_metadata ? $generated_url->setGeneratedUrl($url) : $url;
     }
@@ -296,6 +294,11 @@ class UrlGenerator implements UrlGeneratorInterface {
     $options['route'] = $route;
     if ($options['path_processing']) {
       $path = $this->processPath($path, $options, $generated_url);
+    }
+    // Ensure the resulting path has at most one leading slash, to prevent it
+    // becoming an external URL without a protocol like //example.com.
+    if (strpos($path, '//') === 0) {
+      $path = '/' . ltrim($path, '/');
     }
     // The contexts base URL is already encoded
     // (see Symfony\Component\HttpFoundation\Request).
@@ -324,6 +327,13 @@ class UrlGenerator implements UrlGeneratorInterface {
     }
 
     $query = $options['query'] ? '?' . UrlHelper::buildQuery($options['query']) : '';
+
+    $fragment = '';
+    if (isset($options['fragment'])) {
+      if (($fragment = trim($options['fragment'])) != '') {
+        $fragment = '#' . $fragment;
+      }
+    }
 
     // The base_url might be rewritten from the language rewrite in domain mode.
     if (isset($options['base_url'])) {
@@ -418,8 +428,8 @@ class UrlGenerator implements UrlGeneratorInterface {
     if ($name instanceof SymfonyRoute) {
       $route = $name;
     }
-    elseif (NULL === $route = clone $this->provider->getRouteByName($name)) {
-      throw new RouteNotFoundException(sprintf('Route "%s" does not exist.', $name));
+    else {
+      $route = clone $this->provider->getRouteByName($name);
     }
     return $route;
   }

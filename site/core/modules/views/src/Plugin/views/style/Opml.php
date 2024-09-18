@@ -55,10 +55,6 @@ class Opml extends StylePluginBase {
    * {@inheritdoc}
    */
   public function render() {
-    if (empty($this->view->rowPlugin)) {
-      debug('Drupal\views\Plugin\views\style\Opml: Missing row plugin');
-      return;
-    }
     $rows = [];
 
     foreach ($this->view->result as $row_index => $row) {

@@ -4,7 +4,6 @@
 * https://www.drupal.org/node/2815083
 * @preserve
 **/
-
 (function (Drupal, Backbone) {
   Drupal.contextual.KeyboardView = Backbone.View.extend({
     events: {
@@ -20,7 +19,6 @@
         }, 150);
       }
     },
-
     initialize: function initialize() {
       this.timer = NaN;
     },
