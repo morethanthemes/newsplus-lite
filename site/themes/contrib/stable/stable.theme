@@ -47,7 +47,7 @@ function stable_element_info_alter(array &$info) {
 }
 
 /**
- * #process callback, for adding classes to filter components.
+ * The #process callback, for adding classes to filter components.
  *
  * @param array $element
  *   Render array for the text_format element.
@@ -70,6 +70,18 @@ function stable_process_text_format(array $element) {
 function stable_preprocess_image_widget(&$variables) {
   if (!empty($variables['element']['fids']['#value'])) {
     $file = reset($variables['element']['#files']);
-    $variables['data']['file_' . $file->id()]['filename']['#suffix'] = ' <span class="file-size">(' . format_size($file->getSize()) . ')</span> ';
+    // @phpstan-ignore-next-line
+    $variables['data']['file_' . $file->id()]['filename']['#suffix'] = ' <span class="file-size">(' . stable_format_size($file->getSize()) . ')</span> ';
   }
+}
+
+/**
+ * Formats file size.
+ */
+function stable_format_size($size) {
+  $func = 'Drupal\Core\StringTranslation\ByteSizeMarkup::create';
+  if (!is_callable($func)) {
+    $func = 'format_size';
+  }
+  return $func($size);
 }

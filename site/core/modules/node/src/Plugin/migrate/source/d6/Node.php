@@ -11,6 +11,8 @@ use Drupal\migrate\Row;
 use Drupal\migrate_drupal\Plugin\migrate\source\DrupalSqlBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+// cspell:ignore cnfi tnid
+
 /**
  * Drupal 6 node source from database.
  *
@@ -86,7 +88,7 @@ class Node extends DrupalSqlBase {
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, ?MigrationInterface $migration = NULL) {
     return new static(
       $configuration,
       $plugin_id,
@@ -184,7 +186,7 @@ class Node extends DrupalSqlBase {
    * {@inheritdoc}
    */
   public function prepareRow(Row $row) {
-    // format = 0 can happen when the body field is hidden. Set the format to 1
+    // Format = 0 can happen when the body field is hidden. Set the format to 1
     // to avoid migration map issues (since the body field isn't used anyway).
     if ($row->getSourceProperty('format') === '0') {
       $row->setSourceProperty('format', $this->filterDefaultFormat);
@@ -247,7 +249,7 @@ class Node extends DrupalSqlBase {
       foreach ($this->fieldInfo as $type => $fields) {
         foreach ($fields as $field => $info) {
           foreach ($info as $property => $value) {
-            if ($property == 'db_columns' || preg_match('/_settings$/', $property)) {
+            if ($property == 'db_columns' || str_ends_with($property, '_settings')) {
               $this->fieldInfo[$type][$field][$property] = unserialize($value);
             }
           }

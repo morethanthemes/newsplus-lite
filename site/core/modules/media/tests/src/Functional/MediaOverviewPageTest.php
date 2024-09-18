@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\media\Functional;
 
+use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\media\Entity\Media;
 use Drupal\user\Entity\Role;
 use Drupal\user\RoleInterface;
@@ -21,15 +24,22 @@ class MediaOverviewPageTest extends MediaFunctionalTestBase {
   /**
    * {@inheritdoc}
    */
+  protected static $modules = ['language'];
+
+  /**
+   * {@inheritdoc}
+   */
   protected function setUp(): void {
     parent::setUp();
+    // Make the site multilingual to have a working language field handler.
+    ConfigurableLanguage::create(['id' => 'es', 'title' => 'Spanish title', 'label' => 'Spanish label'])->save();
     $this->drupalLogin($this->nonAdminUser);
   }
 
   /**
    * Tests that the Media overview page (/admin/content/media).
    */
-  public function testMediaOverviewPage() {
+  public function testMediaOverviewPage(): void {
     $assert_session = $this->assertSession();
 
     // Check the view exists, is access-restricted, and some defaults are there.
@@ -86,6 +96,9 @@ class MediaOverviewPageTest extends MediaFunctionalTestBase {
     ]);
     $media3->save();
 
+    // Make sure the role save below properly invalidates cache tags.
+    $this->refreshVariables();
+
     // Verify the view is now correctly populated. The non-admin user can only
     // view published media.
     $this->grantPermissions($role, [
@@ -137,6 +150,9 @@ class MediaOverviewPageTest extends MediaFunctionalTestBase {
     $assert_session->linkByHrefExists('/media/' . $media1->id() . '/edit');
     $assert_session->elementExists('css', 'td.views-field-operations li a:contains("Delete")', $row1);
     $assert_session->linkByHrefExists('/media/' . $media1->id() . '/delete');
+
+    // Make sure the role save below properly invalidates cache tags.
+    $this->refreshVariables();
 
     // Make the user the owner of the unpublished media item and assert the
     // media item is only visible with the 'view own unpublished media'

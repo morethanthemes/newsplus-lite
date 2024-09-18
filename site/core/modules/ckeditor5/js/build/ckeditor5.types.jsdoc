@@ -23,6 +23,12 @@
  */
 
 /**
+ * Declared in file @ckeditor/ckeditor5-autoformat/src/blockautoformatediting.js
+ *
+ * @typedef {module:autoformat/blockautoformatediting} module:autoformat/blockautoformatediting~blockAutoformatEditing
+ */
+
+/**
  * Declared in file @ckeditor/ckeditor5-basic-styles/src/attributecommand.js
  *
  * @typedef {module:basic-styles/attributecommand} module:basic-styles/attributecommand~AttributeCommand
@@ -185,6 +191,12 @@
  */
 
 /**
+ * Declared in file @ckeditor/ckeditor5-clipboard/src/clipboardmarkersutils.js
+ *
+ * @typedef {module:clipboard/clipboardmarkersutils} module:clipboard/clipboardmarkersutils~ClipboardMarkersUtils
+ */
+
+/**
  * Declared in file @ckeditor/ckeditor5-clipboard/src/clipboardobserver.js
  *
  * @typedef {module:clipboard/clipboardobserver} module:clipboard/clipboardobserver~ClipboardObserver
@@ -200,6 +212,24 @@
  * Declared in file @ckeditor/ckeditor5-clipboard/src/dragdrop.js
  *
  * @typedef {module:clipboard/dragdrop} module:clipboard/dragdrop~DragDrop
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-clipboard/src/dragdropblocktoolbar.js
+ *
+ * @typedef {module:clipboard/dragdropblocktoolbar} module:clipboard/dragdropblocktoolbar~DragDropBlockToolbar
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-clipboard/src/dragdroptarget.js
+ *
+ * @typedef {module:clipboard/dragdroptarget} module:clipboard/dragdroptarget~DragDropTarget
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-clipboard/src/lineview.js
+ *
+ * @typedef {module:clipboard/lineview} module:clipboard/lineview~LineView
  */
 
 /**
@@ -227,12 +257,6 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-code-block/src/codeblockcommand.js
- *
- * @typedef {module:code-block/codeblockcommand} module:code-block/codeblockcommand~CodeBlockCommand
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-code-block/src/codeblockediting.js
  *
  * @typedef {module:code-block/codeblockediting} module:code-block/codeblockediting~CodeBlockEditing
@@ -251,9 +275,9 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-code-block/src/outdentcodeblockcommand.js
+ * Declared in file @ckeditor/ckeditor5-core/src/accessibility.js
  *
- * @typedef {module:code-block/outdentcodeblockcommand} module:code-block/outdentcodeblockcommand~OutdentCodeBlockCommand
+ * @typedef {module:core/accessibility} module:core/accessibility~Accessibility
  */
 
 /**
@@ -299,12 +323,6 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-core/src/editor/utils/dataapimixin.js
- *
- * @typedef {module:core/editor/utils/dataapimixin} module:core/editor/utils/dataapimixin~DataApiMixin
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-core/src/editor/utils/elementapimixin.js
  *
  * @typedef {module:core/editor/utils/elementapimixin} module:core/editor/utils/elementapimixin~ElementApiMixin
@@ -347,12 +365,6 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-editor-classic/src/classiceditorui.js
- *
- * @typedef {module:editor-classic/classiceditorui} module:editor-classic/classiceditorui~ClassicEditorUI
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-editor-classic/src/classiceditoruiview.js
  *
  * @typedef {module:editor-classic/classiceditoruiview} module:editor-classic/classiceditoruiview~ClassicEditorUIView
@@ -362,12 +374,6 @@
  * Declared in file @ckeditor/ckeditor5-editor-decoupled/src/decouplededitor.js
  *
  * @typedef {module:editor-decoupled/decouplededitor} module:editor-decoupled/decouplededitor~DecoupledEditor
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-editor-decoupled/src/decouplededitorui.js
- *
- * @typedef {module:editor-decoupled/decouplededitorui} module:editor-decoupled/decouplededitorui~DecoupledEditorUI
  */
 
 /**
@@ -440,12 +446,6 @@
  * Declared in file @ckeditor/ckeditor5-engine/src/conversion/viewconsumable.js
  *
  * @typedef {module:engine/conversion/viewconsumable} module:engine/conversion/viewconsumable~ViewConsumable
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-engine/src/dataprocessor/basichtmlwriter.js
- *
- * @typedef {module:engine/dataprocessor/basichtmlwriter} module:engine/dataprocessor/basichtmlwriter~BasicHtmlWriter
  */
 
 /**
@@ -587,12 +587,6 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-engine/src/model/operation/operation.js
- *
- * @typedef {module:engine/model/operation/operation} module:engine/model/operation/operation~Operation
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-engine/src/model/operation/operationfactory.js
  *
  * @typedef {module:engine/model/operation/operationfactory} module:engine/model/operation/operationfactory~OperationFactory
@@ -608,6 +602,12 @@
  * Declared in file @ckeditor/ckeditor5-engine/src/model/operation/rootattributeoperation.js
  *
  * @typedef {module:engine/model/operation/rootattributeoperation} module:engine/model/operation/rootattributeoperation~RootAttributeOperation
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-engine/src/model/operation/rootoperation.js
+ *
+ * @typedef {module:engine/model/operation/rootoperation} module:engine/model/operation/rootoperation~RootOperation
  */
 
 /**
@@ -680,12 +680,6 @@
  * Declared in file @ckeditor/ckeditor5-engine/src/model/utils/insertcontent.js
  *
  * @typedef {module:engine/model/utils/insertcontent} module:engine/model/utils/insertcontent~insertContent
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-engine/src/model/utils/insertobject.js
- *
- * @typedef {module:engine/model/utils/insertobject} module:engine/model/utils/insertobject~insertObject
  */
 
 /**
@@ -1019,12 +1013,6 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-horizontal-line/src/horizontallinecommand.js
- *
- * @typedef {module:horizontal-line/horizontallinecommand} module:horizontal-line/horizontallinecommand~HorizontalLineCommand
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-horizontal-line/src/horizontallineediting.js
  *
  * @typedef {module:horizontal-line/horizontallineediting} module:horizontal-line/horizontallineediting~HorizontalLineEditing
@@ -1049,39 +1037,27 @@
  */
 
 /**
+ * Declared in file @ckeditor/ckeditor5-html-support/src/fullpage.js
+ *
+ * @typedef {module:html-support/fullpage} module:html-support/fullpage~FullPage
+ */
+
+/**
  * Declared in file @ckeditor/ckeditor5-html-support/src/generalhtmlsupport.js
  *
  * @typedef {module:html-support/generalhtmlsupport} module:html-support/generalhtmlsupport~GeneralHtmlSupport
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-html-support/src/htmlcomment.js
+ * Declared in file @ckeditor/ckeditor5-html-support/src/htmlpagedataprocessor.js
  *
- * @typedef {module:html-support/htmlcomment} module:html-support/htmlcomment~HtmlComment
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-html-support/src/integrations/codeblock.js
- *
- * @typedef {module:html-support/integrations/codeblock} module:html-support/integrations/codeblock~CodeBlockElementSupport
+ * @typedef {module:html-support/htmlpagedataprocessor} module:html-support/htmlpagedataprocessor~HtmlPageDataProcessor
  */
 
 /**
  * Declared in file @ckeditor/ckeditor5-html-support/src/integrations/customelement.js
  *
  * @typedef {module:html-support/integrations/customelement} module:html-support/integrations/customelement~CustomElementSupport
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-html-support/src/integrations/documentlist.js
- *
- * @typedef {module:html-support/integrations/documentlist} module:html-support/integrations/documentlist~DocumentListElementSupport
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-html-support/src/integrations/dualcontent.js
- *
- * @typedef {module:html-support/integrations/dualcontent} module:html-support/integrations/dualcontent~DualContentModelElementSupport
  */
 
 /**
@@ -1094,6 +1070,12 @@
  * Declared in file @ckeditor/ckeditor5-html-support/src/integrations/image.js
  *
  * @typedef {module:html-support/integrations/image} module:html-support/integrations/image~ImageElementSupport
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-html-support/src/integrations/list.js
+ *
+ * @typedef {module:html-support/integrations/list} module:html-support/integrations/list~ListElementSupport
  */
 
 /**
@@ -1112,12 +1094,6 @@
  * Declared in file @ckeditor/ckeditor5-html-support/src/integrations/style.js
  *
  * @typedef {module:html-support/integrations/style} module:html-support/integrations/style~StyleElementSupport
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-html-support/src/integrations/table.js
- *
- * @typedef {module:html-support/integrations/table} module:html-support/integrations/table~TableElementSupport
  */
 
 /**
@@ -1157,15 +1133,21 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-image/src/image/imagetypecommand.js
+ * Declared in file @ckeditor/ckeditor5-image/src/image/imageplaceholder.js
  *
- * @typedef {module:image/image/imagetypecommand} module:image/image/imagetypecommand~ImageTypeCommand
+ * @typedef {module:image/image/imageplaceholder} module:image/image/imageplaceholder~ImagePlaceholder
  */
 
 /**
  * Declared in file @ckeditor/ckeditor5-image/src/image/insertimagecommand.js
  *
  * @typedef {module:image/image/insertimagecommand} module:image/image/insertimagecommand~InsertImageCommand
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-image/src/image/replaceimagesourcecommand.js
+ *
+ * @typedef {module:image/image/replaceimagesourcecommand} module:image/image/replaceimagesourcecommand~ReplaceImageSourceCommand
  */
 
 /**
@@ -1193,18 +1175,6 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-image/src/imagecaption/imagecaptionutils.js
- *
- * @typedef {module:image/imagecaptionutils/utils} module:image/imagecaptionutils/utils~ImageCaptionUtils
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-image/src/imagecaption/toggleimagecaptioncommand.js
- *
- * @typedef {module:image/imagecaption/toggleimagecaptioncommand} module:image/imagecaption/toggleimagecaptioncommand~ToggleImageCaptionCommand
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-image/src/imageinline.js
  *
  * @typedef {module:image/imageinline} module:image/imageinline~ImageInline
@@ -1223,15 +1193,21 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-image/src/imageinsert/ui/imageinsertformrowview.js
+ * Declared in file @ckeditor/ckeditor5-image/src/imageinsert/imageinsertviaurlui.js
  *
- * @typedef {module:image/imageinsert/ui/imageinsertformrowview} module:image/imageinsert/ui/imageinsertformrowview~ImageUploadFormRowView
+ * @typedef {module:image/imageinsert/imageinsertviaurlui} module:image/imageinsert/imageinsertviaurlui~ImageInsertViaUrlUI
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-image/src/imageinsert/ui/imageinsertpanelview.js
+ * Declared in file @ckeditor/ckeditor5-image/src/imageinsert/ui/imageinsertformview.js
  *
- * @typedef {module:image/imageinsert/ui/imageinsertpanelview} module:image/imageinsert/ui/imageinsertpanelview~ImageInsertPanelView
+ * @typedef {module:image/imageinsert/ui/imageinsertformview} module:image/imageinsert/ui/imageinsertformview~ImageInsertFormView
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-image/src/imageinsert/ui/imageinserturlview.js
+ *
+ * @typedef {module:image/imageinsert/ui/imageinserturlview} module:image/imageinsert/ui/imageinserturlview~ImageInsertUrlView
  */
 
 /**
@@ -1253,33 +1229,21 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-image/src/imageresize/imageresizeediting.js
- *
- * @typedef {module:image/imageresize/imageresizeediting} module:image/imageresize/imageresizeediting~ImageResizeEditing
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-image/src/imageresize/imageresizehandles.js
- *
- * @typedef {module:image/imageresize/imageresizehandles} module:image/imageresize/imageresizehandles~ImageResizeHandles
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-image/src/imageresize/resizeimagecommand.js
  *
  * @typedef {module:image/imageresize/resizeimagecommand} module:image/imageresize/resizeimagecommand~ResizeImageCommand
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-image/src/imagestyle.js
+ * Declared in file @ckeditor/ckeditor5-image/src/imagesizeattributes.js
  *
- * @typedef {module:image/imagestyle} module:image/imagestyle~ImageStyle
+ * @typedef {module:image/imagesizeattributes} module:image/imagesizeattributes~ImageSizeAttributes
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-image/src/imagestyle/imagestylecommand.js
+ * Declared in file @ckeditor/ckeditor5-image/src/imagestyle.js
  *
- * @typedef {module:image/imagestyle/imagestylecommand} module:image/imagestyle/imagestylecommand~ImageStyleCommand
+ * @typedef {module:image/imagestyle} module:image/imagestyle~ImageStyle
  */
 
 /**
@@ -1361,12 +1325,6 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-image/src/imageutils.js
- *
- * @typedef {module:image/imageutils} module:image/imageutils~ImageUtils
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-image/src/pictureediting.js
  *
  * @typedef {module:image/pictureediting} module:image/pictureediting~PictureEditing
@@ -1391,18 +1349,6 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-indent/src/indentcommandbehavior/indentusingclasses.js
- *
- * @typedef {module:indent/indentcommandbehavior/indentusingclasses} module:indent/indentcommandbehavior/indentusingclasses~IndentUsingClasses
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-indent/src/indentcommandbehavior/indentusingoffset.js
- *
- * @typedef {module:indent/indentcommandbehavior/indentusingoffset} module:indent/indentcommandbehavior/indentusingoffset~IndentUsingOffset
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-indent/src/indentediting.js
  *
  * @typedef {module:indent/indentediting} module:indent/indentediting~IndentEditing
@@ -1418,18 +1364,6 @@
  * Declared in file @ckeditor/ckeditor5-language/src/textpartlanguage.js
  *
  * @typedef {module:language/textpartlanguage} module:language/textpartlanguage~TextPartLanguage
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-language/src/textpartlanguagecommand.js
- *
- * @typedef {module:language/textpartlanguagecommand} module:language/textpartlanguagecommand~TextPartLanguageCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-language/src/textpartlanguageediting.js
- *
- * @typedef {module:language/textpartlanguageediting} module:language/textpartlanguageediting~TextPartLanguageEditing
  */
 
 /**
@@ -1507,13 +1441,13 @@
 /**
  * Declared in file @ckeditor/ckeditor5-link/src/utils/automaticdecorators.js
  *
- * @typedef {module:link/utils} module:link/utils~AutomaticDecorators
+ * @typedef {module:link/utils/automaticdecorators} module:link/utils/automaticdecorators~AutomaticDecorators
  */
 
 /**
  * Declared in file @ckeditor/ckeditor5-link/src/utils/manualdecorator.js
  *
- * @typedef {module:link/utils} module:link/utils~ManualDecorator
+ * @typedef {module:link/utils/manualdecorator} module:link/utils/manualdecorator~ManualDecorator
  */
 
 /**
@@ -1523,81 +1457,63 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-list/src/documentlist/documentlistcommand.js
- *
- * @typedef {module:list/documentlist/documentlistcommand} module:list/documentlist/documentlistcommand~DocumentListCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-list/src/documentlist/documentlistediting.js
- *
- * @typedef {module:list/documentlist/documentlistediting} module:list/documentlist/documentlistediting~DocumentListEditing
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-list/src/documentlist/documentlistindentcommand.js
- *
- * @typedef {module:list/documentlist/documentlistindentcommand} module:list/documentlist/documentlistindentcommand~DocumentListIndentCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-list/src/documentlist/documentlistmergecommand.js
- *
- * @typedef {module:list/documentlist/documentlistmergecommand} module:list/documentlist/documentlistmergecommand~DocumentListMergeCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-list/src/documentlist/documentlistsplitcommand.js
- *
- * @typedef {module:list/documentlist/documentlistsplitcommand} module:list/documentlist/documentlistsplitcommand~DocumentListSplitCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-list/src/documentlist/documentlistutils.js
- *
- * @typedef {module:list/documentlist/documentlistutils} module:list/documentlist/documentlistutils~DocumentListUtils
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-list/src/documentlist/utils/listwalker.js
- *
- * @typedef {module:list/documentlist/utils/listwalker} module:list/documentlist/utils/listwalker~ListWalker
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-list/src/documentlistproperties.js
  *
  * @typedef {module:list/documentlistproperties} module:list/documentlistproperties~DocumentListProperties
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-list/src/documentlistproperties/documentlistpropertiesediting.js
+ * Declared in file @ckeditor/ckeditor5-list/src/legacylist.js
  *
- * @typedef {module:list/documentlistproperties/documentlistpropertiesediting} module:list/documentlistproperties/documentlistpropertiesediting~DocumentListPropertiesEditing
+ * @typedef {module:list/legacylist} module:list/legacylist~LegacyList
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-list/src/documentlistproperties/documentlistpropertiesutils.js
+ * Declared in file @ckeditor/ckeditor5-list/src/legacylist/legacylistediting.js
  *
- * @typedef {module:list/documentlist/documentlistpropertiesutils} module:list/documentlist/documentlistpropertiesutils~DocumentListPropertiesUtils
+ * @typedef {module:list/legacylist/legacylistediting} module:list/legacylist/legacylistediting~LegacyListEditing
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-list/src/documentlistproperties/documentlistreversedcommand.js
+ * Declared in file @ckeditor/ckeditor5-list/src/legacylistproperties.js
  *
- * @typedef {module:list/documentlistproperties/documentlistreversedcommand} module:list/documentlistproperties/documentlistreversedcommand~DocumentListReversedCommand
+ * @typedef {module:list/legacylistproperties} module:list/legacylistproperties~LegacyListProperties
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-list/src/documentlistproperties/documentliststartcommand.js
+ * Declared in file @ckeditor/ckeditor5-list/src/legacylistproperties/legacylistpropertiesediting.js
  *
- * @typedef {module:list/documentlistproperties/documentliststartcommand} module:list/documentlistproperties/documentliststartcommand~DocumentListStartCommand
+ * @typedef {module:list/legacylistproperties/legacylistpropertiesediting} module:list/legacylistproperties/legacylistpropertiesediting~LegacyListPropertiesEditing
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-list/src/documentlistproperties/documentliststylecommand.js
+ * Declared in file @ckeditor/ckeditor5-list/src/legacylistproperties/legacylistreversedcommand.js
  *
- * @typedef {module:list/documentlistproperties/documentliststylecommand} module:list/documentlistproperties/documentliststylecommand~DocumentListStyleCommand
+ * @typedef {module:list/legacylistproperties/legacylistreversedcommand} module:list/legacylistproperties/legacylistreversedcommand~LegacyListReversedCommand
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-list/src/legacylistproperties/legacyliststartcommand.js
+ *
+ * @typedef {module:list/legacylistproperties/legacyliststartcommand} module:list/legacylistproperties/legacyliststartcommand~LegacyListStartCommand
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-list/src/legacylistproperties/legacyliststylecommand.js
+ *
+ * @typedef {module:list/legacylistproperties/legacyliststylecommand} module:list/legacylistproperties/legacyliststylecommand~LegacyListStyleCommand
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-list/src/legacytodolist.js
+ *
+ * @typedef {module:list/legacytodolist} module:list/legacytodolist~LegacyTodoList
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-list/src/legacytodolist/legacychecktodolistcommand.js
+ *
+ * @typedef {module:list/legacytodolist/legacychecktodolistcommand} module:list/legacytodolist/legacychecktodolistcommand~LegacyCheckTodoListCommand
  */
 
 /**
@@ -1607,21 +1523,21 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-list/src/list/indentcommand.js
- *
- * @typedef {module:list/list/indentcommand} module:list/list/indentcommand~IndentCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-list/src/list/listcommand.js
- *
- * @typedef {module:list/list/listcommand} module:list/list/listcommand~ListCommand
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-list/src/list/listediting.js
  *
  * @typedef {module:list/list/listediting} module:list/list/listediting~ListEditing
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-list/src/list/listindentcommand.js
+ *
+ * @typedef {module:list/list/listindentcommand} module:list/list/listindentcommand~ListIndentCommand
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-list/src/list/listmergecommand.js
+ *
+ * @typedef {module:list/list/listmergecommand} module:list/list/listmergecommand~ListMergeCommand
  */
 
 /**
@@ -1631,9 +1547,9 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-list/src/list/listutils.js
+ * Declared in file @ckeditor/ckeditor5-list/src/list/utils/listwalker.js
  *
- * @typedef {module:list/list/listutils} module:list/list/listutils~ListUtils
+ * @typedef {module:list/list/utils/listwalker} module:list/list/utils/listwalker~ListWalker
  */
 
 /**
@@ -1655,6 +1571,12 @@
  */
 
 /**
+ * Declared in file @ckeditor/ckeditor5-list/src/listproperties/listpropertiesutils.js
+ *
+ * @typedef {module:list/listproperties/listpropertiesutils} module:list/listproperties/listpropertiesutils~ListPropertiesUtils
+ */
+
+/**
  * Declared in file @ckeditor/ckeditor5-list/src/listproperties/listreversedcommand.js
  *
  * @typedef {module:list/listproperties/listreversedcommand} module:list/listproperties/listreversedcommand~ListReversedCommand
@@ -1673,21 +1595,15 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-list/src/listproperties/ui/collapsibleview.js
- *
- * @typedef {module:list/ui/collapsibleview} module:list/ui/collapsibleview~CollapsibleView
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-list/src/listproperties/ui/listpropertiesview.js
  *
- * @typedef {module:list/ui/listpropertiesview} module:list/ui/listpropertiesview~ListPropertiesView
+ * @typedef {module:list/listproperties/ui/listpropertiesview} module:list/listproperties/ui/listpropertiesview~ListPropertiesView
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-list/src/liststyle.js
+ * Declared in file @ckeditor/ckeditor5-list/src/tododocumentlist.js
  *
- * @typedef {module:list/liststyle} module:list/liststyle~ListStyle
+ * @typedef {module:list/tododocumentlist} module:list/tododocumentlist~TodoDocumentList
  */
 
 /**
@@ -1700,6 +1616,12 @@
  * Declared in file @ckeditor/ckeditor5-list/src/todolist/checktodolistcommand.js
  *
  * @typedef {module:list/todolist/checktodolistcommand} module:list/todolist/checktodolistcommand~CheckTodoListCommand
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-list/src/todolist/todocheckboxchangeobserver.js
+ *
+ * @typedef {module:list/todolist/todocheckboxchangeobserver} module:list/todolist/todocheckboxchangeobserver~TodoCheckboxChangeObserver
  */
 
 /**
@@ -1745,21 +1667,21 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-paste-from-office/src/filters/removeboldwrapper.js
+ * Declared in file @ckeditor/ckeditor5-paste-from-office/src/filters/removemsattributes.js
  *
- * @typedef {module:paste-from-office/filters/removeboldwrapper} module:paste-from-office/filters/removeboldwrapper~removeBoldWrapper
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-paste-from-office/src/normalizer.jsdoc
- *
- * @typedef {module:paste-from-office/normalizer} module:paste-from-office/normalizer~Normalizer
+ * @typedef {module:paste-from-office/filters/removemsattributes} module:paste-from-office/filters/removemsattributes~removeMSAttributes
  */
 
 /**
  * Declared in file @ckeditor/ckeditor5-paste-from-office/src/normalizers/googledocsnormalizer.js
  *
  * @typedef {module:paste-from-office/normalizers/googledocsnormalizer} module:paste-from-office/normalizers/googledocsnormalizer~GoogleDocsNormalizer
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-paste-from-office/src/normalizers/googlesheetsnormalizer.js
+ *
+ * @typedef {module:paste-from-office/normalizers/googlesheetsnormalizer} module:paste-from-office/normalizers/googlesheetsnormalizer~GoogleSheetsNormalizer
  */
 
 /**
@@ -1778,12 +1700,6 @@
  * Declared in file @ckeditor/ckeditor5-remove-format/src/removeformat.js
  *
  * @typedef {module:remove-format/removeformat} module:remove-format/removeformat~RemoveFormat
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-remove-format/src/removeformatcommand.js
- *
- * @typedef {module:remove-format/removeformatcommand} module:remove-format/removeformatcommand~RemoveFormatCommand
  */
 
 /**
@@ -1820,6 +1736,30 @@
  * Declared in file @ckeditor/ckeditor5-select-all/src/selectallui.js
  *
  * @typedef {module:select-all/selectallui} module:select-all/selectallui~SelectAllUI
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-show-blocks/src/showblocks.js
+ *
+ * @typedef {module:show-blocks/showblocks} module:show-blocks/showblocks~ShowBlocks
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-show-blocks/src/showblockscommand.js
+ *
+ * @typedef {module:show-blocks/showblockscommand} module:show-blocks/showblockscommand~ShowBlocksCommand
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-show-blocks/src/showblocksediting.js
+ *
+ * @typedef {module:show-blocks/showblocksediting} module:show-blocks/showblocksediting~ShowBlocksEditing
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-show-blocks/src/showblocksui.js
+ *
+ * @typedef {module:show-blocks/showblocksui} module:show-blocks/showblocksui~ShowBlocksUI
  */
 
 /**
@@ -1877,12 +1817,6 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-special-characters/src/ui/characterinfoview.js
- *
- * @typedef {module:special-characters/ui/characterinfoview} module:special-characters/ui/characterinfoview~CharacterInfoView
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-special-characters/src/ui/specialcharactersnavigationview.js
  *
  * @typedef {module:special-characters/ui/specialcharactersnavigationview} module:special-characters/ui/specialcharactersnavigationview~SpecialCharactersNavigationView
@@ -1895,15 +1829,27 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-style/src/style.js
+ * Declared in file @ckeditor/ckeditor5-style/src/integrations/link.js
  *
- * @typedef {module:style/style} module:style/style~Style
+ * @typedef {module:style/integrations/link} module:style/integrations/link~LinkStyleSupport
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-style/src/stylecommand.js
+ * Declared in file @ckeditor/ckeditor5-style/src/integrations/list.js
  *
- * @typedef {module:style/stylecommand} module:style/stylecommand~StyleCommand
+ * @typedef {module:style/integrations/list} module:style/integrations/list~ListStyleSupport
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-style/src/integrations/table.js
+ *
+ * @typedef {module:style/integrations/table} module:style/integrations/table~TableStyleSupport
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-style/src/style.js
+ *
+ * @typedef {module:style/style} module:style/style~Style
  */
 
 /**
@@ -1919,9 +1865,9 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-style/src/ui/stylegridbuttonview.js
+ * Declared in file @ckeditor/ckeditor5-style/src/styleutils.js
  *
- * @typedef {module:style/ui/stylegridbuttonview} module:style/ui/stylegridbuttonview~StyleGridButtonView
+ * @typedef {module:style/styleutils} module:style/styleutils~StyleUtils
  */
 
 /**
@@ -1958,18 +1904,6 @@
  * Declared in file @ckeditor/ckeditor5-table/src/commands/inserttablecommand.js
  *
  * @typedef {module:table/commands/inserttablecommand} module:table/commands/inserttablecommand~InsertTableCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/commands/mergecellcommand.js
- *
- * @typedef {module:table/commands/mergecellcommand} module:table/commands/mergecellcommand~MergeCellCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/commands/mergecellscommand.js
- *
- * @typedef {module:table/commands/mergecellscommand} module:table/commands/mergecellscommand~MergeCellsCommand
  */
 
 /**
@@ -2015,42 +1949,6 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-table/src/converters/table-caption-post-fixer.js
- *
- * @typedef {module:table/converters/table-caption-post-fixer} module:table/converters/table-caption-post-fixer~injectTableCaptionPostFixer
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/converters/table-cell-paragraph-post-fixer.js
- *
- * @typedef {module:table/converters/table-cell-paragraph-post-fixer} module:table/converters/table-cell-paragraph-post-fixer~injectTableCellParagraphPostFixer
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/converters/table-cell-refresh-handler.js
- *
- * @typedef {module:table/converters/table-cell-refresh-post-fixer} module:table/converters/table-cell-refresh-post-fixer~tableCellRefreshHandler
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/converters/table-headings-refresh-handler.js
- *
- * @typedef {module:table/converters/table-heading-rows-refresh-post-fixer} module:table/converters/table-heading-rows-refresh-post-fixer~tableHeadingsRefreshHandler
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/converters/table-layout-post-fixer.js
- *
- * @typedef {module:table/converters/table-layout-post-fixer} module:table/converters/table-layout-post-fixer~injectTableLayoutPostFixer
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/converters/upcasttable.js
- *
- * @typedef {module:table/converters/upcasttable} module:table/converters/upcasttable~upcastTable
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-table/src/plaintableoutput.js
  *
  * @typedef {module:table/plaintableoutput} module:table/plaintableoutput~PlainTableOutput
@@ -2093,57 +1991,9 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-table/src/tablecellproperties/commands/tablecellbackgroundcolorcommand.js
- *
- * @typedef {module:table/tablecellproperties/commands/tablecellbackgroundcolorcommand} module:table/tablecellproperties/commands/tablecellbackgroundcolorcommand~TableCellBackgroundColorCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tablecellproperties/commands/tablecellbordercolorcommand.js
- *
- * @typedef {module:table/tablecellproperties/commands/tablecellbordercolorcommand} module:table/tablecellproperties/commands/tablecellbordercolorcommand~TableCellBorderColorCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tablecellproperties/commands/tablecellborderstylecommand.js
- *
- * @typedef {module:table/tablecellproperties/commands/tablecellborderstylecommand} module:table/tablecellproperties/commands/tablecellborderstylecommand~TableCellBorderStyleCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tablecellproperties/commands/tablecellborderwidthcommand.js
- *
- * @typedef {module:table/tablecellproperties/commands/tablecellborderwidthcommand} module:table/tablecellproperties/commands/tablecellborderwidthcommand~TableCellBorderWidthCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tablecellproperties/commands/tablecellheightcommand.js
- *
- * @typedef {module:table/tablecellproperties/commands/tablecellheightcommand} module:table/tablecellproperties/commands/tablecellheightcommand~TableCellHeightCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tablecellproperties/commands/tablecellhorizontalalignmentcommand.js
- *
- * @typedef {module:table/tablecellproperties/commands/tablecellhorizontalalignmentcommand} module:table/tablecellproperties/commands/tablecellhorizontalalignmentcommand~TableCellHorizontalAlignmentCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tablecellproperties/commands/tablecellpaddingcommand.js
- *
- * @typedef {module:table/tablecellproperties/commands/tablecellpaddingcommand} module:table/tablecellproperties/commands/tablecellpaddingcommand~TableCellPaddingCommand
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-table/src/tablecellproperties/commands/tablecellpropertycommand.js
  *
  * @typedef {module:table/tablecellproperties/commands/tablecellpropertycommand} module:table/tablecellproperties/commands/tablecellpropertycommand~TableCellPropertyCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tablecellproperties/commands/tablecellverticalalignmentcommand.js
- *
- * @typedef {module:table/tablecellproperties/commands/tablecellverticalalignmentcommand} module:table/tablecellproperties/commands/tablecellverticalalignmentcommand~TableCellVerticalAlignmentCommand
  */
 
 /**
@@ -2165,21 +2015,9 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-table/src/tablecellwidth/commands/tablecellwidthcommand.js
- *
- * @typedef {module:table/tablecellproperties/commands/tablecellwidthcommand} module:table/tablecellproperties/commands/tablecellwidthcommand~TableCellWidthCommand
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-table/src/tablecellwidth/tablecellwidthediting.js
  *
  * @typedef {module:table/tablecellwidth/tablecellwidthediting} module:table/tablecellwidth/tablecellwidthediting~TableCellWidthEditing
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tableclipboard.js
- *
- * @typedef {module:table/tableclipboard} module:table/tableclipboard~TableClipboard
  */
 
 /**
@@ -2192,18 +2030,6 @@
  * Declared in file @ckeditor/ckeditor5-table/src/tablecolumnresize/tablecolumnresizeediting.js
  *
  * @typedef {module:table/tablecolumnresize/tablecolumnresizeediting} module:table/tablecolumnresize/tablecolumnresizeediting~TableColumnResizeEditing
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tablecolumnresize/tablecolumnwidthscommand.js
- *
- * @typedef {module:table/tablecolumnresize/tablecolumnwidthscommand} module:table/tablecolumnresize/tablecolumnwidthscommand~TableColumnWidthsCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tablecolumnresize/tablewidthresizecommand.js
- *
- * @typedef {module:table/tablecolumnresize/tablewidthresizecommand} module:table/tablecolumnresize/tablewidthresizecommand~TableWidthResizeCommand
  */
 
 /**
@@ -2227,7 +2053,7 @@
 /**
  * Declared in file @ckeditor/ckeditor5-table/src/tablemouse/mouseeventsobserver.js
  *
- * @typedef {module:table/tableselection/mouseeventsobserver} module:table/tableselection/mouseeventsobserver~MouseEventsObserver
+ * @typedef {module:table/tablemouse/mouseeventsobserver} module:table/tablemouse/mouseeventsobserver~MouseEventsObserver
  */
 
 /**
@@ -2237,45 +2063,9 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-table/src/tableproperties/commands/tablealignmentcommand.js
- *
- * @typedef {module:table/tableproperties/commands/tablealignmentcommand} module:table/tableproperties/commands/tablealignmentcommand~TableAlignmentCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tableproperties/commands/tablebackgroundcolorcommand.js
- *
- * @typedef {module:table/tableproperties/commands/tablebackgroundcolorcommand} module:table/tableproperties/commands/tablebackgroundcolorcommand~TableBackgroundColorCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tableproperties/commands/tablebordercolorcommand.js
- *
- * @typedef {module:table/tableproperties/commands/tablebordercolorcommand} module:table/tableproperties/commands/tablebordercolorcommand~TableBorderColorCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tableproperties/commands/tableborderstylecommand.js
- *
- * @typedef {module:table/tableproperties/commands/tableborderstylecommand} module:table/tableproperties/commands/tableborderstylecommand~TableBorderStyleCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tableproperties/commands/tableborderwidthcommand.js
- *
- * @typedef {module:table/tableproperties/commands/tableborderwidthcommand} module:table/tableproperties/commands/tableborderwidthcommand~TableBorderWidthCommand
- */
-
-/**
  * Declared in file @ckeditor/ckeditor5-table/src/tableproperties/commands/tableheightcommand.js
  *
  * @typedef {module:table/tableproperties/commands/tableheightcommand} module:table/tableproperties/commands/tableheightcommand~TableHeightCommand
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tableproperties/commands/tablepropertycommand.js
- *
- * @typedef {module:table/tableproperties/commands/tablepropertycommand} module:table/tableproperties/commands/tablepropertycommand~TablePropertyCommand
  */
 
 /**
@@ -2324,12 +2114,6 @@
  * Declared in file @ckeditor/ckeditor5-table/src/tableutils.js
  *
  * @typedef {module:table/tableutils} module:table/tableutils~TableUtils
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-table/src/tablewalker.js
- *
- * @typedef {module:table/tablewalker} module:table/tablewalker~TableWalker
  */
 
 /**
@@ -2417,39 +2201,27 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-ui/src/bindings/addkeyboardhandlingforgrid.js
+ * Declared in file @ckeditor/ckeditor5-ui/src/autocomplete/autocompleteview.js
  *
- * @typedef {module:ui/bindings/addkeyboardhandlingforgrid} module:ui/bindings/addkeyboardhandlingforgrid~addKeyboardHandlingForGrid
+ * @typedef {module:ui/autocomplete/autocompleteview} module:ui/autocomplete/autocompleteview~AutocompleteView
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-ui/src/bindings/clickoutsidehandler.js
+ * Declared in file @ckeditor/ckeditor5-ui/src/button/buttonlabelview.js
  *
- * @typedef {module:ui/bindings/clickoutsidehandler} module:ui/bindings/clickoutsidehandler~clickOutsideHandler
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-ui/src/bindings/injectcsstransitiondisabler.js
- *
- * @typedef {module:ui/bindings/injectcsstransitiondisabler} module:ui/bindings/injectcsstransitiondisabler~injectCssTransitionDisabler
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-ui/src/bindings/preventdefault.js
- *
- * @typedef {module:ui/bindings/preventdefault} module:ui/bindings/preventdefault~preventDefault
- */
-
-/**
- * Declared in file @ckeditor/ckeditor5-ui/src/bindings/submithandler.js
- *
- * @typedef {module:ui/bindings/submithandler} module:ui/bindings/submithandler~submitHandler
+ * @typedef {module:ui/button/buttonlabelview} module:ui/button/buttonlabelview~ButtonLabelView
  */
 
 /**
  * Declared in file @ckeditor/ckeditor5-ui/src/button/buttonview.js
  *
  * @typedef {module:ui/button/buttonview} module:ui/button/buttonview~ButtonView
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/button/filedialogbuttonview.js
+ *
+ * @typedef {module:ui/button/filedialogbuttonview} module:ui/button/filedialogbuttonview~FileDialogButtonView
  */
 
 /**
@@ -2461,19 +2233,61 @@
 /**
  * Declared in file @ckeditor/ckeditor5-ui/src/colorgrid/colorgridview.js
  *
- * @typedef {module:ui/colorgrid/colorgrid} module:ui/colorgrid/colorgrid~ColorGridView
+ * @typedef {module:ui/colorgrid/colorgridview} module:ui/colorgrid/colorgridview~ColorGridView
  */
 
 /**
  * Declared in file @ckeditor/ckeditor5-ui/src/colorgrid/colortileview.js
  *
- * @typedef {module:ui/colorgrid/colortile} module:ui/colorgrid/colortile~ColorTileView
+ * @typedef {module:ui/colorgrid/colortileview} module:ui/colorgrid/colortileview~ColorTileView
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/colorpicker/colorpickerview.js
+ *
+ * @typedef {module:ui/colorpicker/colorpickerview} module:ui/colorpicker/colorpickerview~ColorPickerView
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/colorselector/colorgridsfragmentview.js
+ *
+ * @typedef {module:ui/colorselector/colorgridsfragmentview} module:ui/colorselector/colorgridsfragmentview~ColorGridsFragmentView
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/colorselector/colorpickerfragmentview.js
+ *
+ * @typedef {module:ui/colorselector/colorpickerfragmentview} module:ui/colorselector/colorpickerfragmentview~ColorPickerFragmentView
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/colorselector/colorselectorview.js
+ *
+ * @typedef {module:ui/colorselector/colorselectorview} module:ui/colorselector/colorselectorview~ColorSelectorView
  */
 
 /**
  * Declared in file @ckeditor/ckeditor5-ui/src/componentfactory.js
  *
  * @typedef {module:ui/componentfactory} module:ui/componentfactory~ComponentFactory
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/dialog/dialogactionsview.js
+ *
+ * @typedef {module:ui/dialog/dialogactionsview} module:ui/dialog/dialogactionsview~DialogActionsView
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/dialog/dialogcontentview.js
+ *
+ * @typedef {module:ui/dialog/dialogcontentview} module:ui/dialog/dialogcontentview~DialogContentView
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/dialog/dialogview.js
+ *
+ * @typedef {module:ui/dialog/dialogview} module:ui/dialog/dialogview~DialogView
  */
 
 /**
@@ -2513,6 +2327,18 @@
  */
 
 /**
+ * Declared in file @ckeditor/ckeditor5-ui/src/editorui/accessibilityhelp/accessibilityhelp.js
+ *
+ * @typedef {module:ui/editorui/accessibilityhelp/accessibilityhelp} module:ui/editorui/accessibilityhelp/accessibilityhelp~AccessibilityHelp
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/editorui/accessibilityhelp/accessibilityhelpcontentview.js
+ *
+ * @typedef {module:ui/editorui/accessibilityhelp/accessibilityhelpcontentview} module:ui/editorui/accessibilityhelp/accessibilityhelpcontentview~AccessibilityHelpContentView
+ */
+
+/**
  * Declared in file @ckeditor/ckeditor5-ui/src/editorui/bodycollection.js
  *
  * @typedef {module:ui/editorui/bodycollection} module:ui/editorui/bodycollection~BodyCollection
@@ -2522,6 +2348,12 @@
  * Declared in file @ckeditor/ckeditor5-ui/src/editorui/boxed/boxededitoruiview.js
  *
  * @typedef {module:ui/editorui/boxed/boxededitoruiview} module:ui/editorui/boxed/boxededitoruiview~BoxedEditorUIView
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/editorui/editorui.js
+ *
+ * @typedef {module:ui/editorui/editorui} module:ui/editorui/editorui~EditorUI
  */
 
 /**
@@ -2543,6 +2375,12 @@
  */
 
 /**
+ * Declared in file @ckeditor/ckeditor5-ui/src/highlightedtext/highlightedtextview.js
+ *
+ * @typedef {module:ui/highlightedtext/highlightedtextview} module:ui/highlightedtext/highlightedtextview~HighlightedTextView
+ */
+
+/**
  * Declared in file @ckeditor/ckeditor5-ui/src/icon/iconview.js
  *
  * @typedef {module:ui/icon/iconview} module:ui/icon/iconview~IconView
@@ -2555,9 +2393,9 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-ui/src/input/inputview.js
+ * Declared in file @ckeditor/ckeditor5-ui/src/input/inputbase.js
  *
- * @typedef {module:ui/input/inputview} module:ui/input/inputview~InputView
+ * @typedef {module:ui/input/inputbase} module:ui/input/inputbase~InputBase
  */
 
 /**
@@ -2591,6 +2429,12 @@
  */
 
 /**
+ * Declared in file @ckeditor/ckeditor5-ui/src/list/listitemgroupview.js
+ *
+ * @typedef {module:ui/list/listitemgroupview} module:ui/list/listitemgroupview~ListItemGroupView
+ */
+
+/**
  * Declared in file @ckeditor/ckeditor5-ui/src/list/listitemview.js
  *
  * @typedef {module:ui/list/listitemview} module:ui/list/listitemview~ListItemView
@@ -2606,6 +2450,24 @@
  * Declared in file @ckeditor/ckeditor5-ui/src/list/listview.js
  *
  * @typedef {module:ui/list/listview} module:ui/list/listview~ListView
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/menubar/menubarmenubuttonview.js
+ *
+ * @typedef {module:ui/menubar/menubarmenubuttonview} module:ui/menubar/menubarmenubuttonview~MenuBarMenuButtonView
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/menubar/menubarmenuview.js
+ *
+ * @typedef {module:ui/menubar/menubarmenuview} module:ui/menubar/menubarmenuview~MenuBarMenuView
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/menubar/menubarview.js
+ *
+ * @typedef {module:ui/menubar/menubarview} module:ui/menubar/menubarview~MenuBarView
  */
 
 /**
@@ -2639,9 +2501,39 @@
  */
 
 /**
+ * Declared in file @ckeditor/ckeditor5-ui/src/search/searchresultsview.js
+ *
+ * @typedef {module:ui/search/searchresultsview} module:ui/search/searchresultsview~SearchResultsView
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/search/text/searchtextqueryview.js
+ *
+ * @typedef {module:ui/search/text/searchtextqueryview} module:ui/search/text/searchtextqueryview~SearchTextQueryView
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/search/text/searchtextview.js
+ *
+ * @typedef {module:ui/search/text/searchtextview} module:ui/search/text/searchtextview~SearchTextView
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/spinner/spinnerview.js
+ *
+ * @typedef {module:ui/spinner/spinnerview} module:ui/spinner/spinnerview~SpinnerView
+ */
+
+/**
  * Declared in file @ckeditor/ckeditor5-ui/src/template.js
  *
  * @typedef {module:ui/template} module:ui/template~Template
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-ui/src/textarea/textareaview.js
+ *
+ * @typedef {module:ui/textarea/textareaview} module:ui/textarea/textareaview~TextareaView
  */
 
 /**
@@ -2765,15 +2657,15 @@
  */
 
 /**
- * Declared in file @ckeditor/ckeditor5-upload/src/ui/filedialogbuttonview.js
+ * Declared in file @ckeditor/ckeditor5-utils/src/abortabledebounce.js
  *
- * @typedef {module:upload/ui/filedialogbuttonview} module:upload/ui/filedialogbuttonview~FileDialogButtonView
+ * @typedef {module:utils/abortabledebounce} module:utils/abortabledebounce~abortableDebounce
  */
 
 /**
  * Declared in file @ckeditor/ckeditor5-utils/src/areconnectedthroughproperties.js
  *
- * @typedef {module:utils/arestructuresconnected} module:utils/arestructuresconnected~areConnectedThroughProperties
+ * @typedef {module:utils/areconnectedthroughproperties} module:utils/areconnectedthroughproperties~areConnectedThroughProperties
  */
 
 /**
@@ -2807,6 +2699,12 @@
  */
 
 /**
+ * Declared in file @ckeditor/ckeditor5-utils/src/delay.js
+ *
+ * @typedef {module:utils/delay} module:utils/delay~delay
+ */
+
+/**
  * Declared in file @ckeditor/ckeditor5-utils/src/diff.js
  *
  * @typedef {module:utils/diff} module:utils/diff~diff
@@ -2828,6 +2726,12 @@
  * Declared in file @ckeditor/ckeditor5-utils/src/dom/emittermixin.js
  *
  * @typedef {module:utils/dom/emittermixin} module:utils/dom/emittermixin~DomEmitterMixin
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-utils/src/dom/findclosestscrollableancestor.js
+ *
+ * @typedef {module:utils/dom/findclosestscrollableancestor} module:utils/dom/findclosestscrollableancestor~findClosestScrollableAncestor
  */
 
 /**
@@ -2894,6 +2798,12 @@
  * Declared in file @ckeditor/ckeditor5-utils/src/dom/istext.js
  *
  * @typedef {module:utils/dom/istext} module:utils/dom/istext~isText
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-utils/src/dom/isvalidattributename.js
+ *
+ * @typedef {module:utils/dom/isvalidattributename} module:utils/dom/isvalidattributename~isValidAttributeName
  */
 
 /**
@@ -3029,6 +2939,12 @@
  */
 
 /**
+ * Declared in file @ckeditor/ckeditor5-utils/src/retry.js
+ *
+ * @typedef {module:utils/retry} module:utils/retry~async
+ */
+
+/**
  * Declared in file @ckeditor/ckeditor5-utils/src/splicearray.js
  *
  * @typedef {module:utils/splicearray} module:utils/splicearray~spliceArray
@@ -3053,9 +2969,33 @@
  */
 
 /**
+ * Declared in file @ckeditor/ckeditor5-utils/src/verifylicense.js
+ *
+ * @typedef {module:utils/verifylicense} module:utils/verifylicense~verifyLicense
+ */
+
+/**
  * Declared in file @ckeditor/ckeditor5-utils/src/version.js
  *
  * @typedef {module:utils/version} module:utils/version~version
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-utils/src/wait.js
+ *
+ * @typedef {module:utils/wait} module:utils/wait~wait
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-watchdog/src/utils/areconnectedthroughproperties.js
+ *
+ * @typedef {module:watchdog/utils/areconnectedthroughproperties} module:watchdog/utils/areconnectedthroughproperties~areConnectedThroughProperties
+ */
+
+/**
+ * Declared in file @ckeditor/ckeditor5-watchdog/src/utils/getsubnodes.js
+ *
+ * @typedef {module:watchdog/utils/getsubnodes} module:watchdog/utils/getsubnodes~getSubNodes
  */
 
 /**
@@ -3067,7 +3007,7 @@
 /**
  * Declared in file @ckeditor/ckeditor5-widget/src/verticalnavigation.js
  *
- * @typedef {module:widget/verticalnavigationhandler} module:widget/verticalnavigationhandler~verticalNavigationHandler
+ * @typedef {module:widget/verticalnavigation} module:widget/verticalnavigation~verticalNavigationHandler
  */
 
 /**
@@ -3109,5 +3049,5 @@
 /**
  * Declared in file @ckeditor/ckeditor5-widget/src/widgettypearound/widgettypearound.js
  *
- * @typedef {module:widget/widgettypearound} module:widget/widgettypearound~WidgetTypeAround
+ * @typedef {module:widget/widgettypearound/widgettypearound} module:widget/widgettypearound/widgettypearound~WidgetTypeAround
  */

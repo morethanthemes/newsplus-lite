@@ -5,8 +5,10 @@ namespace Drupal\media\OEmbed;
 use Drupal\Component\Serialization\Json;
 use Drupal\Core\Cache\CacheBackendInterface;
 use GuzzleHttp\ClientInterface;
-use GuzzleHttp\Exception\TransferException;
 use GuzzleHttp\RequestOptions;
+use Psr\Http\Client\ClientExceptionInterface;
+
+// cspell:ignore nocdata
 
 /**
  * Fetches and caches oEmbed resources.
@@ -44,13 +46,9 @@ class ResourceFetcher implements ResourceFetcherInterface {
    * @param \Drupal\Core\Cache\CacheBackendInterface $cache_backend
    *   The cache backend.
    */
-  public function __construct(ClientInterface $http_client, ProviderRepositoryInterface $providers, CacheBackendInterface $cache_backend = NULL) {
+  public function __construct(ClientInterface $http_client, ProviderRepositoryInterface $providers, CacheBackendInterface $cache_backend) {
     $this->httpClient = $http_client;
     $this->providers = $providers;
-    if (empty($cache_backend)) {
-      $cache_backend = \Drupal::cache();
-      @trigger_error('Passing NULL as the $cache_backend parameter to ' . __METHOD__ . '() is deprecated in drupal:9.3.0 and is removed from drupal:10.0.0. See https://www.drupal.org/node/3223594', E_USER_DEPRECATED);
-    }
     $this->cacheBackend = $cache_backend;
   }
 
@@ -70,7 +68,7 @@ class ResourceFetcher implements ResourceFetcherInterface {
         RequestOptions::TIMEOUT => 5,
       ]);
     }
-    catch (TransferException $e) {
+    catch (ClientExceptionInterface $e) {
       throw new ResourceException('Could not retrieve the oEmbed resource.', $url, [], $e);
     }
 

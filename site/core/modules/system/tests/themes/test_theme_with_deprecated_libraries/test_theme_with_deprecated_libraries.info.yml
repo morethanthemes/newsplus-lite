@@ -1,0 +1,27 @@
+name: 'Test theme with deprecated libraries'
+type: theme
+description: 'Test theme to test themes with deprecated libraries.'
+# version: VERSION
+package: Testing
+base theme: test_theme
+
+libraries-override:
+  theme_test/deprecated_library:
+    css:
+      base:
+        css/foo.css: css/bar.css
+  theme_test/moved_from:
+    css:
+      base:
+        css/foo.css: css/bar.css
+    js:
+      js/bar.js: false
+
+libraries-extend:
+  theme_test/another_deprecated_library:
+    - test_theme_with_deprecated_libraries/library
+
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
+project: 'drupal'
+datestamp: 1726135113

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\jsonapi\Functional;
 
 use Drupal\contact\Entity\ContactForm;
@@ -9,6 +11,7 @@ use Drupal\Core\Url;
  * JSON:API integration test for the "ContactForm" config entity type.
  *
  * @group jsonapi
+ * @group #slow
  */
 class ContactFormTest extends ConfigEntityResourceTestBase {
 

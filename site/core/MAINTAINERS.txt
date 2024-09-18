@@ -13,13 +13,13 @@ Core committers
 The Drupal core committers oversee the development of Drupal as a whole. The
 core committers for Drupal are (in alphabetical order):
 
-BDFL
+Project Lead
 - Dries Buytaert 'dries' https://www.drupal.org/u/dries
 
 Product managers
 - Dries Buytaert 'dries' https://www.drupal.org/u/dries
 - Gábor Hojtsy 'Gábor Hojtsy' https://www.drupal.org/u/gábor-hojtsy
-- Lauri Eskola 'lauriii' https://www.drupal.org/u/lauriii
+- Lauri Timmanee 'lauriii' https://www.drupal.org/u/lauriii
 - Roy Scholten 'yoroy' https://www.drupal.org/u/yoroy
 
 Framework managers
@@ -32,22 +32,25 @@ Framework managers
 
   Frontend
   - Ben Mullins 'bnjmnm' https://www.drupal.org/u/bnjmnm
-  - (provisional) Théodore Biadala 'nod_' https://www.drupal.org/u/nod_
-  - (provisional) Cristina Chumillas 'ckrina' https://www.drupal.org/u/ckrina
-  - (provisional) Sally Young 'justafish' https://www.drupal.org/u/justafish
+  - Théodore Biadala 'nod_' https://www.drupal.org/u/nod_
+  - Cristina Chumillas 'ckrina' https://www.drupal.org/u/ckrina
+  - Sally Young 'justafish' https://www.drupal.org/u/justafish
 
 Release managers
 - Nathaniel Catchpole 'catch' https://www.drupal.org/u/catch
+- Dave Long 'longwave' https://www.drupal.org/u/longwave
 - Jess Myrbo 'xjm' https://www.drupal.org/u/xjm
 - Victoria Spagnolo 'quietone' https://www.drupal.org/u/quietone
-- (provisional) Dave Long 'longwave' https://www.drupal.org/u/longwave
 
 Core JavaScript packages
- - Théodore Biadala 'nod_' https://www.drupal.org/u/nod_
- - Sally Young 'justafish' https://www.drupal.org/u/justafish
+- Théodore Biadala 'nod_' https://www.drupal.org/u/nod_
+- Sally Young 'justafish' https://www.drupal.org/u/justafish
 
 Committer team facilitators
 - Pamela Barone 'pameeela' https://www.drupal.org/u/pameeela
+
+Core initiative facilitators
+- Gábor Hojtsy 'Gábor Hojtsy' https://www.drupal.org/u/gábor-hojtsy
 
 Subsystem maintainers
 ---------------------
@@ -57,10 +60,7 @@ subsystems. See https://www.drupal.org/contribute/core-maintainers for more
 information on their responsibilities, and to find out how to become a subsystem
 maintainer. Current subsystem maintainers:
 
-Actions
-- ?
-
-Aggregator
+Actions UI
 - ?
 
 Ajax
@@ -78,9 +78,6 @@ Automated Cron
 
 Ban
 - ?
-
-Bartik
-- Emma Maria Karayiannis 'emma.maria' https://www.drupal.org/u/emma.maria
 
 Base system
 - See "Framework managers" above.
@@ -100,6 +97,7 @@ Block
 - Ben Dougherty 'benjy' https://www.drupal.org/u/benjy
 
 Block Content
+- Adam Bramley 'acbramley' https://www.drupal.org/u/acbramley
 - Lee Rowlands 'larowlan' https://www.drupal.org/u/larowlan
 - Stephen Mustgrave 'smustgrave' https://www.drupal.org/u/smustgrave
 
@@ -115,28 +113,18 @@ Breakpoint
 
 Cache
 - Nathaniel Catchpole 'catch' https://www.drupal.org/u/catch
-
-CKEditor
-- Henrik Danielsson 'TwoD' https://www.drupal.org/u/TwoD
-- Wim Leers 'Wim Leers' https://www.drupal.org/u/wim-leers
-- Marek 'mlewand' Lewandowski https://www.drupal.org/u/mlewand
+- Kristiaan Van den Eynde 'kristiaanvandeneynde' https://www.drupal.org/u/kristiaanvandeneynde
 
 CKEditor 5
-- Lauri Eskola 'lauriii' https://www.drupal.org/u/lauriii
+- Lauri Timmanee 'lauriii' https://www.drupal.org/u/lauriii
 - Wim Leers 'Wim Leers' https://www.drupal.org/u/wim-leers
 - Ben Mullins 'bnjmnm' https://www.drupal.org/u/bnjmnm
 
 Claro
 - Cristina Chumillas 'ckrina' https://www.drupal.org/u/ckrina
 - Sascha Eggenberger 'saschaeggi' https://www.drupal.org/u/saschaeggi
-- Lauri Eskola 'lauriii' https://www.drupal.org/u/lauriii
+- Lauri Timmanee 'lauriii' https://www.drupal.org/u/lauriii
 - Ben Mullins 'bnjmnm' https://www.drupal.org/u/bnjmnm
-
-Classy
-- David Hernandez 'davidhernandez' https://www.drupal.org/u/davidhernandez
-
-Color
-- ?
 
 Comment
 - Lee Rowlands 'larowlan' https://www.drupal.org/u/larowlan
@@ -203,6 +191,11 @@ DateTime Range
 - Jonathan Hedstrom 'jhedstrom' https://www.drupal.org/u/jhedstrom
 - Matthew Donadio 'mpdonadio' https://www.drupal.org/u/mpdonadio
 
+Default Content
+- Alex Pott 'alexpott' https://www.drupal.org/u/alexpott
+- Adam Globus-Hoenich 'phenaproxima' https://www.drupal.org/u/phenaproxima
+- Jim Birch 'thejimbirch' https://www.drupal.org/u/thejimbirch
+
 Dynamic Page Cache
 - Fabian Franz 'Fabianx' https://www.drupal.org/u/fabianx
 - Wim Leers 'Wim Leers' https://www.drupal.org/u/wim-leers
@@ -242,13 +235,7 @@ Form API
 History
 - Andrey Postnikov 'andypost' https://www.drupal.org/u/andypost
 
-Hypertext Application Language (HAL)
-- ?
-
 Help
-- ?
-
-Help Topics
 - Amber Matz 'Amber Himes Matz' https://www.drupal.org/u/amber-himes-matz
 - Andrey Postnikov 'andypost' https://www.drupal.org/u/andypost
 
@@ -281,6 +268,7 @@ Layout Builder
 - Ted Bowman 'tedbow' https://www.drupal.org/u/tedbow
 - Emilie Nouveau 'DyanneNova' https://www.drupal.org/u/dyannenova
 - Tim Plunkett 'tim.plunkett' https://www.drupal.org/u/tim.plunkett
+- Daniel Veza 'DanielVeza' https://www.drupal.org/u/DanielVeza
 
 Link Field
 - Weber Macedo 'Mac_Weber' https://www.drupal.org/u/mac_weber
@@ -322,6 +310,13 @@ Migrate
 - Michael Lutz 'mikelutz' https://www.drupal.org/u/mikelutz
 - Victoria Spagnolo 'quietone' https://www.drupal.org/u/quietone
 
+Navigation
+- Cristina Chumillas 'ckrina' https://www.drupal.org/u/ckrina
+- Ivan Berdinsky 'finnsky' https://www.drupal.org/u/finnsky
+- Matthew Oliveira 'm4olivei' https://www.drupal.org/u/m4olivei
+- Théodore Biadala 'nod_' https://www.drupal.org/u/nod_
+- Pablo López 'plopesc' https://www.drupal.org/u/plopesc
+
 Node
 - ?
 
@@ -358,12 +353,10 @@ Plugin
 Queue
 - James Gilliland 'neclimdul' https://www.drupal.org/u/neclimdul
 
-Quick Edit
-- Wim Leers 'Wim Leers' https://www.drupal.org/u/wim-leers
-- Théodore Biadala 'nod_' https://www.drupal.org/u/nod_
-
-RDF
-- ?
+Recipes
+- Alex Pott 'alexpott' https://www.drupal.org/u/alexpott
+- Adam Globus-Hoenich 'phenaproxima' https://www.drupal.org/u/phenaproxima
+- Jim Birch 'thejimbirch' https://www.drupal.org/u/thejimbirch
 
 Render API
 - Alex Bronstein 'effulgentsia' https://www.drupal.org/u/effulgentsia
@@ -392,14 +385,8 @@ Serialization
 Settings Tray
 - Ted Bowman 'tedbow' https://www.drupal.org/u/tedbow
 
-Seven
-- ?
-
 Shortcut
 - Jibran Ijaz 'jibran' https://www.drupal.org/u/jibran
-
-Stable
-- ?
 
 Stark
 - John Albin Wilkins 'JohnAlbin' https://www.drupal.org/u/johnalbin
@@ -420,12 +407,6 @@ Taxonomy
 Telephone
 - Stephen Mustgrave 'smustgrave' https://www.drupal.org/u/smustgrave
 
-Testing framework
-- Alex Pott 'alexpott' https://www.drupal.org/u/alexpott
-- Sascha Grossenbacher 'Berdir' https://www.drupal.org/u/berdir
-- Daniel Wehner 'dawehner' https://www.drupal.org/u/dawehner
-- Alberto M. 'mondrake' https://www.drupal.org/u/mondrake
-
 Text Field
 - Stephen Mustgrave 'smustgrave' https://www.drupal.org/u/smustgrave
 
@@ -433,7 +414,11 @@ Theme API
 - Alex Bronstein 'effulgentsia' https://www.drupal.org/u/effulgentsia
 - Fabian Franz 'Fabianx' https://www.drupal.org/u/fabianx
 - Joël Pittet 'joelpittet' https://www.drupal.org/u/joelpittet
-- Lauri Eskola 'lauriii' https://www.drupal.org/u/lauriii
+- Lauri Timmanee 'lauriii' https://www.drupal.org/u/lauriii
+
+  Single-Directory Components
+  - Mateu Aguiló Bosch 'e0ipso' https://www.drupal.org/u/e0ipso
+  - Pierre Dureau 'pdureau' https://www.drupal.org/u/pdureau
 
 Token
 - ?
@@ -458,6 +443,7 @@ Umami demo
 - Gareth Goodwin 'smaz' https://www.drupal.org/u/smaz
 - Keith Jay 'kjay' https://www.drupal.org/u/kjay
 - Ofer Shaal 'shaal' https://www.drupal.org/u/shaal
+- Ivan Berdinsky 'finnsky' https://www.drupal.org/u/finnsky
 
 Update Manager
 - Ted Bowman 'tedbow' https://www.drupal.org/u/tedbow
@@ -465,6 +451,7 @@ Update Manager
 
 User
 - Moshe Weitzman 'moshe weitzman' https://www.drupal.org/u/moshe-weitzman
+- Kristiaan Van den Eynde 'kristiaanvandeneynde' https://www.drupal.org/u/kristiaanvandeneynde
 
 Views
 - Daniel Wehner 'dawehner' https://www.drupal.org/u/dawehner
@@ -476,6 +463,8 @@ Views
 Workflows
 - Sam Becker 'Sam152' https://www.drupal.org/u/sam152
 
+Workspaces
+- Andrei Mateescu 'amateescu' https://www.drupal.org/u/amateescu
 
 Topic maintainers
 -----------------
@@ -489,7 +478,7 @@ Accessibility
 - Rain Breaw Michaels 'rainbreaw' https://www.drupal.org/u/rainbreaw
 - Mike Gifford 'mgifford' https://www.drupal.org/u/mgifford
 - Andrew Macpherson 'andrewmacpherson' https://www.drupal.org/u/andrewmacpherson
-- (provisional) Ben Mullins 'bnjmnm' https://www.drupal.org/u/bnjmnm
+- Ben Mullins 'bnjmnm' https://www.drupal.org/u/bnjmnm
 
 Documentation
 - ?
@@ -498,7 +487,10 @@ Performance
 - Nathaniel Catchpole 'catch' https://www.drupal.org/u/catch
 
 Testing
-- ?
+- Alex Pott 'alexpott' https://www.drupal.org/u/alexpott
+- Sascha Grossenbacher 'Berdir' https://www.drupal.org/u/berdir
+- Daniel Wehner 'dawehner' https://www.drupal.org/u/dawehner
+- Alberto M. 'mondrake' https://www.drupal.org/u/mondrake
 
 Usability
 - Cristina Chumillas 'ckrina' https://www.drupal.org/u/ckrina
@@ -527,13 +519,6 @@ The Drupal core initiative coordinators oversee approved projects that
 re-architect or otherwise improve large areas of Drupal core. See
 https://www.drupal.org/contribute/core/maintainers for more information on
 their responsibilities. The initiative coordinators are:
-
-Decoupled Menus Initiative
-- Théodore Biadala 'nod_' https://www.drupal.org/u/nod_
-- Brian Perry 'brianperry' https://www.drupal.org/u/brianperry
-
-Media Initiative
-- Janez Urevc 'slashrsm' https://www.drupal.org/u/slashrsm
 
 Project Browser Initiative
 - Leslie Glynn 'leslieg' https://www.drupal.org/u/leslieg

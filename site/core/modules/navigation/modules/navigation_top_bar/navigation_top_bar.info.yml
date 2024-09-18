@@ -1,0 +1,13 @@
+name: Navigation Top Bar
+type: module
+description: 'When enabled, this module provides relevant administrative information and tasks for the current page on a top bar. It is not feature complete nor fully functional so enabling it could lead to possible inconsistencies.'
+package: Core (Experimental)
+lifecycle: experimental
+# version: VERSION
+dependencies:
+  - navigation:navigation
+
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
+project: 'drupal'
+datestamp: 1726135113

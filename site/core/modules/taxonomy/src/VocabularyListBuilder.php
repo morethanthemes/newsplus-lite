@@ -67,11 +67,13 @@ class VocabularyListBuilder extends DraggableListBuilder {
    * @param \Drupal\Core\Messenger\MessengerInterface $messenger
    *   The messenger.
    */
-  public function __construct(EntityTypeInterface $entity_type,
-                              AccountInterface $current_user,
-                              EntityTypeManagerInterface $entity_type_manager,
-                              RendererInterface $renderer = NULL,
-                              MessengerInterface $messenger) {
+  public function __construct(
+    EntityTypeInterface $entity_type,
+    AccountInterface $current_user,
+    EntityTypeManagerInterface $entity_type_manager,
+    RendererInterface $renderer,
+    MessengerInterface $messenger,
+  ) {
     parent::__construct($entity_type, $entity_type_manager->getStorage($entity_type->id()));
 
     $this->currentUser = $current_user;
@@ -109,6 +111,9 @@ class VocabularyListBuilder extends DraggableListBuilder {
     if (isset($operations['edit'])) {
       $operations['edit']['title'] = t('Edit vocabulary');
     }
+    if (isset($operations['delete'])) {
+      $operations['delete']['title'] = $this->t('Delete vocabulary');
+    }
 
     if ($entity->access('access taxonomy overview')) {
       $operations['list'] = [
@@ -126,8 +131,6 @@ class VocabularyListBuilder extends DraggableListBuilder {
         'url' => Url::fromRoute('entity.taxonomy_term.add_form', ['taxonomy_vocabulary' => $entity->id()]),
       ];
     }
-
-    unset($operations['delete']);
 
     return $operations;
   }

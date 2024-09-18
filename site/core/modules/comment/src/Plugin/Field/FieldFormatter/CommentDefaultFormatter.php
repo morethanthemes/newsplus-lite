@@ -7,29 +7,26 @@ use Drupal\Core\Entity\Entity\EntityViewDisplay;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Entity\EntityFormBuilderInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Field\Attribute\FieldFormatter;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FormatterBase;
 use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a default comment formatter.
- *
- * @FieldFormatter(
- *   id = "comment_default",
- *   module = "comment",
- *   label = @Translation("Comment list"),
- *   field_types = {
- *     "comment"
- *   },
- *   quickedit = {
- *     "editor" = "disabled"
- *   }
- * )
  */
+#[FieldFormatter(
+  id: 'comment_default',
+  label: new TranslatableMarkup('Comment list'),
+  field_types: [
+    'comment',
+  ],
+)]
 class CommentDefaultFormatter extends FormatterBase {
 
   /**
@@ -178,7 +175,7 @@ class CommentDefaultFormatter extends FormatterBase {
             // where a specific comment appears and does a subrequest pointing to
             // that page, we need to pass that subrequest route to our pager to
             // keep the pager working.
-            $build['pager']['#route_name'] = $this->routeMatch->getRouteObject();
+            $build['pager']['#route_name'] = $this->routeMatch->getRouteName();
             $build['pager']['#route_parameters'] = $this->routeMatch->getRawParameters()->all();
             if ($this->getSetting('pager_id')) {
               $build['pager']['#element'] = $this->getSetting('pager_id');

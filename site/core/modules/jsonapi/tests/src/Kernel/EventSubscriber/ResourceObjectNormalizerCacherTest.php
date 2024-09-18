@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\jsonapi\Kernel\EventSubscriber;
 
 use Drupal\Core\Cache\Cache;
@@ -26,6 +28,7 @@ class ResourceObjectNormalizerCacherTest extends KernelTestBase {
    * {@inheritdoc}
    */
   protected static $modules = [
+    'file',
     'system',
     'serialization',
     'jsonapi',
@@ -61,7 +64,6 @@ class ResourceObjectNormalizerCacherTest extends KernelTestBase {
     // Add the entity schemas.
     $this->installEntitySchema('user');
     // Add the additional table schemas.
-    $this->installSchema('system', ['sequences']);
     $this->installSchema('user', ['users_data']);
     $this->resourceTypeRepository = $this->container->get('jsonapi.resource_type.repository');
     $this->serializer = $this->container->get('jsonapi.serializer');
@@ -73,7 +75,7 @@ class ResourceObjectNormalizerCacherTest extends KernelTestBase {
    *
    * @see https://www.drupal.org/project/drupal/issues/3077287
    */
-  public function testLinkNormalizationCacheability() {
+  public function testLinkNormalizationCacheability(): void {
     $user = User::create([
       'name' => $this->randomMachineName(),
       'pass' => $this->randomString(),

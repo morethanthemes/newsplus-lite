@@ -5,14 +5,14 @@ namespace Drupal\views\Plugin\views;
 use Drupal\Component\Plugin\DerivativeInspectionInterface;
 use Drupal\Component\Plugin\PluginInspectionInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\ViewExecutable;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides an interface for all views plugins.
  */
-interface ViewsPluginInterface extends PluginInspectionInterface, DerivativeInspectionInterface {
+interface ViewsPluginInterface extends PluginInspectionInterface, DerivativeInspectionInterface, ContainerFactoryPluginInterface {
 
   /**
    * Returns the plugin provider.
@@ -69,11 +69,6 @@ interface ViewsPluginInterface extends PluginInspectionInterface, DerivativeInsp
   public static function preRenderAddFieldsetMarkup(array $form);
 
   /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition);
-
-  /**
    * Initialize the plugin.
    *
    * @param \Drupal\views\ViewExecutable $view
@@ -83,7 +78,7 @@ interface ViewsPluginInterface extends PluginInspectionInterface, DerivativeInsp
    * @param array $options
    *   The options configured for this plugin.
    */
-  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL);
+  public function init(ViewExecutable $view, DisplayPluginBase $display, ?array &$options = NULL);
 
   /**
    * Handle any special handling on the validate form.

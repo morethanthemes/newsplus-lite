@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\BasicAuthResourceTestTrait;
 
 /**
  * @group rest
+ * @group #slow
  */
 class TermJsonBasicAuthTest extends TermResourceTestBase {
 

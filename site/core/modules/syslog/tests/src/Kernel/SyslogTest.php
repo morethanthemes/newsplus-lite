@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\syslog\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 
 /**
  * Test syslog logger functionality.
@@ -26,10 +30,11 @@ class SyslogTest extends KernelTestBase {
   /**
    * @covers ::log
    */
-  public function testSyslogWriting() {
+  public function testSyslogWriting(): void {
 
     $request = Request::create('/page-not-found', 'GET', [], [], [], ['REMOTE_ADDR' => '1.2.3.4']);
     $request->headers->set('Referer', 'other-site');
+    $request->setSession(new Session(new MockArraySessionStorage()));
     \Drupal::requestStack()->push($request);
 
     $user = $this->getMockBuilder('Drupal\Core\Session\AccountInterface')->getMock();
@@ -63,11 +68,25 @@ class SyslogTest extends KernelTestBase {
   }
 
   /**
+   * Tests that missing facility prevents writing to the syslog.
+   *
+   * @covers ::openConnection
+   */
+  public function testSyslogMissingFacility(): void {
+    $config = $this->container->get('config.factory')->getEditable('syslog.settings');
+    $config->clear('facility');
+    $config->save();
+    \Drupal::logger('my_module')->warning('My warning message.');
+    $log_filename = $this->container->get('file_system')->realpath('public://syslog.log');
+    $this->assertFileDoesNotExist($log_filename);
+  }
+
+  /**
    * Tests severity level logging.
    *
    * @covers ::log
    */
-  public function testSyslogSeverity() {
+  public function testSyslogSeverity(): void {
     /** @var \Drupal\Core\Config\Config $config */
     $config = $this->container->get('config.factory')->getEditable('syslog.settings');
     $config->set('format', '!type|!message|!severity');

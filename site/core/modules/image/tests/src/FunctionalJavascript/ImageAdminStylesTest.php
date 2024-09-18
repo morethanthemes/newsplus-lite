@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\image\FunctionalJavascript;
 
 use Drupal\image\Entity\ImageStyle;
@@ -19,11 +21,11 @@ class ImageAdminStylesTest extends ImageFieldTestBase {
   /**
    * Tests editing Ajax-enabled image effect forms.
    */
-  public function testAjaxEnabledEffectForm() {
+  public function testAjaxEnabledEffectForm(): void {
     $admin_path = 'admin/config/media/image-styles';
 
     // Setup a style to be created and effects to add to it.
-    $style_name = strtolower($this->randomMachineName(10));
+    $style_name = $this->randomMachineName(10);
     $style_label = $this->randomString();
     $style_path = $admin_path . '/manage/' . $style_name;
     $effect_edit = [

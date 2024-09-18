@@ -1,9 +1,6 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\migrate\Unit\destination\EntityRevisionTest.
- */
+declare(strict_types=1);
 
 namespace Drupal\Tests\migrate\Unit\destination;
 
@@ -15,6 +12,7 @@ use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\Plugin\migrate\destination\EntityRevision as RealEntityRevision;
 use Drupal\migrate\Row;
 use Drupal\Tests\UnitTestCase;
+use Prophecy\Argument;
 
 /**
  * Tests entity revision destination.
@@ -30,7 +28,7 @@ class EntityRevisionTest extends UnitTestCase {
   protected $migration;
 
   /**
-   * @var \Drupal\Core\Entity\EntityStorageInterface
+   * @var \Drupal\Core\Entity\RevisionableStorageInterface
    */
   protected $storage;
 
@@ -59,7 +57,7 @@ class EntityRevisionTest extends UnitTestCase {
 
     // Setup mocks to be used when creating a revision destination.
     $this->migration = $this->prophesize(MigrationInterface::class);
-    $this->storage = $this->prophesize('\Drupal\Core\Entity\EntityStorageInterface');
+    $this->storage = $this->prophesize('\Drupal\Core\Entity\RevisionableStorageInterface');
 
     $entity_type = $this->prophesize(EntityTypeInterface::class);
     $entity_type->getSingularLabel()->willReturn('crazy');
@@ -76,7 +74,7 @@ class EntityRevisionTest extends UnitTestCase {
    *
    * @covers ::getEntity
    */
-  public function testGetEntityDestinationValues() {
+  public function testGetEntityDestinationValues(): void {
     $destination = $this->getEntityRevisionDestination([]);
     // Return a dummy because we don't care what gets called.
     $entity = $this->prophesize('\Drupal\Core\Entity\RevisionableInterface');
@@ -94,7 +92,7 @@ class EntityRevisionTest extends UnitTestCase {
    *
    * @covers ::getEntity
    */
-  public function testGetEntityUpdateRevision() {
+  public function testGetEntityUpdateRevision(): void {
     $destination = $this->getEntityRevisionDestination([]);
     $entity = $this->prophesize('\Drupal\Core\Entity\RevisionableInterface');
 
@@ -121,7 +119,7 @@ class EntityRevisionTest extends UnitTestCase {
    *
    * @covers ::getEntity
    */
-  public function testGetEntityNewRevision() {
+  public function testGetEntityNewRevision(): void {
     $destination = $this->getEntityRevisionDestination([]);
     $entity = $this->prophesize('\Drupal\Core\Entity\RevisionableInterface');
 
@@ -151,7 +149,7 @@ class EntityRevisionTest extends UnitTestCase {
    *
    * @covers ::getEntity
    */
-  public function testGetEntityLoadFailure() {
+  public function testGetEntityLoadFailure(): void {
     $destination = $this->getEntityRevisionDestination([]);
 
     $entity_type = $this->prophesize('\Drupal\Core\Entity\EntityTypeInterface');
@@ -174,10 +172,13 @@ class EntityRevisionTest extends UnitTestCase {
    *
    * @covers ::save
    */
-  public function testSave() {
+  public function testSave(): void {
     $entity = $this->prophesize('\Drupal\Core\Entity\ContentEntityInterface');
     $entity->save()
       ->shouldBeCalled();
+    // Syncing should be set once.
+    $entity->setSyncing(Argument::exact(TRUE))
+      ->shouldBeCalledTimes(1);
     $entity->getRevisionId()
       ->shouldBeCalled()
       ->willReturn(1234);
@@ -238,6 +239,14 @@ class EntityRevision extends RealEntityRevision {
    * This method is from the parent and we aren't concerned with the inner
    * workings of its implementation which would trickle into mock assertions. An
    * empty implementation avoids this.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to update.
+   * @param \Drupal\migrate\Row $row
+   *   The row object to update from.
+   *
+   * @return \Drupal\Core\Entity\EntityInterface
+   *   An updated entity from row values.
    */
   protected function updateEntity(EntityInterface $entity, Row $row) {
     return $entity;

@@ -29,7 +29,7 @@ define('MAINTENANCE_MODE', 'install');
 // hardcoded minimum PHP version below (both in the version_compare() call and
 // in the printed message to the user) whenever \Drupal::MINIMUM_PHP is
 // updated.
-if (version_compare(PHP_VERSION, '7.3.0') < 0) {
+if (version_compare(PHP_VERSION, '8.1.0') < 0) {
   print 'Your PHP installation is too old. Refer to the <a href="https://www.drupal.org/docs/system-requirements/php-requirements">Drupal PHP requirements</a> for the currently recommended PHP version for this release. See <a href="https://php.net/supported-versions.php">PHP\'s version support documentation</a> for more information on PHP\'s own support schedule.';
   exit;
 }

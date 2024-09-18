@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Scripts;
 
 use Drupal\Component\FileSystem\FileSystem;
@@ -10,6 +12,8 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Request;
 use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Component\Process\Process;
+
+// cspell:ignore htkey
 
 /**
  * Tests core/scripts/test-site.php.
@@ -42,49 +46,34 @@ class TestSiteApplicationTest extends UnitTestCase {
     parent::setUp();
     $php_executable_finder = new PhpExecutableFinder();
     $this->php = $php_executable_finder->find();
-    $this->root = dirname(substr(__DIR__, 0, -strlen(__NAMESPACE__)), 2);
   }
 
   /**
    * @coversNothing
    */
-  public function testInstallWithNonExistingFile() {
-
-    // Create a connection to the DB configured in SIMPLETEST_DB.
-    $connection = Database::getConnection('default', $this->addTestDatabase(''));
-    $table_count = count($connection->schema()->findTables('%'));
-
+  public function testInstallWithNonExistingFile(): void {
     $command_line = $this->php . ' core/scripts/test-site.php install --setup-file "this-class-does-not-exist" --db-url "' . getenv('SIMPLETEST_DB') . '"';
     $process = Process::fromShellCommandline($command_line, $this->root);
     $process->run();
 
     $this->assertStringContainsString('The file this-class-does-not-exist does not exist.', $process->getErrorOutput());
-    $this->assertSame(1, $process->getExitCode());
-    $this->assertCount($table_count, $connection->schema()->findTables('%'), 'No additional tables created in the database');
   }
 
   /**
    * @coversNothing
    */
-  public function testInstallWithFileWithNoClass() {
-
-    // Create a connection to the DB configured in SIMPLETEST_DB.
-    $connection = Database::getConnection('default', $this->addTestDatabase(''));
-    $table_count = count($connection->schema()->findTables('%'));
-
+  public function testInstallWithFileWithNoClass(): void {
     $command_line = $this->php . ' core/scripts/test-site.php install --setup-file core/tests/fixtures/empty_file.php.module --db-url "' . getenv('SIMPLETEST_DB') . '"';
     $process = Process::fromShellCommandline($command_line, $this->root);
     $process->run();
 
     $this->assertStringContainsString('The file core/tests/fixtures/empty_file.php.module does not contain a class', $process->getErrorOutput());
-    $this->assertSame(1, $process->getExitCode());
-    $this->assertCount($table_count, $connection->schema()->findTables('%'), 'No additional tables created in the database');
   }
 
   /**
    * @coversNothing
    */
-  public function testInstallWithNonSetupClass() {
+  public function testInstallWithNonSetupClass(): void {
     $this->markTestIncomplete('Fix this test in https://www.drupal.org/project/drupal/issues/2962157.');
 
     // Use __FILE__ to test absolute paths.
@@ -99,7 +88,7 @@ class TestSiteApplicationTest extends UnitTestCase {
   /**
    * @coversNothing
    */
-  public function testInstallScript() {
+  public function testInstallScript(): void {
     $simpletest_path = $this->root . DIRECTORY_SEPARATOR . 'sites' . DIRECTORY_SEPARATOR . 'simpletest';
     if (!is_writable($simpletest_path)) {
       $this->markTestSkipped("Requires the directory $simpletest_path to exist and be writable");
@@ -199,7 +188,7 @@ class TestSiteApplicationTest extends UnitTestCase {
   /**
    * @coversNothing
    */
-  public function testInstallInDifferentLanguage() {
+  public function testInstallInDifferentLanguage(): void {
     $simpletest_path = $this->root . DIRECTORY_SEPARATOR . 'sites' . DIRECTORY_SEPARATOR . 'simpletest';
     if (!is_writable($simpletest_path)) {
       $this->markTestSkipped("Requires the directory $simpletest_path to exist and be writable");
@@ -236,7 +225,7 @@ class TestSiteApplicationTest extends UnitTestCase {
   /**
    * @coversNothing
    */
-  public function testTearDownDbPrefixValidation() {
+  public function testTearDownDbPrefixValidation(): void {
     $command_line = $this->php . ' core/scripts/test-site.php tear-down not-a-valid-prefix';
     $process = Process::fromShellCommandline($command_line, $this->root);
     $process->setTimeout(500);
@@ -248,7 +237,7 @@ class TestSiteApplicationTest extends UnitTestCase {
   /**
    * @coversNothing
    */
-  public function testUserLogin() {
+  public function testUserLogin(): void {
     $this->markTestIncomplete('Fix this test in https://www.drupal.org/project/drupal/issues/2962157.');
     $simpletest_path = $this->root . DIRECTORY_SEPARATOR . 'sites' . DIRECTORY_SEPARATOR . 'simpletest';
     if (!is_writable($simpletest_path)) {

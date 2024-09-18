@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\jsonapi\Functional;
 
 use Drupal\Core\Entity\Entity\EntityFormMode;
@@ -9,13 +11,14 @@ use Drupal\Core\Url;
  * JSON:API integration test for the "EntityFormMode" config entity type.
  *
  * @group jsonapi
+ * @group #slow
  */
 class EntityFormModeTest extends ConfigEntityResourceTestBase {
 
   /**
    * {@inheritdoc}
    *
-   * @todo: Remove 'field_ui' when https://www.drupal.org/node/2867266.
+   * @todo Remove 'field_ui' when https://www.drupal.org/node/2867266.
    */
   protected static $modules = ['user', 'field_ui'];
 
@@ -55,6 +58,7 @@ class EntityFormModeTest extends ConfigEntityResourceTestBase {
     $entity_form_mode = EntityFormMode::create([
       'id' => 'user.test',
       'label' => 'Test',
+      'description' => '',
       'targetEntityType' => 'user',
     ]);
     $entity_form_mode->save();
@@ -91,6 +95,7 @@ class EntityFormModeTest extends ConfigEntityResourceTestBase {
               'user',
             ],
           ],
+          'description' => '',
           'label' => 'Test',
           'langcode' => 'en',
           'status' => TRUE,

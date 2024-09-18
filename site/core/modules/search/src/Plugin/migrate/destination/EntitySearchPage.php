@@ -7,6 +7,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\migrate\Attribute\MigrateDestination;
 use Drupal\migrate\MigrateException;
 use Drupal\migrate\Plugin\MigrateIdMapInterface;
 use Drupal\migrate\Plugin\MigrationInterface;
@@ -17,11 +18,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Migrate destination for search page.
- *
- * @MigrateDestination(
- *   id = "entity:search_page"
- * )
  */
+#[MigrateDestination('entity:search_page')]
 class EntitySearchPage extends EntityConfigBase {
 
   /**
@@ -61,7 +59,7 @@ class EntitySearchPage extends EntityConfigBase {
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, ?MigrationInterface $migration = NULL) {
     $entity_type_id = static::getEntityTypeId($plugin_id);
     return new static(
       $configuration,
@@ -90,12 +88,7 @@ class EntitySearchPage extends EntityConfigBase {
   }
 
   /**
-   * Updates the entity with the contents of a row.
-   *
-   * @param \Drupal\Core\Entity\EntityInterface $entity
-   *   The search page entity.
-   * @param \Drupal\migrate\Row $row
-   *   The row object to update from.
+   * {@inheritdoc}
    */
   protected function updateEntity(EntityInterface $entity, Row $row) {
     parent::updateEntity($entity, $row);
@@ -105,6 +98,7 @@ class EntitySearchPage extends EntityConfigBase {
     if ($plugin instanceof ConfigurableSearchPluginBase) {
       $plugin->setConfiguration($row->getDestinationProperty('configuration'));
     }
+    return $entity;
   }
 
 }

@@ -7,19 +7,18 @@ use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\Context\EntityContextDefinition;
+use Drupal\views\Attribute\ViewsArgumentValidator;
+use Drupal\views\Plugin\Derivative\ViewsEntityArgumentValidator;
 use Drupal\views\Plugin\views\argument\ArgumentPluginBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Defines an argument validator plugin for each entity type.
- *
- * @ViewsArgumentValidator(
- *   id = "entity",
- *   deriver = "Drupal\views\Plugin\Derivative\ViewsEntityArgumentValidator"
- * )
- *
- * @see \Drupal\views\Plugin\Derivative\ViewsEntityArgumentValidator
  */
+#[ViewsArgumentValidator(
+  id: 'entity',
+  deriver: ViewsEntityArgumentValidator::class
+)]
 class Entity extends ArgumentValidatorPluginBase {
 
   /**
@@ -177,7 +176,7 @@ class Entity extends ArgumentValidatorPluginBase {
   public function validateArgument($argument) {
     $entity_type = $this->definition['entity_type'];
 
-    if ($this->multipleCapable && $this->options['multiple']) {
+    if ($this->multipleCapable && $this->options['multiple'] && isset($argument)) {
       // At this point only interested in individual IDs no matter what type,
       // just splitting by the allowed delimiters.
       $ids = array_filter(preg_split('/[,+ ]/', $argument));

@@ -1,0 +1,18 @@
+name: 'Testing config import theme'
+type: theme
+base theme: stable9
+description: 'Theme for testing profile uninstall'
+# version: VERSION
+regions:
+  sidebar_first: 'Left sidebar'
+  sidebar_second: 'Right sidebar'
+  content: Content
+  header: Header
+  footer: Footer
+  highlighted: Highlighted
+  help: Help
+
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
+project: 'drupal'
+datestamp: 1726135113

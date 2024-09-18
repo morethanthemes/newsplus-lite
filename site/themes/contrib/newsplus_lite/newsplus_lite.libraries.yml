@@ -98,7 +98,7 @@ magnific-popup-init:
   dependencies:
     - newsplus_lite/magnific-popup
     - core/drupal
-    - core/jquery.once
+    - core/once
 
 fontawesome:
   version: 4.7.0

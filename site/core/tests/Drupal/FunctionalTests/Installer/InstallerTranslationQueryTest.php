@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Installer;
 
 /**
@@ -55,7 +57,7 @@ class InstallerTranslationQueryTest extends InstallerTestBase {
   /**
    * Verifies the expected behaviors of the installation result.
    */
-  public function testInstaller() {
+  public function testInstaller(): void {
     $this->assertSession()->addressEquals('user/1');
     $this->assertSession()->statusCodeEquals(200);
 
@@ -75,13 +77,13 @@ class InstallerTranslationQueryTest extends InstallerTestBase {
    *   Contents for the test .po file.
    */
   protected function getPo($langcode) {
-    return <<<ENDPO
+    return <<<PO
 msgid ""
 msgstr ""
 
 msgid "Save and continue"
 msgstr "Save and continue $langcode"
-ENDPO;
+PO;
   }
 
 }

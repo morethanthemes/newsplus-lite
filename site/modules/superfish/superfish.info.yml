@@ -2,10 +2,9 @@ name: 'Superfish'
 type: module
 description: 'Adds jQuery Superfish plugin to menu blocks.'
 package: User interface
-core: 8.x
-core_version_requirement: ^8 || ^9
+core_version_requirement: ^9 || ^10 || ^11
 
-# Information added by Drupal.org packaging script on 2020-05-25
-version: '8.x-1.4'
+# Information added by Drupal.org packaging script on 2024-08-06
+version: '8.x-1.8'
 project: 'superfish'
-datestamp: 1590438118
+datestamp: 1722943139

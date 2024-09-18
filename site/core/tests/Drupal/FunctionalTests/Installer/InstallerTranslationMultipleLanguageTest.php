@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Installer;
 
 /**
@@ -43,7 +45,7 @@ class InstallerTranslationMultipleLanguageTest extends InstallerTestBase {
    *   Contents for the test .po file.
    */
   protected function getPo($langcode) {
-    return <<<ENDPO
+    return <<<PO
 msgid ""
 msgstr ""
 
@@ -59,7 +61,7 @@ msgstr "Language $langcode"
 #: Testing site name configuration during the installer.
 msgid "Drupal"
 msgstr "Drupal"
-ENDPO;
+PO;
   }
 
   /**
@@ -74,7 +76,7 @@ ENDPO;
   /**
    * Tests that translations ended up at the expected places.
    */
-  public function testTranslationsLoaded() {
+  public function testTranslationsLoaded(): void {
     // Ensure the title is correct.
     $this->assertEquals('SITE_NAME_' . $this->langcode, \Drupal::config('system.site')->get('name'));
 

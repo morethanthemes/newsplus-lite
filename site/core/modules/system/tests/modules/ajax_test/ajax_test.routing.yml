@@ -115,3 +115,49 @@ ajax_test.global_events_clear_log:
     _controller: '\Drupal\ajax_test\Controller\AjaxTestController::globalEventsClearLog'
   requirements:
     _access: 'TRUE'
+
+ajax_test.exception_link:
+  path: '/ajax-test/exception-link'
+  defaults:
+    _controller: '\Drupal\ajax_test\Controller\AjaxTestController::exceptionLink'
+  requirements:
+    _access: 'TRUE'
+
+ajax_test.throw_exception:
+  path: '/ajax-test/throw-exception'
+  defaults:
+    _controller: '\Drupal\ajax_test\Controller\AjaxTestController::throwException'
+  requirements:
+    _access: 'TRUE'
+
+ajax_test.http_methods:
+  path: '/ajax-test/http-methods'
+  defaults:
+    _controller: Drupal\ajax_test\Controller\AjaxTestController::httpMethods
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: TRUE
+
+ajax_test.http_methods.dialog:
+  path: '/ajax-test/http-methods-dialog'
+  defaults:
+    _controller: Drupal\ajax_test\Controller\AjaxTestController::httpMethodsDialog
+  requirements:
+    _access: 'TRUE'
+
+ajax_test.link_page.dialog:
+  path: '/ajax-test/link-page-dialog'
+  defaults:
+    _title: 'AJAX link page'
+    _controller: '\Drupal\ajax_test\Controller\AjaxTestController::linkPageDialog'
+  requirements:
+    _access: 'TRUE'
+
+ajax_test.link_page.dialog_contents:
+  path: '/ajax-test/link-page-dialog-contents'
+  defaults:
+    _title_callback: '\Drupal\ajax_test\Controller\AjaxTestController::linkPageDialogTitle'
+    _controller: '\Drupal\ajax_test\Controller\AjaxTestController::httpMethodsDialog'
+  requirements:
+    _access: 'TRUE'

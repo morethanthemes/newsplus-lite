@@ -3,26 +3,27 @@
 namespace Drupal\link\Plugin\Field\FieldFormatter;
 
 use Drupal\Component\Utility\Unicode;
+use Drupal\Core\Field\Attribute\FieldFormatter;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\FormatterBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Path\PathValidatorInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Url;
 use Drupal\link\LinkItemInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Plugin implementation of the 'link' formatter.
- *
- * @FieldFormatter(
- *   id = "link",
- *   label = @Translation("Link"),
- *   field_types = {
- *     "link"
- *   }
- * )
  */
+#[FieldFormatter(
+  id: 'link',
+  label: new TranslatableMarkup('Link'),
+  field_types: [
+    'link',
+  ],
+)]
 class LinkFormatter extends FormatterBase {
 
   /**
@@ -200,23 +201,20 @@ class LinkFormatter extends FormatterBase {
           // Piggyback on the metadata attributes, which will be placed in the
           // field template wrapper, and set the URL value in a content
           // attribute.
-          // @todo Does RDF need a URL rather than an internal URI here?
-          // @see \Drupal\Tests\rdf\Kernel\Field\LinkFieldRdfaTest.
           $content = str_replace('internal:/', '', $item->uri);
           $item->_attributes += ['content' => $content];
         }
       }
       else {
+        // Skip the #options to prevent duplications of query parameters.
         $element[$delta] = [
           '#type' => 'link',
           '#title' => $link_title,
-          '#options' => $url->getOptions(),
+          '#url' => $url,
         ];
-        $element[$delta]['#url'] = $url;
 
         if (!empty($item->_attributes)) {
-          $element[$delta]['#options'] += ['attributes' => []];
-          $element[$delta]['#options']['attributes'] += $item->_attributes;
+          $element[$delta]['#attributes'] = $item->_attributes;
           // Unset field item attributes since they have been included in the
           // formatter output and should not be rendered in the field template.
           unset($item->_attributes);

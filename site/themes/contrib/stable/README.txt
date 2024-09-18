@@ -5,7 +5,7 @@ ABOUT STABLE
 Stable allows core markup and styling to evolve by functioning as a backwards
 compatibility layer for themes against changes to core markup and CSS. If you
 browse Stable's contents, you will find copies of all the Twig templates and
-CSS files provided by core in Drupal 8.
+CSS files provided by core in Drupal.
 
 ABOUT DRUPAL THEMING
 --------------------

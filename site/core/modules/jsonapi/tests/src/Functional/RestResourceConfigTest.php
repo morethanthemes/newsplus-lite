@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\jsonapi\Functional;
 
 use Drupal\Core\Url;
@@ -9,6 +11,7 @@ use Drupal\rest\Entity\RestResourceConfig;
  * JSON:API integration test for the "RestResourceConfig" config entity type.
  *
  * @group jsonapi
+ * @group #slow
  */
 class RestResourceConfigTest extends ConfigEntityResourceTestBase {
 

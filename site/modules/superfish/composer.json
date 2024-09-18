@@ -8,6 +8,21 @@
       "name": "mehrpadin",
       "homepage": "https://www.drupal.org/u/mehrpadin",
       "role": "Maintainer"
+    },
+    {
+      "name": "Nikolay Lobachev",
+      "homepage": "https://www.drupal.org/u/lobsterr",
+      "role": "Maintainer"
+    },
+    {
+       "name": "Nick Dickinson-Wilde",
+       "homepage": "https://www.drupal.org/u/nickdickinsonwilde",
+       "role": "Maintainer"
+    },
+    {
+      "name": "Andrei Ivnitskii",
+      "homepage": "https://www.drupal.org/u/ivnish",
+      "role": "Maintainer"
     }
   ],
   "support": {
@@ -16,6 +31,6 @@
   },
   "license": "GPL-2.0-or-later",
   "require": {
-    "mehrpadin/superfish": "~2.0"
+    "lobsterr/drupal-superfish": "~2"
   }
 }

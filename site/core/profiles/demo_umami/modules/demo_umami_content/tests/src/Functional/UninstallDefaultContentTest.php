@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\demo_umami_content\Functional;
 
 use Drupal\Core\Entity\EntityStorageInterface;
@@ -151,7 +153,7 @@ class UninstallDefaultContentTest extends BrowserTestBase {
   }
 
   /**
-   * Returns the expected properties of this profile's custom blocks.
+   * Returns the expected properties of this profile's content blocks.
    */
   protected function expectedBlocks() {
     return [

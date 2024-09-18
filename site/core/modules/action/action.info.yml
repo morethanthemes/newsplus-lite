@@ -1,11 +1,13 @@
-name: Actions
+name: Actions UI
 type: module
 description: 'Allows configuration of tasks to be executed in response to events.'
 package: Core
 # version: VERSION
+lifecycle: deprecated
+lifecycle_link: https://www.drupal.org/node/3223395#s-action
 configure: entity.action.collection
 
-# Information added by Drupal.org packaging script on 2023-09-20
-version: '9.5.11'
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
 project: 'drupal'
-datestamp: 1695228127
+datestamp: 1726135113

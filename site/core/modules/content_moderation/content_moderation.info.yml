@@ -1,13 +1,13 @@
 name: 'Content Moderation'
 type: module
-description: 'Provides moderation states for content.'
+description: 'Provides additional publication states that can be used by other modules to moderate content.'
 # version: VERSION
 package: Core
 configure: entity.workflow.collection
 dependencies:
   - drupal:workflows
 
-# Information added by Drupal.org packaging script on 2023-09-20
-version: '9.5.11'
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
 project: 'drupal'
-datestamp: 1695228127
+datestamp: 1726135113

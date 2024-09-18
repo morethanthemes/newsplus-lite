@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Component\DependencyInjection;
 
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -14,6 +16,8 @@ class PhpArrayContainerTest extends ContainerTest {
    * {@inheritdoc}
    */
   protected function setUp(): void {
+    parent::setUp();
+
     $this->machineFormat = FALSE;
     $this->containerClass = '\Drupal\Component\DependencyInjection\PhpArrayContainer';
     $this->containerDefinition = $this->getMockContainerDefinition();

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\system\Functional\Session;
 
 use Drupal\Component\Utility\Crypt;
@@ -32,9 +34,7 @@ class SessionHttpsTest extends BrowserTestBase {
   protected $secureSessionName;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
   protected static $modules = ['session_test'];
 
@@ -63,8 +63,8 @@ class SessionHttpsTest extends BrowserTestBase {
   /**
    * Tests HTTPS sessions.
    */
-  public function testHttpsSession() {
-    $user = $this->drupalCreateUser(['access administration pages']);
+  public function testHttpsSession(): void {
+    $user = $this->drupalCreateUser(['access administration pages', 'administer site configuration']);
 
     /** @var \Symfony\Component\BrowserKit\CookieJar $browser_kit_cookie_jar */
     $browser_kit_cookie_jar = $this->getSession()->getDriver()->getClient()->getCookieJar();

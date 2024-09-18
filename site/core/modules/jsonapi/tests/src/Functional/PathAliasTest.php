@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\jsonapi\Functional;
 
 use Drupal\path_alias\Entity\PathAlias;
@@ -10,6 +12,7 @@ use Drupal\Core\Url;
  *
  * @group jsonapi
  * @group path
+ * @group #slow
  */
 class PathAliasTest extends ResourceTestBase {
 

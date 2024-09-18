@@ -20,7 +20,7 @@
 #}
 
 {% set classes = [] %}
-{% spaceless %}
+{% apply spaceless %}
 {% for item in menu_items %}
 
   {% if item.children is not empty %}
@@ -52,4 +52,4 @@
   </li>
 
 {% endfor %}
-{% endspaceless %}
+{% endapply %}

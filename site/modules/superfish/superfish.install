@@ -14,7 +14,10 @@ function superfish_install() {
     $messenger->addMessage(t('In order to use Superfish, go to the <a href="@block">Block layout</a> page and use any of the "Place block" buttons to create a Superfish block.', ['@block' => 'structure/block']));
   }
   else {
-    $messenger->addWarning(t('Superfish library is missing. Please refer to the <a href="@documentation">plugin documentation</a> for how you can fix this issue; Once done, go to the <a href="@block">Block layout</a> page and use any of the "Place block" buttons to create a Superfish block.', ['@documentation' => 'https://www.drupal.org/node/1125896', '@block' => 'structure/block']));
+    $messenger->addWarning(t('Superfish library is missing. Please refer to the <a href="@documentation">plugin documentation</a> for how you can fix this issue; Once done, go to the <a href="@block">Block layout</a> page and use any of the "Place block" buttons to create a Superfish block.', [
+      '@documentation' => 'https://www.drupal.org/node/1125896',
+      '@block' => 'structure/block',
+    ]));
   }
   $messenger->addMessage(t('If there was no Superfish block in the "Place block" form, go to the <a href="@performance">Performance</a> page and clear the cache once.', ['@performance' => 'config/development/performance']));
 }
@@ -24,40 +27,42 @@ function superfish_install() {
  */
 function superfish_requirements($phase) {
   $requirements = [];
-  if ($phase == 'runtime') {
-    $requirements['superfish']['title'] = t('Superfish library');
+  if ($phase !== 'runtime') {
+    return $requirements;
+  }
 
-    if (superfish_library_check()) {
-      // Check the uploaded Superfish library version.
-      $version = superfish_library_version();
-      if (is_null($version)) {
-        $requirements['superfish']['value'] = t('Inaccessible');
-        $requirements['superfish']['severity'] = REQUIREMENT_ERROR;
-        $requirements['superfish']['description'] = t('Cannot access the Superfish library directory; perhaps because its permissions and/or ownership are not set up correctly.');
-      }
-      else {
-        $version = (integer) $version;
-        if (!$version || !is_numeric($version)) {
-          $requirements['superfish']['value'] = t('Unknown version');
-          $requirements['superfish']['severity'] = REQUIREMENT_ERROR;
-          $requirements['superfish']['description'] = t('Cannot determine the version of your Superfish library.');
-        }
-        elseif (version_compare($version, 2, '<')) {
-          $requirements['superfish']['value'] = t('Not supported');
-          $requirements['superfish']['severity'] = REQUIREMENT_ERROR;
-          $requirements['superfish']['description'] = t('The Superfish library requires an update. You can find the update instructions on :url.', [':url' => 'https://www.drupal.org/project/superfish']);
-        }
-        else {
-          $requirements['superfish']['value'] = t('Installed; at @location', ['@location' => superfish_library_path()]);
-          $requirements['superfish']['severity'] = REQUIREMENT_OK;
-        }
-      }
+  $requirements['superfish']['title'] = t('Superfish library');
+
+  if (superfish_library_check()) {
+    // Check the uploaded Superfish library version.
+    $version = superfish_library_version();
+    if (is_null($version)) {
+      $requirements['superfish']['value'] = t('Inaccessible');
+      $requirements['superfish']['severity'] = REQUIREMENT_ERROR;
+      $requirements['superfish']['description'] = t('Cannot access the Superfish library directory; perhaps because its permissions and/or ownership are not set up correctly.');
     }
     else {
-      $requirements['superfish']['value'] = t('Not installed');
-      $requirements['superfish']['severity'] = REQUIREMENT_ERROR;
-      $requirements['superfish']['description'] = t('Please download the Superfish library from :url.', [':url' => 'https://www.drupal.org/project/superfish']);
+      $version = (integer) $version;
+      if (!$version || !is_numeric($version)) {
+        $requirements['superfish']['value'] = t('Unknown version');
+        $requirements['superfish']['severity'] = REQUIREMENT_ERROR;
+        $requirements['superfish']['description'] = t('Cannot determine the version of your Superfish library.');
+      }
+      elseif (version_compare($version, 2, '<')) {
+        $requirements['superfish']['value'] = t('Not supported');
+        $requirements['superfish']['severity'] = REQUIREMENT_ERROR;
+        $requirements['superfish']['description'] = t('The Superfish library requires an update. You can find the update instructions on :url.', [':url' => 'https://www.drupal.org/project/superfish']);
+      }
+      else {
+        $requirements['superfish']['value'] = t('Installed; at @location', ['@location' => superfish_library_path()]);
+        $requirements['superfish']['severity'] = REQUIREMENT_OK;
+      }
     }
+  }
+  else {
+    $requirements['superfish']['value'] = t('Not installed');
+    $requirements['superfish']['severity'] = REQUIREMENT_ERROR;
+    $requirements['superfish']['description'] = t('Please download the Superfish library from :url.', [':url' => 'https://www.drupal.org/project/superfish']);
   }
   return $requirements;
 }

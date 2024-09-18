@@ -1,5 +1,5 @@
 /* eslint-disable import/no-extraneous-dependencies */
-/* cspell:words focustracker keystrokehandler labeledfield labeledfieldview buttonview viewcollection focusables focuscycler switchbuttonview imagealternativetextformview imagealternativetext */
+/* cspell:ignore focustracker keystrokehandler labeledfield labeledfieldview buttonview viewcollection focusables focuscycler switchbuttonview imagealternativetextformview imagealternativetext */
 
 /**
  * @module drupalImage/imagealternativetext/ui/imagealternativetextformview
@@ -251,7 +251,7 @@ export default class ImageAlternativeTextFormView extends View {
     labeledInput
       .bind('class')
       .to(this.decorativeToggle, 'isOn', (value) => (value ? 'ck-hidden' : ''));
-    labeledInput.label = Drupal.t('Text alternative');
+    labeledInput.label = Drupal.t('Alternative text');
 
     return labeledInput;
   }

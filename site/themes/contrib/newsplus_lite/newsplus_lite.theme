@@ -8,6 +8,7 @@
 
 use Drupal\Core\Theme\ThemeSettings;
 use Drupal\Core\Template\Attribute;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Implements hook_preprocess_HOOK() for HTML document templates.
@@ -190,8 +191,8 @@ function newsplus_lite_preprocess_node(&$variables) {
     unset($variables['content']['links']['comment']['#links']['comment-add']);
   }
 
-  $variables['posted_ago'] = \Drupal::service('date.formatter')->formatInterval(REQUEST_TIME - $variables['node']->getCreatedTime(), $granularity = 1);
-  $variables['changed_ago'] = \Drupal::service('date.formatter')->formatInterval(REQUEST_TIME - $variables['node']->getChangedTime(), $granularity = 1);
+  $variables['posted_ago'] = \Drupal::service('date.formatter')->formatInterval(\Drupal::time()->getRequestTime() - $variables['node']->getCreatedTime(), $granularity = 1);
+  $variables['changed_ago'] = \Drupal::service('date.formatter')->formatInterval(\Drupal::time()->getRequestTime() - $variables['node']->getChangedTime(), $granularity = 1);
   if (isset($variables['content']['field_image']['#theme'])){
     $variables['has_image'] = true;
   } else {
@@ -233,7 +234,7 @@ function newsplus_lite_theme_suggestions_form_alter(array &$suggestions, array $
 /**
  * Implements hook_form_alter() to add classes to the search form.
  */
-function newsplus_lite_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+function newsplus_lite_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   if (in_array($form_id, ['search_block_form', 'search_form'])) {
     $key = ($form_id == 'search_block_form') ? 'actions' : 'basic';
     if (!isset($form[$key]['submit']['#attributes'])) {

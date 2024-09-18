@@ -1,6 +1,6 @@
 {
     "name": "drupal/legacy-project",
-    "description": "Project template for Drupal 9 projects with composer following drupal/drupal layout",
+    "description": "Project template for Drupal projects with composer following drupal/drupal layout",
     "type": "project",
     "license": "GPL-2.0-or-later",
     "homepage": "https://www.drupal.org/project/drupal",
@@ -15,11 +15,11 @@
         }
     ],
     "require": {
-        "composer/installers": "^1.9",
-        "drupal/core-composer-scaffold": "^9.5",
-        "drupal/core-project-message": "^9.5",
-        "drupal/core-recommended": "^9.5",
-        "drupal/core-vendor-hardening": "^9.5"
+        "composer/installers": "^2.0",
+        "drupal/core-composer-scaffold": "^10.3",
+        "drupal/core-project-message": "^10.3",
+        "drupal/core-recommended": "^10.3",
+        "drupal/core-vendor-hardening": "^10.3"
     },
     "conflict": {
         "drupal/drupal": "*"
@@ -32,7 +32,9 @@
             "drupal/core-composer-scaffold": true,
             "drupal/core-project-message": true,
             "drupal/core-vendor-hardening": true,
-            "dealerdirect/phpcodesniffer-composer-installer": true
+            "phpstan/extension-installer": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "php-http/discovery": true
         },
         "sort-packages": true
     },

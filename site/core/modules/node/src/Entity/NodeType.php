@@ -78,16 +78,16 @@ class NodeType extends ConfigEntityBundleBase implements NodeTypeInterface {
   /**
    * A brief description of this node type.
    *
-   * @var string
+   * @var string|null
    */
-  protected $description;
+  protected $description = NULL;
 
   /**
    * Help information shown to the user when creating a Node of this type.
    *
-   * @var string
+   * @var string|null
    */
-  protected $help;
+  protected $help = NULL;
 
   /**
    * Default value of the 'Create new revision' checkbox of this node type.
@@ -122,7 +122,7 @@ class NodeType extends ConfigEntityBundleBase implements NodeTypeInterface {
    */
   public function isLocked() {
     $locked = \Drupal::state()->get('node.type.locked');
-    return isset($locked[$this->id()]) ? $locked[$this->id()] : FALSE;
+    return $locked[$this->id()] ?? FALSE;
   }
 
   /**
@@ -164,14 +164,14 @@ class NodeType extends ConfigEntityBundleBase implements NodeTypeInterface {
    * {@inheritdoc}
    */
   public function getHelp() {
-    return $this->help;
+    return $this->help ?? '';
   }
 
   /**
    * {@inheritdoc}
    */
   public function getDescription() {
-    return $this->description;
+    return $this->description ?? '';
   }
 
   /**
@@ -181,7 +181,7 @@ class NodeType extends ConfigEntityBundleBase implements NodeTypeInterface {
     parent::postSave($storage, $update);
 
     if ($update && $this->getOriginalId() != $this->id()) {
-      $update_count = node_type_update_nodes($this->getOriginalId(), $this->id());
+      $update_count = $storage->updateType($this->getOriginalId(), $this->id());
       if ($update_count) {
         \Drupal::messenger()->addStatus(\Drupal::translation()->formatPlural($update_count,
           'Changed the content type of 1 post from %old-type to %type.',

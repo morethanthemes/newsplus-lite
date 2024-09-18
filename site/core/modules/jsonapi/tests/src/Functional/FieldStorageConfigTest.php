@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\jsonapi\Functional;
 
 use Drupal\Core\Url;
@@ -9,6 +11,7 @@ use Drupal\field\Entity\FieldStorageConfig;
  * JSON:API integration test for the "FieldStorageConfig" config entity type.
  *
  * @group jsonapi
+ * @group #slow
  */
 class FieldStorageConfigTest extends ConfigEntityResourceTestBase {
 

@@ -89,14 +89,18 @@
 }
 
 /* Override default styling from jQuery UI. */
-#drupal-off-canvas .ui-state-default,
-#drupal-off-canvas .ui-widget-content .ui-state-default,
-#drupal-off-canvas .ui-widget-header .ui-state-default {
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .ui-state-default,
+#drupal-off-canvas-wrapper .ui-state-default,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .ui-widget-content .ui-state-default,
+#drupal-off-canvas-wrapper .ui-widget-content .ui-state-default,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .ui-widget-header .ui-state-default,
+#drupal-off-canvas-wrapper .ui-widget-header .ui-state-default {
   color: #333;
   border: 0;
   font-size: 14px;
   font-weight: normal;
 }
-#drupal-off-canvas .ui-widget-content a {
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .ui-widget-content a,
+#drupal-off-canvas-wrapper .ui-widget-content a {
   color: #85bef4;
 }

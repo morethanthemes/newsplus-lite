@@ -255,7 +255,7 @@ class ImageStyle extends ConfigEntityBase implements ImageStyleInterface, Entity
     $file_url = $file_url_generator->generateAbsoluteString($uri);
     // Append the query string with the token, if necessary.
     if ($token_query) {
-      $file_url .= (strpos($file_url, '?') !== FALSE ? '&' : '?') . UrlHelper::buildQuery($token_query);
+      $file_url .= (str_contains($file_url, '?') ? '&' : '?') . UrlHelper::buildQuery($token_query);
     }
 
     return $file_url;
@@ -278,30 +278,32 @@ class ImageStyle extends ConfigEntityBase implements ImageStyleInterface, Entity
           // Ignore failed deletes.
         }
       }
-      return $this;
     }
-
-    // Delete the style directory in each registered wrapper.
-    $wrappers = $this->getStreamWrapperManager()->getWrappers(StreamWrapperInterface::WRITE_VISIBLE);
-    foreach ($wrappers as $wrapper => $wrapper_data) {
-      if (file_exists($directory = $wrapper . '://styles/' . $this->id())) {
-        try {
-          $file_system->deleteRecursive($directory);
-        }
-        catch (FileException $e) {
-          // Ignore failed deletes.
+    else {
+      // Delete the style directory in each registered wrapper.
+      $wrappers = $this->getStreamWrapperManager()->getWrappers(StreamWrapperInterface::WRITE_VISIBLE);
+      foreach ($wrappers as $wrapper => $wrapper_data) {
+        if (file_exists($directory = $wrapper . '://styles/' . $this->id())) {
+          try {
+            $file_system->deleteRecursive($directory);
+          }
+          catch (FileException $e) {
+            // Ignore failed deletes.
+          }
         }
       }
     }
 
     // Let other modules update as necessary on flush.
     $module_handler = \Drupal::moduleHandler();
-    $module_handler->invokeAll('image_style_flush', [$this]);
+    $module_handler->invokeAll('image_style_flush', [$this, $path]);
 
-    // Clear caches so that formatters may be added for this style.
-    drupal_theme_rebuild();
-
-    Cache::invalidateTags($this->getCacheTagsToInvalidate());
+    // Clear caches when the complete image style is flushed,
+    // so that field formatters may be added for this style.
+    if (!isset($path)) {
+      \Drupal::service('theme.registry')->reset();
+      Cache::invalidateTags($this->getCacheTagsToInvalidate());
+    }
 
     return $this;
   }

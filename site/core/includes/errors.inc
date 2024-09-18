@@ -67,7 +67,7 @@ function _drupal_error_handler_real($error_level, $message, $filename, $line) {
     // As __toString() methods must not throw exceptions (recoverable errors)
     // in PHP, we allow them to trigger a fatal error by emitting a user error
     // using trigger_error().
-    $to_string = $error_level == E_USER_ERROR && substr($caller['function'], -strlen('__toString()')) == '__toString()';
+    $to_string = $error_level == E_USER_ERROR && str_ends_with($caller['function'], '__toString()');
     _drupal_log_error([
       '%type' => isset($types[$error_level]) ? $severity_msg : 'Unknown error',
       // The standard PHP error handler considers that the error messages
@@ -252,7 +252,7 @@ function _drupal_log_error($error, $fatal = FALSE) {
         array_shift($backtrace);
         // Generate a backtrace containing only scalar argument values.
         $error['@backtrace'] = Error::formatBacktrace($backtrace);
-        $message = new FormattableMarkup(Error::DEFAULT_ERROR_MESSAGE . ' <pre class="backtrace">@backtrace</pre>', $error);
+        $message = new FormattableMarkup('<details class="error-with-backtrace"><summary>' . Error::DEFAULT_ERROR_MESSAGE . '</summary><pre class="backtrace">@backtrace</pre></details>', $error);
       }
     }
 
@@ -260,7 +260,7 @@ function _drupal_log_error($error, $fatal = FALSE) {
       // We fallback to a maintenance page at this point, because the page generation
       // itself can generate errors.
       // Should not translate the string to avoid errors producing more errors.
-      $message = 'The website encountered an unexpected error. Please try again later.' . '<br />' . $message;
+      $message = 'The website encountered an unexpected error. Try again later.' . '<br />' . $message;
 
       if ($is_installer) {
         // install_display_output() prints the output and ends script execution.

@@ -19,7 +19,7 @@ use Drupal\Core\Security\TrustedCallbackInterface;
 use Drupal\Core\Theme\ThemeManagerInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\FileBag;
-use Symfony\Component\HttpFoundation\ParameterBag;
+use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -127,7 +127,7 @@ class FormBuilder implements FormBuilderInterface, FormValidatorInterface, FormS
     'Drupal\Core\Render\Element\Checkbox::valueCallback',
     'Drupal\Core\Render\Element\Checkboxes::valueCallback',
     'Drupal\Core\Render\Element\Email::valueCallback',
-    'Drupal\Core\Render\Element\FormElement::valueCallback',
+    'Drupal\Core\Render\Element\FormElementBase::valueCallback',
     'Drupal\Core\Render\Element\MachineName::valueCallback',
     'Drupal\Core\Render\Element\Number::valueCallback',
     'Drupal\Core\Render\Element\PathElement::valueCallback',
@@ -172,7 +172,7 @@ class FormBuilder implements FormBuilderInterface, FormValidatorInterface, FormS
    * @param \Drupal\Core\Access\CsrfTokenGenerator $csrf_token
    *   The CSRF token generator.
    */
-  public function __construct(FormValidatorInterface $form_validator, FormSubmitterInterface $form_submitter, FormCacheInterface $form_cache, ModuleHandlerInterface $module_handler, EventDispatcherInterface $event_dispatcher, RequestStack $request_stack, ClassResolverInterface $class_resolver, ElementInfoManagerInterface $element_info, ThemeManagerInterface $theme_manager, CsrfTokenGenerator $csrf_token = NULL) {
+  public function __construct(FormValidatorInterface $form_validator, FormSubmitterInterface $form_submitter, FormCacheInterface $form_cache, ModuleHandlerInterface $module_handler, EventDispatcherInterface $event_dispatcher, RequestStack $request_stack, ClassResolverInterface $class_resolver, ElementInfoManagerInterface $element_info, ThemeManagerInterface $theme_manager, ?CsrfTokenGenerator $csrf_token = NULL) {
     $this->formValidator = $form_validator;
     $this->formSubmitter = $form_submitter;
     $this->formCache = $form_cache;
@@ -199,7 +199,7 @@ class FormBuilder implements FormBuilderInterface, FormValidatorInterface, FormS
       throw new \InvalidArgumentException(("The form class $form_arg could not be found or loaded."));
     }
     elseif (!($form_arg instanceof FormInterface)) {
-      throw new \InvalidArgumentException('The form argument ' . get_class($form_arg) . ' must be an instance of \Drupal\Core\Form\FormInterface.');
+      throw new \InvalidArgumentException('The form argument ' . $form_arg::class . ' must be an instance of \Drupal\Core\Form\FormInterface.');
     }
 
     // Add the $form_arg as the callback object and determine the form ID.
@@ -251,11 +251,12 @@ class FormBuilder implements FormBuilderInterface, FormValidatorInterface, FormS
       $form_state->setUserInput($input);
     }
 
-    if (isset($_SESSION['batch_form_state'])) {
+    if ($request->getSession()->has('batch_form_state')) {
       // We've been redirected here after a batch processing. The form has
       // already been processed, but needs to be rebuilt. See _batch_finished().
-      $form_state = $_SESSION['batch_form_state'];
-      unset($_SESSION['batch_form_state']);
+      $session = $request->getSession();
+      $form_state = $session->get('batch_form_state');
+      $session->remove('batch_form_state');
       return $this->rebuildForm($form_id, $form_state);
     }
 
@@ -327,7 +328,7 @@ class FormBuilder implements FormBuilderInterface, FormValidatorInterface, FormS
     // In case the post request exceeds the configured allowed size
     // (post_max_size), the post request is potentially broken. Add some
     // protection against that and at the same time have a nice error message.
-    if ($ajax_form_request && !$request->request->has('form_id')) {
+    if ($ajax_form_request && !$request->get('form_id')) {
       throw new BrokenPostRequestException($this->getFileUploadMaxSize());
     }
 
@@ -340,7 +341,7 @@ class FormBuilder implements FormBuilderInterface, FormValidatorInterface, FormS
     // build a proper AJAX response.
     // Only do this when the form ID matches, since there is no guarantee from
     // $ajax_form_request that it's an AJAX request for this particular form.
-    if ($ajax_form_request && $form_state->isProcessingInput() && $request->request->get('form_id') == $form_id) {
+    if ($ajax_form_request && $form_state->isProcessingInput() && $request->get('form_id') == $form_id) {
       throw new FormAjaxException($form, $form_state);
     }
 
@@ -348,10 +349,9 @@ class FormBuilder implements FormBuilderInterface, FormValidatorInterface, FormS
     // throwing an exception.
     // @see Drupal\Core\EventSubscriber\EnforcedFormResponseSubscriber
     //
-    // @todo Exceptions should not be used for code flow control. However, the
-    //   Form API does not integrate with the HTTP Kernel based architecture of
-    //   Drupal 8. In order to resolve this issue properly it is necessary to
-    //   completely separate form submission from rendering.
+    // @todo Exceptions should not be used for code flow control. In order to
+    //   resolve this issue properly it is necessary to completely separate form
+    //   submission from rendering.
     //   @see https://www.drupal.org/node/2367555
     if ($response instanceof Response) {
       throw new EnforcedResponseException($response);
@@ -698,6 +698,7 @@ class FormBuilder implements FormBuilderInterface, FormValidatorInterface, FormS
       // See https://www.drupal.org/node/2562341.
       // The placeholder uses a unique string that is returned by
       // Crypt::hashBase64('Drupal\Core\Form\FormBuilder::prepareForm').
+      // cspell:disable-next-line
       $placeholder = 'form_action_p_pvdeGsVG5zNF_XLGPTvYSKCf43t8qZYSwcfZl2uzM';
 
       $form['#attached']['placeholders'][$placeholder] = [
@@ -736,17 +737,6 @@ class FormBuilder implements FormBuilderInterface, FormValidatorInterface, FormS
       // submitted form value appears literally, regardless of custom #tree
       // and #parents being set elsewhere.
       '#parents' => ['form_build_id'],
-      // Prevent user agents from prefilling the build ID with earlier values.
-      // When the ajax command "update_build_id" is executed, the user agent
-      // will assume that a user interaction changed the field. Upon a soft
-      // reload of the page, the previous build ID will be restored in the
-      // input, causing subsequent ajax callbacks to access the wrong cached
-      // form build. Setting the autocomplete attribute to "off" will tell the
-      // user agent to never reuse the value.
-      // @see https://www.w3.org/TR/2011/WD-html5-20110525/common-input-element-attributes.html#the-autocomplete-attribute
-      '#attributes' => [
-        'autocomplete' => 'off',
-      ],
     ];
 
     // Add a token, based on either #token or form_id, to any form displayed to
@@ -830,6 +820,10 @@ class FormBuilder implements FormBuilderInterface, FormValidatorInterface, FormS
       }
     }
 
+    // Add the 'CACHE_MISS_IF_UNCACHEABLE_HTTP_METHOD:form' cache tag to
+    // identify this render array as a form to the render cache.
+    $form['#cache']['tags'][] = 'CACHE_MISS_IF_UNCACHEABLE_HTTP_METHOD:form';
+
     // Invoke hook_form_alter(), hook_form_BASE_FORM_ID_alter(), and
     // hook_form_FORM_ID_alter() implementations.
     $hooks = ['form'];
@@ -855,7 +849,7 @@ class FormBuilder implements FormBuilderInterface, FormValidatorInterface, FormS
 
     // Prevent cross site requests via the Form API by using an absolute URL
     // when the request uri starts with multiple slashes..
-    if (strpos($request_uri, '//') === 0) {
+    if (str_starts_with($request_uri, '//')) {
       $request_uri = $request->getUri();
     }
 
@@ -966,7 +960,7 @@ class FormBuilder implements FormBuilderInterface, FormValidatorInterface, FormS
 
             $request = $this->requestStack->getCurrentRequest();
             // Do not trust any POST data.
-            $request->request = new ParameterBag();
+            $request->request = new InputBag();
             // Make sure file uploads do not get processed.
             $request->files = new FileBag();
             // Ensure PHP globals reflect these changes.
@@ -1176,7 +1170,7 @@ class FormBuilder implements FormBuilderInterface, FormValidatorInterface, FormS
       $name = array_shift($element['#parents']);
       $element['#name'] = $name;
       if ($element['#type'] == 'file') {
-        // To make it easier to handle files in file.inc, we place all
+        // To make it easier to handle files, we place all
         // file fields in the 'files' array. Also, we do not support
         // nested file names.
         // @todo Remove this files prefix now?
@@ -1231,12 +1225,9 @@ class FormBuilder implements FormBuilderInterface, FormValidatorInterface, FormS
 
     // Set the element's #value property.
     if (!isset($element['#value']) && !array_key_exists('#value', $element)) {
-      // @todo Once all elements are converted to plugins in
-      //   https://www.drupal.org/node/2311393, rely on
-      //   $element['#value_callback'] directly.
-      $value_callable = !empty($element['#value_callback']) ? $element['#value_callback'] : 'form_type_' . $element['#type'] . '_value';
+      $value_callable = $element['#value_callback'] ?? NULL;
       if (!is_callable($value_callable)) {
-        $value_callable = '\Drupal\Core\Render\Element\FormElement::valueCallback';
+        $value_callable = '\Drupal\Core\Render\Element\FormElementBase::valueCallback';
       }
 
       if ($process_input) {
@@ -1399,11 +1390,11 @@ class FormBuilder implements FormBuilderInterface, FormValidatorInterface, FormS
   /**
    * Wraps file_upload_max_size().
    *
-   * @return string
-   *   A translated string representation of the size of the file size limit
-   *   based on the PHP upload_max_filesize and post_max_size.
+   * @return int
+   *   The file size limit in bytes based on the PHP upload_max_filesize and
+   *   post_max_size.
    */
-  protected function getFileUploadMaxSize() {
+  protected function getFileUploadMaxSize(): int {
     return Environment::getUploadMaxSize();
   }
 

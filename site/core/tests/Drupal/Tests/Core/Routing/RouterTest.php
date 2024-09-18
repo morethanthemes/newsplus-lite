@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Routing;
 
 use Drupal\Core\Path\CurrentPathStack;
@@ -22,7 +24,7 @@ class RouterTest extends UnitTestCase {
   /**
    * @covers ::applyFitOrder
    */
-  public function testMatchesWithDifferentFitOrder() {
+  public function testMatchesWithDifferentFitOrder(): void {
     $route_provider = $this->prophesize(RouteProviderInterface::class);
 
     $route_collection = new RouteCollection();

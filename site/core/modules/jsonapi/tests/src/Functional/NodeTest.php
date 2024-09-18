@@ -1,16 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\jsonapi\Functional;
 
 use Drupal\Component\Serialization\Json;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Cache\Cache;
+use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Url;
 use Drupal\jsonapi\Normalizer\HttpExceptionNormalizer;
 use Drupal\jsonapi\Normalizer\Value\CacheableNormalization;
 use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
 use Drupal\Tests\jsonapi\Traits\CommonCollectionFilterAccessTestPatternsTrait;
+use Drupal\Tests\WaitTerminateTestTrait;
 use Drupal\user\Entity\User;
 use GuzzleHttp\RequestOptions;
 
@@ -18,10 +22,12 @@ use GuzzleHttp\RequestOptions;
  * JSON:API integration test for the "Node" content entity type.
  *
  * @group jsonapi
+ * @group #slow
  */
 class NodeTest extends ResourceTestBase {
 
   use CommonCollectionFilterAccessTestPatternsTrait;
+  use WaitTerminateTestTrait;
 
   /**
    * {@inheritdoc}
@@ -173,7 +179,6 @@ class NodeTest extends ResourceTestBase {
             'langcode' => 'en',
           ],
           'promote' => TRUE,
-          'revision_log' => NULL,
           'revision_timestamp' => '1973-11-29T21:33:09+00:00',
           // @todo Attempt to remove this in https://www.drupal.org/project/drupal/issues/2933518.
           'revision_translation_affected' => TRUE,
@@ -248,7 +253,7 @@ class NodeTest extends ResourceTestBase {
       'data' => [
         'type' => 'node--camelids',
         'attributes' => [
-          'title' => 'Dramallama',
+          'title' => 'Drama llama',
         ],
       ],
     ];
@@ -276,7 +281,7 @@ class NodeTest extends ResourceTestBase {
    * @see \Drupal\Tests\jsonapi\Functional\TermTest::testPatchPath()
    * @see \Drupal\Tests\rest\Functional\EntityResource\Term\TermResourceTestBase::testPatchPath()
    */
-  public function testPatchPath() {
+  public function testPatchPath(): void {
     $this->setUpAuthorization('GET');
     $this->setUpAuthorization('PATCH');
     $this->config('jsonapi.settings')->set('read_only', FALSE)->save(TRUE);
@@ -287,7 +292,7 @@ class NodeTest extends ResourceTestBase {
 
     // GET node's current normalization.
     $response = $this->request('GET', $url, $this->getAuthenticationRequestOptions());
-    $normalization = Json::decode((string) $response->getBody());
+    $normalization = $this->getDocumentFromResponse($response);
 
     // Change node's path alias.
     $normalization['data']['attributes']['path']['alias'] .= 's-rule-the-world';
@@ -306,15 +311,20 @@ class NodeTest extends ResourceTestBase {
 
     // Repeat PATCH request: 200.
     $response = $this->request('PATCH', $url, $request_options);
+    $updated_normalization = $this->getDocumentFromResponse($response);
     $this->assertResourceResponse(200, FALSE, $response);
-    $updated_normalization = Json::decode((string) $response->getBody());
     $this->assertSame($normalization['data']['attributes']['path']['alias'], $updated_normalization['data']['attributes']['path']['alias']);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function testGetIndividual() {
+  public function testGetIndividual(): void {
+    // Cacheable normalizations are written after the response is flushed to
+    // the client. We use WaitTerminateTestTrait to wait for Drupal to perform
+    // its termination work before continuing.
+    $this->setWaitForTerminate();
+
     parent::testGetIndividual();
 
     $this->assertCacheableNormalizations();
@@ -328,34 +338,17 @@ class NodeTest extends ResourceTestBase {
 
     // 403 when accessing own unpublished node.
     $response = $this->request('GET', $url, $request_options);
-    // @todo Remove $expected + assertResourceResponse() in favor of the commented line below once https://www.drupal.org/project/drupal/issues/2943176 lands.
-    $expected_document = [
-      'jsonapi' => static::$jsonApiMember,
-      'errors' => [
-        [
-          'title' => 'Forbidden',
-          'status' => '403',
-          'detail' => 'The current user is not allowed to GET the selected resource.',
-          'links' => [
-            'info' => ['href' => HttpExceptionNormalizer::getInfoUrl(403)],
-            'via' => ['href' => $url->setAbsolute()->toString()],
-          ],
-          'source' => [
-            'pointer' => '/data',
-          ],
-        ],
-      ],
-    ];
-    $this->assertResourceResponse(
+    $this->assertResourceErrorResponse(
       403,
-      $expected_document,
+      'The current user is not allowed to GET the selected resource.',
+      $url,
       $response,
+      '/data',
       ['4xx-response', 'http_response', 'node:1'],
-      ['url.query_args:resourceVersion', 'url.site', 'user.permissions'],
+      ['url.query_args', 'url.site', 'user.permissions'],
       FALSE,
       'MISS'
     );
-    /* $this->assertResourceErrorResponse(403, 'The current user is not allowed to GET the selected resource.', $response, '/data'); */
 
     // 200 after granting permission.
     $this->grantPermissionsToTestedRole(['view own unpublished content']);
@@ -379,12 +372,7 @@ class NodeTest extends ResourceTestBase {
     $this->entity->save();
     $uuid = $this->entity->uuid();
     $language = $this->entity->language()->getId();
-    $cache = \Drupal::service('render_cache')->get([
-      '#cache' => [
-        'keys' => ['node--camelids', $uuid, $language],
-        'bin' => 'jsonapi_normalizations',
-      ],
-    ]);
+    $cache = \Drupal::service('variation_cache.jsonapi_normalizations')->get(['node--camelids', $uuid, $language], new CacheableMetadata());
     // After saving the entity the normalization should not be cached.
     $this->assertFalse($cache);
     // @todo Remove line below in favor of commented line in https://www.drupal.org/project/drupal/issues/2878463.
@@ -415,13 +403,8 @@ class NodeTest extends ResourceTestBase {
    * @internal
    */
   protected function assertNormalizedFieldsAreCached(array $field_names): void {
-    $cache = \Drupal::service('render_cache')->get([
-      '#cache' => [
-        'keys' => ['node--camelids', $this->entity->uuid(), $this->entity->language()->getId()],
-        'bin' => 'jsonapi_normalizations',
-      ],
-    ]);
-    $cached_fields = $cache['#data']['fields'];
+    $cache = \Drupal::service('variation_cache.jsonapi_normalizations')->get(['node--camelids', $this->entity->uuid(), $this->entity->language()->getId()], new CacheableMetadata());
+    $cached_fields = $cache->data['fields'];
     $this->assertSameSize($field_names, $cached_fields);
     array_walk($field_names, function ($field_name) use ($cached_fields) {
       $this->assertInstanceOf(
@@ -446,7 +429,7 @@ class NodeTest extends ResourceTestBase {
    *
    * @see https://github.com/json-api/json-api/issues/1033
    */
-  public function testPostNonExistingAuthor() {
+  public function testPostNonExistingAuthor(): void {
     $this->setUpAuthorization('POST');
     $this->config('jsonapi.settings')->set('read_only', FALSE)->save(TRUE);
     $this->grantPermissionsToTestedRole(['administer nodes']);
@@ -487,7 +470,7 @@ class NodeTest extends ResourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public function testCollectionFilterAccess() {
+  public function testCollectionFilterAccess(): void {
     $label_field_name = 'title';
     $this->doTestCollectionFilterAccessForPublishableEntities($label_field_name, 'access content', 'bypass node access');
 
@@ -501,21 +484,21 @@ class NodeTest extends ResourceTestBase {
 
     // 0 results because the node is unpublished.
     $response = $this->request('GET', $collection_filter_url, $request_options);
-    $doc = Json::decode((string) $response->getBody());
+    $doc = $this->getDocumentFromResponse($response);
     $this->assertCount(0, $doc['data']);
 
     $this->grantPermissionsToTestedRole(['view own unpublished content']);
 
     // 1 result because the current user is the owner of the unpublished node.
     $response = $this->request('GET', $collection_filter_url, $request_options);
-    $doc = Json::decode((string) $response->getBody());
+    $doc = $this->getDocumentFromResponse($response);
     $this->assertCount(1, $doc['data']);
 
     $this->entity->setOwnerId(0)->save();
 
     // 0 results because the current user is no longer the owner.
     $response = $this->request('GET', $collection_filter_url, $request_options);
-    $doc = Json::decode((string) $response->getBody());
+    $doc = $this->getDocumentFromResponse($response);
     $this->assertCount(0, $doc['data']);
 
     // Assert bubbling of cacheability from query alter hook.
@@ -524,6 +507,28 @@ class NodeTest extends ResourceTestBase {
     $this->rebuildAll();
     $response = $this->request('GET', $collection_filter_url, $request_options);
     $this->assertContains('user.node_grants:view', explode(' ', $response->getHeader('X-Drupal-Cache-Contexts')[0]));
+  }
+
+  /**
+   * Tests deprecated entity reference items.
+   *
+   * @group legacy
+   */
+  public function testDeprecatedEntityReferenceFieldItem(): void {
+    \Drupal::service('module_installer')->install(['jsonapi_test_reference_types']);
+
+    $this->setUpAuthorization('GET');
+    // @todo Remove line below in favor of commented line in https://www.drupal.org/project/drupal/issues/2878463.
+    $url = Url::fromRoute(sprintf('jsonapi.%s.individual', static::$resourceTypeName), ['entity' => $this->entity->uuid()]);
+    // $url = $this->entity->toUrl('jsonapi');
+    $query = ['include' => 'deprecated_reference'];
+    $url->setOption('query', $query);
+    $request_options = [];
+    $request_options[RequestOptions::HEADERS]['Accept'] = 'application/vnd.api+json';
+    $request_options = NestedArray::mergeDeep($request_options, $this->getAuthenticationRequestOptions());
+
+    $this->expectDeprecation('Entity reference field items not implementing Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItemInterface is deprecated in drupal:10.2.0 and will be required in drupal:11.0.0. See https://www.drupal.org/node/3279140');
+    $this->request('GET', $url, $request_options);
   }
 
 }

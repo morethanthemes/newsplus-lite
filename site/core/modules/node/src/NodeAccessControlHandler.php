@@ -63,16 +63,12 @@ class NodeAccessControlHandler extends EntityAccessControlHandler implements Nod
    *   The entity type definition.
    * @param \Drupal\node\NodeGrantDatabaseStorageInterface $grant_storage
    *   The node grant storage.
-   * @param \Drupal\Core\Entity\EntityTypeManagerInterface|null $entity_type_manager
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
    */
-  public function __construct(EntityTypeInterface $entity_type, NodeGrantDatabaseStorageInterface $grant_storage, EntityTypeManagerInterface $entity_type_manager = NULL) {
+  public function __construct(EntityTypeInterface $entity_type, NodeGrantDatabaseStorageInterface $grant_storage, EntityTypeManagerInterface $entity_type_manager) {
     parent::__construct($entity_type);
     $this->grantStorage = $grant_storage;
-    if (!isset($entity_type_manager)) {
-      @trigger_error('Calling ' . __METHOD__ . '() without the $entity_type_manager argument is deprecated in drupal:9.3.0 and will be required in drupal:10.0.0. See https://www.drupal.org/node/3214171', E_USER_DEPRECATED);
-      $entity_type_manager = \Drupal::entityTypeManager();
-    }
     $this->entityTypeManager = $entity_type_manager;
   }
 
@@ -90,7 +86,7 @@ class NodeAccessControlHandler extends EntityAccessControlHandler implements Nod
   /**
    * {@inheritdoc}
    */
-  public function access(EntityInterface $entity, $operation, AccountInterface $account = NULL, $return_as_object = FALSE) {
+  public function access(EntityInterface $entity, $operation, ?AccountInterface $account = NULL, $return_as_object = FALSE) {
     $account = $this->prepareUser($account);
 
     // Only bypass if not a revision operation, to retain compatibility.
@@ -110,7 +106,7 @@ class NodeAccessControlHandler extends EntityAccessControlHandler implements Nod
   /**
    * {@inheritdoc}
    */
-  public function createAccess($entity_bundle = NULL, AccountInterface $account = NULL, array $context = [], $return_as_object = FALSE) {
+  public function createAccess($entity_bundle = NULL, ?AccountInterface $account = NULL, array $context = [], $return_as_object = FALSE) {
     $account = $this->prepareUser($account);
 
     if ($account->hasPermission('bypass node access')) {
@@ -203,7 +199,7 @@ class NodeAccessControlHandler extends EntityAccessControlHandler implements Nod
   /**
    * {@inheritdoc}
    */
-  protected function checkFieldAccess($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, FieldItemListInterface $items = NULL) {
+  protected function checkFieldAccess($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, ?FieldItemListInterface $items = NULL) {
     // Only users with the administer nodes permission can edit administrative
     // fields.
     $administrative_fields = ['uid', 'status', 'created', 'promote', 'sticky'];

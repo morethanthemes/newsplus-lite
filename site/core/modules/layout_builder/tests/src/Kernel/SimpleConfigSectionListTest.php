@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\layout_builder\Kernel;
 
 use Drupal\Core\Plugin\Context\Context;
@@ -14,6 +16,7 @@ use Drupal\layout_builder_test\Plugin\SectionStorage\SimpleConfigSectionStorage;
  * @coversDefaultClass \Drupal\layout_builder_test\Plugin\SectionStorage\SimpleConfigSectionStorage
  *
  * @group layout_builder
+ * @group #slow
  */
 class SimpleConfigSectionListTest extends SectionListTestBase {
 

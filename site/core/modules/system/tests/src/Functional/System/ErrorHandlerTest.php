@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\system\Functional\System;
 
 use Drupal\Component\Render\FormattableMarkup;
@@ -13,9 +15,7 @@ use Drupal\Tests\BrowserTestBase;
 class ErrorHandlerTest extends BrowserTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
   protected static $modules = ['error_test'];
 
@@ -27,7 +27,7 @@ class ErrorHandlerTest extends BrowserTestBase {
   /**
    * Tests the error handler.
    */
-  public function testErrorHandler() {
+  public function testErrorHandler(): void {
     $config = $this->config('system.logging');
     $error_notice = [
       '%type' => 'Notice',
@@ -93,9 +93,33 @@ class ErrorHandlerTest extends BrowserTestBase {
   }
 
   /**
+   * Tests a custom error handler set in settings.php.
+   */
+  public function testCustomErrorHandler(): void {
+    $settings_filename = $this->siteDirectory . '/settings.php';
+    chmod($settings_filename, 0777);
+    $settings_php = file_get_contents($settings_filename);
+    $settings_php .= "\n";
+    $settings_php .= "set_error_handler(function() {\n";
+    $settings_php .= "  header('HTTP/1.1 418 I\'m a teapot');\n";
+    $settings_php .= "  print('Oh oh, flying teapots from a custom error handler');\n";
+    $settings_php .= "  exit();\n";
+    $settings_php .= "});\n";
+    file_put_contents($settings_filename, $settings_php);
+
+    // For most types of errors, PHP throws an \Error object that Drupal
+    // catches, so the error handler is not invoked. To test the error handler,
+    // generate warnings, which are not thrown/caught.
+    $this->drupalGet('error-test/generate-warnings');
+
+    $this->assertSession()->statusCodeEquals(418);
+    $this->assertSession()->responseContains('Oh oh, flying teapots from a custom error handler');
+  }
+
+  /**
    * Tests the exception handler.
    */
-  public function testExceptionHandler() {
+  public function testExceptionHandler(): void {
     $error_exception = [
       '%type' => 'Exception',
       '@message' => 'Drupal & awesome',

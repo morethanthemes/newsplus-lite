@@ -58,7 +58,7 @@ class EntityAccessControlHandler extends EntityHandlerBase implements EntityAcce
   /**
    * {@inheritdoc}
    */
-  public function access(EntityInterface $entity, $operation, AccountInterface $account = NULL, $return_as_object = FALSE) {
+  public function access(EntityInterface $entity, $operation, ?AccountInterface $account = NULL, $return_as_object = FALSE) {
     $account = $this->prepareUser($account);
     $langcode = $entity->language()->getId();
 
@@ -76,6 +76,10 @@ class EntityAccessControlHandler extends EntityHandlerBase implements EntityAcce
     if ($entity instanceof RevisionableInterface) {
       /** @var \Drupal\Core\Entity\RevisionableInterface $entity */
       $cid .= ':' . $entity->getRevisionId();
+      // It is not possible to delete or revert the default revision.
+      if ($entity->isDefaultRevision() && ($operation === 'revert' || $operation === 'delete revision')) {
+        return $return_as_object ? AccessResult::forbidden() : FALSE;
+      }
     }
 
     if (($return = $this->getCache($cid, $operation, $langcode, $account)) !== NULL) {
@@ -227,7 +231,7 @@ class EntityAccessControlHandler extends EntityHandlerBase implements EntityAcce
   /**
    * {@inheritdoc}
    */
-  public function createAccess($entity_bundle = NULL, AccountInterface $account = NULL, array $context = [], $return_as_object = FALSE) {
+  public function createAccess($entity_bundle = NULL, ?AccountInterface $account = NULL, array $context = [], $return_as_object = FALSE) {
     $account = $this->prepareUser($account);
     $context += [
       'entity_type_id' => $this->entityTypeId,
@@ -301,7 +305,7 @@ class EntityAccessControlHandler extends EntityHandlerBase implements EntityAcce
    * @return \Drupal\Core\Session\AccountInterface
    *   Returns the current account object.
    */
-  protected function prepareUser(AccountInterface $account = NULL) {
+  protected function prepareUser(?AccountInterface $account = NULL) {
     if (!$account) {
       $account = \Drupal::currentUser();
     }
@@ -311,7 +315,7 @@ class EntityAccessControlHandler extends EntityHandlerBase implements EntityAcce
   /**
    * {@inheritdoc}
    */
-  public function fieldAccess($operation, FieldDefinitionInterface $field_definition, AccountInterface $account = NULL, FieldItemListInterface $items = NULL, $return_as_object = FALSE) {
+  public function fieldAccess($operation, FieldDefinitionInterface $field_definition, ?AccountInterface $account = NULL, ?FieldItemListInterface $items = NULL, $return_as_object = FALSE) {
     $account = $this->prepareUser($account);
 
     // Get the default access restriction that lives within this field.
@@ -384,7 +388,18 @@ class EntityAccessControlHandler extends EntityHandlerBase implements EntityAcce
    * @return \Drupal\Core\Access\AccessResultInterface
    *   The access result.
    */
-  protected function checkFieldAccess($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, FieldItemListInterface $items = NULL) {
+  protected function checkFieldAccess($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, ?FieldItemListInterface $items = NULL) {
+    if (!$items instanceof FieldItemListInterface || $operation !== 'view') {
+      return AccessResult::allowed();
+    }
+    $entity = $items->getEntity();
+    $isRevisionLogField = $this->entityType instanceof ContentEntityTypeInterface && $field_definition->getName() === $this->entityType->getRevisionMetadataKey('revision_log_message');
+    if ($entity && $isRevisionLogField) {
+      // The revision log should only be visible to those who can view the
+      // revisions OR edit the entity.
+      return $entity->access('view revision', $account, TRUE)
+        ->orIf($entity->access('update', $account, TRUE));
+    }
     return AccessResult::allowed();
   }
 
