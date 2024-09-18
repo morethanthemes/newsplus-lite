@@ -11,15 +11,17 @@
 
 namespace Symfony\Component\DependencyInjection\Dumper;
 
+use Symfony\Component\DependencyInjection\Alias;
+use Symfony\Component\DependencyInjection\Argument\AbstractArgument;
 use Symfony\Component\DependencyInjection\Argument\IteratorArgument;
 use Symfony\Component\DependencyInjection\Argument\ServiceClosureArgument;
+use Symfony\Component\DependencyInjection\Argument\ServiceLocatorArgument;
 use Symfony\Component\DependencyInjection\Argument\TaggedIteratorArgument;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\Exception\RuntimeException;
 use Symfony\Component\DependencyInjection\Parameter;
 use Symfony\Component\DependencyInjection\Reference;
-use Symfony\Component\DependencyInjection\Definition;
-use Symfony\Component\DependencyInjection\Alias;
-use Symfony\Component\DependencyInjection\Exception\RuntimeException;
 use Symfony\Component\ExpressionLanguage\Expression;
 
 /**
@@ -30,36 +32,31 @@ use Symfony\Component\ExpressionLanguage\Expression;
  */
 class XmlDumper extends Dumper
 {
-    /**
-     * @var \DOMDocument
-     */
-    private $document;
+    private \DOMDocument $document;
 
     /**
      * Dumps the service container as an XML string.
-     *
-     * @return string An xml string representing of the service container
      */
-    public function dump(array $options = array())
+    public function dump(array $options = []): string
     {
         $this->document = new \DOMDocument('1.0', 'utf-8');
         $this->document->formatOutput = true;
 
         $container = $this->document->createElementNS('http://symfony.com/schema/dic/services', 'container');
         $container->setAttribute('xmlns:xsi', 'http://www.w3.org/2001/XMLSchema-instance');
-        $container->setAttribute('xsi:schemaLocation', 'http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd');
+        $container->setAttribute('xsi:schemaLocation', 'http://symfony.com/schema/dic/services https://symfony.com/schema/dic/services/services-1.0.xsd');
 
         $this->addParameters($container);
         $this->addServices($container);
 
         $this->document->appendChild($container);
         $xml = $this->document->saveXML();
-        $this->document = null;
+        unset($this->document);
 
         return $this->container->resolveEnvPlaceholders($xml);
     }
 
-    private function addParameters(\DOMElement $parent)
+    private function addParameters(\DOMElement $parent): void
     {
         $data = $this->container->getParameterBag()->all();
         if (!$data) {
@@ -75,33 +72,29 @@ class XmlDumper extends Dumper
         $this->convertParameters($data, 'parameter', $parameters);
     }
 
-    private function addMethodCalls(array $methodcalls, \DOMElement $parent)
+    private function addMethodCalls(array $methodcalls, \DOMElement $parent): void
     {
         foreach ($methodcalls as $methodcall) {
             $call = $this->document->createElement('call');
             $call->setAttribute('method', $methodcall[0]);
-            if (count($methodcall[1])) {
+            if (\count($methodcall[1])) {
                 $this->convertParameters($methodcall[1], 'argument', $call);
+            }
+            if ($methodcall[2] ?? false) {
+                $call->setAttribute('returns-clone', 'true');
             }
             $parent->appendChild($call);
         }
     }
 
-    /**
-     * Adds a service.
-     *
-     * @param Definition  $definition
-     * @param string      $id
-     * @param \DOMElement $parent
-     */
-    private function addService($definition, $id, \DOMElement $parent)
+    private function addService(Definition $definition, ?string $id, \DOMElement $parent): void
     {
         $service = $this->document->createElement('service');
         if (null !== $id) {
             $service->setAttribute('id', $id);
         }
         if ($class = $definition->getClass()) {
-            if ('\\' === substr($class, 0, 1)) {
+            if (str_starts_with($class, '\\')) {
                 $class = substr($class, 1);
             }
 
@@ -110,8 +103,8 @@ class XmlDumper extends Dumper
         if (!$definition->isShared()) {
             $service->setAttribute('shared', 'false');
         }
-        if (!$definition->isPrivate()) {
-            $service->setAttribute('public', $definition->isPublic() ? 'true' : 'false');
+        if ($definition->isPublic()) {
+            $service->setAttribute('public', 'true');
         }
         if ($definition->isSynthetic()) {
             $service->setAttribute('synthetic', 'true');
@@ -119,9 +112,15 @@ class XmlDumper extends Dumper
         if ($definition->isLazy()) {
             $service->setAttribute('lazy', 'true');
         }
-        if (null !== $decorated = $definition->getDecoratedService()) {
-            list($decorated, $renamedId, $priority) = $decorated;
+        if (null !== $decoratedService = $definition->getDecoratedService()) {
+            [$decorated, $renamedId, $priority] = $decoratedService;
             $service->setAttribute('decorates', $decorated);
+
+            $decorationOnInvalid = $decoratedService[3] ?? ContainerInterface::EXCEPTION_ON_INVALID_REFERENCE;
+            if (\in_array($decorationOnInvalid, [ContainerInterface::IGNORE_ON_INVALID_REFERENCE, ContainerInterface::NULL_ON_INVALID_REFERENCE], true)) {
+                $invalidBehavior = ContainerInterface::NULL_ON_INVALID_REFERENCE === $decorationOnInvalid ? 'null' : 'ignore';
+                $service->setAttribute('decoration-on-invalid', $invalidBehavior);
+            }
             if (null !== $renamedId) {
                 $service->setAttribute('decoration-inner-name', $renamedId);
             }
@@ -130,12 +129,25 @@ class XmlDumper extends Dumper
             }
         }
 
-        foreach ($definition->getTags() as $name => $tags) {
+        $tags = $definition->getTags();
+        $tags['container.error'] = array_map(fn ($e) => ['message' => $e], $definition->getErrors());
+        foreach ($tags as $name => $tags) {
             foreach ($tags as $attributes) {
                 $tag = $this->document->createElement('tag');
-                $tag->setAttribute('name', $name);
-                foreach ($attributes as $key => $value) {
-                    $tag->setAttribute($key, $value);
+
+                // Check if we have recursive attributes
+                if (array_filter($attributes, \is_array(...))) {
+                    $tag->setAttribute('name', $name);
+                    $this->addTagRecursiveAttributes($tag, $attributes);
+                } else {
+                    if (!\array_key_exists('name', $attributes)) {
+                        $tag->setAttribute('name', $name);
+                    } else {
+                        $tag->appendChild($this->document->createTextNode($name));
+                    }
+                    foreach ($attributes as $key => $value) {
+                        $tag->setAttribute($key, $value ?? '');
+                    }
                 }
                 $service->appendChild($tag);
             }
@@ -158,38 +170,38 @@ class XmlDumper extends Dumper
         $this->addMethodCalls($definition->getMethodCalls(), $service);
 
         if ($callable = $definition->getFactory()) {
-            $factory = $this->document->createElement('factory');
-
-            if (is_array($callable) && $callable[0] instanceof Definition) {
-                $this->addService($callable[0], null, $factory);
-                $factory->setAttribute('method', $callable[1]);
-            } elseif (is_array($callable)) {
-                if (null !== $callable[0]) {
-                    $factory->setAttribute($callable[0] instanceof Reference ? 'service' : 'class', $callable[0]);
-                }
-                $factory->setAttribute('method', $callable[1]);
+            if (\is_array($callable) && ['Closure', 'fromCallable'] !== $callable && $definition->getClass() === $callable[0]) {
+                $service->setAttribute('constructor', $callable[1]);
             } else {
-                $factory->setAttribute('function', $callable);
+                $factory = $this->document->createElement('factory');
+
+                if (\is_array($callable) && $callable[0] instanceof Definition) {
+                    $this->addService($callable[0], null, $factory);
+                    $factory->setAttribute('method', $callable[1]);
+                } elseif (\is_array($callable)) {
+                    if (null !== $callable[0]) {
+                        $factory->setAttribute($callable[0] instanceof Reference ? 'service' : 'class', $callable[0]);
+                    }
+                    $factory->setAttribute('method', $callable[1]);
+                } else {
+                    $factory->setAttribute('function', $callable);
+                }
+                $service->appendChild($factory);
             }
-            $service->appendChild($factory);
         }
 
         if ($definition->isDeprecated()) {
+            $deprecation = $definition->getDeprecation('%service_id%');
             $deprecated = $this->document->createElement('deprecated');
-            $deprecated->appendChild($this->document->createTextNode($definition->getDeprecationMessage('%service_id%')));
+            $deprecated->appendChild($this->document->createTextNode($definition->getDeprecation('%service_id%')['message']));
+            $deprecated->setAttribute('package', $deprecation['package']);
+            $deprecated->setAttribute('version', $deprecation['version']);
 
             $service->appendChild($deprecated);
         }
 
         if ($definition->isAutowired()) {
             $service->setAttribute('autowire', 'true');
-        }
-
-        foreach ($definition->getAutowiringTypes(false) as $autowiringTypeValue) {
-            $autowiringType = $this->document->createElement('autowiring-type');
-            $autowiringType->appendChild($this->document->createTextNode($autowiringTypeValue));
-
-            $service->appendChild($autowiringType);
         }
 
         if ($definition->isAutoconfigured()) {
@@ -203,10 +215,10 @@ class XmlDumper extends Dumper
         if ($callable = $definition->getConfigurator()) {
             $configurator = $this->document->createElement('configurator');
 
-            if (is_array($callable) && $callable[0] instanceof Definition) {
+            if (\is_array($callable) && $callable[0] instanceof Definition) {
                 $this->addService($callable[0], null, $configurator);
                 $configurator->setAttribute('method', $callable[1]);
-            } elseif (is_array($callable)) {
+            } elseif (\is_array($callable)) {
                 $configurator->setAttribute($callable[0] instanceof Reference ? 'service' : 'class', $callable[0]);
                 $configurator->setAttribute('method', $callable[1]);
             } else {
@@ -218,25 +230,29 @@ class XmlDumper extends Dumper
         $parent->appendChild($service);
     }
 
-    /**
-     * Adds a service alias.
-     *
-     * @param string      $alias
-     * @param Alias       $id
-     * @param \DOMElement $parent
-     */
-    private function addServiceAlias($alias, Alias $id, \DOMElement $parent)
+    private function addServiceAlias(string $alias, Alias $id, \DOMElement $parent): void
     {
         $service = $this->document->createElement('service');
         $service->setAttribute('id', $alias);
         $service->setAttribute('alias', $id);
-        if (!$id->isPrivate()) {
-            $service->setAttribute('public', $id->isPublic() ? 'true' : 'false');
+        if ($id->isPublic()) {
+            $service->setAttribute('public', 'true');
         }
+
+        if ($id->isDeprecated()) {
+            $deprecation = $id->getDeprecation('%alias_id%');
+            $deprecated = $this->document->createElement('deprecated');
+            $deprecated->appendChild($this->document->createTextNode($deprecation['message']));
+            $deprecated->setAttribute('package', $deprecation['package']);
+            $deprecated->setAttribute('version', $deprecation['version']);
+
+            $service->appendChild($deprecated);
+        }
+
         $parent->appendChild($service);
     }
 
-    private function addServices(\DOMElement $parent)
+    private function addServices(\DOMElement $parent): void
     {
         $definitions = $this->container->getDefinitions();
         if (!$definitions) {
@@ -258,44 +274,82 @@ class XmlDumper extends Dumper
         $parent->appendChild($services);
     }
 
-    /**
-     * Converts parameters.
-     *
-     * @param array       $parameters
-     * @param string      $type
-     * @param \DOMElement $parent
-     * @param string      $keyAttribute
-     */
-    private function convertParameters(array $parameters, $type, \DOMElement $parent, $keyAttribute = 'key')
+    private function addTagRecursiveAttributes(\DOMElement $parent, array $attributes): void
     {
-        $withKeys = array_keys($parameters) !== range(0, count($parameters) - 1);
+        foreach ($attributes as $name => $value) {
+            $attribute = $this->document->createElement('attribute');
+            $attribute->setAttribute('name', $name);
+
+            if (\is_array($value)) {
+                $this->addTagRecursiveAttributes($attribute, $value);
+            } else {
+                $attribute->appendChild($this->document->createTextNode($value));
+            }
+
+            $parent->appendChild($attribute);
+        }
+    }
+
+    private function convertParameters(array $parameters, string $type, \DOMElement $parent, string $keyAttribute = 'key'): void
+    {
+        $withKeys = !array_is_list($parameters);
         foreach ($parameters as $key => $value) {
             $element = $this->document->createElement($type);
             if ($withKeys) {
                 $element->setAttribute($keyAttribute, $key);
             }
 
-            if ($value instanceof ServiceClosureArgument) {
-                $value = $value->getValues()[0];
-            }
-            if (is_array($value)) {
+            if (\is_array($tag = $value)) {
                 $element->setAttribute('type', 'collection');
                 $this->convertParameters($value, $type, $element, 'key');
-            } elseif ($value instanceof TaggedIteratorArgument) {
-                $element->setAttribute('type', 'tagged');
-                $element->setAttribute('tag', $value->getTag());
+            } elseif ($value instanceof TaggedIteratorArgument || ($value instanceof ServiceLocatorArgument && $tag = $value->getTaggedIteratorArgument())) {
+                $element->setAttribute('type', $value instanceof TaggedIteratorArgument ? 'tagged_iterator' : 'tagged_locator');
+                $element->setAttribute('tag', $tag->getTag());
+
+                if (null !== $tag->getIndexAttribute()) {
+                    $element->setAttribute('index-by', $tag->getIndexAttribute());
+
+                    if (null !== $tag->getDefaultIndexMethod()) {
+                        $element->setAttribute('default-index-method', $tag->getDefaultIndexMethod());
+                    }
+                    if (null !== $tag->getDefaultPriorityMethod()) {
+                        $element->setAttribute('default-priority-method', $tag->getDefaultPriorityMethod());
+                    }
+                }
+                if ($excludes = $tag->getExclude()) {
+                    if (1 === \count($excludes)) {
+                        $element->setAttribute('exclude', $excludes[0]);
+                    } else {
+                        foreach ($excludes as $exclude) {
+                            $element->appendChild($this->document->createElement('exclude', $exclude));
+                        }
+                    }
+                }
+                if (!$tag->excludeSelf()) {
+                    $element->setAttribute('exclude-self', 'false');
+                }
             } elseif ($value instanceof IteratorArgument) {
                 $element->setAttribute('type', 'iterator');
                 $this->convertParameters($value->getValues(), $type, $element, 'key');
-            } elseif ($value instanceof Reference) {
+            } elseif ($value instanceof ServiceLocatorArgument) {
+                $element->setAttribute('type', 'service_locator');
+                $this->convertParameters($value->getValues(), $type, $element, 'key');
+            } elseif ($value instanceof ServiceClosureArgument && !$value->getValues()[0] instanceof Reference) {
+                $element->setAttribute('type', 'service_closure');
+                $this->convertParameters($value->getValues(), $type, $element, 'key');
+            } elseif ($value instanceof Reference || $value instanceof ServiceClosureArgument) {
                 $element->setAttribute('type', 'service');
+                if ($value instanceof ServiceClosureArgument) {
+                    $element->setAttribute('type', 'service_closure');
+                    $value = $value->getValues()[0];
+                }
                 $element->setAttribute('id', (string) $value);
-                $behaviour = $value->getInvalidBehavior();
-                if (ContainerInterface::NULL_ON_INVALID_REFERENCE == $behaviour) {
+                $behavior = $value->getInvalidBehavior();
+                if (ContainerInterface::NULL_ON_INVALID_REFERENCE == $behavior) {
                     $element->setAttribute('on-invalid', 'null');
-                } elseif (ContainerInterface::IGNORE_ON_INVALID_REFERENCE == $behaviour) {
+                } elseif (ContainerInterface::IGNORE_ON_INVALID_REFERENCE == $behavior) {
                     $element->setAttribute('on-invalid', 'ignore');
-                } elseif (ContainerInterface::IGNORE_ON_UNINITIALIZED_REFERENCE == $behaviour) {
+                } elseif (ContainerInterface::IGNORE_ON_UNINITIALIZED_REFERENCE == $behavior) {
                     $element->setAttribute('on-invalid', 'ignore_uninitialized');
                 }
             } elseif ($value instanceof Definition) {
@@ -305,10 +359,26 @@ class XmlDumper extends Dumper
                 $element->setAttribute('type', 'expression');
                 $text = $this->document->createTextNode(self::phpToXml((string) $value));
                 $element->appendChild($text);
+            } elseif (\is_string($value) && !preg_match('/^[^\x00-\x08\x0B\x0C\x0E-\x1F\x7F]*+$/u', $value)) {
+                $element->setAttribute('type', 'binary');
+                $text = $this->document->createTextNode(self::phpToXml(base64_encode($value)));
+                $element->appendChild($text);
+            } elseif ($value instanceof \UnitEnum) {
+                $element->setAttribute('type', 'constant');
+                $element->appendChild($this->document->createTextNode(self::phpToXml($value)));
+            } elseif ($value instanceof AbstractArgument) {
+                $element->setAttribute('type', 'abstract');
+                $text = $this->document->createTextNode(self::phpToXml($value->getText()));
+                $element->appendChild($text);
             } else {
-                if (in_array($value, array('null', 'true', 'false'), true)) {
+                if (\in_array($value, ['null', 'true', 'false'], true)) {
                     $element->setAttribute('type', 'string');
                 }
+
+                if (\is_string($value) && (is_numeric($value) || preg_match('/^0b[01]*$/', $value) || preg_match('/^0x[0-9a-f]++$/i', $value))) {
+                    $element->setAttribute('type', 'string');
+                }
+
                 $text = $this->document->createTextNode(self::phpToXml($value));
                 $element->appendChild($text);
             }
@@ -318,16 +388,14 @@ class XmlDumper extends Dumper
 
     /**
      * Escapes arguments.
-     *
-     * @return array
      */
-    private function escape(array $arguments)
+    private function escape(array $arguments): array
     {
-        $args = array();
+        $args = [];
         foreach ($arguments as $k => $v) {
-            if (is_array($v)) {
+            if (\is_array($v)) {
                 $args[$k] = $this->escape($v);
-            } elseif (is_string($v)) {
+            } elseif (\is_string($v)) {
                 $args[$k] = str_replace('%', '%%', $v);
             } else {
                 $args[$k] = $v;
@@ -340,13 +408,9 @@ class XmlDumper extends Dumper
     /**
      * Converts php types to xml types.
      *
-     * @param mixed $value Value to convert
-     *
-     * @return string
-     *
      * @throws RuntimeException When trying to dump object or resource
      */
-    public static function phpToXml($value)
+    public static function phpToXml(mixed $value): string
     {
         switch (true) {
             case null === $value:
@@ -357,8 +421,10 @@ class XmlDumper extends Dumper
                 return 'false';
             case $value instanceof Parameter:
                 return '%'.$value.'%';
-            case is_object($value) || is_resource($value):
-                throw new RuntimeException('Unable to dump a service container if a parameter is an object or a resource.');
+            case $value instanceof \UnitEnum:
+                return sprintf('%s::%s', $value::class, $value->name);
+            case \is_object($value) || \is_resource($value):
+                throw new RuntimeException(sprintf('Unable to dump a service container if a parameter is an object or a resource, got "%s".', get_debug_type($value)));
             default:
                 return (string) $value;
         }

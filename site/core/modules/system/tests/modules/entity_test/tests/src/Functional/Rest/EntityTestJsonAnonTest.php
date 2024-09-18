@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\entity_test\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\AnonResourceTestTrait;
-use Drupal\Tests\rest\Functional\EntityResource\FormatSpecificGetBcRouteTestTrait;
 
 /**
  * @group rest
@@ -11,7 +12,6 @@ use Drupal\Tests\rest\Functional\EntityResource\FormatSpecificGetBcRouteTestTrai
 class EntityTestJsonAnonTest extends EntityTestResourceTestBase {
 
   use AnonResourceTestTrait;
-  use FormatSpecificGetBcRouteTestTrait;
 
   /**
    * {@inheritdoc}
@@ -22,5 +22,10 @@ class EntityTestJsonAnonTest extends EntityTestResourceTestBase {
    * {@inheritdoc}
    */
   protected static $mimeType = 'application/json';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
 }

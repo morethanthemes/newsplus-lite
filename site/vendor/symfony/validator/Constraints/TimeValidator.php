@@ -14,50 +14,46 @@ namespace Symfony\Component\Validator\Constraints;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Exception\UnexpectedTypeException;
+use Symfony\Component\Validator\Exception\UnexpectedValueException;
 
 /**
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
 class TimeValidator extends ConstraintValidator
 {
-    const PATTERN = '/^(\d{2}):(\d{2}):(\d{2})$/';
+    public const PATTERN = '/^(\d{2}):(\d{2}):(\d{2})$/D';
+    public const PATTERN_WITHOUT_SECONDS = '/^(\d{2}):(\d{2})$/D';
 
     /**
      * Checks whether a time is valid.
      *
-     * @param int $hour   The hour
-     * @param int $minute The minute
-     * @param int $second The second
-     *
-     * @return bool Whether the time is valid
-     *
      * @internal
      */
-    public static function checkTime($hour, $minute, $second)
+    public static function checkTime(int $hour, int $minute, float $second): bool
     {
         return $hour >= 0 && $hour < 24 && $minute >= 0 && $minute < 60 && $second >= 0 && $second < 60;
     }
 
     /**
-     * {@inheritdoc}
+     * @return void
      */
-    public function validate($value, Constraint $constraint)
+    public function validate(mixed $value, Constraint $constraint)
     {
         if (!$constraint instanceof Time) {
-            throw new UnexpectedTypeException($constraint, __NAMESPACE__.'\Time');
+            throw new UnexpectedTypeException($constraint, Time::class);
         }
 
-        if (null === $value || '' === $value || $value instanceof \DateTimeInterface) {
+        if (null === $value || '' === $value) {
             return;
         }
 
-        if (!is_scalar($value) && !(is_object($value) && method_exists($value, '__toString'))) {
-            throw new UnexpectedTypeException($value, 'string');
+        if (!\is_scalar($value) && !$value instanceof \Stringable) {
+            throw new UnexpectedValueException($value, 'string');
         }
 
         $value = (string) $value;
 
-        if (!preg_match(static::PATTERN, $value, $matches)) {
+        if (!preg_match($constraint->withSeconds ? static::PATTERN : static::PATTERN_WITHOUT_SECONDS, $value, $matches)) {
             $this->context->buildViolation($constraint->message)
                 ->setParameter('{{ value }}', $this->formatValue($value))
                 ->setCode(Time::INVALID_FORMAT_ERROR)
@@ -66,7 +62,7 @@ class TimeValidator extends ConstraintValidator
             return;
         }
 
-        if (!self::checkTime($matches[1], $matches[2], $matches[3])) {
+        if (!self::checkTime($matches[1], $matches[2], $constraint->withSeconds ? $matches[3] : 0)) {
             $this->context->buildViolation($constraint->message)
                 ->setParameter('{{ value }}', $this->formatValue($value))
                 ->setCode(Time::INVALID_TIME_ERROR)

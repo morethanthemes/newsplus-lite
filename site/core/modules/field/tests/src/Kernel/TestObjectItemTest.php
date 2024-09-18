@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\field\Kernel;
 
 use Drupal\entity_test\Entity\EntityTest;
@@ -14,16 +16,14 @@ use Drupal\field\Entity\FieldStorageConfig;
 class TestObjectItemTest extends FieldKernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['field_test'];
+  protected static $modules = ['field_test'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     // Create a 'test_field' field and storage for validation.
@@ -42,7 +42,7 @@ class TestObjectItemTest extends FieldKernelTestBase {
   /**
    * Tests the serialization of a field type that has an object.
    */
-  public function testTestObjectItem() {
+  public function testTestObjectItem(): void {
     $object = new \stdClass();
     $object->foo = 'bar';
     $entity = EntityTest::create();
@@ -52,7 +52,7 @@ class TestObjectItemTest extends FieldKernelTestBase {
     // Verify that the entity has been created properly.
     $id = $entity->id();
     $entity = EntityTest::load($id);
-    $this->assertTrue($entity->field_test->value instanceof \stdClass);
+    $this->assertInstanceOf(\stdClass::class, $entity->field_test->value);
     $this->assertEquals($object, $entity->field_test->value);
   }
 

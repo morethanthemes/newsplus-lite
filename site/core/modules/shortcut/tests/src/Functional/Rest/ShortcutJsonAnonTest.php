@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\shortcut\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\AnonResourceTestTrait;
@@ -20,5 +22,10 @@ class ShortcutJsonAnonTest extends ShortcutResourceTestBase {
    * {@inheritdoc}
    */
   protected static $mimeType = 'application/json';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
 }

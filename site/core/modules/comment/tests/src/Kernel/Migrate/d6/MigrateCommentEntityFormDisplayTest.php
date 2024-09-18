@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\comment\Kernel\Migrate\d6;
 
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
@@ -16,12 +18,12 @@ class MigrateCommentEntityFormDisplayTest extends MigrateDrupal6TestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['comment', 'menu_ui'];
+  protected static $modules = ['comment', 'menu_ui'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installConfig(['comment']);
     $this->migrateContentTypes();
@@ -40,10 +42,12 @@ class MigrateCommentEntityFormDisplayTest extends MigrateDrupal6TestBase {
    *   The entity ID.
    * @param string $component_id
    *   The ID of the form component.
+   *
+   * @internal
    */
-  protected function assertDisplay($id, $component_id) {
+  protected function assertDisplay(string $id, string $component_id): void {
     $component = EntityFormDisplay::load($id)->getComponent($component_id);
-    $this->assertInternalType('array', $component);
+    $this->assertIsArray($component);
     $this->assertSame('comment_default', $component['type']);
     $this->assertSame(20, $component['weight']);
   }
@@ -51,7 +55,7 @@ class MigrateCommentEntityFormDisplayTest extends MigrateDrupal6TestBase {
   /**
    * Tests the migrated display configuration.
    */
-  public function testMigration() {
+  public function testMigration(): void {
     $this->assertDisplay('node.article.default', 'comment_node_article');
     $this->assertDisplay('node.company.default', 'comment_node_company');
     $this->assertDisplay('node.employee.default', 'comment_node_employee');

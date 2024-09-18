@@ -8,7 +8,6 @@ use Drupal\Core\Render\RendererInterface;
 use Drupal\search\Form\SearchPageForm;
 use Drupal\search\SearchPageInterface;
 use Drupal\search\SearchPageRepositoryInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -52,16 +51,6 @@ class SearchController extends ControllerBase {
   }
 
   /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('search.search_page_repository'),
-      $container->get('renderer')
-    );
-  }
-
-  /**
    * Creates a render array for the search page.
    *
    * @param \Symfony\Component\HttpFoundation\Request $request
@@ -95,7 +84,7 @@ class SearchController extends ControllerBase {
       if ($plugin->isSearchExecutable()) {
         // Log the search.
         if ($this->config('search.settings')->get('logging')) {
-          $this->logger->notice('Searched %type for %keys.', ['%keys' => $keys, '%type' => $entity->label()]);
+          $this->logger->info('Searched %type for %keys.', ['%keys' => $keys, '%type' => $entity->label()]);
         }
 
         // Collect the search results.
@@ -104,7 +93,7 @@ class SearchController extends ControllerBase {
       else {
         // The search not being executable means that no keywords or other
         // conditions were entered.
-        drupal_set_message($this->t('Please enter some keywords.'), 'error');
+        $this->messenger()->addError($this->t('Enter some keywords.'));
       }
     }
 
@@ -118,7 +107,9 @@ class SearchController extends ControllerBase {
       '#theme' => ['item_list__search_results__' . $plugin->getPluginId(), 'item_list__search_results'],
       '#items' => $results,
       '#empty' => [
-        '#markup' => '<h3>' . $this->t('Your search yielded no results.') . '</h3>',
+        '#type' => 'html_tag',
+        '#tag' => 'em',
+        '#value' => $this->t('Your search yielded no results.'),
       ],
       '#list_type' => 'ol',
       '#context' => [
@@ -206,13 +197,13 @@ class SearchController extends ControllerBase {
     $search_page->$op()->save();
 
     if ($op == 'enable') {
-      drupal_set_message($this->t('The %label search page has been enabled.', ['%label' => $search_page->label()]));
+      $this->messenger()->addStatus($this->t('The %label search page has been enabled.', ['%label' => $search_page->label()]));
     }
     elseif ($op == 'disable') {
-      drupal_set_message($this->t('The %label search page has been disabled.', ['%label' => $search_page->label()]));
+      $this->messenger()->addStatus($this->t('The %label search page has been disabled.', ['%label' => $search_page->label()]));
     }
 
-    $url = $search_page->urlInfo('collection');
+    $url = $search_page->toUrl('collection');
     return $this->redirect($url->getRouteName(), $url->getRouteParameters(), $url->getOptions());
   }
 
@@ -229,7 +220,7 @@ class SearchController extends ControllerBase {
     // Set the default page to this search page.
     $this->searchPageRepository->setDefaultSearchPage($search_page);
 
-    drupal_set_message($this->t('The default search page is now %label. Be sure to check the ordering of your search pages.', ['%label' => $search_page->label()]));
+    $this->messenger()->addStatus($this->t('The default search page is now %label. Be sure to check the ordering of your search pages.', ['%label' => $search_page->label()]));
     return $this->redirect('entity.search_page.collection');
   }
 

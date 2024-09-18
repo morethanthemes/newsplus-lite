@@ -3,7 +3,7 @@
 namespace Drupal\Core\Archiver;
 
 /**
- * Defines a archiver implementation for .zip files.
+ * Defines an archiver implementation for .zip files.
  *
  * @link http://php.net/zip
  */
@@ -23,13 +23,16 @@ class Zip implements ArchiverInterface {
    *   The full system path of the archive to manipulate. Only local files
    *   are supported. If the file does not yet exist, it will be created if
    *   appropriate.
+   * @param array $configuration
+   *   (Optional) settings to open the archive with the following keys:
+   *   - 'flags': The mode to open the archive with \ZipArchive::open().
    *
    * @throws \Drupal\Core\Archiver\ArchiverException
    */
-  public function __construct($file_path) {
+  public function __construct($file_path, array $configuration = []) {
     $this->zip = new \ZipArchive();
-    if ($this->zip->open($file_path) !== TRUE) {
-      throw new ArchiverException(t('Cannot open %file_path', ['%file_path' => $file_path]));
+    if ($this->zip->open($file_path, $configuration['flags'] ?? 0) !== TRUE) {
+      throw new ArchiverException("Cannot open '$file_path'");
     }
   }
 

@@ -2,18 +2,17 @@ langcode: en
 status: true
 dependencies: {  }
 id: test_cache
-label: ''
+label: test_cache
 module: views
 description: ''
 tag: ''
 base_table: views_test_data
 base_field: nid
-core: '8'
 display:
   default:
     display_plugin: default
     id: default
-    display_title: Master
+    display_title: Default
     position: 0
     display_options:
       fields:

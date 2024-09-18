@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\migrate_drupal\Kernel\d7;
 
 use Drupal\KernelTests\FileSystemModuleDiscoveryDataProviderTrait;
@@ -7,8 +9,8 @@ use Drupal\migrate\Audit\AuditResult;
 use Drupal\migrate\Audit\IdAuditor;
 use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
+use Drupal\Tests\content_moderation\Traits\ContentModerationTestTrait;
 use Drupal\Tests\migrate_drupal\Traits\CreateTestContentEntitiesTrait;
-use Drupal\workflows\Entity\Workflow;
 
 /**
  * Tests the migration auditor for ID conflicts.
@@ -19,11 +21,12 @@ class MigrateDrupal7AuditIdsTest extends MigrateDrupal7TestBase {
 
   use FileSystemModuleDiscoveryDataProviderTrait;
   use CreateTestContentEntitiesTrait;
+  use ContentModerationTestTrait;
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     // Enable all modules.
     self::$modules = array_keys($this->coreModuleListDataProvider());
     parent::setUp();
@@ -32,19 +35,24 @@ class MigrateDrupal7AuditIdsTest extends MigrateDrupal7TestBase {
     $this->installEntitySchemas();
 
     // Install required schemas.
+    // @todo Remove book in https://www.drupal.org/project/drupal/issues/3376101
     $this->installSchema('book', ['book']);
     $this->installSchema('dblog', ['watchdog']);
+    // @todo Remove forum in https://www.drupal.org/project/drupal/issues/3261653
     $this->installSchema('forum', ['forum_index']);
     $this->installSchema('node', ['node_access']);
     $this->installSchema('search', ['search_dataset']);
-    $this->installSchema('system', ['sequences']);
+    // @todo Remove tracker in https://www.drupal.org/project/drupal/issues/3261452
     $this->installSchema('tracker', ['tracker_node', 'tracker_user']);
 
     // Enable content moderation for nodes of type page.
     $this->installEntitySchema('content_moderation_state');
     $this->installConfig('content_moderation');
-    NodeType::create(['type' => 'page'])->save();
-    $workflow = Workflow::load('editorial');
+    NodeType::create([
+      'type' => 'page',
+      'name' => 'Page',
+    ])->save();
+    $workflow = $this->createEditorialWorkflow();
     $workflow->getTypePlugin()->addEntityTypeAndBundle('node', 'page');
     $workflow->save();
   }
@@ -52,16 +60,17 @@ class MigrateDrupal7AuditIdsTest extends MigrateDrupal7TestBase {
   /**
    * Tests multiple migrations to the same destination with no ID conflicts.
    */
-  public function testMultipleMigrationWithoutIdConflicts() {
+  public function testMultipleMigrationWithoutIdConflicts(): void {
     // Create a node of type page.
     $node = Node::create(['type' => 'page', 'title' => 'foo']);
     $node->moderation_state->value = 'published';
     $node->save();
 
-    // Insert data in the d7_node:page migration mappping table to simulate a
+    // Insert data in the d7_node:page migration mapping table to simulate a
     // previously migrated node.
-    $table_name = $this->getMigration('d7_node:page')->getIdMap()->mapTableName();
-    $this->container->get('database')->insert($table_name)
+    $id_map = $this->getMigration('d7_node:page')->getIdMap();
+    $table_name = $id_map->mapTableName();
+    $id_map->getDatabase()->insert($table_name)
       ->fields([
         'source_ids_hash' => 1,
         'sourceid1' => 1,
@@ -89,7 +98,7 @@ class MigrateDrupal7AuditIdsTest extends MigrateDrupal7TestBase {
   /**
    * Tests all migrations with no ID conflicts.
    */
-  public function testAllMigrationsWithNoIdConflicts() {
+  public function testAllMigrationsWithNoIdConflicts(): void {
     $migrations = $this->container
       ->get('plugin.manager.migration')
       ->createInstancesByTag('Drupal 7');
@@ -107,7 +116,7 @@ class MigrateDrupal7AuditIdsTest extends MigrateDrupal7TestBase {
   /**
    * Tests all migrations with ID conflicts.
    */
-  public function testAllMigrationsWithIdConflicts() {
+  public function testAllMigrationsWithIdConflicts(): void {
     $migrations = $this->container
       ->get('plugin.manager.migration')
       ->createInstancesByTag('Drupal 7');
@@ -125,14 +134,13 @@ class MigrateDrupal7AuditIdsTest extends MigrateDrupal7TestBase {
     );
 
     $expected = [
-      'd7_aggregator_feed',
-      'd7_aggregator_item',
       'd7_comment',
       'd7_custom_block',
       'd7_file',
       'd7_file_private',
       'd7_menu_links',
       'd7_node',
+      'd7_node_complete',
       'd7_node_revision',
       'd7_taxonomy_term',
       'd7_user',
@@ -144,7 +152,7 @@ class MigrateDrupal7AuditIdsTest extends MigrateDrupal7TestBase {
   /**
    * Tests draft revisions ID conflicts.
    */
-  public function testDraftRevisionIdConflicts() {
+  public function testDraftRevisionIdConflicts(): void {
     // Create a published node of type page.
     $node = Node::create(['type' => 'page', 'title' => 'foo']);
     $node->moderation_state->value = 'published';
@@ -155,10 +163,11 @@ class MigrateDrupal7AuditIdsTest extends MigrateDrupal7TestBase {
     $node->setNewRevision(TRUE);
     $node->save();
 
-    // Insert data in the d7_node_revision:page migration mappping table to
-    // simulate a previously migrated node revison.
-    $table_name = $this->getMigration('d7_node_revision:page')->getIdMap()->mapTableName();
-    $this->container->get('database')->insert($table_name)
+    // Insert data in the d7_node_revision:page migration mapping table to
+    // simulate a previously migrated node revision.
+    $id_map = $this->getMigration('d7_node_revision:page')->getIdMap();
+    $table_name = $id_map->mapTableName();
+    $id_map->getDatabase()->insert($table_name)
       ->fields([
         'source_ids_hash' => 1,
         'sourceid1' => 1,
@@ -177,7 +186,7 @@ class MigrateDrupal7AuditIdsTest extends MigrateDrupal7TestBase {
   /**
    * Tests ID conflicts for inaccessible nodes.
    */
-  public function testNodeGrantsIdConflicts() {
+  public function testNodeGrantsIdConflicts(): void {
     // Enable the node_test module to restrict access to page nodes.
     $this->enableModules(['node_test']);
 

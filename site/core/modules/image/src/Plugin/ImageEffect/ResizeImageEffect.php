@@ -4,17 +4,18 @@ namespace Drupal\image\Plugin\ImageEffect;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Image\ImageInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\image\Attribute\ImageEffect;
 use Drupal\image\ConfigurableImageEffectBase;
 
 /**
  * Resizes an image resource.
- *
- * @ImageEffect(
- *   id = "image_resize",
- *   label = @Translation("Resize"),
- *   description = @Translation("Resizing will make images an exact set of dimensions. This may cause images to be stretched or shrunk disproportionately.")
- * )
  */
+#[ImageEffect(
+  id: "image_resize",
+  label: new TranslatableMarkup("Resize"),
+  description: new TranslatableMarkup("Resizing will make images an exact set of dimensions. This may cause images to be stretched or shrunk disproportionately."),
+)]
 class ResizeImageEffect extends ConfigurableImageEffectBase {
 
   /**
@@ -66,17 +67,17 @@ class ResizeImageEffect extends ConfigurableImageEffectBase {
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
     $form['width'] = [
       '#type' => 'number',
-      '#title' => t('Width'),
+      '#title' => $this->t('Width'),
       '#default_value' => $this->configuration['width'],
-      '#field_suffix' => ' ' . t('pixels'),
+      '#field_suffix' => ' ' . $this->t('pixels'),
       '#required' => TRUE,
       '#min' => 1,
     ];
     $form['height'] = [
       '#type' => 'number',
-      '#title' => t('Height'),
+      '#title' => $this->t('Height'),
       '#default_value' => $this->configuration['height'],
-      '#field_suffix' => ' ' . t('pixels'),
+      '#field_suffix' => ' ' . $this->t('pixels'),
       '#required' => TRUE,
       '#min' => 1,
     ];

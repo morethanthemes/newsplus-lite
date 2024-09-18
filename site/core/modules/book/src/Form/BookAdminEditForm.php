@@ -5,6 +5,7 @@ namespace Drupal\book\Form;
 use Drupal\book\BookManager;
 use Drupal\book\BookManagerInterface;
 use Drupal\Component\Utility\Crypt;
+use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -35,26 +36,37 @@ class BookAdminEditForm extends FormBase {
   protected $bookManager;
 
   /**
+   * The entity repository service.
+   *
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
+   */
+  protected $entityRepository;
+
+  /**
    * Constructs a new BookAdminEditForm.
    *
    * @param \Drupal\Core\Entity\EntityStorageInterface $node_storage
-   *   The custom block storage.
+   *   The content block storage.
    * @param \Drupal\book\BookManagerInterface $book_manager
    *   The book manager.
+   * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
+   *   The entity repository service.
    */
-  public function __construct(EntityStorageInterface $node_storage, BookManagerInterface $book_manager) {
+  public function __construct(EntityStorageInterface $node_storage, BookManagerInterface $book_manager, EntityRepositoryInterface $entity_repository) {
     $this->nodeStorage = $node_storage;
     $this->bookManager = $book_manager;
+    $this->entityRepository = $entity_repository;
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    $entity_manager = $container->get('entity.manager');
+    $entity_type_manager = $container->get('entity_type.manager');
     return new static(
-      $entity_manager->getStorage('node'),
-      $container->get('book.manager')
+      $entity_type_manager->getStorage('node'),
+      $container->get('book.manager'),
+      $container->get('entity.repository')
     );
   }
 
@@ -68,7 +80,7 @@ class BookAdminEditForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, NodeInterface $node = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, ?NodeInterface $node = NULL) {
     $form['#title'] = $node->label();
     $form['#node'] = $node;
     $this->bookAdminTable($node, $form);
@@ -116,18 +128,19 @@ class BookAdminEditForm extends FormBase {
           // Update the title if changed.
           if ($row['title']['#default_value'] != $values['title']) {
             $node = $this->nodeStorage->load($values['nid']);
+            $node = $this->entityRepository->getTranslationFromContext($node);
             $node->revision_log = $this->t('Title changed from %original to %current.', ['%original' => $node->label(), '%current' => $values['title']]);
             $node->title = $values['title'];
             $node->book['link_title'] = $values['title'];
             $node->setNewRevision();
             $node->save();
-            $this->logger('content')->notice('book: updated %title.', ['%title' => $node->label(), 'link' => $node->link($this->t('View'))]);
+            $this->logger('content')->info('book: updated %title.', ['%title' => $node->label(), 'link' => $node->toLink($this->t('View'))->toString()]);
           }
         }
       }
     }
 
-    drupal_set_message($this->t('Updated book %title.', ['%title' => $form['#node']->label()]));
+    $this->messenger()->addStatus($this->t('Updated book %title.', ['%title' => $form['#node']->label()]));
   }
 
   /**

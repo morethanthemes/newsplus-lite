@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\AnonResourceTestTrait;
@@ -22,5 +24,10 @@ class VocabularyXmlAnonTest extends VocabularyResourceTestBase {
    * {@inheritdoc}
    */
   protected static $mimeType = 'text/xml; charset=UTF-8';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
 }

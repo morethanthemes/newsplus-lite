@@ -3,7 +3,7 @@
 namespace Drupal\block;
 
 use Drupal\Core\Cache\CacheableMetadata;
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Plugin\Context\ContextHandlerInterface;
 use Drupal\Core\Theme\ThemeManagerInterface;
 
@@ -27,17 +27,24 @@ class BlockRepository implements BlockRepositoryInterface {
   protected $themeManager;
 
   /**
+   * The context handler.
+   *
+   * @var \Drupal\Core\Plugin\Context\ContextHandlerInterface
+   */
+  protected $contextHandler;
+
+  /**
    * Constructs a new BlockRepository.
    *
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager service.
    * @param \Drupal\Core\Theme\ThemeManagerInterface $theme_manager
    *   The theme manager.
    * @param \Drupal\Core\Plugin\Context\ContextHandlerInterface $context_handler
    *   The plugin context handler.
    */
-  public function __construct(EntityManagerInterface $entity_manager, ThemeManagerInterface $theme_manager, ContextHandlerInterface $context_handler) {
-    $this->blockStorage = $entity_manager->getStorage('block');
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, ThemeManagerInterface $theme_manager, ContextHandlerInterface $context_handler) {
+    $this->blockStorage = $entity_type_manager->getStorage('block');
     $this->themeManager = $theme_manager;
     $this->contextHandler = $context_handler;
   }
@@ -71,11 +78,37 @@ class BlockRepository implements BlockRepositoryInterface {
     // Merge it with the actual values to maintain the region ordering.
     $assignments = array_intersect_key(array_merge($empty, $full), $empty);
     foreach ($assignments as &$assignment) {
-      // Suppress errors because PHPUnit will indirectly modify the contents,
-      // triggering https://bugs.php.net/bug.php?id=50688.
-      @uasort($assignment, 'Drupal\block\Entity\Block::sort');
+      uasort($assignment, 'Drupal\block\Entity\Block::sort');
     }
     return $assignments;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getUniqueMachineName(string $suggestion, ?string $theme = NULL): string {
+    if ($theme) {
+      $suggestion = $theme . '_' . $suggestion;
+    }
+    // Get all the block machine names that begin with the suggested string.
+    $query = $this->blockStorage->getQuery();
+    $query->accessCheck(FALSE);
+    $query->condition('id', $suggestion, 'CONTAINS');
+    $block_ids = $query->execute();
+
+    $block_ids = array_map(function ($block_id) {
+      $parts = explode('.', $block_id);
+      return end($parts);
+    }, $block_ids);
+
+    // Iterate through potential IDs until we get a new one. E.g.
+    // For example, 'plugin', 'plugin_2', 'plugin_3', etc.
+    $count = 1;
+    $machine_default = $suggestion;
+    while (in_array($machine_default, $block_ids)) {
+      $machine_default = $suggestion . '_' . ++$count;
+    }
+    return $machine_default;
   }
 
 }

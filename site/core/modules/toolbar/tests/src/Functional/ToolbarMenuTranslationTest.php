@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\toolbar\Functional;
 
 use Drupal\Tests\BrowserTestBase;
@@ -19,29 +21,48 @@ class ToolbarMenuTranslationTest extends BrowserTestBase {
   protected $adminUser;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['toolbar', 'toolbar_test', 'locale', 'locale_test'];
+  protected static $modules = [
+    'toolbar',
+    'toolbar_test',
+    'locale',
+    'locale_test',
+    'block',
+  ];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     // Create an administrative user and log it in.
-    $this->adminUser = $this->drupalCreateUser(['access toolbar', 'translate interface', 'administer languages', 'access administration pages']);
+    $this->adminUser = $this->drupalCreateUser([
+      'access toolbar',
+      'translate interface',
+      'administer languages',
+      'access administration pages',
+      'administer blocks',
+    ]);
     $this->drupalLogin($this->adminUser);
   }
 
   /**
    * Tests that toolbar classes don't change when adding a translation.
    */
-  public function testToolbarClasses() {
+  public function testToolbarClasses(): void {
     $langcode = 'es';
 
     // Add Spanish.
     $edit['predefined_langcode'] = $langcode;
-    $this->drupalPostForm('admin/config/regional/language/add', $edit, t('Add language'));
+    $this->drupalGet('admin/config/regional/language/add');
+    $this->submitForm($edit, 'Add language');
 
     // The menu item 'Structure' in the toolbar will be translated.
     $menu_item = 'Structure';
@@ -55,22 +76,23 @@ class ToolbarMenuTranslationTest extends BrowserTestBase {
       'langcode' => $langcode,
       'translation' => 'untranslated',
     ];
-    $this->drupalPostForm('admin/config/regional/translate', $search, t('Filter'));
+    $this->drupalGet('admin/config/regional/translate');
+    $this->submitForm($search, 'Filter');
     // Make sure will be able to translate the menu item.
-    $this->assertNoText('No strings available.', 'Search found the menu item as untranslated.');
+    $this->assertSession()->pageTextNotContains('No strings available.');
 
     // Check that the class is on the item before we translate it.
-    $xpath = $this->xpath('//a[contains(@class, "icon-system-admin-structure")]');
-    $this->assertEqual(count($xpath), 1, 'The menu item class ok before translation.');
+    $this->assertSession()->elementsCount('xpath', '//a[contains(@class, "icon-system-admin-structure")]', 1);
 
     // Translate the menu item.
     $menu_item_translated = $this->randomMachineName();
-    $textarea = current($this->xpath('//textarea'));
+    $textarea = $this->assertSession()->elementExists('xpath', '//textarea');
     $lid = (string) $textarea->getAttribute('name');
     $edit = [
       $lid => $menu_item_translated,
     ];
-    $this->drupalPostForm('admin/config/regional/translate', $edit, t('Save translations'));
+    $this->drupalGet('admin/config/regional/translate');
+    $this->submitForm($edit, 'Save translations');
 
     // Search for the translated menu item.
     $search = [
@@ -78,19 +100,19 @@ class ToolbarMenuTranslationTest extends BrowserTestBase {
       'langcode' => $langcode,
       'translation' => 'translated',
     ];
-    $this->drupalPostForm('admin/config/regional/translate', $search, t('Filter'));
+    $this->drupalGet('admin/config/regional/translate');
+    $this->submitForm($search, 'Filter');
     // Make sure the menu item string was translated.
-    $this->assertText($menu_item_translated, 'Search found the menu item as translated: ' . $menu_item_translated . '.');
+    $this->assertSession()->pageTextContains($menu_item_translated);
 
     // Go to another page in the custom language and make sure the menu item
     // was translated.
     $this->drupalGet($langcode . '/admin/structure');
-    $this->assertText($menu_item_translated, 'Found the menu translated.');
+    $this->assertSession()->pageTextContains($menu_item_translated);
 
     // Toolbar icons are included based on the presence of a specific class on
     // the menu item. Ensure that class also exists for a translated menu item.
-    $xpath = $this->xpath('//a[contains(@class, "icon-system-admin-structure")]');
-    $this->assertEqual(count($xpath), 1, 'The menu item class is the same.');
+    $this->assertSession()->elementsCount('xpath', '//a[contains(@class, "icon-system-admin-structure")]', 1);
   }
 
 }

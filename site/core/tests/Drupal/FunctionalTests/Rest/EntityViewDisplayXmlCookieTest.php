@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Rest;
 
 use Drupal\Tests\rest\Functional\CookieResourceTestTrait;
@@ -27,5 +29,10 @@ class EntityViewDisplayXmlCookieTest extends EntityViewDisplayResourceTestBase {
    * {@inheritdoc}
    */
   protected static $auth = 'cookie';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
 }

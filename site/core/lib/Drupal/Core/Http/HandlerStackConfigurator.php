@@ -16,7 +16,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @see https://guzzle.readthedocs.org/en/latest/handlers-and-middleware.html
  *
- * @see \Drupal\Core\Http\Client
+ * @see \GuzzleHttp\Client
  * @see \Drupal\Core\Test\HttpClientMiddleware\TestHttpClientMiddleware
  */
 class HandlerStackConfigurator {
@@ -43,7 +43,7 @@ class HandlerStackConfigurator {
   protected $container;
 
   /**
-   * Contructs a new HandlerStackConfigurator object.
+   * Constructs a new HandlerStackConfigurator object.
    *
    * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
    *   The service container.

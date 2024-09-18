@@ -42,6 +42,9 @@
  *   parent: system.admin_reports
  *   description: 'View events that have recently been logged.'
  *   route_name: dblog.overview
+ *   options:
+ *     query:
+ *       uid: 1
  *   weight: -1
  * @endcode
  * Some notes:
@@ -50,6 +53,9 @@
  * - parent: The machine name of the menu link that is the parent in the
  *   administrative hierarchy. See system.links.menu.yml to find the main
  *   skeleton of the hierarchy.
+ * - options: Define additional route options such as query parameters. See
+ *   https://www.drupal.org/docs/8/api/menu-api/providing-module-defined-menu-links
+ *   for more information.
  * - weight: Lower (negative) numbers come before higher (positive) numbers,
  *   for menu items with the same parent.
  *
@@ -66,14 +72,14 @@
  * following to a module_name.links.task.yml file (in the top-level directory
  * for your module):
  * @code
- * book.admin:
- *   route_name: book.admin
+ * my_module.admin:
+ *   route_name: my_module.admin
  *   title: 'List'
- *   base_route: book.admin
- * book.settings:
- *   route_name: book.settings
+ *   base_route: my_module.admin
+ * my_module.settings:
+ *   route_name: my_module.settings
  *   title: 'Settings'
- *   base_route: book.admin
+ *   base_route: my_module.admin
  *   weight: 100
  * @endcode
  * Some notes:
@@ -122,12 +128,12 @@
  * interface elements whose render arrays have a '#contextual_links' element
  * defined. For example, a block render array might look like this, in part:
  * @code
- * array(
- *   '#contextual_links' => array(
- *     'block' => array(
- *       'route_parameters' => array('block' => $entity->id()),
- *     ),
- *   ),
+ * [
+ *   '#contextual_links' => [
+ *     'block' => [
+ *       'route_parameters' => ['block' => $entity->id()],
+ *     ],
+ *   ],
  * @endcode
  * In this array, the outer key 'block' defines a "group" for contextual
  * links, and the inner array provides values for the route's placeholder
@@ -190,12 +196,12 @@
  * $tree = $menu_tree->load($menu_name, $parameters);
  *
  * // Transform the tree using the manipulators you want.
- * $manipulators = array(
+ * $manipulators = [
  *   // Only show links that are accessible for the current user.
- *   array('callable' => 'menu.default_tree_manipulators:checkAccess'),
+ *   ['callable' => 'menu.default_tree_manipulators:checkAccess'],
  *   // Use the default sorting of menu links.
- *   array('callable' => 'menu.default_tree_manipulators:generateIndexAndSort'),
- * );
+ *   ['callable' => 'menu.default_tree_manipulators:generateIndexAndSort'],
+ * ];
  * $tree = $menu_tree->transform($tree, $manipulators);
  *
  * // Finally, build a renderable array from the transformed tree.
@@ -215,11 +221,8 @@
 /**
  * Alters all the menu links discovered by the menu link plugin manager.
  *
- * @param array $links
- *   The link definitions to be altered.
- *
- * @return array
- *   An array of discovered menu links. Each link has a key that is the machine
+ * @param array &$links
+ *   The link definitions to be altered. Each link has a key that is the machine
  *   name, which must be unique. By default, use the route name as the
  *   machine name. In cases where multiple links use the same route name, such
  *   as two links to the same page in different menus, or two links using the
@@ -305,25 +308,27 @@ function hook_menu_links_discovered_alter(&$links) {
  * @param \Drupal\Core\Cache\RefinableCacheableDependencyInterface $cacheability
  *   The cacheability metadata for the current route's local tasks.
  *
+ * @see hook_local_tasks_alter()
+ *
  * @ingroup menu
  */
 function hook_menu_local_tasks_alter(&$data, $route_name, \Drupal\Core\Cache\RefinableCacheableDependencyInterface &$cacheability) {
 
   // Add a tab linking to node/add to all pages.
   $data['tabs'][0]['node.add_page'] = [
-      '#theme' => 'menu_local_task',
-      '#link' => [
-          'title' => t('Example tab'),
-          'url' => Url::fromRoute('node.add_page'),
-          'localized_options' => [
-              'attributes' => [
-                  'title' => t('Add content'),
-              ],
-          ],
+    '#theme' => 'menu_local_task',
+    '#link' => [
+      'title' => t('Example tab'),
+      'url' => Url::fromRoute('node.add_page'),
+      'localized_options' => [
+        'attributes' => [
+          'title' => t('Add content'),
+        ],
       ],
+    ],
   ];
   // The tab we're adding is dependent on a user's access to add content.
-  $cacheability->addCacheTags(['user.permissions']);
+  $cacheability->addCacheContexts(['user.permissions']);
 }
 
 /**
@@ -348,6 +353,7 @@ function hook_menu_local_actions_alter(&$local_actions) {
  *
  * @see \Drupal\Core\Menu\LocalTaskInterface
  * @see \Drupal\Core\Menu\LocalTaskManager
+ * @see hook_menu_local_tasks_alter()
  *
  * @ingroup menu
  */
@@ -371,7 +377,6 @@ function hook_local_tasks_alter(&$local_tasks) {
  * - localized_options: An array of URL options.
  * - (optional) weight: The weight of the link, which is used to sort the links.
  *
- *
  * @param array $links
  *   An associative array containing contextual links for the given $group,
  *   as described above. The array keys are used to build CSS class names for
@@ -383,7 +388,7 @@ function hook_local_tasks_alter(&$local_tasks) {
  *   The route parameters passed to each route_name of the contextual links.
  *   For example:
  *   @code
- *   array('node' => $node->id())
+ *   ['node' => $node->id()]
  *   @endcode
  *
  * @see \Drupal\Core\Menu\ContextualLinkManager
@@ -394,7 +399,7 @@ function hook_contextual_links_alter(array &$links, $group, array $route_paramet
   if ($group == 'menu') {
     // Dynamically use the menu name for the title of the menu_edit contextual
     // link.
-    $menu = \Drupal::entityManager()->getStorage('menu')->load($route_parameters['menu']);
+    $menu = \Drupal::entityTypeManager()->getStorage('menu')->load($route_parameters['menu']);
     $links['menu_edit']['title'] = t('Edit menu: @label', ['@label' => $menu->label()]);
   }
 }
@@ -436,52 +441,6 @@ function hook_contextual_links_plugins_alter(array &$contextual_links) {
 function hook_system_breadcrumb_alter(\Drupal\Core\Breadcrumb\Breadcrumb &$breadcrumb, \Drupal\Core\Routing\RouteMatchInterface $route_match, array $context) {
   // Add an item to the end of the breadcrumb.
   $breadcrumb->addLink(\Drupal\Core\Link::createFromRoute(t('Text'), 'example_route_name'));
-}
-
-/**
- * Alter the parameters for links.
- *
- * @param array $variables
- *   An associative array of variables defining a link. The link may be either a
- *   "route link" using \Drupal\Core\Utility\LinkGenerator::link(), which is
- *   exposed as the 'link_generator' service or a link generated by
- *   \Drupal\Core\Utility\LinkGeneratorInterface::generate(). If the link is a
- *   "route link", 'route_name' will be set; otherwise, 'path' will be set.
- *   The following keys can be altered:
- *   - text: The link text for the anchor tag. If the hook implementation
- *     changes this text it needs to preserve the safeness of the original text.
- *     Using t() or \Drupal\Component\Utility\SafeMarkup::format() with
- *     @placeholder is recommended as this will escape the original text if
- *     necessary. If the resulting text is not marked safe it will be escaped.
- *   - url_is_active: Whether or not the link points to the currently active
- *     URL.
- *   - url: The \Drupal\Core\Url object.
- *   - options: An associative array of additional options that will be passed
- *     to either \Drupal\Core\Utility\UnroutedUrlAssembler::assemble() or
- *     \Drupal\Core\Routing\UrlGenerator::generateFromRoute() to generate the
- *     href attribute for this link, and also used when generating the link.
- *     Defaults to an empty array. It may contain the following elements:
- *     - 'query': An array of query key/value-pairs (without any URL-encoding) to
- *       append to the URL.
- *     - absolute: Whether to force the output to be an absolute link (beginning
- *       with http:). Useful for links that will be displayed outside the site,
- *       such as in an RSS feed. Defaults to FALSE.
- *     - language: An optional language object. May affect the rendering of
- *       the anchor tag, such as by adding a language prefix to the path.
- *     - attributes: An associative array of HTML attributes to apply to the
- *       anchor tag. If element 'class' is included, it must be an array; 'title'
- *       must be a string; other elements are more flexible, as they just need
- *       to work as an argument for the constructor of the class
- *       Drupal\Core\Template\Attribute($options['attributes']).
- *
- * @see \Drupal\Core\Utility\UnroutedUrlAssembler::assemble()
- * @see \Drupal\Core\Routing\UrlGenerator::generateFromRoute()
- */
-function hook_link_alter(&$variables) {
-  // Add a warning to the end of route links to the admin section.
-  if (isset($variables['route_name']) && strpos($variables['route_name'], 'admin') !== FALSE) {
-    $variables['text'] = t('@text (Warning!)', ['@text' => $variables['text']]);
-  }
 }
 
 /**

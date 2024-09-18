@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Rest;
 
 use Drupal\Tests\rest\Functional\BasicAuthResourceTestTrait;
@@ -16,7 +18,12 @@ class EntityViewModeXmlBasicAuthTest extends EntityViewModeResourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['basic_auth'];
+  protected static $modules = ['basic_auth'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

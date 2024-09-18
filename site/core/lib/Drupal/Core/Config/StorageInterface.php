@@ -7,6 +7,11 @@ namespace Drupal\Core\Config;
  *
  * Classes implementing this interface allow reading and writing configuration
  * data from and to the storage.
+ *
+ * Note: this should never be used directly to work with active configuration.
+ * The values returned from it do not have the expected overrides and writing
+ * directly to the storage does not trigger configuration events. Use the
+ * 'config.factory' service and the configuration objects it provides.
  */
 interface StorageInterface {
 
@@ -32,7 +37,7 @@ interface StorageInterface {
    * @param string $name
    *   The name of a configuration object to load.
    *
-   * @return array|bool
+   * @return array|false
    *   The configuration data stored for the configuration object name. If no
    *   configuration data exists for the given name, FALSE is returned.
    */
@@ -173,7 +178,7 @@ interface StorageInterface {
    *   configuration in a way that allows retrieval of configuration for a
    *   particular collection.
    *
-   * @return \Drupal\Core\Config\StorageInterface
+   * @return $this
    *   A new instance of the storage backend with the collection set.
    */
   public function createCollection($collection);

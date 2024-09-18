@@ -15,6 +15,9 @@ class LinkNotExistingInternalConstraintValidator extends ConstraintValidator {
 
   /**
    * {@inheritdoc}
+   *
+   * phpcs:ignore Drupal.Commenting.FunctionComment.VoidReturn
+   * @return void
    */
   public function validate($value, Constraint $constraint) {
     if (isset($value)) {
@@ -30,7 +33,7 @@ class LinkNotExistingInternalConstraintValidator extends ConstraintValidator {
       if ($url->isRouted()) {
         $allowed = TRUE;
         try {
-          $url->toString();
+          $url->toString(TRUE);
         }
         // The following exceptions are all possible during URL generation, and
         // should be considered as disallowed URLs.

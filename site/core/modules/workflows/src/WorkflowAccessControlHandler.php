@@ -54,8 +54,8 @@ class WorkflowAccessControlHandler extends EntityAccessControlHandler implements
   protected function checkAccess(EntityInterface $entity, $operation, AccountInterface $account) {
     /** @var \Drupal\workflows\Entity\Workflow $entity */
     $workflow_type = $entity->getTypePlugin();
-    if (strpos($operation, 'delete-state') === 0) {
-      list(, $state_id) = explode(':', $operation, 2);
+    if (str_starts_with($operation, 'delete-state')) {
+      [, $state_id] = explode(':', $operation, 2);
       // Deleting a state is editing a workflow, but also we should forbid
       // access if there is only one state.
       return AccessResult::allowedIf(count($entity->getTypePlugin()->getStates()) > 1)
@@ -76,8 +76,7 @@ class WorkflowAccessControlHandler extends EntityAccessControlHandler implements
     // Allow access if there is at least one workflow type. Since workflow types
     // are provided by modules this is cacheable until extensions change.
     return $admin_access
-      ->andIf(AccessResult::allowedIf($workflow_types_count > 0))
-      ->addCacheTags(['workflow_type_plugins']);
+      ->andIf(AccessResult::allowedIf($workflow_types_count > 0));
   }
 
 }

@@ -18,14 +18,29 @@ use Symfony\Component\Routing\RouteCollection;
  */
 class ImportConfigurator
 {
+    use Traits\HostTrait;
+    use Traits\PrefixTrait;
     use Traits\RouteTrait;
 
-    private $parent;
+    private RouteCollection $parent;
 
     public function __construct(RouteCollection $parent, RouteCollection $route)
     {
         $this->parent = $parent;
         $this->route = $route;
+    }
+
+    public function __sleep(): array
+    {
+        throw new \BadMethodCallException('Cannot serialize '.__CLASS__);
+    }
+
+    /**
+     * @return void
+     */
+    public function __wakeup()
+    {
+        throw new \BadMethodCallException('Cannot unserialize '.__CLASS__);
     }
 
     public function __destruct()
@@ -36,13 +51,39 @@ class ImportConfigurator
     /**
      * Sets the prefix to add to the path of all child routes.
      *
-     * @param string $prefix
+     * @param string|array $prefix the prefix, or the localized prefixes
      *
      * @return $this
      */
-    final public function prefix($prefix)
+    final public function prefix(string|array $prefix, bool $trailingSlashOnRoot = true): static
     {
-        $this->route->addPrefix($prefix);
+        $this->addPrefix($this->route, $prefix, $trailingSlashOnRoot);
+
+        return $this;
+    }
+
+    /**
+     * Sets the prefix to add to the name of all child routes.
+     *
+     * @return $this
+     */
+    final public function namePrefix(string $namePrefix): static
+    {
+        $this->route->addNamePrefix($namePrefix);
+
+        return $this;
+    }
+
+    /**
+     * Sets the host to use for all child routes.
+     *
+     * @param string|array $host the host, or the localized hosts
+     *
+     * @return $this
+     */
+    final public function host(string|array $host): static
+    {
+        $this->addHost($this->route, $host);
 
         return $this;
     }

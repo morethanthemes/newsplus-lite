@@ -1,0 +1,12 @@
+name: 'Entity Bundle Class Test'
+type: module
+description: 'Support module for testing entity bundle classes.'
+package: Testing
+# version: VERSION
+dependencies:
+  - drupal:entity_test
+
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
+project: 'drupal'
+datestamp: 1726135113

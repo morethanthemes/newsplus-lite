@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\responsive_image\Kernel;
 
 use Drupal\Core\Entity\Entity\EntityViewDisplay;
@@ -18,12 +20,29 @@ class ResponsiveImageIntegrationTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['responsive_image', 'field', 'image', 'file', 'entity_test', 'breakpoint', 'responsive_image_test_module'];
+  protected static $modules = [
+    'responsive_image',
+    'field',
+    'image',
+    'file',
+    'entity_test',
+    'breakpoint',
+    'responsive_image_test_module',
+    'user',
+  ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
+    parent::setUp();
+    $this->installEntitySchema('entity_test');
+  }
 
   /**
    * Tests integration with entity view display.
    */
-  public function testEntityViewDisplayDependency() {
+  public function testEntityViewDisplayDependency(): void {
     // Create a responsive image style.
     ResponsiveImageStyle::create([
       'id' => 'foo',
@@ -56,7 +75,7 @@ class ResponsiveImageIntegrationTest extends KernelTestBase {
 
     // Check that the 'foo' field is on the display.
     $this->assertNotNull($display = EntityViewDisplay::load('entity_test.entity_test.default'));
-    $this->assertTrue($display->getComponent('bar'));
+    $this->assertNotEmpty($display->getComponent('bar'));
     $this->assertArrayNotHasKey('bar', $display->get('hidden'));
 
     // Delete the responsive image style.

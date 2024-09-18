@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Kernel\Plugin;
 
 use Drupal\Core\Cache\CacheBackendInterface;
@@ -21,12 +23,12 @@ class PagerKernelTest extends ViewsKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['user', 'node'];
+  protected static $modules = ['user', 'node'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
+  protected function setUp($import_test_views = TRUE): void {
     parent::setUp($import_test_views);
 
     $this->installEntitySchema('node');
@@ -40,7 +42,7 @@ class PagerKernelTest extends ViewsKernelTestBase {
    * @see \Drupal\views\ViewExecutable::setOffset
    * @see \Drupal\views\ViewExecutable::setCurrentPage
    */
-  public function testSetPagerMethods() {
+  public function testSetPagerMethods(): void {
     $view = Views::getView('test_pager_full');
 
     // Mark the view as cacheable in order have the cache checking working
@@ -51,8 +53,8 @@ class PagerKernelTest extends ViewsKernelTestBase {
 
     $output = $view->preview();
 
-    \Drupal::service('renderer')->renderPlain($output);
-    $this->assertIdentical(CacheBackendInterface::CACHE_PERMANENT, $output['#cache']['max-age']);
+    \Drupal::service('renderer')->renderInIsolation($output);
+    $this->assertSame(CacheBackendInterface::CACHE_PERMANENT, $output['#cache']['max-age']);
 
     foreach (['setItemsPerPage', 'setOffset', 'setCurrentPage'] as $method) {
       $view = Views::getView('test_pager_full');
@@ -60,8 +62,8 @@ class PagerKernelTest extends ViewsKernelTestBase {
       $view->{$method}(1);
       $output = $view->preview();
 
-      \Drupal::service('renderer')->renderPlain($output);
-      $this->assertIdentical(CacheBackendInterface::CACHE_PERMANENT, $output['#cache']['max-age'], 'Max age kept.');
+      \Drupal::service('renderer')->renderInIsolation($output);
+      $this->assertSame(CacheBackendInterface::CACHE_PERMANENT, $output['#cache']['max-age'], 'Max age kept.');
     }
 
   }

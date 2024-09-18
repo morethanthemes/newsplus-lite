@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\shortcut\Kernel\Migrate\d7;
 
 use Drupal\shortcut\Entity\ShortcutSet;
@@ -14,11 +16,9 @@ use Drupal\Tests\migrate_drupal\Kernel\d7\MigrateDrupal7TestBase;
 class MigrateShortcutSetTest extends MigrateDrupal7TestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'link',
     'field',
     'shortcut',
@@ -28,23 +28,21 @@ class MigrateShortcutSetTest extends MigrateDrupal7TestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installEntitySchema('shortcut');
     $this->installEntitySchema('menu_link_content');
-    \Drupal::service('router.builder')->rebuild();
     $this->executeMigration('d7_shortcut_set');
     $this->executeMigration('d7_menu');
-    $this->executeMigration('d7_menu_links');
     $this->executeMigration('d7_shortcut');
   }
 
   /**
-   * Test the shortcut set migration.
+   * Tests the shortcut set migration.
    */
-  public function testShortcutSetMigration() {
+  public function testShortcutSetMigration(): void {
     $this->assertEntity('default', 'Default', 2);
-    $this->assertEntity('shortcut_set_2', 'Alternative shortcut set', 2);
+    $this->assertEntity('shortcut-set-2', 'Alternative shortcut set', 2);
   }
 
   /**
@@ -56,17 +54,19 @@ class MigrateShortcutSetTest extends MigrateDrupal7TestBase {
    *   The expected shortcut set label.
    * @param int $expected_size
    *   The number of shortcuts expected to be in the set.
+   *
+   * @internal
    */
-  protected function assertEntity($id, $label, $expected_size) {
+  protected function assertEntity(string $id, string $label, int $expected_size): void {
     $shortcut_set = ShortcutSet::load($id);
-    $this->assertTrue($shortcut_set instanceof ShortcutSetInterface);
+    $this->assertInstanceOf(ShortcutSetInterface::class, $shortcut_set);
     /** @var \Drupal\shortcut\ShortcutSetInterface $shortcut_set */
-    $this->assertIdentical($id, $shortcut_set->id());
-    $this->assertIdentical($label, $shortcut_set->label());
+    $this->assertSame($id, $shortcut_set->id());
+    $this->assertSame($label, $shortcut_set->label());
 
     // Check the number of shortcuts in the set.
     $shortcuts = $shortcut_set->getShortcuts();
-    $this->assertIdentical(count($shortcuts), $expected_size);
+    $this->assertCount($expected_size, $shortcuts);
   }
 
 }

@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\image\Kernel\Plugin\migrate\source\d6;
 
 use Drupal\Tests\migrate\Kernel\MigrateSqlSourceTestBase;
+
+// cspell:ignore actionid imagecache presetid presetname
 
 /**
  * Tests the d6_imagecache_presets source plugin.
@@ -16,19 +20,19 @@ class ImageCachePresetTest extends MigrateSqlSourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['image', 'migrate_drupal'];
+  protected static $modules = ['image', 'migrate_drupal'];
 
   /**
    * {@inheritdoc}
    */
-  public function providerSource() {
+  public static function providerSource() {
     $tests = [];
 
     // The source data.
     $tests[0]['source_data']['imagecache_preset'] = [
       [
         'presetid' => '1',
-        'presetname' => 'slackjaw_boys',
+        'presetname' => 'slack_jaw_boys',
       ],
     ];
     $tests[0]['source_data']['imagecache_action'] = [
@@ -46,7 +50,7 @@ class ImageCachePresetTest extends MigrateSqlSourceTestBase {
     $tests[0]['expected_data'] = [
       [
         'presetid' => '1',
-        'presetname' => 'slackjaw_boys',
+        'presetname' => 'slack_jaw_boys',
         'actions' => [
           [
             'actionid' => '3',

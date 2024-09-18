@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Rest;
 
 use Drupal\Tests\rest\Functional\BasicAuthResourceTestTrait;
@@ -16,7 +18,7 @@ class BaseFieldOverrideXmlBasicAuthTest extends BaseFieldOverrideResourceTestBas
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['basic_auth'];
+  protected static $modules = ['basic_auth'];
 
   /**
    * {@inheritdoc}
@@ -27,6 +29,11 @@ class BaseFieldOverrideXmlBasicAuthTest extends BaseFieldOverrideResourceTestBas
    * {@inheritdoc}
    */
   protected static $mimeType = 'text/xml; charset=UTF-8';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

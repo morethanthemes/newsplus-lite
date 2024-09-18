@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\node\Kernel;
 
 use Drupal\user\UserInterface;
@@ -23,16 +25,14 @@ class NodeFieldOverridesTest extends EntityKernelTestBase {
   protected $user;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['user', 'system', 'field', 'node'];
+  protected static $modules = ['user', 'system', 'field', 'node'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installConfig(['user']);
     $this->user = $this->createUser();
@@ -42,7 +42,7 @@ class NodeFieldOverridesTest extends EntityKernelTestBase {
   /**
    * Tests that field overrides work as expected.
    */
-  public function testFieldOverrides() {
+  public function testFieldOverrides(): void {
     if (!NodeType::load('ponies')) {
       NodeType::create(['name' => 'Ponies', 'type' => 'ponies'])->save();
     }
@@ -50,15 +50,15 @@ class NodeFieldOverridesTest extends EntityKernelTestBase {
     if ($override) {
       $override->delete();
     }
-    $uid_field = \Drupal::entityManager()->getBaseFieldDefinitions('node')['uid'];
+    $uid_field = \Drupal::service('entity_field.manager')->getBaseFieldDefinitions('node')['uid'];
     $config = $uid_field->getConfig('ponies');
     $config->save();
-    $this->assertEqual($config->get('default_value_callback'), 'Drupal\node\Entity\Node::getCurrentUserId');
+    $this->assertEquals('Drupal\node\Entity\Node::getDefaultEntityOwner', $config->get('default_value_callback'));
     /** @var \Drupal\node\NodeInterface $node */
     $node = Node::create(['type' => 'ponies']);
     $owner = $node->getOwner();
-    $this->assertTrue($owner instanceof UserInterface);
-    $this->assertEqual($owner->id(), $this->user->id());
+    $this->assertInstanceOf(UserInterface::class, $owner);
+    $this->assertEquals($this->user->id(), $owner->id());
   }
 
 }

@@ -27,7 +27,7 @@ class DateTimeComputed extends TypedData {
   /**
    * {@inheritdoc}
    */
-  public function __construct(DataDefinitionInterface $definition, $name = NULL, TypedDataInterface $parent = NULL) {
+  public function __construct(DataDefinitionInterface $definition, $name = NULL, ?TypedDataInterface $parent = NULL) {
     parent::__construct($definition, $name, $parent);
     if (!$definition->getSetting('date source')) {
       throw new \InvalidArgumentException("The definition's 'date source' key has to specify the name of the date property to be computed.");
@@ -45,6 +45,11 @@ class DateTimeComputed extends TypedData {
     /** @var \Drupal\Core\Field\FieldItemInterface $item */
     $item = $this->getParent();
     $value = $item->{($this->definition->getSetting('date source'))};
+
+    // A date cannot be created from a NULL value.
+    if ($value === NULL) {
+      return NULL;
+    }
 
     $datetime_type = $item->getFieldDefinition()->getSetting('datetime_type');
     $storage_format = $datetime_type === DateTimeItem::DATETIME_TYPE_DATE ? DateTimeItemInterface::DATE_STORAGE_FORMAT : DateTimeItemInterface::DATETIME_STORAGE_FORMAT;

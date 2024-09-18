@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Plugin\Condition;
 
 use Drupal\Core\Path\CurrentPathStack;
@@ -7,10 +9,11 @@ use Drupal\KernelTests\KernelTestBase;
 use Drupal\system\Tests\Routing\MockAliasManager;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 
 /**
- * Tests that the Request Path Condition, provided by the system module, is
- * working properly.
+ * Tests system.module's request path condition.
  *
  * @group Plugin
  */
@@ -38,32 +41,30 @@ class RequestPathTest extends KernelTestBase {
   protected $requestStack;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['system', 'user', 'field', 'path'];
+  protected static $modules = ['system', 'user', 'field', 'path'];
 
   /**
    * The current path.
    *
-   * @var \Drupal\Core\Path\CurrentPathStack|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Path\CurrentPathStack|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $currentPath;
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
-    $this->installSchema('system', ['sequences']);
+    $this->installConfig('system');
 
     $this->pluginManager = $this->container->get('plugin.manager.condition');
 
     // Set a mock alias manager in the container.
     $this->aliasManager = new MockAliasManager();
-    $this->container->set('path.alias_manager', $this->aliasManager);
+    $this->container->set('path_alias.manager', $this->aliasManager);
 
     // Set the test request stack in the container.
     $this->requestStack = new RequestStack();
@@ -76,7 +77,7 @@ class RequestPathTest extends KernelTestBase {
   /**
    * Tests the request path condition.
    */
-  public function testConditions() {
+  public function testConditions(): void {
 
     // Get the request path condition and test and configure it to check against
     // different patterns and requests.
@@ -84,16 +85,18 @@ class RequestPathTest extends KernelTestBase {
     $pages = "/my/pass/page\r\n/my/pass/page2\r\n/foo";
 
     $request = Request::create('/my/pass/page2');
+    $request->setSession(new Session(new MockArraySessionStorage()));
     $this->requestStack->push($request);
 
-    /* @var \Drupal\system\Plugin\Condition\RequestPath $condition */
+    /** @var \Drupal\system\Plugin\Condition\RequestPath $condition */
     $condition = $this->pluginManager->createInstance('request_path');
+    $this->assertEquals('No page is specified', $condition->summary());
     $condition->setConfig('pages', $pages);
 
     $this->aliasManager->addAlias('/my/pass/page2', '/my/pass/page2');
 
     $this->assertTrue($condition->execute(), 'The request path matches a standard path');
-    $this->assertEqual($condition->summary(), 'Return true on the following pages: /my/pass/page, /my/pass/page2, /foo', 'The condition summary matches for a standard path');
+    $this->assertEquals('Return true on the following pages: /my/pass/page, /my/pass/page2, /foo', $condition->summary(), 'The condition summary matches for a standard path');
 
     // Test an aliased path.
     $this->currentPath->setPath('/my/aliased/page', $request);
@@ -103,7 +106,7 @@ class RequestPathTest extends KernelTestBase {
     $this->aliasManager->addAlias('/my/aliased/page', '/my/pass/page');
 
     $this->assertTrue($condition->execute(), 'The request path matches an aliased path');
-    $this->assertEqual($condition->summary(), 'Return true on the following pages: /my/pass/page, /my/pass/page2, /foo', 'The condition summary matches for an aliased path');
+    $this->assertEquals('Return true on the following pages: /my/pass/page, /my/pass/page2, /foo', $condition->summary(), 'The condition summary matches for an aliased path');
 
     // Test a wildcard path.
     $this->aliasManager->addAlias('/my/pass/page3', '/my/pass/page3');
@@ -114,7 +117,7 @@ class RequestPathTest extends KernelTestBase {
     $condition->setConfig('pages', '/my/pass/*');
 
     $this->assertTrue($condition->evaluate(), 'The system_path my/pass/page3 passes for wildcard paths.');
-    $this->assertEqual($condition->summary(), 'Return true on the following pages: /my/pass/*', 'The condition summary matches for a wildcard path');
+    $this->assertEquals('Return true on the following pages: /my/pass/*', $condition->summary(), 'The condition summary matches for a wildcard path');
 
     // Test a missing path.
     $this->requestStack->pop();
@@ -134,7 +137,7 @@ class RequestPathTest extends KernelTestBase {
     $this->requestStack->push($request);
 
     $this->assertTrue($condition->evaluate(), 'The system_path my/pass/page3 passes for wildcard paths.');
-    $this->assertEqual($condition->summary(), 'Return true on the following pages: /my/pass/*', 'The condition summary matches for a wildcard path');
+    $this->assertEquals('Return true on the following pages: /my/pass/*', $condition->summary(), 'The condition summary matches for a wildcard path');
 
   }
 

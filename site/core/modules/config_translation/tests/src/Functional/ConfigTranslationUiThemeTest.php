@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\config_translation\Functional;
 
 use Drupal\language\Entity\ConfigurableLanguage;
@@ -13,11 +15,17 @@ use Drupal\Tests\BrowserTestBase;
 class ConfigTranslationUiThemeTest extends BrowserTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['config_translation', 'config_translation_test'];
+  protected static $modules = [
+    'config_translation',
+    'config_translation_test',
+  ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Languages to enable.
@@ -33,7 +41,10 @@ class ConfigTranslationUiThemeTest extends BrowserTestBase {
    */
   protected $adminUser;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $admin_permissions = [
@@ -54,23 +65,20 @@ class ConfigTranslationUiThemeTest extends BrowserTestBase {
   /**
    * Tests that theme provided *.config_translation.yml files are found.
    */
-  public function testThemeDiscovery() {
+  public function testThemeDiscovery(): void {
     // Install the test theme and rebuild routes.
     $theme = 'config_translation_test_theme';
 
     $this->drupalLogin($this->adminUser);
 
     $this->drupalGet('admin/appearance');
-    $elements = $this->xpath('//a[normalize-space()=:label and contains(@href, :theme)]', [
-      ':label' => 'Install and set as default',
-      ':theme' => $theme,
-    ]);
-    $this->drupalGet($GLOBALS['base_root'] . $elements[0]->getAttribute('href'), ['external' => TRUE]);
+    $element = $this->assertSession()->elementExists('xpath', "//a[normalize-space()='Install and set as default' and contains(@href, '{$theme}')]");
+    $this->drupalGet($this->getAbsoluteUrl($element->getAttribute('href')), ['external' => TRUE]);
 
     $translation_base_url = 'admin/config/development/performance/translate';
     $this->drupalGet($translation_base_url);
-    $this->assertResponse(200);
-    $this->assertLinkByHref("$translation_base_url/fr/add");
+    $this->assertSession()->statusCodeEquals(200);
+    $this->assertSession()->linkByHrefExists("$translation_base_url/fr/add");
   }
 
 }

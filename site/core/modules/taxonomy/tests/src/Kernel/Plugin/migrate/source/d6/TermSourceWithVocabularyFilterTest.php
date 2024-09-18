@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Kernel\Plugin\migrate\source\d6;
 
 /**
@@ -13,12 +15,12 @@ class TermSourceWithVocabularyFilterTest extends TermTest {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['taxonomy', 'migrate_drupal'];
+  protected static $modules = ['taxonomy', 'migrate_drupal'];
 
   /**
    * {@inheritdoc}
    */
-  public function providerSource() {
+  public static function providerSource() {
     // Get the source data from parent.
     $tests = parent::providerSource();
 

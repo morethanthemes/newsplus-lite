@@ -1,22 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\path\Functional;
 
 use Drupal\Tests\BrowserTestBase;
+use Drupal\Tests\Traits\Core\PathAliasTestTrait;
 
 /**
  * Provides a base class for testing the Path module.
  */
 abstract class PathTestBase extends BrowserTestBase {
 
-  /**
-   * Modules to enable.
-   *
-   * @var array
-   */
-  public static $modules = ['node', 'path'];
+  use PathAliasTestTrait;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected static $modules = ['node', 'path'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     // Create Basic page and Article node types.

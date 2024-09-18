@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Unit\Plugin\migrate\field;
 
 use Drupal\migrate\Plugin\MigrationInterface;
@@ -26,12 +28,14 @@ class TaxonomyTermReferenceFieldTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
+    parent::setUp();
+
     $this->plugin = new TaxonomyTermReference([], 'taxonomy', []);
 
     $migration = $this->prophesize(MigrationInterface::class);
 
-    // The plugin's processFieldValues() method will call
+    // The plugin's defineValueProcessPipeline() method will call
     // setProcessOfProperty() and return nothing. So, in order to examine the
     // process pipeline created by the plugin, we need to ensure that
     // getProcess() always returns the last input to setProcessOfProperty().
@@ -44,14 +48,14 @@ class TaxonomyTermReferenceFieldTest extends UnitTestCase {
   }
 
   /**
-   * @covers ::processFieldValues
+   * @covers ::defineValueProcessPipeline
    */
-  public function testProcessFieldValues() {
-    $this->plugin->processFieldValues($this->migration, 'somefieldname', []);
+  public function testDefineValueProcessPipeline($method = 'defineValueProcessPipeline'): void {
+    $this->plugin->$method($this->migration, 'field_name', []);
 
     $expected = [
       'plugin' => 'sub_process',
-      'source' => 'somefieldname',
+      'source' => 'field_name',
       'process' => [
         'target_id' => 'tid',
       ],

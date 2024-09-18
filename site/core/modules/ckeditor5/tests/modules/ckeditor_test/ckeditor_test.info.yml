@@ -1,0 +1,11 @@
+name: CKEditor Test
+type: module
+description: "Provides test a test editor that with the ID ckeditor."
+package: Testing
+dependencies:
+  - drupal:editor_test
+
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
+project: 'drupal'
+datestamp: 1726135113

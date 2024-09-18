@@ -2,10 +2,12 @@
 
 namespace Drupal\field_test\Plugin\Field\FieldWidget;
 
+use Drupal\Core\Field\Attribute\FieldWidget;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 
 /**
@@ -15,14 +17,13 @@ use Symfony\Component\Validator\ConstraintViolationInterface;
  * hook_field_widget_info_alter().
  *
  * @see field_test_field_widget_info_alter()
- *
- * @FieldWidget(
- *   id = "test_field_widget_multiple",
- *   label = @Translation("Test widget - multiple"),
- *   multiple_values = TRUE,
- *   weight = 10
- * )
  */
+#[FieldWidget(
+  id: 'test_field_widget_multiple',
+  label: new TranslatableMarkup('Test widget - multiple'),
+  multiple_values: TRUE,
+  weight: 10,
+)]
 class TestFieldWidgetMultiple extends WidgetBase {
 
   /**
@@ -40,8 +41,8 @@ class TestFieldWidgetMultiple extends WidgetBase {
   public function settingsForm(array $form, FormStateInterface $form_state) {
     $element['test_widget_setting_multiple'] = [
       '#type' => 'textfield',
-      '#title' => t('Field test field widget setting'),
-      '#description' => t('A dummy form element to simulate field widget setting.'),
+      '#title' => $this->t('Field test field widget setting'),
+      '#description' => $this->t('A dummy form element to simulate field widget setting.'),
       '#default_value' => $this->getSetting('test_widget_setting_multiple'),
       '#required' => FALSE,
     ];
@@ -53,7 +54,7 @@ class TestFieldWidgetMultiple extends WidgetBase {
    */
   public function settingsSummary() {
     $summary = [];
-    $summary[] = t('@setting: @value', ['@setting' => 'test_widget_setting_multiple', '@value' => $this->getSetting('test_widget_setting_multiple')]);
+    $summary[] = $this->t('@setting: @value', ['@setting' => 'test_widget_setting_multiple', '@value' => $this->getSetting('test_widget_setting_multiple')]);
     return $summary;
   }
 
@@ -68,7 +69,7 @@ class TestFieldWidgetMultiple extends WidgetBase {
     $element += [
       '#type' => 'textfield',
       '#default_value' => implode(', ', $values),
-      '#element_validate' => [[get_class($this), 'multipleValidate']],
+      '#element_validate' => [[static::class, 'multipleValidate']],
     ];
     return $element;
   }
@@ -93,8 +94,16 @@ class TestFieldWidgetMultiple extends WidgetBase {
   }
 
   /**
-   * {@inheritdoc}
-   * Used in \Drupal\field\Tests\EntityReference\EntityReferenceAdminTest::testAvailableFormatters().
+   * Test is the widget is applicable to the field definition.
+   *
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field_definition
+   *   The field definition that should be checked.
+   *
+   * @return bool
+   *   TRUE if the machine name of the field is not equals to
+   *   field_onewidgetfield, FALSE otherwise.
+   *
+   * @see \Drupal\Tests\field\Functional\EntityReference\EntityReferenceAdminTest::testAvailableFormatters
    */
   public static function isApplicable(FieldDefinitionInterface $field_definition) {
     // Returns FALSE if machine name of the field equals field_onewidgetfield.

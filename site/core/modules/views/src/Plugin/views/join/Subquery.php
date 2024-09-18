@@ -2,6 +2,8 @@
 
 namespace Drupal\views\Plugin\views\join;
 
+use Drupal\views\Attribute\ViewsJoin;
+
 /**
  * Join handler for relationships that join with a subquery as the left field.
  *
@@ -15,9 +17,15 @@ namespace Drupal\views\Plugin\views\join;
  * - left_query: The subquery to use in the left side of the join clause.
  *
  * @ingroup views_join_handlers
- * @ViewsJoin("subquery")
  */
+#[ViewsJoin("subquery")]
 class Subquery extends JoinPluginBase {
+
+  /**
+   * The left join query.
+   */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
+  public string $left_query;
 
   /**
    * Constructs a Subquery object.
@@ -52,7 +60,7 @@ class Subquery extends JoinPluginBase {
 
     // Tack on the extra.
     // This is just copied verbatim from the parent class, which itself has a
-    //   bug: https://www.drupal.org/node/1118100.
+    // bug: https://www.drupal.org/node/1118100.
     if (isset($this->extra)) {
       if (is_array($this->extra)) {
         $extras = [];

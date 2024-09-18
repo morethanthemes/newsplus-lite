@@ -46,22 +46,25 @@ class ProtectedUserFieldConstraintValidator extends ConstraintValidator implemen
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity.manager')->getStorage('user'),
+      $container->get('entity_type.manager')->getStorage('user'),
       $container->get('current_user')
     );
   }
 
   /**
    * {@inheritdoc}
+   *
+   * phpcs:ignore Drupal.Commenting.FunctionComment.VoidReturn
+   * @return void
    */
   public function validate($items, Constraint $constraint) {
     if (!isset($items)) {
       return;
     }
-    /* @var \Drupal\Core\Field\FieldItemListInterface $items */
+    /** @var \Drupal\Core\Field\FieldItemListInterface $items */
     $field = $items->getFieldDefinition();
 
-    /* @var \Drupal\user\UserInterface $account */
+    /** @var \Drupal\user\UserInterface $account */
     $account = $items->getEntity();
     if (!isset($account) || !empty($account->_skipProtectedUserFieldConstraint)) {
       // Looks like we are validating a field not being part of a user, or the
@@ -72,7 +75,7 @@ class ProtectedUserFieldConstraintValidator extends ConstraintValidator implemen
     // Only validate for existing entities and if this is the current user.
     if (!$account->isNew() && $account->id() == $this->currentUser->id()) {
 
-      /* @var \Drupal\user\UserInterface $account_unchanged */
+      /** @var \Drupal\user\UserInterface $account_unchanged */
       $account_unchanged = $this->userStorage
         ->loadUnchanged($account->id());
 

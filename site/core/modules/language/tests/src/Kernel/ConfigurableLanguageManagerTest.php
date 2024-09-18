@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\language\Kernel;
 
 use Drupal\Core\Language\LanguageInterface;
@@ -16,7 +18,7 @@ class ConfigurableLanguageManagerTest extends LanguageTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['user'];
+  protected static $modules = ['user'];
 
   /**
    * The language negotiator.
@@ -35,10 +37,9 @@ class ConfigurableLanguageManagerTest extends LanguageTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
-    $this->installSchema('system', ['sequence']);
     $this->installEntitySchema('user');
 
     $this->languageNegotiator = $this->container->get('language_negotiator');
@@ -48,7 +49,7 @@ class ConfigurableLanguageManagerTest extends LanguageTestBase {
   /**
    * @covers ::getLanguageSwitchLinks
    */
-  public function testLanguageSwitchLinks() {
+  public function testLanguageSwitchLinks(): void {
     $this->languageNegotiator->setCurrentUser($this->prophesize('Drupal\Core\Session\AccountInterface')->reveal());
     $this->languageManager->getLanguageSwitchLinks(LanguageInterface::TYPE_INTERFACE, new Url('<current>'));
   }

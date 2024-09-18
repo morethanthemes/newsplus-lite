@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\contextual\FunctionalJavascript;
 
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 
 /**
  * Tests edit mode.
  *
  * @group contextual
  */
-class EditModeTest extends JavascriptTestBase {
+class EditModeTest extends WebDriverTestBase {
 
   /**
    * CSS selector for Drupal's announce element.
@@ -19,7 +21,7 @@ class EditModeTest extends JavascriptTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'node',
     'block',
     'user',
@@ -32,13 +34,32 @@ class EditModeTest extends JavascriptTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * The administration theme name.
+   *
+   * @var string
+   */
+  protected $adminTheme = 'claro';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
+
+    \Drupal::service('theme_installer')->install([$this->adminTheme]);
+    \Drupal::configFactory()
+      ->getEditable('system.theme')
+      ->set('admin', $this->adminTheme)
+      ->save();
 
     $this->drupalLogin($this->createUser([
       'administer blocks',
       'access contextual links',
       'access toolbar',
+      'view the administration theme',
     ]));
     $this->placeBlock('system_powered_by_block', ['id' => 'powered']);
   }
@@ -46,7 +67,7 @@ class EditModeTest extends JavascriptTestBase {
   /**
    * Tests enabling and disabling edit mode.
    */
-  public function testEditModeEnableDisalbe() {
+  public function testEditModeEnableDisable(): void {
     $web_assert = $this->assertSession();
     $page = $this->getSession()->getPage();
     // Get the page twice to ensure edit mode remains enabled after a new page
@@ -57,7 +78,9 @@ class EditModeTest extends JavascriptTestBase {
 
       // After the page loaded we need to additionally wait until the settings
       // tray Ajax activity is done.
-      $web_assert->assertWaitOnAjaxRequest();
+      if ($page_get_count === 0) {
+        $web_assert->assertWaitOnAjaxRequest();
+      }
 
       if ($page_get_count == 0) {
         $unrestricted_tab_count = $this->getTabbableElementsCount();
@@ -81,6 +104,13 @@ class EditModeTest extends JavascriptTestBase {
       // correct after toggling the edit mode at least once.
       $this->assertAnnounceEditMode();
       $this->assertSame($expected_restricted_tab_count, $this->getTabbableElementsCount());
+
+      // Test while Edit Mode is enabled it doesn't interfere with pages with
+      // no contextual links.
+      $this->drupalGet('admin/structure/block');
+      $web_assert->elementContains('css', 'h1.page-title', 'Block layout');
+      $this->assertEquals(0, count($page->findAll('css', '[data-contextual-id]')));
+      $this->assertGreaterThan(0, $this->getTabbableElementsCount());
     }
 
   }
@@ -95,8 +125,10 @@ class EditModeTest extends JavascriptTestBase {
 
   /**
    * Asserts that the correct message was announced when entering edit mode.
+   *
+   * @internal
    */
-  protected function assertAnnounceEditMode() {
+  protected function assertAnnounceEditMode(): void {
     $web_assert = $this->assertSession();
     // Wait for contextual trigger button.
     $web_assert->waitForElementVisible('css', '.contextual trigger');
@@ -106,12 +138,14 @@ class EditModeTest extends JavascriptTestBase {
 
   /**
    * Assert that the correct message was announced when leaving edit mode.
+   *
+   * @internal
    */
-  protected function assertAnnounceLeaveEditMode() {
+  protected function assertAnnounceLeaveEditMode(): void {
     $web_assert = $this->assertSession();
     $page = $this->getSession()->getPage();
     // Wait till all the contextual links are hidden.
-    $page->waitFor(1, function () use ($page, $web_assert) {
+    $page->waitFor(1, function () use ($page) {
       return empty($page->find('css', '.contextual .trigger.visually-hidden'));
     });
     $web_assert->elementContains('css', static::ANNOUNCE_SELECTOR, 'Tabbing is no longer constrained by the Contextual module.');
@@ -126,7 +160,7 @@ class EditModeTest extends JavascriptTestBase {
    */
   protected function getTabbableElementsCount() {
     // Mark all tabbable elements.
-    $this->getSession()->executeScript("jQuery(':tabbable').attr('data-marked', '');");
+    $this->getSession()->executeScript("jQuery(window.tabbable.tabbable(document.body)).attr('data-marked', '');");
     // Count all marked elements.
     $count = count($this->getSession()->getPage()->findAll('css', "[data-marked]"));
     // Remove set attributes.

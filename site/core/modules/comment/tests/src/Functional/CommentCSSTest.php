@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\comment\Functional;
 
 use Drupal\Core\Language\LanguageInterface;
@@ -17,20 +19,30 @@ class CommentCSSTest extends CommentTestBase {
 
   use GeneratePermutationsTrait;
 
-  protected function setUp() {
+  /**
+   * The theme to install as the default for testing.
+   *
+   * @var string
+   */
+  protected $defaultTheme = 'starterkit_theme';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     // Allow anonymous users to see comments.
     user_role_grant_permissions(RoleInterface::ANONYMOUS_ID, [
       'access comments',
-      'access content'
+      'access content',
     ]);
   }
 
   /**
    * Tests CSS classes on comments.
    */
-  public function testCommentClasses() {
+  public function testCommentClasses(): void {
     // Create all permutations for comments, users, and nodes.
     $parameters = [
       'node_uid' => [0, $this->webUser->id()],
@@ -83,43 +95,43 @@ class CommentCSSTest extends CommentTestBase {
 
       // Verify the data-history-node-id attribute, which is necessary for the
       // by-viewer class and the "new" indicator, see below.
-      $this->assertIdentical(1, count($this->xpath('//*[@data-history-node-id="' . $node->id() . '"]')), 'data-history-node-id attribute is set on node.');
+      $this->assertSession()->elementsCount('xpath', '//*[@data-history-node-id="' . $node->id() . '"]', 1);
 
       // Verify classes if the comment is visible for the current user.
       if ($case['comment_status'] == CommentInterface::PUBLISHED || $case['user'] == 'admin') {
         // Verify the by-anonymous class.
-        $comments = $this->xpath('//*[contains(@class, "comment") and contains(@class, "by-anonymous")]');
+        $comments = '//*[contains(@class, "comment") and contains(@class, "by-anonymous")]';
         if ($case['comment_uid'] == 0) {
-          $this->assertTrue(count($comments) == 1, 'by-anonymous class found.');
+          $this->assertSession()->elementsCount('xpath', $comments, 1);
         }
         else {
-          $this->assertFalse(count($comments), 'by-anonymous class not found.');
+          $this->assertSession()->elementNotExists('xpath', $comments);
         }
 
         // Verify the by-node-author class.
-        $comments = $this->xpath('//*[contains(@class, "comment") and contains(@class, "by-node-author")]');
+        $comments = '//*[contains(@class, "comment") and contains(@class, "by-node-author")]';
         if ($case['comment_uid'] > 0 && $case['comment_uid'] == $case['node_uid']) {
-          $this->assertTrue(count($comments) == 1, 'by-node-author class found.');
+          $this->assertSession()->elementsCount('xpath', $comments, 1);
         }
         else {
-          $this->assertFalse(count($comments), 'by-node-author class not found.');
+          $this->assertSession()->elementNotExists('xpath', $comments);
         }
 
         // Verify the data-comment-user-id attribute, which is used by the
         // drupal.comment-by-viewer library to add a by-viewer when the current
         // user (the viewer) was the author of the comment. We do this in Java-
         // Script to prevent breaking the render cache.
-        $this->assertIdentical(1, count($this->xpath('//*[contains(@class, "comment") and @data-comment-user-id="' . $case['comment_uid'] . '"]')), 'data-comment-user-id attribute is set on comment.');
-        $this->assertRaw(drupal_get_path('module', 'comment') . '/js/comment-by-viewer.js', 'drupal.comment-by-viewer library is present.');
+        $this->assertSession()->elementsCount('xpath', '//*[contains(@class, "comment") and @data-comment-user-id="' . $case['comment_uid'] . '"]', 1);
+        $this->assertSession()->responseContains($this->getModulePath('comment') . '/js/comment-by-viewer.js');
       }
 
       // Verify the unpublished class.
-      $comments = $this->xpath('//*[contains(@class, "comment") and contains(@class, "unpublished")]');
+      $comments = '//*[contains(@class, "comment") and contains(@class, "unpublished")]';
       if ($case['comment_status'] == CommentInterface::NOT_PUBLISHED && $case['user'] == 'admin') {
-        $this->assertTrue(count($comments) == 1, 'unpublished class found.');
+        $this->assertSession()->elementsCount('xpath', $comments, 1);
       }
       else {
-        $this->assertFalse(count($comments), 'unpublished class not found.');
+        $this->assertSession()->elementNotExists('xpath', $comments);
       }
 
       // Verify the data-comment-timestamp attribute, which is used by the
@@ -127,9 +139,9 @@ class CommentCSSTest extends CommentTestBase {
       // comment that was created or changed after the last time the current
       // user read the corresponding node.
       if ($case['comment_status'] == CommentInterface::PUBLISHED || $case['user'] == 'admin') {
-        $this->assertIdentical(1, count($this->xpath('//*[contains(@class, "comment")]/*[@data-comment-timestamp="' . $comment->getChangedTime() . '"]')), 'data-comment-timestamp attribute is set on comment');
+        $this->assertSession()->elementsCount('xpath', '//*[contains(@class, "comment")]/*[@data-comment-timestamp="' . $comment->getChangedTime() . '"]', 1);
         $expectedJS = ($case['user'] !== 'anonymous');
-        $this->assertIdentical($expectedJS, isset($settings['ajaxPageState']['libraries']) && in_array('comment/drupal.comment-new-indicator', explode(',', $settings['ajaxPageState']['libraries'])), 'drupal.comment-new-indicator library is present.');
+        $this->assertSame($expectedJS, isset($settings['ajaxPageState']['libraries']) && in_array('comment/drupal.comment-new-indicator', explode(',', $settings['ajaxPageState']['libraries'])), 'drupal.comment-new-indicator library is present.');
       }
     }
   }

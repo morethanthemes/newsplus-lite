@@ -1,16 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\block_content\Functional\Rest;
 
-use Drupal\Tests\rest\Functional\EntityResource\EntityResourceTestBase;
+use Drupal\Tests\rest\Functional\EntityResource\ConfigEntityResourceTestBase;
 use Drupal\block_content\Entity\BlockContentType;
 
-abstract class BlockContentTypeResourceTestBase extends EntityResourceTestBase {
+abstract class BlockContentTypeResourceTestBase extends ConfigEntityResourceTestBase {
 
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['block_content'];
+  protected static $modules = ['block_content'];
 
   /**
    * {@inheritdoc}
@@ -18,7 +20,7 @@ abstract class BlockContentTypeResourceTestBase extends EntityResourceTestBase {
   protected static $entityTypeId = 'block_content_type';
 
   /**
-   * @var \Drupal\block_content\Entity\BlockContentTypeInterface
+   * @var \Drupal\block_content\BlockContentTypeInterface
    */
   protected $entity;
 
@@ -26,7 +28,7 @@ abstract class BlockContentTypeResourceTestBase extends EntityResourceTestBase {
    * {@inheritdoc}
    */
   protected function setUpAuthorization($method) {
-    $this->grantPermissionsToTestedRole(['administer blocks']);
+    $this->grantPermissionsToTestedRole(['administer block types']);
   }
 
   /**
@@ -55,7 +57,7 @@ abstract class BlockContentTypeResourceTestBase extends EntityResourceTestBase {
       'id' => 'pascal',
       'label' => 'Pascal',
       'langcode' => 'en',
-      'revision' => 0,
+      'revision' => FALSE,
       'status' => TRUE,
       'uuid' => $this->entity->uuid(),
     ];
@@ -66,6 +68,7 @@ abstract class BlockContentTypeResourceTestBase extends EntityResourceTestBase {
    */
   protected function getNormalizedPostEntity() {
     // @todo Update in https://www.drupal.org/node/2300677.
+    return [];
   }
 
 }

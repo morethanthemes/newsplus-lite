@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\dblog\Kernel\Migrate\d7;
 
 use Drupal\Tests\migrate_drupal\Kernel\d7\MigrateDrupal7TestBase;
@@ -14,12 +16,12 @@ class MigrateDblogConfigsTest extends MigrateDrupal7TestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['dblog'];
+  protected static $modules = ['dblog'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installConfig(static::$modules);
     $this->executeMigration('d7_dblog_settings');
@@ -28,9 +30,9 @@ class MigrateDblogConfigsTest extends MigrateDrupal7TestBase {
   /**
    * Tests migration of dblog variables to dblog.settings.yml.
    */
-  public function testDblogSettings() {
+  public function testDblogSettings(): void {
     $config = $this->config('dblog.settings');
-    $this->assertIdentical(10000, $config->get('row_limit'));
+    $this->assertSame(10000, $config->get('row_limit'));
   }
 
 }

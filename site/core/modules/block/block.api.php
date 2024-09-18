@@ -48,7 +48,7 @@ use Drupal\Core\Access\AccessResult;
  *   of defining a block.
  * - \Drupal\user\Plugin\Condition\UserRole is a straightforward example of a
  *   block placement condition plugin.
- * - \Drupal\book\Plugin\Block\BookNavigationBlock is an example of a block with
+ * - \Drupal\system\Plugin\Block\SystemMenuBlock is an example of a block with
  *   a custom configuration form.
  * - For a more in-depth discussion of the Block API, see
  *   https://www.drupal.org/developing/api/8/block_api.
@@ -72,8 +72,9 @@ use Drupal\Core\Access\AccessResult;
  * If the module wishes to act on the rendered HTML of the block rather than
  * the structured content array, it may use this hook to add a #post_render
  * callback. Alternatively, it could also implement hook_preprocess_HOOK() for
- * block.html.twig. See drupal_render() documentation or the
- * @link themeable Default theme implementations topic @endlink for details.
+ * block.html.twig. See \Drupal\Core\Render\RendererInterface::render()
+ * documentation or the @link themeable Default theme implementations topic
+ * @endlink for details.
  *
  * In addition to hook_block_view_alter(), which is called for all blocks, there
  * is hook_block_view_BASE_BLOCK_ID_alter(), which can be used to target a
@@ -214,6 +215,23 @@ function hook_block_access(\Drupal\block\Entity\Block $block, $operation, \Drupa
 
   // No opinion.
   return AccessResult::neutral();
+}
+
+/**
+ * Allow modules to alter the block plugin definitions.
+ *
+ * @param array[] $definitions
+ *   The array of block definitions, keyed by plugin ID.
+ *
+ * @ingroup block_api
+ */
+function hook_block_alter(&$definitions) {
+  foreach ($definitions as $id => $definition) {
+    if (str_starts_with($id, 'system_menu_block:')) {
+      // Replace $definition properties: id, deriver, class, provider to ones
+      // provided by this custom module.
+    }
+  }
 }
 
 /**

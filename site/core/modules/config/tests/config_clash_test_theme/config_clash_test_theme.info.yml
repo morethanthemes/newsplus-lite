@@ -2,15 +2,13 @@ name: 'Test theme for configuration clash detection'
 type: theme
 description: 'Test theme for configuration clash detection'
 # version: VERSION
-base theme: classy
-# core: 8.x
+base theme: stark
 regions:
   content: Content
   left: Left
   right: Right
 
-# Information added by Drupal.org packaging script on 2018-06-06
-version: '8.5.4'
-core: '8.x'
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
 project: 'drupal'
-datestamp: 1528319624
+datestamp: 1726135113

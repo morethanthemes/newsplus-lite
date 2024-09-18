@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Kernel\Views;
 
 use Drupal\taxonomy\Entity\Term;
@@ -16,12 +18,12 @@ class TaxonomyViewsFieldAccessTest extends FieldFieldAccessTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['taxonomy', 'text', 'entity_test'];
+  protected static $modules = ['taxonomy', 'text', 'entity_test'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
+  protected function setUp($import_test_views = TRUE): void {
     parent::setUp($import_test_views);
 
     $this->installEntitySchema('taxonomy_term');
@@ -30,7 +32,7 @@ class TaxonomyViewsFieldAccessTest extends FieldFieldAccessTestBase {
   /**
    * Check access for taxonomy fields.
    */
-  public function testTermFields() {
+  public function testTermFields(): void {
     $vocab = Vocabulary::create([
       'vid' => 'random',
       'name' => 'Randomness',

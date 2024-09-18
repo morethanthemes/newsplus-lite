@@ -11,7 +11,6 @@ description: 'Find and manage content.'
 tag: default
 base_table: node_field_data
 base_field: nid
-core: 8.x
 display:
   default:
     display_options:
@@ -311,6 +310,15 @@ display:
             date_format: short
             custom_date_format: ''
             timezone: ''
+            tooltip:
+              date_format: long
+              custom_date_format: ''
+            time_diff:
+              enabled: false
+              future_format: '@interval hence'
+              past_format: '@interval ago'
+              granularity: 2
+              refresh: 60
           plugin_id: field
           entity_type: node
           entity_field: changed
@@ -568,7 +576,7 @@ display:
           1: AND
       display_extenders: {  }
     display_plugin: default
-    display_title: Master
+    display_title: Default
     id: default
     position: 0
     cache_metadata:

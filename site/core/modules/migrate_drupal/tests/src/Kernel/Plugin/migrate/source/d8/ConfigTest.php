@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\migrate_drupal\Kernel\Plugin\migrate\source\d8;
 
 use Drupal\Tests\migrate\Kernel\MigrateSqlSourceTestBase;
@@ -15,12 +17,12 @@ class ConfigTest extends MigrateSqlSourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['migrate_drupal'];
+  protected static $modules = ['migrate_drupal'];
 
   /**
    * {@inheritdoc}
    */
-  public function providerSource() {
+  public static function providerSource() {
     $data = [];
 
     // The source database tables.
@@ -50,7 +52,7 @@ class ConfigTest extends MigrateSqlSourceTestBase {
     ];
 
     // The expected results.
-    $data[0]['expected_results'] = [
+    $data[0]['expected_data'] = [
       [
         'collection' => 'language.af',
         'name' => 'user.settings',
@@ -72,12 +74,12 @@ class ConfigTest extends MigrateSqlSourceTestBase {
       ],
       'collections' => [
         'language.af',
-      ]
+      ],
     ];
 
     // Test with name and no collection in configuration.
     $data[1]['source_data'] = $data[0]['source_data'];
-    $data[1]['expected_results'] = [
+    $data[1]['expected_data'] = [
       [
         'collection' => 'language.af',
         'name' => 'bar',
@@ -93,7 +95,7 @@ class ConfigTest extends MigrateSqlSourceTestBase {
 
     // Test with collection and no name in configuration.
     $data[2]['source_data'] = $data[0]['source_data'];
-    $data[2]['expected_results'] = [
+    $data[2]['expected_data'] = [
       [
         'collection' => 'language.de',
         'name' => 'user.settings',

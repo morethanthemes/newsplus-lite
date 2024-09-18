@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Kernel\Handler;
 
 use Drupal\Core\Session\AccountInterface;
 use Drupal\entity_test\Entity\EntityTest;
-use Drupal\simpletest\UserCreationTrait;
-use Drupal\user\Entity\Role;
+use Drupal\Tests\user\Traits\UserCreationTrait;
 use Drupal\Tests\views\Kernel\ViewsKernelTestBase;
+use Drupal\user\Entity\Role;
 use Drupal\views\Views;
 
 /**
@@ -26,11 +28,9 @@ class FieldEntityLinkTest extends ViewsKernelTestBase {
   public static $testViews = ['test_entity_test_link'];
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['user', 'entity_test'];
+  protected static $modules = ['user', 'entity_test'];
 
   /**
    * An admin user account.
@@ -45,7 +45,9 @@ class FieldEntityLinkTest extends ViewsKernelTestBase {
   protected function setUpFixtures() {
     parent::setUpFixtures();
 
-    $this->installEntitySchema('user');
+    // Create the anonymous user account and set it as current user.
+    $this->setUpCurrentUser(['uid' => 0]);
+
     $this->installEntitySchema('entity_test');
     $this->installConfig(['user']);
 
@@ -65,7 +67,7 @@ class FieldEntityLinkTest extends ViewsKernelTestBase {
   /**
    * Tests entity link fields.
    */
-  public function testEntityLink() {
+  public function testEntityLink(): void {
     // Anonymous users cannot see edit/delete links.
     $expected_results = ['canonical' => TRUE, 'edit-form' => FALSE, 'delete-form' => FALSE, 'canonical_raw' => TRUE, 'canonical_raw_absolute' => TRUE];
     $this->doTestEntityLink(\Drupal::currentUser(), $expected_results);
@@ -135,17 +137,17 @@ class FieldEntityLinkTest extends ViewsKernelTestBase {
       foreach ($expected_results as $template => $expected_result) {
         $expected_link = '';
         if ($expected_result) {
-          $path = $entity->url($info[$template]['relationship'], $info[$template]['options']);
+          $path = $entity->toUrl($info[$template]['relationship'], $info[$template]['options'])->toString();
           $destination = $info[$template]['destination'] ? '?destination=/' : '';
           if ($info[$template]['link']) {
             $expected_link = '<a href="' . $path . $destination . '" hreflang="en">' . $info[$template]['label'] . '</a>';
           }
           else {
-            $expected_link = $path;
+            $expected_link = (string) $path;
           }
         }
         $link = $view->style_plugin->getField($index, $info[$template]['field_id']);
-        $this->assertEqual($link, $expected_link);
+        $this->assertSame($expected_link, (string) $link);
       }
       $index++;
     }

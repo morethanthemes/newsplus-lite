@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Plugin\Discovery;
 
 use Drupal\Core\Plugin\Discovery\AnnotatedClassDiscovery;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Tests that plugins are correctly discovered using annotated classes.
@@ -11,7 +14,10 @@ use Drupal\Core\Plugin\Discovery\AnnotatedClassDiscovery;
  */
 class AnnotatedClassDiscoveryTest extends DiscoveryTestBase {
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
     $this->expectedDefinitions = [
       'apple' => [
@@ -26,7 +32,7 @@ class AnnotatedClassDiscoveryTest extends DiscoveryTestBase {
         'label' => 'Banana',
         'color' => 'yellow',
         'uses' => [
-          'bread' => t('Banana bread'),
+          'bread' => new TranslatableMarkup('Banana bread'),
           'loaf' => [
             'singular' => '@count loaf',
             'plural' => '@count loaves',
@@ -73,8 +79,8 @@ class AnnotatedClassDiscoveryTest extends DiscoveryTestBase {
       ],
     ];
 
-    $base_directory = \Drupal::root() . '/core/modules/system/tests/modules/plugin_test/src';
-    $base_directory2 = \Drupal::root() . '/core/modules/system/tests/modules/plugin_test_extended/src';
+    $base_directory = $this->root . '/core/modules/system/tests/modules/plugin_test/src';
+    $base_directory2 = $this->root . '/core/modules/system/tests/modules/plugin_test_extended/src';
     $namespaces = new \ArrayObject(['Drupal\plugin_test' => $base_directory, 'Drupal\plugin_test_extended' => $base_directory2]);
 
     $annotation_namespaces = ['Drupal\plugin_test\Plugin\Annotation', 'Drupal\plugin_test_extended\Plugin\Annotation'];

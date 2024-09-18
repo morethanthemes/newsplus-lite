@@ -1,21 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\tracker\Kernel\Migrate\d7;
 
-use Drupal\Tests\migrate_drupal\Kernel\d7\MigrateDrupal7TestBase;
 use Drupal\Core\Database\Database;
 
 /**
  * Tests migration of tracker_node.
  *
  * @group tracker
+ * @group legacy
  */
-class MigrateTrackerNodeTest extends MigrateDrupal7TestBase {
+class MigrateTrackerNodeTest extends MigrateDrupalTestBase {
 
   /**
    * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'menu_ui',
     'node',
     'text',
@@ -25,7 +27,7 @@ class MigrateTrackerNodeTest extends MigrateDrupal7TestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installEntitySchema('node');
@@ -33,10 +35,9 @@ class MigrateTrackerNodeTest extends MigrateDrupal7TestBase {
     $this->installSchema('node', ['node_access']);
     $this->installSchema('tracker', ['tracker_node', 'tracker_user']);
 
+    $this->migrateContentTypes();
+    $this->migrateUsers(FALSE);
     $this->executeMigrations([
-      'd7_user_role',
-      'd7_user',
-      'd7_node_type',
       'd7_node',
       'd7_tracker_node',
     ]);
@@ -45,7 +46,7 @@ class MigrateTrackerNodeTest extends MigrateDrupal7TestBase {
   /**
    * Tests migration of tracker node table.
    */
-  public function testMigrateTrackerNode() {
+  public function testMigrateTrackerNode(): void {
     $connection = Database::getConnection('default', 'migrate');
     $num_rows = $connection
       ->select('tracker_node', 'tn')
@@ -53,16 +54,16 @@ class MigrateTrackerNodeTest extends MigrateDrupal7TestBase {
       ->countQuery()
       ->execute()
       ->fetchField();
-    $this->assertIdentical('1', $num_rows);
+    $this->assertSame('1', $num_rows);
 
     $tracker_nodes = $connection
       ->select('tracker_node', 'tn')
       ->fields('tn', ['nid', 'published', 'changed'])
       ->execute();
     $row = $tracker_nodes->fetchAssoc();
-    $this->assertIdentical('1', $row['nid']);
-    $this->assertIdentical('1', $row['published']);
-    $this->assertIdentical('1421727536', $row['changed']);
+    $this->assertSame('1', $row['nid']);
+    $this->assertSame('1', $row['published']);
+    $this->assertSame('1421727536', $row['changed']);
   }
 
 }

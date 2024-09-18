@@ -2,14 +2,15 @@
 
 namespace Drupal\views_ui\Controller;
 
+use Drupal\Component\Utility\Tags;
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Drupal\views\ViewExecutable;
 use Drupal\views\ViewEntityInterface;
 use Drupal\views\Views;
 use Drupal\views_ui\ViewUI;
 use Drupal\views\ViewsData;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Core\Ajax\AjaxResponse;
@@ -39,22 +40,13 @@ class ViewsUIController extends ControllerBase {
   }
 
   /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('views.views_data')
-    );
-  }
-
-  /**
    * Lists all instances of fields on any views.
    *
    * @return array
    *   The Views fields report page.
    */
   public function reportFields() {
-    $views = $this->entityManager()->getStorage('view')->loadMultiple();
+    $views = $this->entityTypeManager()->getStorage('view')->loadMultiple();
 
     // Fetch all fieldapi fields which are used in views
     // Therefore search in all views, displays and handler-types.
@@ -81,12 +73,12 @@ class ViewsUIController extends ControllerBase {
       }
     }
 
-    $header = [t('Field name'), t('Used in')];
+    $header = [$this->t('Field name'), $this->t('Used in')];
     $rows = [];
     foreach ($fields as $field_name => $views) {
       $rows[$field_name]['data'][0]['data']['#plain_text'] = $field_name;
       foreach ($views as $view) {
-        $rows[$field_name]['data'][1][] = $this->l($view, new Url('entity.view.edit_form', ['view' => $view]));
+        $rows[$field_name]['data'][1][] = Link::fromTextAndUrl($view, new Url('entity.view.edit_form', ['view' => $view]))->toString();
       }
       $item_list = [
         '#theme' => 'item_list',
@@ -102,7 +94,7 @@ class ViewsUIController extends ControllerBase {
       '#type' => 'table',
       '#header' => $header,
       '#rows' => $rows,
-      '#empty' => t('No fields have been used in views yet.'),
+      '#empty' => $this->t('No fields have been used in views yet.'),
     ];
 
     return $output;
@@ -119,8 +111,8 @@ class ViewsUIController extends ControllerBase {
     foreach ($rows as &$row) {
       $views = [];
       // Link each view name to the view itself.
-      foreach ($row['views'] as $row_name => $view) {
-        $views[] = $this->l($view, new Url('entity.view.edit_form', ['view' => $view]));
+      foreach ($row['views'] as $view) {
+        $views[] = Link::fromTextAndUrl($view, new Url('entity.view.edit_form', ['view' => $view]))->toString();
       }
       unset($row['views']);
       $row['views']['data'] = [
@@ -134,9 +126,9 @@ class ViewsUIController extends ControllerBase {
     ksort($rows);
     return [
       '#type' => 'table',
-      '#header' => [t('Type'), t('Name'), t('Provided by'), t('Used in')],
+      '#header' => [$this->t('Type'), $this->t('Name'), $this->t('Provided by'), $this->t('Used in')],
       '#rows' => $rows,
-      '#empty' => t('There are no enabled views.'),
+      '#empty' => $this->t('There are no enabled views.'),
     ];
   }
 
@@ -160,7 +152,7 @@ class ViewsUIController extends ControllerBase {
 
     // If the request is via AJAX, return the rendered list as JSON.
     if ($request->request->get('js')) {
-      $list = $this->entityManager()->getListBuilder('view')->render();
+      $list = $this->entityTypeManager()->getListBuilder('view')->render();
       $response = new AjaxResponse();
       $response->addCommand(new ReplaceCommand('#views-entity-list', $list));
       return $response;
@@ -183,17 +175,19 @@ class ViewsUIController extends ControllerBase {
     $matches = [];
     $string = $request->query->get('q');
     // Get matches from default views.
-    $views = $this->entityManager()->getStorage('view')->loadMultiple();
+    $views = $this->entityTypeManager()->getStorage('view')->loadMultiple();
     // Keep track of previously processed tags so they can be skipped.
     $tags = [];
     foreach ($views as $view) {
-      $tag = $view->get('tag');
-      if ($tag && !in_array($tag, $tags)) {
-        $tags[] = $tag;
-        if (strpos($tag, $string) === 0) {
-          $matches[] = ['value' => $tag, 'label' => Html::escape($tag)];
-          if (count($matches) >= 10) {
-            break;
+      $view_tag = $view->get('tag');
+      foreach (Tags::explode($view_tag) as $tag) {
+        if ($tag && !in_array($tag, $tags, TRUE)) {
+          $tags[] = $tag;
+          if (mb_stripos($tag, $string) !== FALSE) {
+            $matches[] = ['value' => $tag, 'label' => Html::escape($tag)];
+            if (count($matches) >= 10) {
+              break 2;
+            }
           }
         }
       }

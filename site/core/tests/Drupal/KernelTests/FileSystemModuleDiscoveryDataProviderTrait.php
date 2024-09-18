@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests;
 
 /**
@@ -13,10 +15,11 @@ trait FileSystemModuleDiscoveryDataProviderTrait {
    * @return array
    *   An array of module names to test.
    */
-  public function coreModuleListDataProvider() {
-    $module_dirs = array_keys(iterator_to_array(new \FilesystemIterator(__DIR__ . '/../../../modules/')));
-    $module_names = array_map(function ($path) {
-      return str_replace(__DIR__ . '/../../../modules/', '', $path);
+  public static function coreModuleListDataProvider(): array {
+    $prefix = dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'modules';
+    $module_dirs = array_keys(iterator_to_array(new \FilesystemIterator($prefix)));
+    $module_names = array_map(function ($path) use ($prefix) {
+      return str_replace($prefix . DIRECTORY_SEPARATOR, '', $path);
     }, $module_dirs);
     $modules_keyed = array_combine($module_names, $module_names);
 

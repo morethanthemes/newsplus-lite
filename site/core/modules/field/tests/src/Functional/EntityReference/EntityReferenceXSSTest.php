@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\field\Functional\EntityReference;
 
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\Core\Entity\Entity\EntityViewDisplay;
 use Drupal\Tests\BrowserTestBase;
-use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
+use Drupal\Tests\field\Traits\EntityReferenceFieldCreationTrait;
 
 /**
  * Tests possible XSS security issues in entity references.
@@ -14,19 +16,22 @@ use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
  */
 class EntityReferenceXSSTest extends BrowserTestBase {
 
-  use EntityReferenceTestTrait;
+  use EntityReferenceFieldCreationTrait;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
   protected static $modules = ['node'];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * Tests markup is escaped in the entity reference select and label formatter.
    */
-  public function testEntityReferenceXSS() {
+  public function testEntityReferenceXSS(): void {
     $this->drupalCreateContentType(['type' => 'article']);
 
     // Create a node with markup in the title.
@@ -53,26 +58,28 @@ class EntityReferenceXSSTest extends BrowserTestBase {
       ->save();
 
     // Create a node and reference the node with markup in the title.
-    $this->drupalLogin($this->rootUser);
+    $this->drupalLogin($this->drupalCreateUser([
+      'create article content',
+    ]));
     $this->drupalGet('node/add/article');
-    $this->assertEscaped($referenced_node->getTitle());
-    $this->assertEscaped($node_type_two->label());
+    $this->assertSession()->assertEscaped($referenced_node->getTitle());
+    $this->assertSession()->assertEscaped($node_type_two->label());
 
     $edit = [
       'title[0][value]' => $this->randomString(),
-      'entity_reference_test' => $referenced_node->id()
+      'entity_reference_test' => $referenced_node->id(),
     ];
-    $this->drupalPostForm(NULL, $edit, 'Save');
-    $this->assertEscaped($referenced_node->getTitle());
+    $this->submitForm($edit, 'Save');
+    $this->assertSession()->assertEscaped($referenced_node->getTitle());
 
     // Test the options_buttons type.
     EntityFormDisplay::load('node.article.default')
       ->setComponent('entity_reference_test', ['type' => 'options_buttons'])
       ->save();
     $this->drupalGet('node/add/article');
-    $this->assertEscaped($referenced_node->getTitle());
+    $this->assertSession()->assertEscaped($referenced_node->getTitle());
     // options_buttons does not support optgroups.
-    $this->assertNoText('bundle with markup');
+    $this->assertSession()->pageTextNotContains('bundle with markup');
   }
 
 }

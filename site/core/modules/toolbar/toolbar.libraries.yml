@@ -18,18 +18,17 @@ toolbar:
       css/toolbar.theme.css: {}
       css/toolbar.icons.theme.css: {}
   dependencies:
-    - core/modernizr
     - core/jquery
     - core/drupal
     - core/drupalSettings
     - core/drupal.ajax
     - core/drupal.announce
-    - core/backbone
-    - core/matchmedia
-    - core/matchmedia.addListener
-    - core/jquery.once
+    # @todo Remove this in https://www.drupal.org/project/drupal/issues/3204015
+    - core/internal.backbone
+    - core/once
     - core/drupal.displace
     - toolbar/toolbar.menu
+    - toolbar/toolbar.anti-flicker
 
 toolbar.menu:
   version: VERSION
@@ -41,7 +40,7 @@ toolbar.menu:
   dependencies:
     - core/jquery
     - core/drupal
-    - core/jquery.once
+    - core/once
 
 toolbar.escapeAdmin:
   version: VERSION
@@ -51,4 +50,10 @@ toolbar.escapeAdmin:
     - core/jquery
     - core/drupal
     - core/drupalSettings
-    - core/jquery.once
+    - core/once
+toolbar.anti-flicker:
+  # Block the page from being loaded until anti-flicker is initialized.
+  version: VERSION
+  header: true
+  js:
+    js/toolbar.anti-flicker.js: {}

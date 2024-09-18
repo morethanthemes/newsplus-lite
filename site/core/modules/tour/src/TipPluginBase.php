@@ -29,13 +29,6 @@ abstract class TipPluginBase extends PluginBase implements TipPluginInterface {
   protected $weight;
 
   /**
-   * The attributes that will be applied to the markup of this tip.
-   *
-   * @var array
-   */
-  protected $attributes;
-
-  /**
    * {@inheritdoc}
    */
   public function id() {
@@ -59,13 +52,6 @@ abstract class TipPluginBase extends PluginBase implements TipPluginInterface {
   /**
    * {@inheritdoc}
    */
-  public function getAttributes() {
-    return $this->get('attributes') ?: [];
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function get($key) {
     if (!empty($this->configuration[$key])) {
       return $this->configuration[$key];
@@ -77,6 +63,50 @@ abstract class TipPluginBase extends PluginBase implements TipPluginInterface {
    */
   public function set($key, $value) {
     $this->configuration[$key] = $value;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getLocation(): ?string {
+    $location = $this->get('position');
+
+    // The location values accepted by PopperJS, the library used for
+    // positioning the tip.
+    assert(in_array(trim($location ?? ''), [
+      'auto',
+      'auto-start',
+      'auto-end',
+      'top',
+      'top-start',
+      'top-end',
+      'bottom',
+      'bottom-start',
+      'bottom-end',
+      'right',
+      'right-start',
+      'right-end',
+      'left',
+      'left-start',
+      'left-end',
+      '',
+    ], TRUE), "$location is not a valid Tour Tip position value");
+
+    return $location;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getSelector(): ?string {
+    return $this->get('selector');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getBody(): array {
+    return [];
   }
 
 }

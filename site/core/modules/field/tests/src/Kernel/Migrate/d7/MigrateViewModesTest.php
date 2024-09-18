@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\field\Kernel\Migrate\d7;
 
 use Drupal\Core\Entity\Entity\EntityViewMode;
@@ -13,12 +15,12 @@ use Drupal\Tests\migrate_drupal\Kernel\d7\MigrateDrupal7TestBase;
  */
 class MigrateViewModesTest extends MigrateDrupal7TestBase {
 
-  public static $modules = ['comment', 'node', 'taxonomy'];
+  protected static $modules = ['comment', 'node', 'taxonomy', 'text'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installEntitySchema('comment');
     $this->installEntitySchema('node');
@@ -34,19 +36,21 @@ class MigrateViewModesTest extends MigrateDrupal7TestBase {
    *   The expected label of the view mode.
    * @param string $entity_type
    *   The expected entity type ID which owns the view mode.
+   *
+   * @internal
    */
-  protected function assertEntity($id, $label, $entity_type) {
+  protected function assertEntity(string $id, string $label, string $entity_type): void {
     /** @var \Drupal\Core\Entity\EntityViewModeInterface $view_mode */
     $view_mode = EntityViewMode::load($id);
-    $this->assertTrue($view_mode instanceof EntityViewModeInterface);
-    $this->assertIdentical($label, $view_mode->label());
-    $this->assertIdentical($entity_type, $view_mode->getTargetType());
+    $this->assertInstanceOf(EntityViewModeInterface::class, $view_mode);
+    $this->assertSame($label, $view_mode->label());
+    $this->assertSame($entity_type, $view_mode->getTargetType());
   }
 
   /**
    * Tests migration of D7 view mode variables to D8 config entities.
    */
-  public function testMigration() {
+  public function testMigration(): void {
     $this->assertEntity('comment.full', 'Full', 'comment');
     $this->assertEntity('node.teaser', 'Teaser', 'node');
     $this->assertEntity('node.full', 'Full', 'node');

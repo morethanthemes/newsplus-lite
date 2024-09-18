@@ -3,7 +3,7 @@
 namespace Drupal\Core\Routing\Enhancer;
 
 use Drupal\Core\Routing\EnhancerInterface;
-use Symfony\Cmf\Component\Routing\RouteObjectInterface;
+use Drupal\Core\Routing\RouteObjectInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Route;
 
@@ -15,7 +15,7 @@ class FormRouteEnhancer implements EnhancerInterface {
   /**
    * Returns whether the enhancer runs on the current route.
    *
-   * @param \Drupal\Core\Routing\Enhancer\Route $route
+   * @param \Symfony\Component\Routing\Route $route
    *   The current route.
    *
    * @return bool

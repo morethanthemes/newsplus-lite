@@ -25,6 +25,8 @@ class SelectExtender implements SelectInterface {
 
   /**
    * A unique identifier for this query object.
+   *
+   * @var string
    */
   protected $uniqueIdentifier;
 
@@ -216,8 +218,16 @@ class SelectExtender implements SelectInterface {
    * {@inheritdoc}
    */
   public function extend($extender_name) {
-    $class = $this->connection->getDriverClass($extender_name);
-    return new $class($this, $this->connection);
+    // We cannot call $this->query->extend(), because with multiple extenders
+    // you will replace all the earlier extenders with the last extender,
+    // instead of creating list of objects that extend each other.
+    $parts = explode('\\', $extender_name);
+    $class = end($parts);
+    $driver_class = $this->connection->getDriverClass($class);
+    if ($driver_class !== $class) {
+      return new $driver_class($this, $this->connection);
+    }
+    return new $extender_name($this, $this->connection);
   }
 
   /* Alter accessors to expose the query data to alter hooks. */
@@ -282,7 +292,7 @@ class SelectExtender implements SelectInterface {
   /**
    * {@inheritdoc}
    */
-  public function getArguments(PlaceholderInterface $queryPlaceholder = NULL) {
+  public function getArguments(?PlaceholderInterface $queryPlaceholder = NULL) {
     return $this->query->getArguments($queryPlaceholder);
   }
 
@@ -296,7 +306,7 @@ class SelectExtender implements SelectInterface {
   /**
    * {@inheritdoc}
    */
-  public function preExecute(SelectInterface $query = NULL) {
+  public function preExecute(?SelectInterface $query = NULL) {
     // If no query object is passed in, use $this.
     if (!isset($query)) {
       $query = $this;
@@ -368,13 +378,6 @@ class SelectExtender implements SelectInterface {
    */
   public function leftJoin($table, $alias = NULL, $condition = NULL, $arguments = []) {
     return $this->query->leftJoin($table, $alias, $condition, $arguments);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function rightJoin($table, $alias = NULL, $condition = NULL, $arguments = []) {
-    return $this->query->rightJoin($table, $alias, $condition, $arguments);
   }
 
   /**
@@ -474,6 +477,14 @@ class SelectExtender implements SelectInterface {
   /**
    * {@inheritdoc}
    */
+  public function alwaysFalse() {
+    $this->query->alwaysFalse();
+    return $this;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function __toString() {
     return (string) $this->query;
   }
@@ -518,7 +529,7 @@ class SelectExtender implements SelectInterface {
    * {@inheritdoc}
    */
   public function conditionGroupFactory($conjunction = 'AND') {
-    return new Condition($conjunction);
+    return $this->connection->condition($conjunction);
   }
 
   /**

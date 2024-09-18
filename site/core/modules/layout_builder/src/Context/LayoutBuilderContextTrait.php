@@ -31,7 +31,7 @@ trait LayoutBuilderContextTrait {
   }
 
   /**
-   * Provides all available contexts, both global and section_storage-specific.
+   * Returns all populated contexts, both global and section-storage-specific.
    *
    * @param \Drupal\layout_builder\SectionStorageInterface $section_storage
    *   The section storage.
@@ -39,14 +39,16 @@ trait LayoutBuilderContextTrait {
    * @return \Drupal\Core\Plugin\Context\ContextInterface[]
    *   The array of context objects.
    */
-  protected function getAvailableContexts(SectionStorageInterface $section_storage) {
-    // Get all globally available contexts that have a defined value.
-    $contexts = array_filter($this->contextRepository()->getAvailableContexts(), function (ContextInterface $context) {
+  protected function getPopulatedContexts(SectionStorageInterface $section_storage): array {
+    // Get all known globally available contexts IDs.
+    $available_context_ids = array_keys($this->contextRepository()->getAvailableContexts());
+    // Filter to those that are populated.
+    $contexts = array_filter($this->contextRepository()->getRuntimeContexts($available_context_ids), function (ContextInterface $context) {
       return $context->hasContextValue();
     });
 
     // Add in the per-section_storage contexts.
-    $contexts += $section_storage->getContexts();
+    $contexts += $section_storage->getContextsDuringPreview();
     return $contexts;
   }
 

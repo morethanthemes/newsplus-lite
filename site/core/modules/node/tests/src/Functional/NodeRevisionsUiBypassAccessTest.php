@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\node\Functional;
 
 use Drupal\node\Entity\NodeType;
@@ -16,6 +18,11 @@ use Drupal\node\Entity\NodeType;
 class NodeRevisionsUiBypassAccessTest extends NodeTestBase {
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * User with bypass node access permission.
    *
    * @var \Drupal\user\Entity\User
@@ -25,12 +32,12 @@ class NodeRevisionsUiBypassAccessTest extends NodeTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['block'];
+  protected static $modules = ['block'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     // Create a user.
@@ -46,11 +53,10 @@ class NodeRevisionsUiBypassAccessTest extends NodeTestBase {
   /**
    * Checks that the Revision tab is displayed correctly.
    */
-  public function testDisplayRevisionTab() {
+  public function testDisplayRevisionTab(): void {
     $this->drupalPlaceBlock('local_tasks_block');
 
     $this->drupalLogin($this->editor);
-    $node_storage = $this->container->get('entity.manager')->getStorage('node');
 
     // Set page revision setting 'create new revision'. This will mean new
     // revisions are created by default when the node is edited.
@@ -63,25 +69,28 @@ class NodeRevisionsUiBypassAccessTest extends NodeTestBase {
 
     // Verify the checkbox is checked on the node edit form.
     $this->drupalGet('node/' . $node->id() . '/edit');
-    $this->assertFieldChecked('edit-revision', "'Create new revision' checkbox is checked");
+    $this->assertSession()->checkboxChecked('edit-revision');
 
     // Uncheck the create new revision checkbox and save the node.
     $edit = ['revision' => FALSE];
-    $this->drupalPostForm('node/' . $node->id() . '/edit', $edit, 'Save');
+    $this->drupalGet('node/' . $node->id() . '/edit');
+    $this->submitForm($edit, 'Save');
 
-    $this->assertUrl($node->toUrl());
-    $this->assertNoLink(t('Revisions'));
+    $this->assertSession()->addressEquals($node->toUrl());
+    // Verify revisions exist.
+    $this->assertSession()->linkExists('Revisions');
 
     // Verify the checkbox is checked on the node edit form.
     $this->drupalGet('node/' . $node->id() . '/edit');
-    $this->assertFieldChecked('edit-revision', "'Create new revision' checkbox is checked");
+    $this->assertSession()->checkboxChecked('edit-revision');
 
     // Submit the form without changing the checkbox.
     $edit = [];
-    $this->drupalPostForm('node/' . $node->id() . '/edit', $edit, 'Save');
+    $this->drupalGet('node/' . $node->id() . '/edit');
+    $this->submitForm($edit, 'Save');
 
-    $this->assertUrl($node->toUrl());
-    $this->assertLink(t('Revisions'));
+    $this->assertSession()->addressEquals($node->toUrl());
+    $this->assertSession()->linkExists('Revisions');
   }
 
 }

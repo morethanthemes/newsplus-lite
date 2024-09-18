@@ -1,9 +1,6 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\Core\ProxyBuilder\ProxyBuilderTest.
- */
+declare(strict_types=1);
 
 namespace Drupal\Tests\Core\ProxyBuilder;
 
@@ -26,7 +23,7 @@ class ProxyBuilderTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->proxyBuilder = new ProxyBuilder();
@@ -37,7 +34,7 @@ class ProxyBuilderTest extends UnitTestCase {
    * @covers ::buildParameter
    * @covers ::buildMethodBody
    */
-  public function testBuildComplexMethod() {
+  public function testBuildComplexMethod(): void {
     $class = 'Drupal\Tests\Core\ProxyBuilder\TestServiceComplexMethod';
 
     $result = $this->proxyBuilder->build($class);
@@ -48,7 +45,7 @@ class ProxyBuilderTest extends UnitTestCase {
 /**
  * {@inheritdoc}
  */
-public function complexMethod($parameter, callable $function, \Drupal\Tests\Core\ProxyBuilder\TestServiceNoMethod $test_service = NULL, array &$elements = array (
+public function complexMethod($parameter, callable $function, ?\Drupal\Tests\Core\ProxyBuilder\TestServiceNoMethod $test_service = NULL, array &$elements = array (
 ))
 {
     return $this->lazyLoadItself()->complexMethod($parameter, $function, $test_service, $elements);
@@ -62,8 +59,12 @@ EOS;
   /**
    * Constructs the expected class output.
    *
+   * @param string $class
+   *   The class name that is being built.
    * @param string $expected_methods_body
    *   The expected body of decorated methods.
+   * @param string $interface_string
+   *   (optional) The expected "implements" clause of the class definition.
    *
    * @return string
    *   The code of the entire proxy.
@@ -166,7 +167,7 @@ class TestServiceNoMethod {
 
 class TestServiceComplexMethod {
 
-  public function complexMethod($parameter, callable $function, TestServiceNoMethod $test_service = NULL, array &$elements = []) {
+  public function complexMethod($parameter, callable $function, ?TestServiceNoMethod $test_service = NULL, array &$elements = []) {
 
   }
 

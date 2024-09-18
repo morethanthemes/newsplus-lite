@@ -1,27 +1,45 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\layout_builder\FunctionalJavascript;
 
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
+
+// cspell:ignore datefield
 
 /**
  * @coversDefaultClass \Drupal\layout_builder\Plugin\Block\FieldBlock
  *
  * @group field
+ * @group legacy
  */
-class FieldBlockTest extends JavascriptTestBase {
+class FieldBlockTest extends WebDriverTestBase {
 
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['block', 'datetime', 'layout_builder', 'user'];
+  protected static $modules = [
+    'block',
+    'datetime',
+    'layout_builder',
+    'user',
+    // See \Drupal\layout_builder_fieldblock_test\Plugin\Block\FieldBlock.
+    'layout_builder_fieldblock_test',
+    'layout_builder_expose_all_field_blocks',
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'starterkit_theme';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $field_storage = FieldStorageConfig::create([
@@ -49,7 +67,7 @@ class FieldBlockTest extends JavascriptTestBase {
   /**
    * Tests configuring a field block for a user field.
    */
-  public function testFieldBlock() {
+  public function testUserFieldBlock(): void {
     $page = $this->getSession()->getPage();
     $assert_session = $this->assertSession();
 
@@ -61,13 +79,16 @@ class FieldBlockTest extends JavascriptTestBase {
     $this->clickLink('Place block');
     $assert_session->assertWaitOnAjaxRequest();
 
+    // Ensure that focus is on the first focusable element on modal.
+    $this->assertJsCondition('document.activeElement === document.getElementsByClassName("block-filter-text")[0]');
+
     // Ensure that fields without any formatters are not available.
     $assert_session->pageTextNotContains('Password');
     // Ensure that non-display-configurable fields are not available.
     $assert_session->pageTextNotContains('Initial email');
 
     $assert_session->pageTextContains('Date field');
-    $block_url = 'admin/structure/block/add/field_block%3Auser%3Auser%3Afield_date/classy';
+    $block_url = 'admin/structure/block/add/field_block_test%3Auser%3Auser%3Afield_date/starterkit_theme';
     $assert_session->linkByHrefExists($block_url);
 
     $this->drupalGet($block_url);
@@ -84,7 +105,7 @@ class FieldBlockTest extends JavascriptTestBase {
     $assert_session->fieldNotExists('settings[formatter][settings][format_type]');
     $assert_session->fieldExists('settings[formatter][settings][granularity]');
     $page->pressButton('Save block');
-    $assert_session->pageTextContains('The block configuration has been saved.');
+    $this->assertTrue($assert_session->waitForText('The block configuration has been saved.'));
 
     // Configure the block and change the formatter again.
     $this->clickLink('Configure');
@@ -94,7 +115,7 @@ class FieldBlockTest extends JavascriptTestBase {
     $page->selectFieldOption('settings[formatter][settings][format_type]', 'long');
 
     $page->pressButton('Save block');
-    $assert_session->pageTextContains('The block configuration has been saved.');
+    $this->assertTrue($assert_session->waitForText('The block configuration has been saved.'));
 
     // Assert that the field value is updated.
     $this->clickLink('Configure');
@@ -110,13 +131,38 @@ class FieldBlockTest extends JavascriptTestBase {
       ],
       'third_party_settings' => [],
     ];
-    $config = $this->container->get('config.factory')->get('block.block.datefield');
+    $config = $this->container->get('config.factory')->get('block.block.starterkit_theme_datefield');
     $this->assertEquals($expected, $config->get('settings.formatter'));
     $this->assertEquals(['field.field.user.user.field_date'], $config->get('dependencies.config'));
 
     // Assert that the block is displaying the user field.
     $this->drupalGet('admin');
     $assert_session->pageTextContains('Sunday, November 19, 1978 - 16:00');
+  }
+
+  /**
+   * Tests configuring a field block that uses #states.
+   */
+  public function testStatesFieldBlock(): void {
+    $page = $this->getSession()->getPage();
+
+    $timestamp_field_storage = FieldStorageConfig::create([
+      'field_name' => 'field_timestamp',
+      'entity_type' => 'user',
+      'type' => 'timestamp',
+    ]);
+    $timestamp_field_storage->save();
+    $timestamp_field = FieldConfig::create([
+      'field_storage' => $timestamp_field_storage,
+      'bundle' => 'user',
+      'label' => 'Timestamp',
+    ]);
+    $timestamp_field->save();
+
+    $this->drupalGet('admin/structure/block/add/field_block_test%3Auser%3Auser%3Afield_timestamp/starterkit_theme');
+    $this->assertFalse($page->findField('settings[formatter][settings][custom_date_format]')->isVisible(), 'Custom date format is not visible');
+    $page->selectFieldOption('settings[formatter][settings][date_format]', 'custom');
+    $this->assertTrue($page->findField('settings[formatter][settings][custom_date_format]')->isVisible(), 'Custom date format is visible');
   }
 
 }

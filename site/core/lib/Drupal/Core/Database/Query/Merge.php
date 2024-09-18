@@ -66,6 +66,8 @@ class Merge extends Query implements ConditionInterface {
 
   /**
    * The table or subquery to be used for the condition.
+   *
+   * @var string
    */
   protected $conditionTable;
 
@@ -104,10 +106,10 @@ class Merge extends Query implements ConditionInterface {
    *
    * This variable is a nested array in the following format:
    * @code
-   * <some field> => array(
+   * <some field> => [
    *  'condition' => <condition to execute, as a string>,
    *  'arguments' => <array of arguments for condition, or NULL for none>,
-   * );
+   * ];
    * @endcode
    *
    * @var array
@@ -132,11 +134,13 @@ class Merge extends Query implements ConditionInterface {
    *   Array of database options.
    */
   public function __construct(Connection $connection, $table, array $options = []) {
+    // @todo Remove $options['return'] in Drupal 11.
+    // @see https://www.drupal.org/project/drupal/issues/3256524
     $options['return'] = Database::RETURN_AFFECTED;
     parent::__construct($connection, $options);
     $this->table = $table;
     $this->conditionTable = $table;
-    $this->condition = new Condition('AND');
+    $this->condition = $this->connection->condition('AND');
   }
 
   /**
@@ -146,7 +150,7 @@ class Merge extends Query implements ConditionInterface {
    *   The table name or the subquery to be used. Use a Select query object to
    *   pass in a subquery.
    *
-   * @return \Drupal\Core\Database\Query\Merge
+   * @return $this
    *   The called object.
    */
   protected function conditionTable($table) {
@@ -161,7 +165,7 @@ class Merge extends Query implements ConditionInterface {
    *   An associative array of fields to write into the database. The array keys
    *   are the field names and the values are the values to which to set them.
    *
-   * @return \Drupal\Core\Database\Query\Merge
+   * @return $this
    *   The called object.
    */
   public function updateFields(array $fields) {
@@ -186,10 +190,10 @@ class Merge extends Query implements ConditionInterface {
    *   If specified, this is an array of key/value pairs for named placeholders
    *   corresponding to the expression.
    *
-   * @return \Drupal\Core\Database\Query\Merge
+   * @return $this
    *   The called object.
    */
-  public function expression($field, $expression, array $arguments = NULL) {
+  public function expression($field, $expression, ?array $arguments = NULL) {
     $this->expressionFields[$field] = [
       'expression' => $expression,
       'arguments' => $arguments,
@@ -211,7 +215,7 @@ class Merge extends Query implements ConditionInterface {
    *   An array of fields to insert into the database. The values must be
    *   specified in the same order as the $fields array.
    *
-   * @return \Drupal\Core\Database\Query\Merge
+   * @return $this
    *   The called object.
    */
   public function insertFields(array $fields, array $values = []) {
@@ -238,7 +242,7 @@ class Merge extends Query implements ConditionInterface {
    *   An array of values for which to use the default values
    *   specified in the table definition.
    *
-   * @return \Drupal\Core\Database\Query\Merge
+   * @return $this
    *   The called object.
    */
   public function useDefaults(array $fields) {
@@ -264,7 +268,7 @@ class Merge extends Query implements ConditionInterface {
    *   An array of values to set into the database. The values must be
    *   specified in the same order as the $fields array.
    *
-   * @return \Drupal\Core\Database\Query\Merge
+   * @return $this
    *   The called object.
    */
   public function fields(array $fields, array $values = []) {
@@ -329,7 +333,8 @@ class Merge extends Query implements ConditionInterface {
   public function key($field, $value = NULL) {
     // @todo D9: Remove this backwards-compatibility shim.
     if (is_array($field)) {
-      $this->keys($field, isset($value) ? $value : []);
+      @trigger_error("Passing an array to the \$field argument of " . __METHOD__ . '() is deprecated in drupal:10.2.0 and is removed from drupal:11.0.0. See https://www.drupal.org/node/2205327', E_USER_DEPRECATED);
+      $this->keys($field, $value ?? []);
     }
     else {
       $this->keys([$field => $value]);
@@ -349,59 +354,61 @@ class Merge extends Query implements ConditionInterface {
   public function __toString() {
   }
 
+  /**
+   * Executes the merge database query.
+   *
+   * @return int|null
+   *   One of the following values:
+   *   - Merge::STATUS_INSERT: If the entry does not already exist,
+   *     and an INSERT query is executed.
+   *   - Merge::STATUS_UPDATE: If the entry already exists,
+   *     and an UPDATE query is executed.
+   *
+   * @throws \Drupal\Core\Database\Query\InvalidMergeQueryException
+   *   When there are no conditions found to merge.
+   */
   public function execute() {
-    // Default options for merge queries.
-    $this->queryOptions += [
-      'throw_exception' => TRUE,
-    ];
+    if (!count($this->condition)) {
+      throw new InvalidMergeQueryException('Invalid merge query: no conditions');
+    }
 
-    try {
-      if (!count($this->condition)) {
-        throw new InvalidMergeQueryException(t('Invalid merge query: no conditions'));
+    $select = $this->connection->select($this->conditionTable)
+      ->condition($this->condition);
+    $select->addExpression('1');
+
+    if (!$select->execute()->fetchField()) {
+      try {
+        $insert = $this->connection->insert($this->table)->fields($this->insertFields);
+        if ($this->defaultFields) {
+          $insert->useDefaults($this->defaultFields);
+        }
+        $insert->execute();
+        return self::STATUS_INSERT;
       }
-      $select = $this->connection->select($this->conditionTable)
+      catch (IntegrityConstraintViolationException $e) {
+        // The insert query failed, maybe it's because a racing insert query
+        // beat us in inserting the same row. Retry the select query, if it
+        // returns a row, ignore the error and continue with the update
+        // query below.
+        if (!$select->execute()->fetchField()) {
+          throw $e;
+        }
+      }
+    }
+
+    if ($this->needsUpdate) {
+      $update = $this->connection->update($this->table)
+        ->fields($this->updateFields)
         ->condition($this->condition);
-      $select->addExpression('1');
-      if (!$select->execute()->fetchField()) {
-        try {
-          $insert = $this->connection->insert($this->table)->fields($this->insertFields);
-          if ($this->defaultFields) {
-            $insert->useDefaults($this->defaultFields);
-          }
-          $insert->execute();
-          return self::STATUS_INSERT;
-        }
-        catch (IntegrityConstraintViolationException $e) {
-          // The insert query failed, maybe it's because a racing insert query
-          // beat us in inserting the same row. Retry the select query, if it
-          // returns a row, ignore the error and continue with the update
-          // query below.
-          if (!$select->execute()->fetchField()) {
-            throw $e;
-          }
+      if ($this->expressionFields) {
+        foreach ($this->expressionFields as $field => $data) {
+          $update->expression($field, $data['expression'], $data['arguments']);
         }
       }
-      if ($this->needsUpdate) {
-        $update = $this->connection->update($this->table)
-          ->fields($this->updateFields)
-          ->condition($this->condition);
-        if ($this->expressionFields) {
-          foreach ($this->expressionFields as $field => $data) {
-            $update->expression($field, $data['expression'], $data['arguments']);
-          }
-        }
-        $update->execute();
-        return self::STATUS_UPDATE;
-      }
+      $update->execute();
+      return self::STATUS_UPDATE;
     }
-    catch (\Exception $e) {
-      if ($this->queryOptions['throw_exception']) {
-        throw $e;
-      }
-      else {
-        return NULL;
-      }
-    }
+    return NULL;
   }
 
 }

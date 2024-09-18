@@ -2,6 +2,7 @@
 
 namespace Drupal\filter\Plugin\migrate\process;
 
+use Drupal\migrate\Attribute\MigrateProcess;
 use Drupal\migrate\ProcessPluginBase;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\Row;
@@ -10,12 +11,11 @@ use Drupal\migrate\Row;
  * Adds the default allowed attributes to filter_html's allowed_html setting.
  *
  * E.g. map '<a>' to '<a href hreflang dir>'.
- *
- * @MigrateProcessPlugin(
- *   id = "filter_settings",
- *   handle_multiples = TRUE
- * )
  */
+#[MigrateProcess(
+  id: "filter_settings",
+  handle_multiples: TRUE,
+)]
 class FilterSettings extends ProcessPluginBase {
 
   /**
@@ -45,6 +45,16 @@ class FilterSettings extends ProcessPluginBase {
       if (!empty($value['allowed_html'])) {
         $value['allowed_html'] = str_replace(array_keys($this->allowedHtmlDefaultAttributes), array_values($this->allowedHtmlDefaultAttributes), $value['allowed_html']);
       }
+    }
+    // Filters that don't exist in Drupal 8 will have been mapped to filter_null
+    // but will have their settings (if any) retained. Those filter settings
+    // need to be dropped, otherwise saving the resulting FilterFormat config
+    // entity will be unable to save due to config schema validation errors.
+    // The migration warning message in the "filter_id" migration process plugin
+    // warns the user about this.
+    // @see \Drupal\filter\Plugin\migrate\process\FilterID::transform()
+    elseif ($row->getDestinationProperty('id') === 'filter_null') {
+      $value = [];
     }
     return $value;
   }

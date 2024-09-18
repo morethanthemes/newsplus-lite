@@ -1,0 +1,1 @@
+!function(o){const n=o.tr=o.tr||{};n.dictionary=Object.assign(n.dictionary||{},{"Code block":"Kod bloku","Insert code block":"Kod bloğu ekle","Plain text":"Düz metin"})}(window.CKEDITOR_TRANSLATIONS||(window.CKEDITOR_TRANSLATIONS={}));

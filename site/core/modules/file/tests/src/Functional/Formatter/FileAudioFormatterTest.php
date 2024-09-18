@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\file\Functional\Formatter;
 
 use Drupal\entity_test\Entity\EntityTest;
@@ -8,15 +10,21 @@ use Drupal\file\Entity\File;
 /**
  * @coversDefaultClass \Drupal\file\Plugin\Field\FieldFormatter\FileAudioFormatter
  * @group file
+ * @group #slow
  */
 class FileAudioFormatterTest extends FileMediaFormatterTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * @covers ::viewElements
    *
    * @dataProvider dataProvider
    */
-  public function testRender($tag_count, $formatter_settings) {
+  public function testRender($tag_count, $formatter_settings): void {
     $field_config = $this->createMediaField('file_audio', 'mp3', $formatter_settings);
 
     file_put_contents('public://file.mp3', str_repeat('t', 10));
@@ -46,8 +54,8 @@ class FileAudioFormatterTest extends FileMediaFormatterTestBase {
 
     $this->drupalGet($entity->toUrl());
 
-    $file1_url = file_url_transform_relative(file_create_url($file1->getFileUri()));
-    $file2_url = file_url_transform_relative(file_create_url($file2->getFileUri()));
+    $file1_url = $file1->createFileUrl();
+    $file2_url = $file2->createFileUrl();
 
     $assert_session = $this->assertSession();
     $assert_session->elementsCount('css', 'audio[controls="controls"]', $tag_count);

@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\field\Kernel\Boolean;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\entity_test\Entity\EntityTest;
@@ -18,11 +19,15 @@ use Drupal\KernelTests\KernelTestBase;
 class BooleanFormatterTest extends KernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['field', 'text', 'entity_test', 'user', 'system'];
+  protected static $modules = [
+    'field',
+    'text',
+    'entity_test',
+    'user',
+    'system',
+  ];
 
   /**
    * @var string
@@ -47,7 +52,7 @@ class BooleanFormatterTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installConfig(['field']);
@@ -55,7 +60,7 @@ class BooleanFormatterTest extends KernelTestBase {
 
     $this->entityType = 'entity_test';
     $this->bundle = $this->entityType;
-    $this->fieldName = Unicode::strtolower($this->randomMachineName());
+    $this->fieldName = $this->randomMachineName();
 
     $field_storage = FieldStorageConfig::create([
       'field_name' => $this->fieldName,
@@ -71,7 +76,8 @@ class BooleanFormatterTest extends KernelTestBase {
     ]);
     $instance->save();
 
-    $this->display = entity_get_display($this->entityType, $this->bundle, 'default')
+    $this->display = \Drupal::service('entity_display.repository')
+      ->getViewDisplay($this->entityType, $this->bundle)
       ->setComponent($this->fieldName, [
         'type' => 'boolean',
         'settings' => [],
@@ -99,7 +105,7 @@ class BooleanFormatterTest extends KernelTestBase {
   /**
    * Tests boolean formatter output.
    */
-  public function testBooleanFormatter() {
+  public function testBooleanFormatter(): void {
     $data = [];
     $data[] = [0, [], 'Off'];
     $data[] = [1, [], 'On'];
@@ -115,13 +121,13 @@ class BooleanFormatterTest extends KernelTestBase {
     $format = [
       'format' => 'custom',
       'format_custom_false' => 'FALSE',
-      'format_custom_true' => 'TRUE'
+      'format_custom_true' => 'TRUE',
     ];
     $data[] = [0, $format, 'FALSE'];
     $data[] = [1, $format, 'TRUE'];
 
     foreach ($data as $test_data) {
-      list($value, $settings, $expected) = $test_data;
+      [$value, $settings, $expected] = $test_data;
 
       $component = $this->display->getComponent($this->fieldName);
       $component['settings'] = $settings;

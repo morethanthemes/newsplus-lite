@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\node\Functional;
 
 use Drupal\node\Entity\Node;
@@ -10,17 +12,23 @@ use Drupal\node\Entity\Node;
  * @group node
  */
 class PageViewTest extends NodeTestBase {
+
   /**
-   * Tests an anonymous and unpermissioned user attempting to edit the node.
+   * {@inheritdoc}
    */
-  public function testPageView() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * Tests editing a node by users with various access permissions.
+   */
+  public function testPageView(): void {
     // Create a node to view.
     $node = $this->drupalCreateNode();
-    $this->assertTrue(Node::load($node->id()), 'Node created.');
+    $this->assertNotEmpty(Node::load($node->id()), 'Node created.');
 
     // Try to edit with anonymous user.
     $this->drupalGet("node/" . $node->id() . "/edit");
-    $this->assertResponse(403);
+    $this->assertSession()->statusCodeEquals(403);
 
     // Create a user without permission to edit node.
     $web_user = $this->drupalCreateUser(['access content']);
@@ -28,7 +36,7 @@ class PageViewTest extends NodeTestBase {
 
     // Attempt to access edit page.
     $this->drupalGet("node/" . $node->id() . "/edit");
-    $this->assertResponse(403);
+    $this->assertSession()->statusCodeEquals(403);
 
     // Create user with permission to edit node.
     $web_user = $this->drupalCreateUser(['bypass node access']);
@@ -36,7 +44,7 @@ class PageViewTest extends NodeTestBase {
 
     // Attempt to access edit page.
     $this->drupalGet("node/" . $node->id() . "/edit");
-    $this->assertResponse(200);
+    $this->assertSession()->statusCodeEquals(200);
   }
 
 }

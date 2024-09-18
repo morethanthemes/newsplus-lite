@@ -3,24 +3,25 @@
 namespace Drupal\path\Plugin\Field\FieldType;
 
 use Drupal\Component\Utility\Random;
+use Drupal\Core\Field\Attribute\FieldType;
 use Drupal\Core\Field\FieldDefinitionInterface;
-use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Field\FieldItemBase;
+use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\TypedData\DataDefinition;
 
 /**
  * Defines the 'path' entity field type.
- *
- * @FieldType(
- *   id = "path",
- *   label = @Translation("Path"),
- *   description = @Translation("An entity field containing a path alias and related data."),
- *   no_ui = TRUE,
- *   default_widget = "path",
- *   list_class = "\Drupal\path\Plugin\Field\FieldType\PathFieldItemList",
- *   constraints = {"PathAlias" = {}},
- * )
  */
+#[FieldType(
+  id: "path",
+  label: new TranslatableMarkup("Path"),
+  description: new TranslatableMarkup("An entity field containing a path alias and related data."),
+  default_widget: "path",
+  no_ui: TRUE,
+  list_class: PathFieldItemList::class,
+  constraints: ["PathAlias" => []],
+)]
 class PathItem extends FieldItemBase {
 
   /**
@@ -63,23 +64,42 @@ class PathItem extends FieldItemBase {
    * {@inheritdoc}
    */
   public function postSave($update) {
-    if (!$update) {
-      if ($this->alias) {
-        $entity = $this->getEntity();
-        if ($path = \Drupal::service('path.alias_storage')->save('/' . $entity->urlInfo()->getInternalPath(), $this->alias, $this->getLangcode())) {
-          $this->pid = $path['pid'];
+    $path_alias_storage = \Drupal::entityTypeManager()->getStorage('path_alias');
+    $entity = $this->getEntity();
+
+    // If specified, rely on the langcode property for the language, so that the
+    // existing language of an alias can be kept. That could for example be
+    // unspecified even if the field/entity has a specific langcode.
+    $alias_langcode = ($this->langcode && $this->pid) ? $this->langcode : $this->getLangcode();
+
+    // If we have an alias, we need to create or update a path alias entity.
+    if ($this->alias) {
+      if (!$update || !$this->pid) {
+        $path_alias = $path_alias_storage->create([
+          'path' => '/' . $entity->toUrl()->getInternalPath(),
+          'alias' => $this->alias,
+          'langcode' => $alias_langcode,
+        ]);
+        $path_alias->save();
+        $this->pid = $path_alias->id();
+      }
+      elseif ($this->pid) {
+        $path_alias = $path_alias_storage->load($this->pid);
+
+        if ($this->alias != $path_alias->getAlias()) {
+          $path_alias->setAlias($this->alias);
+          $path_alias->save();
         }
       }
     }
-    else {
-      // Delete old alias if user erased it.
-      if ($this->pid && !$this->alias) {
-        \Drupal::service('path.alias_storage')->delete(['pid' => $this->pid]);
+    elseif ($this->pid && !$this->alias) {
+      // Otherwise, delete the old alias if the user erased it.
+      $path_alias = $path_alias_storage->load($this->pid);
+      if ($entity->isDefaultRevision()) {
+        $path_alias_storage->delete([$path_alias]);
       }
-      // Only save a non-empty alias.
-      elseif ($this->alias) {
-        $entity = $this->getEntity();
-        \Drupal::service('path.alias_storage')->save('/' . $entity->urlInfo()->getInternalPath(), $this->alias, $this->getLangcode(), $this->pid);
+      else {
+        $path_alias_storage->deleteRevision($path_alias->getRevisionID());
       }
     }
   }

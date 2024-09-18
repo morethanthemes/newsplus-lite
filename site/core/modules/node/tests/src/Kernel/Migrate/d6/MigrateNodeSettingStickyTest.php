@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\node\Kernel\Migrate\d6;
 
 use Drupal\Core\Field\Entity\BaseFieldOverride;
@@ -10,12 +12,12 @@ use Drupal\Tests\migrate_drupal\Kernel\d6\MigrateDrupal6TestBase;
  */
 class MigrateNodeSettingStickyTest extends MigrateDrupal6TestBase {
 
-  public static $modules = ['node', 'text', 'menu_ui'];
+  protected static $modules = ['node', 'text', 'menu_ui'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installConfig(['node']);
     $this->executeMigration('d6_node_type');
@@ -25,8 +27,8 @@ class MigrateNodeSettingStickyTest extends MigrateDrupal6TestBase {
   /**
    * Tests migration of the sticky checkbox's settings.
    */
-  public function testMigration() {
-    $this->assertIdentical('Sticky at the top of lists', BaseFieldOverride::load('node.article.sticky')->label());
+  public function testMigration(): void {
+    $this->assertSame('Sticky at the top of lists', BaseFieldOverride::load('node.article.sticky')->label());
   }
 
 }

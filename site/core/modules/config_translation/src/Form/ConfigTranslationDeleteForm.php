@@ -113,7 +113,7 @@ class ConfigTranslationDeleteForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, RouteMatchInterface $route_match = NULL, $plugin_id = NULL, $langcode = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, ?RouteMatchInterface $route_match = NULL, $plugin_id = NULL, $langcode = NULL) {
     /** @var \Drupal\config_translation\ConfigMapperInterface $mapper */
     $mapper = $this->configMapperManager->createInstance($plugin_id);
     $mapper->populateFromRouteMatch($route_match);
@@ -142,7 +142,7 @@ class ConfigTranslationDeleteForm extends ConfirmFormBase {
       $cache_backend->deleteAll();
     }
 
-    drupal_set_message($this->t('@language translation of %label was deleted', ['%label' => $this->mapper->getTitle(), '@language' => $this->language->getName()]));
+    $this->messenger()->addStatus($this->t('@language translation of %label was deleted', ['%label' => $this->mapper->getTitle(), '@language' => $this->language->getName()]));
 
     $form_state->setRedirectUrl($this->getCancelUrl());
   }

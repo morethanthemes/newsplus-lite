@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\media\Functional;
 
 use Drupal\field\Entity\FieldConfig;
@@ -12,14 +14,19 @@ use Drupal\field\Entity\FieldConfig;
 class MediaSourceFileTest extends MediaFunctionalTestBase {
 
   /**
-   * Test that it's possible to change the allowed file extensions.
+   * {@inheritdoc}
    */
-  public function testSourceFieldSettingsEditing() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * Tests that it's possible to change the allowed file extensions.
+   */
+  public function testSourceFieldSettingsEditing(): void {
     $session = $this->getSession();
     $page = $session->getPage();
     $assert_session = $this->assertSession();
 
-    $media_type = $this->createMediaType([], 'file');
+    $media_type = $this->createMediaType('file');
     $media_type_id = $media_type->id();
     $this->assertSame('txt doc docx pdf', FieldConfig::load("media.$media_type_id.field_media_file")->get('settings')['file_extensions']);
 
@@ -42,8 +49,8 @@ class MediaSourceFileTest extends MediaFunctionalTestBase {
   /**
    * Ensure source field deletion is not possible.
    */
-  public function testPreventSourceFieldDeletion() {
-    $media_type = $this->createMediaType([], 'file');
+  public function testPreventSourceFieldDeletion(): void {
+    $media_type = $this->createMediaType('file');
     $media_type_id = $media_type->id();
 
     $this->drupalGet("admin/structure/media/manage/$media_type_id/fields/media.$media_type_id.field_media_file/delete");

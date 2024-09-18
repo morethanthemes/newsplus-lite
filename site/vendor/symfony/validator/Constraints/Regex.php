@@ -12,6 +12,7 @@
 namespace Symfony\Component\Validator\Constraints;
 
 use Symfony\Component\Validator\Constraint;
+use Symfony\Component\Validator\Exception\InvalidArgumentException;
 
 /**
  * @Annotation
@@ -19,33 +20,63 @@ use Symfony\Component\Validator\Constraint;
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
+#[\Attribute(\Attribute::TARGET_PROPERTY | \Attribute::TARGET_METHOD | \Attribute::IS_REPEATABLE)]
 class Regex extends Constraint
 {
-    const REGEX_FAILED_ERROR = 'de1e3db3-5ed4-4941-aae4-59f3667cc3a3';
+    public const REGEX_FAILED_ERROR = 'de1e3db3-5ed4-4941-aae4-59f3667cc3a3';
 
-    protected static $errorNames = array(
+    protected const ERROR_NAMES = [
         self::REGEX_FAILED_ERROR => 'REGEX_FAILED_ERROR',
-    );
+    ];
+
+    /**
+     * @deprecated since Symfony 6.1, use const ERROR_NAMES instead
+     */
+    protected static $errorNames = self::ERROR_NAMES;
 
     public $message = 'This value is not valid.';
     public $pattern;
     public $htmlPattern;
     public $match = true;
+    /** @var callable|null */
+    public $normalizer;
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getDefaultOption()
+    public function __construct(
+        string|array|null $pattern,
+        ?string $message = null,
+        ?string $htmlPattern = null,
+        ?bool $match = null,
+        ?callable $normalizer = null,
+        ?array $groups = null,
+        mixed $payload = null,
+        array $options = []
+    ) {
+        if (\is_array($pattern)) {
+            $options = array_merge($pattern, $options);
+        } elseif (null !== $pattern) {
+            $options['value'] = $pattern;
+        }
+
+        parent::__construct($options, $groups, $payload);
+
+        $this->message = $message ?? $this->message;
+        $this->htmlPattern = $htmlPattern ?? $this->htmlPattern;
+        $this->match = $match ?? $this->match;
+        $this->normalizer = $normalizer ?? $this->normalizer;
+
+        if (null !== $this->normalizer && !\is_callable($this->normalizer)) {
+            throw new InvalidArgumentException(sprintf('The "normalizer" option must be a valid callable ("%s" given).', get_debug_type($this->normalizer)));
+        }
+    }
+
+    public function getDefaultOption(): ?string
     {
         return 'pattern';
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function getRequiredOptions()
+    public function getRequiredOptions(): array
     {
-        return array('pattern');
+        return ['pattern'];
     }
 
     /**
@@ -53,14 +84,9 @@ class Regex extends Constraint
      * Example: /^[a-z]+$/ would be converted to [a-z]+
      * However, if options are specified, it cannot be converted.
      *
-     * Pattern is also ignored if match=false since the pattern should
-     * then be reversed before application.
-     *
      * @see http://dev.w3.org/html5/spec/single-page.html#the-pattern-attribute
-     *
-     * @return string|null
      */
-    public function getHtmlPattern()
+    public function getHtmlPattern(): ?string
     {
         // If htmlPattern is specified, use it
         if (null !== $this->htmlPattern) {
@@ -70,8 +96,8 @@ class Regex extends Constraint
         }
 
         // Quit if delimiters not at very beginning/end (e.g. when options are passed)
-        if ($this->pattern[0] !== $this->pattern[strlen($this->pattern) - 1]) {
-            return;
+        if ($this->pattern[0] !== $this->pattern[\strlen($this->pattern) - 1]) {
+            return null;
         }
 
         $delimiter = $this->pattern[0];
@@ -79,7 +105,7 @@ class Regex extends Constraint
         // Unescape the delimiter
         $pattern = str_replace('\\'.$delimiter, $delimiter, substr($this->pattern, 1, -1));
 
-        // If the pattern is inverted, we can simply wrap it in
+        // If the pattern is inverted, we can wrap it in
         // ((?!pattern).)*
         if (!$this->match) {
             return '((?!'.$pattern.').)*';
@@ -87,7 +113,7 @@ class Regex extends Constraint
 
         // If the pattern contains an or statement, wrap the pattern in
         // .*(pattern).* and quit. Otherwise we'd need to parse the pattern
-        if (false !== strpos($pattern, '|')) {
+        if (str_contains($pattern, '|')) {
             return '.*('.$pattern.').*';
         }
 
@@ -95,7 +121,7 @@ class Regex extends Constraint
         $pattern = '^' === $pattern[0] ? substr($pattern, 1) : '.*'.$pattern;
 
         // Trim trailing $, otherwise append .*
-        $pattern = '$' === $pattern[strlen($pattern) - 1] ? substr($pattern, 0, -1) : $pattern.'.*';
+        $pattern = '$' === $pattern[\strlen($pattern) - 1] ? substr($pattern, 0, -1) : $pattern.'.*';
 
         return $pattern;
     }

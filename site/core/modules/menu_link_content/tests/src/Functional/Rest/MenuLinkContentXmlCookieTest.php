@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\menu_link_content\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\CookieResourceTestTrait;
@@ -27,5 +29,10 @@ class MenuLinkContentXmlCookieTest extends MenuLinkContentResourceTestBase {
    * {@inheritdoc}
    */
   protected static $auth = 'cookie';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
 }

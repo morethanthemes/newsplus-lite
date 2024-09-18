@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\image\Kernel;
 
 use Drupal\image\Entity\ImageStyle;
@@ -15,21 +17,22 @@ class ImageImportTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['system', 'image', 'image_module_test'];
+  protected static $modules = ['system', 'image', 'image_module_test'];
 
   /**
    * Tests importing image styles.
    */
-  public function testImport() {
+  public function testImport(): void {
     $style = ImageStyle::create([
-      'name' => 'test'
+      'name' => 'test',
+      'label' => 'Test',
     ]);
 
     $style->addImageEffect(['id' => 'image_module_test_null']);
     $style->addImageEffect(['id' => 'image_module_test_null']);
     $style->save();
 
-    $this->assertEqual(count($style->getEffects()), 2);
+    $this->assertCount(2, $style->getEffects());
 
     $uuid = \Drupal::service('uuid')->generate();
     $style->set('effects', [
@@ -40,7 +43,7 @@ class ImageImportTest extends KernelTestBase {
     $style->save();
 
     $style = ImageStyle::load('test');
-    $this->assertEqual(count($style->getEffects()), 1);
+    $this->assertCount(1, $style->getEffects());
   }
 
 }

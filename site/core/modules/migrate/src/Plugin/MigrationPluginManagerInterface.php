@@ -29,6 +29,17 @@ interface MigrationPluginManagerInterface extends PluginManagerInterface {
   public function createInstances($id, array $configuration = []);
 
   /**
+   * Expand derivative migration dependencies.
+   *
+   * @param string[] $migration_ids
+   *   A list of plugin IDs.
+   *
+   * @return array
+   *   An array of expanded plugin ids.
+   */
+  public function expandPluginIds(array $migration_ids);
+
+  /**
    * Creates a stub migration plugin from a definition array.
    *
    * @param array $definition
@@ -47,7 +58,8 @@ interface MigrationPluginManagerInterface extends PluginManagerInterface {
    *   A migration tag we want to filter by.
    *
    * @return array|\Drupal\migrate\Plugin\MigrationInterface[]
-   *   An array of migration objects with the given tag.
+   *   An array of migration objects with the given tag, or an empty array if no
+   *   migrations with that tag exist.
    */
   public function createInstancesByTag($tag);
 

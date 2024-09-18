@@ -3,7 +3,7 @@
 namespace Drupal\Core\File\MimeType;
 
 use Drupal\Core\Extension\ModuleHandlerInterface;
-use Symfony\Component\HttpFoundation\File\MimeType\MimeTypeGuesserInterface;
+use Symfony\Component\Mime\MimeTypeGuesserInterface;
 
 /**
  * Makes possible to guess the MIME type of a file using its extension.
@@ -17,6 +17,7 @@ class ExtensionMimeTypeGuesser implements MimeTypeGuesserInterface {
    *   Array of mimetypes correlated to the extensions that relate to them.
    */
   protected $defaultMapping = [
+    // cspell:disable
     'mimetypes' => [
       0 => 'application/andrew-inset',
       1 => 'application/atom',
@@ -26,6 +27,7 @@ class ExtensionMimeTypeGuesser implements MimeTypeGuesserInterface {
       5 => 'application/cu-seeme',
       6 => 'application/dsptype',
       350 => 'application/epub+zip',
+      359 => 'application/gzip',
       7 => 'application/hta',
       8 => 'application/java-archive',
       9 => 'application/java-serialized-object',
@@ -132,7 +134,6 @@ class ExtensionMimeTypeGuesser implements MimeTypeGuesserInterface {
       109 => 'application/x-dms',
       110 => 'application/x-doom',
       111 => 'application/x-dvi',
-      112 => 'application/x-flac',
       113 => 'application/x-font',
       114 => 'application/x-freemind',
       115 => 'application/x-futuresplash',
@@ -152,7 +153,9 @@ class ExtensionMimeTypeGuesser implements MimeTypeGuesserInterface {
       129 => 'application/x-iphone',
       130 => 'application/x-iso9660-image',
       131 => 'application/x-java-jnlp-file',
-      132 => 'application/javascript',
+      // Per RFC 9239, text/javascript is preferred over application/javascript.
+      // @see https://www.rfc-editor.org/rfc/rfc9239
+      132 => 'text/javascript',
       133 => 'application/x-jmol',
       134 => 'application/x-kchart',
       135 => 'application/x-killustrator',
@@ -208,7 +211,9 @@ class ExtensionMimeTypeGuesser implements MimeTypeGuesserInterface {
       183 => 'application/xhtml+xml',
       184 => 'application/xml',
       185 => 'application/zip',
+      360 => 'audio/aac',
       186 => 'audio/basic',
+      112 => 'audio/flac',
       187 => 'audio/midi',
       346 => 'audio/mp4',
       188 => 'audio/mpeg',
@@ -279,6 +284,7 @@ class ExtensionMimeTypeGuesser implements MimeTypeGuesserInterface {
       251 => 'chemical/x-vmd',
       252 => 'chemical/x-xtel',
       253 => 'chemical/x-xyz',
+      362 => 'image/avif',
       254 => 'image/gif',
       255 => 'image/ief',
       256 => 'image/jpeg',
@@ -377,6 +383,7 @@ class ExtensionMimeTypeGuesser implements MimeTypeGuesserInterface {
       343 => 'x-conference/x-cooltalk',
       344 => 'x-epoc/x-sisx-app',
       345 => 'x-world/x-vrml',
+      361 => 'application/json',
     ],
 
     // Extensions added to this list MUST be lower-case.
@@ -618,11 +625,11 @@ class ExtensionMimeTypeGuesser implements MimeTypeGuesserInterface {
       'kar' => 187,
       'mpega' => 188,
       'mpga' => 188,
-      'm4a' => 188,
       'mp3' => 188,
       'mp2' => 188,
       'ogg' => 189,
       'oga' => 189,
+      'opus' => 189,
       'spx' => 189,
       'sid' => 190,
       'aif' => 191,
@@ -844,6 +851,7 @@ class ExtensionMimeTypeGuesser implements MimeTypeGuesserInterface {
       'vrml' => 345,
       'f4a' => 346,
       'f4b' => 346,
+      'm4a' => 346,
       'flv' => 347,
       'm4v' => 348,
       'azw' => 349,
@@ -856,7 +864,13 @@ class ExtensionMimeTypeGuesser implements MimeTypeGuesserInterface {
       'weba' => 356,
       'webm' => 357,
       'vtt' => 358,
+      'gz' => 359,
+      'mjs' => 132,
+      'aac' => 360,
+      'json' => 361,
+      'avif' => 362,
     ],
+    // cspell:enable
   ];
 
   /**
@@ -886,7 +900,7 @@ class ExtensionMimeTypeGuesser implements MimeTypeGuesserInterface {
   /**
    * {@inheritdoc}
    */
-  public function guess($path) {
+  public function guessMimeType($path): ?string {
     if ($this->mapping === NULL) {
       $mapping = $this->defaultMapping;
       // Allow modules to alter the default mapping.
@@ -895,16 +909,16 @@ class ExtensionMimeTypeGuesser implements MimeTypeGuesserInterface {
     }
 
     $extension = '';
-    $file_parts = explode('.', drupal_basename($path));
+    $file_parts = explode('.', \Drupal::service('file_system')->basename($path));
 
     // Remove the first part: a full filename should not match an extension.
     array_shift($file_parts);
 
     // Iterate over the file parts, trying to find a match.
     // For my.awesome.image.jpeg, we try:
-    //   - jpeg
-    //   - image.jpeg, and
-    //   - awesome.image.jpeg
+    // - jpeg
+    // - image.jpeg, and
+    // - awesome.image.jpeg
     while ($additional_part = array_pop($file_parts)) {
       $extension = strtolower($additional_part . ($extension ? '.' . $extension : ''));
       if (isset($this->mapping['extensions'][$extension])) {
@@ -912,7 +926,7 @@ class ExtensionMimeTypeGuesser implements MimeTypeGuesserInterface {
       }
     }
 
-    return 'application/octet-stream';
+    return NULL;
   }
 
   /**
@@ -921,8 +935,15 @@ class ExtensionMimeTypeGuesser implements MimeTypeGuesserInterface {
    * @param array|null $mapping
    *   Passing a NULL mapping will cause guess() to use self::$defaultMapping.
    */
-  public function setMapping(array $mapping = NULL) {
+  public function setMapping(?array $mapping = NULL) {
     $this->mapping = $mapping;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function isGuesserSupported(): bool {
+    return TRUE;
   }
 
 }

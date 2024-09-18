@@ -10,7 +10,7 @@ use Drupal\Component\Utility\Html;
  * To use with the Attribute class, set the key to be the attribute name
  * and the value the attribute value.
  * @code
- *  $attributes = new Attribute(array());
+ *  $attributes = new Attribute([]);
  *  $attributes['id'] = 'socks';
  *  $attributes['style'] = 'background-color:white';
  *  echo '<cat ' . $attributes . '>';
@@ -25,7 +25,7 @@ class AttributeString extends AttributeValueBase {
    * Implements the magic __toString() method.
    */
   public function __toString() {
-    return Html::escape($this->value);
+    return Html::escape((string) $this->value);
   }
 
 }

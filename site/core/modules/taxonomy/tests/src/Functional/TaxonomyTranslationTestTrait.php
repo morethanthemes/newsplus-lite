@@ -1,23 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Functional;
 
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
-use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\language\Entity\ConfigurableLanguage;
+use Drupal\Tests\field\Traits\EntityReferenceFieldCreationTrait;
 
 /**
  * Provides common testing base for translated taxonomy terms.
  */
 trait TaxonomyTranslationTestTrait {
 
-  use EntityReferenceTestTrait;
+  use EntityReferenceFieldCreationTrait;
 
   /**
    * The vocabulary.
    *
-   * @var \Drupal\taxonomy\Entity\Vocabulary;
+   * @var \Drupal\taxonomy\Entity\Vocabulary
    */
   protected $vocabulary;
 
@@ -65,10 +67,6 @@ trait TaxonomyTranslationTestTrait {
     // picked up.
     \Drupal::service('content_translation.manager')->setEnabled('node', 'article', TRUE);
     \Drupal::service('content_translation.manager')->setEnabled('taxonomy_term', $this->vocabulary->id(), TRUE);
-    drupal_static_reset();
-    \Drupal::entityManager()->clearCachedDefinitions();
-    \Drupal::service('router.builder')->rebuild();
-    \Drupal::service('entity.definition_update_manager')->applyUpdates();
   }
 
   /**
@@ -86,12 +84,15 @@ trait TaxonomyTranslationTestTrait {
     $field_storage->setTranslatable(FALSE);
     $field_storage->save();
 
-    entity_get_form_display('node', 'article', 'default')
+    /** @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface $display_repository */
+    $display_repository = \Drupal::service('entity_display.repository');
+
+    $display_repository->getFormDisplay('node', 'article')
       ->setComponent($this->termFieldName, [
         'type' => 'entity_reference_autocomplete_tags',
       ])
       ->save();
-    entity_get_display('node', 'article', 'default')
+    $display_repository->getViewDisplay('node', 'article')
       ->setComponent($this->termFieldName, [
         'type' => 'entity_reference_label',
       ])

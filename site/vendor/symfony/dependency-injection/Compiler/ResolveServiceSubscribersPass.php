@@ -14,6 +14,7 @@ namespace Symfony\Component\DependencyInjection\Compiler;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Reference;
+use Symfony\Contracts\Service\ServiceProviderInterface;
 
 /**
  * Compiler pass to inject their service locator to service subscribers.
@@ -22,11 +23,13 @@ use Symfony\Component\DependencyInjection\Reference;
  */
 class ResolveServiceSubscribersPass extends AbstractRecursivePass
 {
-    private $serviceLocator;
+    protected bool $skipScalars = true;
 
-    protected function processValue($value, $isRoot = false)
+    private ?string $serviceLocator = null;
+
+    protected function processValue(mixed $value, bool $isRoot = false): mixed
     {
-        if ($value instanceof Reference && $this->serviceLocator && ContainerInterface::class === $this->container->normalizeId($value)) {
+        if ($value instanceof Reference && $this->serviceLocator && \in_array((string) $value, [ContainerInterface::class, ServiceProviderInterface::class], true)) {
             return new Reference($this->serviceLocator);
         }
 
@@ -35,7 +38,12 @@ class ResolveServiceSubscribersPass extends AbstractRecursivePass
         }
 
         $serviceLocator = $this->serviceLocator;
-        $this->serviceLocator = $value->hasTag('container.service_subscriber.locator') ? $value->getTag('container.service_subscriber.locator')[0]['id'] : null;
+        $this->serviceLocator = null;
+
+        if ($value->hasTag('container.service_subscriber.locator')) {
+            $this->serviceLocator = $value->getTag('container.service_subscriber.locator')[0]['id'];
+            $value->clearTag('container.service_subscriber.locator');
+        }
 
         try {
             return parent::processValue($value);

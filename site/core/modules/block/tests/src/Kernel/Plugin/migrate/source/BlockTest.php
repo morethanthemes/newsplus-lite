@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\block\Kernel\Plugin\migrate\source;
 
 use Drupal\Tests\migrate\Kernel\MigrateSqlSourceTestBase;
@@ -15,12 +17,12 @@ class BlockTest extends MigrateSqlSourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['block', 'migrate_drupal'];
+  protected static $modules = ['block', 'migrate_drupal'];
 
   /**
    * {@inheritdoc}
    */
-  public function providerSource() {
+  public static function providerSource() {
     $tests = [];
 
     // The source data.
@@ -87,7 +89,7 @@ class BlockTest extends MigrateSqlSourceTestBase {
         'schema_version' => '6055',
         'weight' => '0',
         'info' => 'a:0:{}',
-      ]
+      ],
     ];
 
     // The expected results.
@@ -104,7 +106,7 @@ class BlockTest extends MigrateSqlSourceTestBase {
         'pages' => '',
         'title' => 'Test Title 01',
         'cache' => -1,
-        'roles' => [2]
+        'roles' => [2],
       ],
       [
         'bid' => 2,
@@ -118,7 +120,7 @@ class BlockTest extends MigrateSqlSourceTestBase {
         'pages' => '<front>',
         'title' => 'Test Title 02',
         'cache' => -1,
-        'roles' => [2]
+        'roles' => [2],
       ],
     ];
     return $tests;

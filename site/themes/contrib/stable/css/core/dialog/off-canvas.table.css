@@ -1,0 +1,112 @@
+/**
+ * @file
+ * Visual styling for tables in the off-canvas dialog.
+ */
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) table *,
+#drupal-off-canvas-wrapper table * {
+  font-family: "Lucida Grande", "Lucida Sans Unicode", "liberation sans", sans-serif;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) table,
+#drupal-off-canvas-wrapper table {
+  display: table;
+  width: 100%;
+  min-width: calc(100% + 40px);
+  /* Cancel out the padding of the parent to make the table full width. */
+  margin: 0 -20px -10px -20px;
+  color: #ddd;
+  border: 0;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) table thead,
+#drupal-off-canvas-wrapper table thead {
+  display: table-header-group;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) table tbody,
+#drupal-off-canvas-wrapper table tbody {
+  display: table-row-group;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) tr,
+#drupal-off-canvas-wrapper tr {
+  display: table-row;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) tr:hover td,
+#drupal-off-canvas-wrapper tr:hover td {
+  background-color: transparent;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) td,
+#drupal-off-canvas-wrapper td,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) th,
+#drupal-off-canvas-wrapper th {
+  display: table-cell;
+  width: auto;
+  height: auto;
+  padding: 2px 8px;
+  vertical-align: middle;
+  border-bottom: 1px solid #777;
+  background-color: transparent;
+}
+[dir="rtl"] #drupal-off-canvas:not(.drupal-off-canvas-reset) th,
+[dir="rtl"] #drupal-off-canvas-wrapper th,
+[dir="rtl"] #drupal-off-canvas:not(.drupal-off-canvas-reset) td,
+[dir="rtl"] #drupal-off-canvas-wrapper td {
+  text-align: right;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) th,
+#drupal-off-canvas-wrapper th {
+  font-weight: bold;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) th.checkbox,
+#drupal-off-canvas-wrapper th.checkbox,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) td.checkbox,
+#drupal-off-canvas-wrapper td.checkbox {
+  width: 20px;
+  padding: 0;
+  text-align: center;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) div.checkbox.menu-enabled,
+#drupal-off-canvas-wrapper div.checkbox.menu-enabled {
+  position: static;
+  display: inline;
+  width: auto;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) th:first-child,
+#drupal-off-canvas-wrapper th:first-child,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) td:first-child,
+#drupal-off-canvas-wrapper td:first-child {
+  width: 150px;
+}
+/* For lack of a better class, using this to grab the operations th. */
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .tabledrag-has-colspan,
+#drupal-off-canvas-wrapper .tabledrag-has-colspan {
+  padding-right: 20px;
+  text-align: right;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) td,
+#drupal-off-canvas-wrapper td {
+  padding: 6px 8px;
+  color: #ddd;
+}
+/* Hide overflow with ellipsis for links. */
+#drupal-off-canvas:not(.drupal-off-canvas-reset) td a,
+#drupal-off-canvas-wrapper td a {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: transparent;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) tr td:first-child,
+#drupal-off-canvas-wrapper tr td:first-child,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) tr th:first-child,
+#drupal-off-canvas-wrapper tr th:first-child {
+  padding-left: 20px; /* LTR */
+}
+[dir="rtl"] #drupal-off-canvas:not(.drupal-off-canvas-reset) tr td:first-child,
+[dir="rtl"] #drupal-off-canvas-wrapper tr td:first-child,
+[dir="rtl"] #drupal-off-canvas:not(.drupal-off-canvas-reset) tr th:first-child,
+[dir="rtl"] #drupal-off-canvas-wrapper tr th:first-child {
+  padding-right: 20px;
+}

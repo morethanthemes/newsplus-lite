@@ -4,5 +4,5 @@ dependencies: {  }
 name: Tags
 vid: tags
 description: 'Use tags to group articles on similar topics into categories.'
-hierarchy: 0
 weight: 0
+new_revision: false

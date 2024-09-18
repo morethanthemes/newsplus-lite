@@ -1,32 +1,41 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\user\Functional;
 
-use Drupal\Component\Render\FormattableMarkup;
+use Drupal\Core\Url;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\Tests\BrowserTestBase;
 use Drupal\user\Entity\User;
 
 /**
- * Generates text using placeholders for dummy content to check user token
- * replacement.
+ * Tests the replacement of user tokens.
  *
  * @group user
  */
 class UserTokenReplaceTest extends BrowserTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['language', 'user_hooks_test'];
+  protected static $modules = ['language', 'user_hooks_test'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected bool $useOneTimeLoginLinks = FALSE;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
     ConfigurableLanguage::createFromLangcode('de')->save();
   }
@@ -34,7 +43,7 @@ class UserTokenReplaceTest extends BrowserTestBase {
   /**
    * Creates a user, then tests the tokens generated from it.
    */
-  public function testUserTokenReplacement() {
+  public function testUserTokenReplacement(): void {
     $token_service = \Drupal::token();
     $language_interface = \Drupal::languageManager()->getCurrentLanguage();
     $url_options = [
@@ -55,6 +64,9 @@ class UserTokenReplaceTest extends BrowserTestBase {
     $account = User::load($user1->id());
     $global_account = User::load(\Drupal::currentUser()->id());
 
+    /** @var \Drupal\Core\Datetime\DateFormatterInterface $date_formatter */
+    $date_formatter = $this->container->get('date.formatter');
+
     // Generate and test tokens.
     $tests = [];
     $tests['[user:uid]'] = $account->id();
@@ -62,12 +74,12 @@ class UserTokenReplaceTest extends BrowserTestBase {
     $tests['[user:account-name]'] = $account->getAccountName();
     $tests['[user:display-name]'] = $account->getDisplayName();
     $tests['[user:mail]'] = $account->getEmail();
-    $tests['[user:url]'] = $account->url('canonical', $url_options);
-    $tests['[user:edit-url]'] = $account->url('edit-form', $url_options);
-    $tests['[user:last-login]'] = format_date($account->getLastLoginTime(), 'medium', '', NULL, $language_interface->getId());
-    $tests['[user:last-login:short]'] = format_date($account->getLastLoginTime(), 'short', '', NULL, $language_interface->getId());
-    $tests['[user:created]'] = format_date($account->getCreatedTime(), 'medium', '', NULL, $language_interface->getId());
-    $tests['[user:created:short]'] = format_date($account->getCreatedTime(), 'short', '', NULL, $language_interface->getId());
+    $tests['[user:url]'] = $account->toUrl('canonical', $url_options)->toString();
+    $tests['[user:edit-url]'] = $account->toUrl('edit-form', $url_options)->toString();
+    $tests['[user:last-login]'] = $date_formatter->format($account->getLastLoginTime(), 'medium', '', NULL, $language_interface->getId());
+    $tests['[user:last-login:short]'] = $date_formatter->format($account->getLastLoginTime(), 'short', '', NULL, $language_interface->getId());
+    $tests['[user:created]'] = $date_formatter->format($account->getCreatedTime(), 'medium', '', NULL, $language_interface->getId());
+    $tests['[user:created:short]'] = $date_formatter->format($account->getCreatedTime(), 'short', '', NULL, $language_interface->getId());
     $tests['[current-user:name]'] = $global_account->getAccountName();
     $tests['[current-user:account-name]'] = $global_account->getAccountName();
     $tests['[current-user:display-name]'] = $global_account->getDisplayName();
@@ -97,19 +109,19 @@ class UserTokenReplaceTest extends BrowserTestBase {
     $metadata_tests['[current-user:display-name]'] = $base_bubbleable_metadata->merge(BubbleableMetadata::createFromObject($global_account)->addCacheContexts(['user']));
 
     // Test to make sure that we generated something for each token.
-    $this->assertFalse(in_array(0, array_map('strlen', $tests)), 'No empty tokens generated.');
+    $this->assertNotContains(0, array_map('strlen', $tests), 'No empty tokens generated.');
 
     foreach ($tests as $input => $expected) {
       $bubbleable_metadata = new BubbleableMetadata();
       $output = $token_service->replace($input, ['user' => $account], ['langcode' => $language_interface->getId()], $bubbleable_metadata);
-      $this->assertEqual($output, $expected, new FormattableMarkup('User token %token replaced.', ['%token' => $input]));
-      $this->assertEqual($bubbleable_metadata, $metadata_tests[$input]);
+      $this->assertSame((string) $expected, (string) $output, "Failed test case: {$input}");
+      $this->assertEquals($metadata_tests[$input], $bubbleable_metadata);
     }
 
     // Generate tokens for the anonymous user.
     $anonymous_user = User::load(0);
     $tests = [];
-    $tests['[user:uid]'] = t('not yet assigned');
+    $tests['[user:uid]'] = 'not yet assigned';
     $tests['[user:display-name]'] = $anonymous_user->getDisplayName();
 
     $base_bubbleable_metadata = BubbleableMetadata::createFromObject($anonymous_user);
@@ -122,8 +134,8 @@ class UserTokenReplaceTest extends BrowserTestBase {
     foreach ($tests as $input => $expected) {
       $bubbleable_metadata = new BubbleableMetadata();
       $output = $token_service->replace($input, ['user' => $anonymous_user], ['langcode' => $language_interface->getId()], $bubbleable_metadata);
-      $this->assertEqual($output, $expected, format_string('Sanitized user token %token replaced.', ['%token' => $input]));
-      $this->assertEqual($bubbleable_metadata, $metadata_tests[$input]);
+      $this->assertSame((string) $expected, (string) $output, "Failed test case: {$input}");
+      $this->assertEquals($metadata_tests[$input], $bubbleable_metadata);
     }
 
     // Generate login and cancel link.
@@ -132,27 +144,27 @@ class UserTokenReplaceTest extends BrowserTestBase {
     $tests['[user:cancel-url]'] = user_cancel_url($account);
 
     // Generate tokens with interface language.
-    $link = \Drupal::url('user.page', [], ['absolute' => TRUE]);
+    $link = Url::fromRoute('user.page', [], ['absolute' => TRUE])->toString();
     foreach ($tests as $input => $expected) {
       $output = $token_service->replace($input, ['user' => $account], ['langcode' => $language_interface->getId(), 'callback' => 'user_mail_tokens', 'clear' => TRUE]);
-      $this->assertTrue(strpos($output, $link) === 0, 'Generated URL is in interface language.');
+      $this->assertStringStartsWith($link, $output, 'Generated URL is in interface language.');
     }
 
     // Generate tokens with the user's preferred language.
     $account->preferred_langcode = 'de';
     $account->save();
-    $link = \Drupal::url('user.page', [], ['language' => \Drupal::languageManager()->getLanguage($account->getPreferredLangcode()), 'absolute' => TRUE]);
+    $link = Url::fromRoute('user.page', [], ['language' => \Drupal::languageManager()->getLanguage($account->getPreferredLangcode()), 'absolute' => TRUE])->toString();
     foreach ($tests as $input => $expected) {
       $output = $token_service->replace($input, ['user' => $account], ['callback' => 'user_mail_tokens', 'clear' => TRUE]);
-      $this->assertTrue(strpos($output, $link) === 0, "Generated URL is in the user's preferred language.");
+      $this->assertStringStartsWith($link, $output, "Generated URL is in the user's preferred language.");
     }
 
     // Generate tokens with one specific language.
-    $link = \Drupal::url('user.page', [], ['language' => \Drupal::languageManager()->getLanguage('de'), 'absolute' => TRUE]);
+    $link = Url::fromRoute('user.page', [], ['language' => \Drupal::languageManager()->getLanguage('de'), 'absolute' => TRUE])->toString();
     foreach ($tests as $input => $expected) {
       foreach ([$user1, $user2] as $account) {
         $output = $token_service->replace($input, ['user' => $account], ['langcode' => 'de', 'callback' => 'user_mail_tokens', 'clear' => TRUE]);
-        $this->assertTrue(strpos($output, $link) === 0, "Generated URL in the requested language.");
+        $this->assertStringStartsWith($link, $output, "Generated URL in the requested language.");
       }
     }
 
@@ -162,7 +174,7 @@ class UserTokenReplaceTest extends BrowserTestBase {
     $input = '[user:display-name] [current-user:display-name]';
     $expected = "<em>{$user1->id()}</em> <em>{$user2->id()}</em>";
     $output = $token_service->replace($input, ['user' => $user1]);
-    $this->assertEqual($output, $expected, new FormattableMarkup('User token %token does not escape safe markup.', ['%token' => 'display-name']));
+    $this->assertSame($expected, (string) $output);
   }
 
 }

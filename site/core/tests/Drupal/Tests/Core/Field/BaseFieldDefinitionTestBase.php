@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Field;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\Field\FieldTypeCategoryManagerInterface;
 use Drupal\Core\Field\FieldTypePluginManager;
 use Drupal\Core\TypedData\TypedDataManagerInterface;
 use Drupal\Tests\UnitTestCase;
@@ -23,26 +26,28 @@ abstract class BaseFieldDefinitionTestBase extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     // getModuleAndPath() returns an array of the module name and directory.
-    list($module_name, $module_dir) = $this->getModuleAndPath();
+    [$module_name, $module_dir] = $this->getModuleAndPath();
 
     $namespaces = new \ArrayObject();
     $namespaces["Drupal\\$module_name"] = $module_dir . '/src';
 
-    $module_handler = $this->getMock('Drupal\Core\Extension\ModuleHandlerInterface');
+    $module_handler = $this->createMock('Drupal\Core\Extension\ModuleHandlerInterface');
     $module_handler->expects($this->once())
       ->method('moduleExists')
       ->with($module_name)
-      ->will($this->returnValue(TRUE));
-    $typed_data_manager = $this->getMock(TypedDataManagerInterface::class);
+      ->willReturn(TRUE);
+    $typed_data_manager = $this->createMock(TypedDataManagerInterface::class);
+    $field_type_category_manager = $this->createMock(FieldTypeCategoryManagerInterface::class);
     $plugin_manager = new FieldTypePluginManager(
       $namespaces,
-      $this->getMock('Drupal\Core\Cache\CacheBackendInterface'),
+      $this->createMock('Drupal\Core\Cache\CacheBackendInterface'),
       $module_handler,
-      $typed_data_manager
+      $typed_data_manager,
+      $field_type_category_manager,
     );
 
     $container = new ContainerBuilder();
@@ -64,9 +69,6 @@ abstract class BaseFieldDefinitionTestBase extends UnitTestCase {
 
   /**
    * Returns the module name and the module directory for the plugin.
-   *
-   * drupal_get_path() cannot be used here, because it is not available in
-   * Drupal PHPUnit tests.
    *
    * @return array
    *   A one-dimensional array containing the following strings:

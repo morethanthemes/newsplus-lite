@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\options\Kernel;
 
 use Drupal\field\Entity\FieldConfig;
@@ -12,11 +14,9 @@ use Drupal\field\Entity\FieldStorageConfig;
 abstract class OptionsFieldUnitTestBase extends FieldKernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['options'];
+  protected static $modules = ['options'];
 
   /**
    * The field name used in the test.
@@ -49,9 +49,8 @@ abstract class OptionsFieldUnitTestBase extends FieldKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
-    $this->container->get('router.builder')->rebuild();
 
     $this->fieldStorageDefinition = [
       'field_name' => $this->fieldName,
@@ -71,7 +70,8 @@ abstract class OptionsFieldUnitTestBase extends FieldKernelTestBase {
     ]);
     $this->field->save();
 
-    entity_get_form_display('entity_test', 'entity_test', 'default')
+    \Drupal::service('entity_display.repository')
+      ->getFormDisplay('entity_test', 'entity_test')
       ->setComponent($this->fieldName, [
         'type' => 'options_buttons',
       ])

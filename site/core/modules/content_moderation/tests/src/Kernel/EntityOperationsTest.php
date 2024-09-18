@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\content_moderation\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
-use Drupal\workflows\Entity\Workflow;
+use Drupal\Tests\content_moderation\Traits\ContentModerationTestTrait;
 
 /**
  * @coversDefaultClass \Drupal\content_moderation\EntityOperations
@@ -14,10 +16,12 @@ use Drupal\workflows\Entity\Workflow;
  */
 class EntityOperationsTest extends KernelTestBase {
 
+  use ContentModerationTestTrait;
+
   /**
    * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'content_moderation',
     'node',
     'user',
@@ -28,7 +32,7 @@ class EntityOperationsTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installEntitySchema('node');
     $this->installSchema('node', 'node_access');
@@ -45,10 +49,10 @@ class EntityOperationsTest extends KernelTestBase {
   protected function createNodeType() {
     $node_type = NodeType::create([
       'type' => 'page',
-      'label' => 'Page',
+      'name' => 'Page',
     ]);
     $node_type->save();
-    $workflow = Workflow::load('editorial');
+    $workflow = $this->createEditorialWorkflow();
     $workflow->getTypePlugin()->addEntityTypeAndBundle('node', 'page');
     $workflow->save();
   }
@@ -56,7 +60,7 @@ class EntityOperationsTest extends KernelTestBase {
   /**
    * Verifies that the process of saving pending revisions works as expected.
    */
-  public function testPendingRevisions() {
+  public function testPendingRevisions(): void {
     // Create a new node in draft.
     $page = Node::create([
       'type' => 'page',
@@ -130,7 +134,7 @@ class EntityOperationsTest extends KernelTestBase {
   /**
    * Verifies that a newly-created node can go straight to published.
    */
-  public function testPublishedCreation() {
+  public function testPublishedCreation(): void {
     // Create a new node in draft.
     $page = Node::create([
       'type' => 'page',
@@ -152,7 +156,7 @@ class EntityOperationsTest extends KernelTestBase {
   /**
    * Verifies that an unpublished state may be made the default revision.
    */
-  public function testArchive() {
+  public function testArchive(): void {
     $page = Node::create([
       'type' => 'page',
       'title' => $this->randomString(),

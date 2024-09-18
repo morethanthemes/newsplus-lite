@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\system\Unit\Menu;
 
 use Drupal\Core\Access\AccessResult;
@@ -9,6 +11,7 @@ use Drupal\Core\Menu\MenuLinkTree;
 use Drupal\Core\Menu\MenuLinkTreeElement;
 use Drupal\Core\Template\Attribute;
 use Drupal\Core\Url;
+use Drupal\Core\Utility\CallableResolver;
 use Drupal\Tests\Core\Menu\MenuLinkMock;
 use Drupal\Tests\UnitTestCase;
 
@@ -28,15 +31,15 @@ class MenuLinkTreeTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->menuLinkTree = new MenuLinkTree(
-      $this->getMock('\Drupal\Core\Menu\MenuTreeStorageInterface'),
-      $this->getMock('\Drupal\Core\Menu\MenuLinkManagerInterface'),
-      $this->getMock('\Drupal\Core\Routing\RouteProviderInterface'),
-      $this->getMock('\Drupal\Core\Menu\MenuActiveTrailInterface'),
-      $this->getMock('\Drupal\Core\Controller\ControllerResolverInterface')
+      $this->createMock('\Drupal\Core\Menu\MenuTreeStorageInterface'),
+      $this->createMock('\Drupal\Core\Menu\MenuLinkManagerInterface'),
+      $this->createMock('\Drupal\Core\Routing\RouteProviderInterface'),
+      $this->createMock('\Drupal\Core\Menu\MenuActiveTrailInterface'),
+      $this->createMock(CallableResolver::class)
     );
 
     $cache_contexts_manager = $this->getMockBuilder('Drupal\Core\Cache\Context\CacheContextsManager')
@@ -96,12 +99,11 @@ class MenuLinkTreeTest extends UnitTestCase {
    *
    * @dataProvider providerTestBuildCacheability
    */
-  public function testBuildCacheability($description, $tree, $expected_build, $access, array $access_cache_contexts = []) {
+  public function testBuildCacheability($description, $tree, $expected_build, $access, array $access_cache_contexts = []): void {
     if ($access !== NULL) {
       $access->addCacheContexts($access_cache_contexts);
     }
     $build = $this->menuLinkTree->build($tree);
-    sort($expected_build['#cache']['contexts']);
     $this->assertEquals($expected_build, $build, $description);
   }
 
@@ -113,7 +115,7 @@ class MenuLinkTreeTest extends UnitTestCase {
    *
    * @see testBuildCacheability
    */
-  public function providerTestBuildCacheability() {
+  public static function providerTestBuildCacheability() {
     $base_expected_build_empty = [
       '#cache' => [
         'contexts' => [],
@@ -134,7 +136,7 @@ class MenuLinkTreeTest extends UnitTestCase {
       '#theme' => 'menu__mock',
       '#items' => [
         // To be filled when generating test cases, using $get_built_element().
-      ]
+      ],
     ];
 
     $get_built_element = function (MenuLinkTreeElement $element) {
@@ -194,7 +196,7 @@ class MenuLinkTreeTest extends UnitTestCase {
     ];
 
     for ($i = 0; $i < count($access_scenarios); $i++) {
-      list($access, $access_cache_contexts) = $access_scenarios[$i];
+      [$access, $access_cache_contexts] = $access_scenarios[$i];
 
       for ($j = 0; $j < count($links_scenarios); $j++) {
         $links = $links_scenarios[$j];
@@ -241,28 +243,28 @@ class MenuLinkTreeTest extends UnitTestCase {
         ];
 
         // Multi-level tree.
-        $multi_level_root_a = MenuLinkMock::create(['id' => 'test.roota', 'route_name' => 'roota', 'title' => 'Root A']);
-        $multi_level_root_b = MenuLinkMock::create(['id' => 'test.rootb', 'route_name' => 'rootb', 'title' => 'Root B']);
-        $multi_level_parent_c = MenuLinkMock::create(['id' => 'test.parentc', 'route_name' => 'parentc', 'title' => 'Parent C']);
+        $multi_level_root_a = MenuLinkMock::create(['id' => 'test.root_a', 'route_name' => 'root_a', 'title' => 'Root A']);
+        $multi_level_root_b = MenuLinkMock::create(['id' => 'test.root_b', 'route_name' => 'root_b', 'title' => 'Root B']);
+        $multi_level_parent_c = MenuLinkMock::create(['id' => 'test.parent_c', 'route_name' => 'parent_c', 'title' => 'Parent C']);
         $tree = [
           new MenuLinkTreeElement($multi_level_root_a, TRUE, 0, FALSE, [
             new MenuLinkTreeElement($multi_level_parent_c, TRUE, 0, FALSE, [
               new MenuLinkTreeElement($links[0], FALSE, 0, FALSE, []),
-            ])
+            ]),
           ]),
           new MenuLinkTreeElement($multi_level_root_b, TRUE, 0, FALSE, [
-            new MenuLinkTreeElement($links[1], FALSE, 1, FALSE, [])
+            new MenuLinkTreeElement($links[1], FALSE, 1, FALSE, []),
           ]),
         ];
         $tree[0]->subtree[0]->subtree[0]->access = $access;
         $expected_build = $base_expected_build;
-        $expected_build['#items']['test.roota'] = $get_built_element($tree[0]);
-        $expected_build['#items']['test.roota']['below']['test.parentc'] = $get_built_element($tree[0]->subtree[0]);
+        $expected_build['#items']['test.root_a'] = $get_built_element($tree[0]);
+        $expected_build['#items']['test.root_a']['below']['test.parent_c'] = $get_built_element($tree[0]->subtree[0]);
         if ($access === NULL || $access->isAllowed()) {
-          $expected_build['#items']['test.roota']['below']['test.parentc']['below']['test.example1'] = $get_built_element($tree[0]->subtree[0]->subtree[0]);
+          $expected_build['#items']['test.root_a']['below']['test.parent_c']['below']['test.example1'] = $get_built_element($tree[0]->subtree[0]->subtree[0]);
         }
-        $expected_build['#items']['test.rootb'] = $get_built_element($tree[1]);
-        $expected_build['#items']['test.rootb']['below']['test.example2'] = $get_built_element($tree[1]->subtree[0]);
+        $expected_build['#items']['test.root_b'] = $get_built_element($tree[1]);
+        $expected_build['#items']['test.root_b']['below']['test.example2'] = $get_built_element($tree[1]->subtree[0]);
         $expected_build['#cache']['contexts'] = array_merge($expected_build['#cache']['contexts'], $access_cache_contexts, $links[0]->getCacheContexts(), $links[1]->getCacheContexts());
         $data[] = [
           'description' => "Multi-level tree; access=$i; link=$j.",

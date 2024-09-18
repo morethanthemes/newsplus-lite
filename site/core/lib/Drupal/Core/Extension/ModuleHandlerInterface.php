@@ -2,6 +2,8 @@
 
 namespace Drupal\Core\Extension;
 
+use Drupal\Core\DestructableInterface;
+
 /**
  * Interface for classes that manage a set of enabled modules.
  *
@@ -9,7 +11,7 @@ namespace Drupal\Core\Extension;
  * responsible for loading module files and maintaining information about module
  * dependencies and hook implementations.
  */
-interface ModuleHandlerInterface {
+interface ModuleHandlerInterface extends DestructableInterface {
 
   /**
    * Includes a module's .module file.
@@ -61,7 +63,7 @@ interface ModuleHandlerInterface {
    * @return \Drupal\Core\Extension\Extension
    *   An extension object.
    *
-   * @throws \InvalidArgumentException
+   * @throws \Drupal\Core\Extension\Exception\UnknownExtensionException
    *   Thrown when the requested module does not exist.
    */
   public function getModule($name);
@@ -103,7 +105,7 @@ interface ModuleHandlerInterface {
    *   information discovered during a Drupal\Core\Extension\ExtensionDiscovery
    *   scan.
    *
-   * @return
+   * @return array
    *   The same array with the new keys for each module:
    *   - requires: An array with the keys being the modules that this module
    *     requires.
@@ -173,17 +175,6 @@ interface ModuleHandlerInterface {
   public function getHookInfo();
 
   /**
-   * Determines which modules are implementing a hook.
-   *
-   * @param string $hook
-   *   The name of the hook (e.g. "help" or "menu").
-   *
-   * @return array
-   *   An array with the names of the modules which are implementing this hook.
-   */
-  public function getImplementations($hook);
-
-  /**
    * Write the hook implementation info to the cache.
    */
   public function writeCache();
@@ -194,18 +185,38 @@ interface ModuleHandlerInterface {
   public function resetImplementations();
 
   /**
-   * Returns whether a given module implements a given hook.
+   * Determines whether there are implementations of a hook.
    *
-   * @param string $module
-   *   The name of the module (without the .module extension).
    * @param string $hook
    *   The name of the hook (e.g. "help" or "menu").
+   * @param string|string[]|null $modules
+   *   (optional) A single module or multiple modules to check if they have any
+   *   implementations of a hook. Use NULL to check if any enabled module has
+   *   implementations.
    *
    * @return bool
-   *   TRUE if the module is both installed and enabled, and the hook is
-   *   implemented in that module.
+   *   If $modules is provided, then TRUE if there are any implementations by
+   *   the module(s) provided. Or if $modules if NULL, then TRUE if there are
+   *   any implementations. Otherwise FALSE.
    */
-  public function implementsHook($module, $hook);
+  public function hasImplementations(string $hook, $modules = NULL): bool;
+
+  /**
+   * Executes a callback for each implementation of a hook.
+   *
+   * The callback is passed two arguments, a closure which executes a hook
+   * implementation. And the module name.
+   *
+   * @param string $hook
+   *   The name of the hook to invoke.
+   * @param callable $callback
+   *   A callable that invokes a hook implementation. Such that
+   *   $callback is callable(callable, string): mixed.
+   *   Arguments:
+   *    - Closure to a hook implementation.
+   *    - Implementation module machine name.
+   */
+  public function invokeAllWith(string $hook, callable $callback): void;
 
   /**
    * Invokes a hook in a particular module.
@@ -234,7 +245,7 @@ interface ModuleHandlerInterface {
    *   An array of return values of the hook implementations. If modules return
    *   arrays from their implementations, those are merged into one array
    *   recursively. Note: integer keys in arrays will be lost, as the merge is
-   *   done using array_merge_recursive().
+   *   done using Drupal\Component\Utility\NestedArray::mergeDeepArray().
    */
   public function invokeAll($hook, array $args = []);
 
@@ -284,7 +295,7 @@ interface ModuleHandlerInterface {
    *   An array of return values of the hook implementations. If modules return
    *   arrays from their implementations, those are merged into one array
    *   recursively. Note: integer keys in arrays will be lost, as the merge is
-   *   done using array_merge_recursive().
+   *   done using Drupal\Component\Utility\NestedArray::mergeDeepArray().
    *
    * @see \Drupal\Core\Extension\ModuleHandlerInterface::invokeAll()
    * @see https://www.drupal.org/core/deprecation#how-hook
@@ -302,22 +313,22 @@ interface ModuleHandlerInterface {
    * to be passed and alterable, modules provide additional variables assigned by
    * reference in the last $context argument:
    * @code
-   *   $context = array(
+   *   $context = [
    *     'alterable' => &$alterable,
    *     'unalterable' => $unalterable,
    *     'foo' => 'bar',
    *   );
-   *   $this->alter('mymodule_data', $alterable1, $alterable2, $context);
+   *   $this->alter('my_module_data', $alterable1, $alterable2, $context);
    * @endcode
    *
-   * Note that objects are always passed by reference in PHP5. If it is absolutely
+   * Note that objects are always passed by reference. If it is absolutely
    * required that no implementation alters a passed object in $context, then an
    * object needs to be cloned:
    * @code
-   *   $context = array(
+   *   $context = [
    *     'unalterable_object' => clone $object,
    *   );
-   *   $this->alter('mymodule_data', $data, $context);
+   *   $this->alter('my_module_data', $data, $context);
    * @endcode
    *
    * @param string|array $type
@@ -327,7 +338,7 @@ interface ModuleHandlerInterface {
    *   array, ordered first by module, and then for each module, in the order of
    *   values in $type. For example, when Form API is using $this->alter() to
    *   execute both hook_form_alter() and hook_form_FORM_ID_alter()
-   *   implementations, it passes array('form', 'form_' . $form_id) for $type.
+   *   implementations, it passes ['form', 'form_' . $form_id] for $type.
    * @param mixed $data
    *   The variable that will be passed to hook_TYPE_alter() implementations to be
    *   altered. The type of this variable depends on the value of the $type
@@ -360,7 +371,7 @@ interface ModuleHandlerInterface {
    *   array, ordered first by module, and then for each module, in the order of
    *   values in $type. For example, when Form API is using $this->alter() to
    *   execute both hook_form_alter() and hook_form_FORM_ID_alter()
-   *   implementations, it passes array('form', 'form_' . $form_id) for $type.
+   *   implementations, it passes ['form', 'form_' . $form_id] for $type.
    * @param mixed $data
    *   The variable that will be passed to hook_TYPE_alter() implementations to be
    *   altered. The type of this variable depends on the value of the $type
@@ -379,8 +390,10 @@ interface ModuleHandlerInterface {
   public function alterDeprecated($description, $type, &$data, &$context1 = NULL, &$context2 = NULL);
 
   /**
-   * Returns an array of directories for all enabled modules. Useful for
-   * tasks such as finding a file that exists in all module directories.
+   * Returns an array of directories for all enabled modules.
+   *
+   * This is useful for tasks such as finding a file that exists in all module
+   * directories.
    *
    * @return array
    */
@@ -395,6 +408,11 @@ interface ModuleHandlerInterface {
    * @return string
    *   Returns the human readable name of the module or the machine name passed
    *   in if no matching module is found.
+   *
+   * @deprecated in drupal:10.3.0 and is removed from drupal:12.0.0.
+   *   Use \Drupal::service('extension.list.module')->getName($module) instead.
+   *
+   * @see https://www.drupal.org/node/3310017
    */
   public function getName($module);
 

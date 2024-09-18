@@ -42,8 +42,9 @@ function file_test_reset() {
 }
 
 /**
- * Get the arguments passed to invocation of a given hook since
- * file_test_reset() was last called.
+ * Gets the arguments passed to a given hook invocation.
+ *
+ * Arguments are gathered since file_test_reset() was last called.
  *
  * @param string $op
  *   One of the hook_file_* operations: 'load', 'validate', 'download',
@@ -56,20 +57,20 @@ function file_test_reset() {
  * @see file_test_reset()
  */
 function file_test_get_calls($op) {
-  $results = \Drupal::state()->get('file_test.results') ?: [];
+  $results = \Drupal::state()->get('file_test.results', []);
   return $results[$op];
 }
 
 /**
  * Get an array with the calls for all hooks.
  *
- * @return
+ * @return array
  *   An array keyed by hook name ('load', 'validate', 'download', 'insert',
  *   'update', 'copy', 'move', 'delete') with values being arrays of parameters
  *   passed to each call.
  */
 function file_test_get_all_calls() {
-  return \Drupal::state()->get('file_test.results') ?: [];
+  return \Drupal::state()->get('file_test.results', []);
 }
 
 /**
@@ -86,7 +87,7 @@ function file_test_get_all_calls() {
  */
 function _file_test_log_call($op, $args) {
   if (\Drupal::state()->get('file_test.count_hook_invocations', TRUE)) {
-    $results = \Drupal::state()->get('file_test.results') ?: [];
+    $results = \Drupal::state()->get('file_test.results', []);
     $results[$op][] = $args;
     \Drupal::state()->set('file_test.results', $results);
   }
@@ -105,7 +106,7 @@ function _file_test_log_call($op, $args) {
  * @see file_test_reset()
  */
 function _file_test_get_return($op) {
-  $return = \Drupal::state()->get('file_test.return') ?: [$op => NULL];
+  $return = \Drupal::state()->get('file_test.return', [$op => NULL]);
   return $return[$op];
 }
 
@@ -121,7 +122,7 @@ function _file_test_get_return($op) {
  * @see file_test_reset()
  */
 function file_test_set_return($op, $value) {
-  $return = \Drupal::state()->get('file_test.return') ?: [];
+  $return = \Drupal::state()->get('file_test.return', []);
   $return[$op] = $value;
   \Drupal::state()->set('file_test.return', $return);
 }
@@ -139,19 +140,11 @@ function file_test_file_load($files) {
 }
 
 /**
- * Implements hook_file_validate().
- */
-function file_test_file_validate(File $file) {
-  _file_test_log_call('validate', [$file->id()]);
-  return _file_test_get_return('validate');
-}
-
-/**
  * Implements hook_file_download().
  */
 function file_test_file_download($uri) {
   if (\Drupal::state()->get('file_test.allow_all', FALSE)) {
-    $files = entity_load_multiple_by_properties('file', ['uri' => $uri]);
+    $files = \Drupal::entityTypeManager()->getStorage('file')->loadByProperties(['uri' => $uri]);
     $file = reset($files);
     return file_get_content_headers($file);
   }
@@ -198,6 +191,9 @@ function file_test_file_predelete(File $file) {
  * Implements hook_file_url_alter().
  */
 function file_test_file_url_alter(&$uri) {
+  /** @var \Drupal\Core\StreamWrapper\StreamWrapperManagerInterface $stream_wrapper_manager */
+  $stream_wrapper_manager = \Drupal::service('stream_wrapper_manager');
+
   // Only run this hook when this variable is set. Otherwise, we'd have to add
   // another hidden test module just for this hook.
   $alter_mode = \Drupal::state()->get('file_test.hook_file_url_alter');
@@ -212,7 +208,7 @@ function file_test_file_url_alter(&$uri) {
     // so don't support this in the common case.
     $schemes = ['public'];
 
-    $scheme = file_uri_scheme($uri);
+    $scheme = $stream_wrapper_manager::getScheme($uri);
 
     // Only serve shipped files and public created files from the CDN.
     if (!$scheme || in_array($scheme, $schemes)) {
@@ -222,8 +218,8 @@ function file_test_file_url_alter(&$uri) {
       }
       // Public created files.
       else {
-        $wrapper = \Drupal::service('stream_wrapper_manager')->getViaScheme($scheme);
-        $path = $wrapper->getDirectoryPath() . '/' . file_uri_target($uri);
+        $wrapper = $stream_wrapper_manager->getViaScheme($scheme);
+        $path = $wrapper->getDirectoryPath() . '/' . $stream_wrapper_manager::getTarget($uri);
       }
 
       // Clean up Windows paths.
@@ -244,7 +240,7 @@ function file_test_file_url_alter(&$uri) {
   elseif ($alter_mode == 'root-relative') {
     // Only serve shipped files and public created files with root-relative
     // URLs.
-    $scheme = file_uri_scheme($uri);
+    $scheme = $stream_wrapper_manager::getScheme($uri);
     if (!$scheme || $scheme == 'public') {
       // Shipped files.
       if (!$scheme) {
@@ -252,8 +248,8 @@ function file_test_file_url_alter(&$uri) {
       }
       // Public created files.
       else {
-        $wrapper = \Drupal::service('stream_wrapper_manager')->getViaScheme($scheme);
-        $path = $wrapper->getDirectoryPath() . '/' . file_uri_target($uri);
+        $wrapper = $stream_wrapper_manager->getViaScheme($scheme);
+        $path = $wrapper->getDirectoryPath() . '/' . $stream_wrapper_manager::getTarget($uri);
       }
 
       // Clean up Windows paths.
@@ -267,7 +263,7 @@ function file_test_file_url_alter(&$uri) {
   elseif ($alter_mode == 'protocol-relative') {
     // Only serve shipped files and public created files with protocol-relative
     // URLs.
-    $scheme = file_uri_scheme($uri);
+    $scheme = $stream_wrapper_manager::getScheme($uri);
     if (!$scheme || $scheme == 'public') {
       // Shipped files.
       if (!$scheme) {
@@ -275,8 +271,8 @@ function file_test_file_url_alter(&$uri) {
       }
       // Public created files.
       else {
-        $wrapper = \Drupal::service('stream_wrapper_manager')->getViaScheme($scheme);
-        $path = $wrapper->getDirectoryPath() . '/' . file_uri_target($uri);
+        $wrapper = $stream_wrapper_manager->getViaScheme($scheme);
+        $path = $wrapper->getDirectoryPath() . '/' . $stream_wrapper_manager::getTarget($uri);
       }
 
       // Clean up Windows paths.
@@ -293,9 +289,9 @@ function file_test_file_url_alter(&$uri) {
  */
 function file_test_file_mimetype_mapping_alter(&$mapping) {
   // Add new mappings.
-  $mapping['mimetypes']['file_test_mimetype_1'] = 'madeup/file_test_1';
-  $mapping['mimetypes']['file_test_mimetype_2'] = 'madeup/file_test_2';
-  $mapping['mimetypes']['file_test_mimetype_3'] = 'madeup/doc';
+  $mapping['mimetypes']['file_test_mimetype_1'] = 'made_up/file_test_1';
+  $mapping['mimetypes']['file_test_mimetype_2'] = 'made_up/file_test_2';
+  $mapping['mimetypes']['file_test_mimetype_3'] = 'made_up/doc';
   $mapping['extensions']['file_test_1'] = 'file_test_mimetype_1';
   $mapping['extensions']['file_test_2'] = 'file_test_mimetype_2';
   $mapping['extensions']['file_test_3'] = 'file_test_mimetype_2';
@@ -311,7 +307,7 @@ function file_test_validator(File $file, $errors) {
 }
 
 /**
- * Helper function for testing file_scan_directory().
+ * Helper function for testing FileSystemInterface::scanDirectory().
  *
  * Each time the function is called the file is stored in a static variable.
  * When the function is called with no $filepath parameter, the results are
@@ -319,24 +315,31 @@ function file_test_validator(File $file, $errors) {
  *
  * @param string|null $filepath
  *   File path
+ * @param bool $reset
+ *   (optional) If to reset the internal memory cache. If TRUE is passed, the
+ *   first parameter has no effect. Defaults to FALSE.
+ *
  * @return array
  *   If $filepath is NULL, an array of all previous $filepath parameters
  */
-function file_test_file_scan_callback($filepath = NULL) {
-  $files = &drupal_static(__FUNCTION__, []);
-  if (isset($filepath)) {
+function file_test_file_scan_callback($filepath = NULL, $reset = FALSE) {
+  static $files = [];
+
+  if ($reset) {
+    $files = [];
+  }
+  elseif ($filepath) {
     $files[] = $filepath;
   }
-  else {
-    return $files;
-  }
+
+  return $files;
 }
 
 /**
  * Reset static variables used by file_test_file_scan_callback().
  */
 function file_test_file_scan_callback_reset() {
-  drupal_static_reset('file_test_file_scan_callback');
+  file_test_file_scan_callback(NULL, TRUE);
 }
 
 /**
@@ -344,7 +347,7 @@ function file_test_file_scan_callback_reset() {
  */
 function file_test_entity_type_alter(&$entity_types) {
   if (\Drupal::state()->get('file_test_alternate_access_handler', FALSE)) {
-    /** @var $entity_types \Drupal\Core\Entity\EntityTypeInterface[] */
+    /** @var \Drupal\Core\Entity\EntityTypeInterface[] $entity_types */
     $entity_types['file']
       ->setAccessClass('Drupal\file_test\FileTestAccessControlHandler');
   }

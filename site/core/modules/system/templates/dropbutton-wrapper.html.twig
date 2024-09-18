@@ -12,11 +12,11 @@
  */
 #}
 {% if children %}
-  {% spaceless %}
-    <div class="dropbutton-wrapper">
+  {% apply spaceless %}
+    <div class="dropbutton-wrapper" data-drupal-ajax-container>
       <div class="dropbutton-widget">
         {{ children }}
       </div>
     </div>
-  {% endspaceless %}
+  {% endapply %}
 {% endif %}

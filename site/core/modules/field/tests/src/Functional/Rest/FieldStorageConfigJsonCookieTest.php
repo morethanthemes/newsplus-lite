@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\field\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\CookieResourceTestTrait;
@@ -25,5 +27,10 @@ class FieldStorageConfigJsonCookieTest extends FieldStorageConfigResourceTestBas
    * {@inheritdoc}
    */
   protected static $auth = 'cookie';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Kernel\Handler;
 
 use Drupal\Tests\views\Kernel\ViewsKernelTestBase;
@@ -25,7 +27,7 @@ class FieldNumericTest extends ViewsKernelTestBase {
    *
    * @dataProvider providerTestFieldNumeric
    */
-  public function testFieldNumeric($field_settings, $values, $expected_values) {
+  public function testFieldNumeric($field_settings, $values, $expected_values): void {
     $view = Views::getView('test_view');
     $view->setDisplay();
 
@@ -47,9 +49,9 @@ class FieldNumericTest extends ViewsKernelTestBase {
    *   The data set containing field settings, values to set and expected
    *   values.
    */
-  public function providerTestFieldNumeric() {
+  public static function providerTestFieldNumeric() {
     return [
-      'no-formating' => [
+      'no-formatting' => [
         [],
         [0, 0.1234, -0.1234, 1000.1234, -1000.1234],
         ['0', '0.1234', '-0.1234', '1,000.1234', '-1,000.1234'],

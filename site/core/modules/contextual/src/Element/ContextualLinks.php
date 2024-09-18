@@ -3,21 +3,22 @@
 namespace Drupal\contextual\Element;
 
 use Drupal\Component\Utility\Html;
-use Drupal\Core\Render\Element\RenderElement;
+use Drupal\Component\Utility\SortArray;
+use Drupal\Core\Render\Attribute\RenderElement;
+use Drupal\Core\Render\Element\RenderElementBase;
 use Drupal\Core\Url;
 
 /**
  * Provides a contextual_links element.
- *
- * @RenderElement("contextual_links")
  */
-class ContextualLinks extends RenderElement {
+#[RenderElement('contextual_links')]
+class ContextualLinks extends RenderElementBase {
 
   /**
    * {@inheritdoc}
    */
   public function getInfo() {
-    $class = get_class($this);
+    $class = static::class;
     return [
       '#pre_render' => [
         [$class, 'preRenderLinks'],
@@ -42,17 +43,17 @@ class ContextualLinks extends RenderElement {
    *   render (based on the 'group' key in the *.links.contextual.yml files for
    *   all enabled modules). The value contains an associative array containing
    *   the following keys:
-   *   - route_parameters: The route parameters passed to the url generator.
+   *   - route_parameters: The route parameters passed to the URL generator.
    *   - metadata: Any additional data needed in order to alter the link.
    *   @code
-   *     array('#contextual_links' => array(
-   *       'block' => array(
-   *         'route_parameters' => array('block' => 'system.menu-tools'),
-   *       ),
-   *       'menu' => array(
-   *         'route_parameters' => array('menu' => 'tools'),
-   *       ),
-   *     ))
+   *     ['#contextual_links' => [
+   *       'block' => [
+   *         'route_parameters' => ['block' => 'system.menu-tools'],
+   *       ],
+   *       'menu' => [
+   *         'route_parameters' => ['menu' => 'tools'],
+   *       ],
+   *     ]]
    *   @endcode
    *
    * @return array
@@ -72,13 +73,15 @@ class ContextualLinks extends RenderElement {
       $items += $contextual_links_manager->getContextualLinksArrayByGroup($group, $args['route_parameters'], $args['metadata']);
     }
 
+    uasort($items, [SortArray::class, 'sortByWeightElement']);
+
     // Transform contextual links into parameters suitable for links.html.twig.
     $links = [];
     foreach ($items as $class => $item) {
       $class = Html::getClass($class);
       $links[$class] = [
         'title' => $item['title'],
-        'url' => Url::fromRoute(isset($item['route_name']) ? $item['route_name'] : '', isset($item['route_parameters']) ? $item['route_parameters'] : [], $item['localized_options']),
+        'url' => Url::fromRoute($item['route_name'] ?? '', $item['route_parameters'] ?? [], $item['localized_options']),
       ];
     }
     $element['#links'] = $links;
@@ -86,7 +89,8 @@ class ContextualLinks extends RenderElement {
     // Allow modules to alter the renderable contextual links element.
     static::moduleHandler()->alter('contextual_links_view', $element, $items);
 
-    // If there are no links, tell drupal_render() to abort rendering.
+    // If there are no links, tell \Drupal::service('renderer')->render() to
+    // abort rendering.
     if (empty($element['#links'])) {
       $element['#printed'] = TRUE;
     }

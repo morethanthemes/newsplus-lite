@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\comment\Kernel\Plugin\migrate\source\d6;
 
 use Drupal\Tests\migrate\Kernel\MigrateSqlSourceTestBase;
@@ -15,12 +17,12 @@ class CommentTest extends MigrateSqlSourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['comment', 'migrate_drupal'];
+  protected static $modules = ['comment', 'migrate_drupal'];
 
   /**
    * {@inheritdoc}
    */
-  public function providerSource() {
+  public static function providerSource() {
     $tests = [];
 
     // The source data.
@@ -39,7 +41,7 @@ class CommentTest extends MigrateSqlSourceTestBase {
         'name' => '',
         'mail' => '',
         'homepage' => '',
-        'format' => 'testformat1',
+        'format' => 'test_format1',
         'type' => 'story',
       ],
       [
@@ -56,7 +58,7 @@ class CommentTest extends MigrateSqlSourceTestBase {
         'name' => '',
         'mail' => '',
         'homepage' => '',
-        'format' => 'testformat2',
+        'format' => 'test_format2',
         'type' => 'page',
       ],
     ];
@@ -65,10 +67,12 @@ class CommentTest extends MigrateSqlSourceTestBase {
       [
         'nid' => 2,
         'type' => 'story',
+        'language' => 'en',
       ],
       [
         'nid' => 3,
         'type' => 'page',
+        'language' => 'fr',
       ],
     ];
 
@@ -88,8 +92,9 @@ class CommentTest extends MigrateSqlSourceTestBase {
         'name' => '',
         'mail' => '',
         'homepage' => '',
-        'format' => 'testformat1',
+        'format' => 'test_format1',
         'type' => 'story',
+        'language' => 'en',
       ],
       [
         'cid' => 2,
@@ -105,8 +110,9 @@ class CommentTest extends MigrateSqlSourceTestBase {
         'name' => '',
         'mail' => '',
         'homepage' => '',
-        'format' => 'testformat2',
+        'format' => 'test_format2',
         'type' => 'page',
+        'language' => 'fr',
       ],
     ];
 

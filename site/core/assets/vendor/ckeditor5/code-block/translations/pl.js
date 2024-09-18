@@ -1,0 +1,1 @@
+!function(o){const t=o.pl=o.pl||{};t.dictionary=Object.assign(t.dictionary||{},{"Code block":"Blok kodu","Insert code block":"Wstaw blok kodu","Plain text":"Zwykły tekst"})}(window.CKEDITOR_TRANSLATIONS||(window.CKEDITOR_TRANSLATIONS={}));

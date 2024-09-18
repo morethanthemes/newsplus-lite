@@ -26,7 +26,7 @@ class PathProcessorLanguage implements InboundPathProcessorInterface, OutboundPa
   protected $config;
 
   /**
-   * Language manager for retrieving the url language type.
+   * Language manager for retrieving the URL language type.
    *
    * @var \Drupal\language\ConfigurableLanguageManagerInterface
    */
@@ -59,7 +59,6 @@ class PathProcessorLanguage implements InboundPathProcessorInterface, OutboundPa
    * @var \Drupal\language\EventSubscriber\ConfigSubscriber
    */
   protected $configSubscriber;
-
 
   /**
    * Constructs a PathProcessorLanguage object.
@@ -102,7 +101,7 @@ class PathProcessorLanguage implements InboundPathProcessorInterface, OutboundPa
   /**
    * {@inheritdoc}
    */
-  public function processOutbound($path, &$options = [], Request $request = NULL, BubbleableMetadata $bubbleable_metadata = NULL) {
+  public function processOutbound($path, &$options = [], ?Request $request = NULL, ?BubbleableMetadata $bubbleable_metadata = NULL) {
     if (!isset($this->multilingual)) {
       $this->multilingual = $this->languageManager->isMultilingual();
     }
@@ -130,14 +129,13 @@ class PathProcessorLanguage implements InboundPathProcessorInterface, OutboundPa
    *   The scope of the processors: "inbound" or "outbound".
    */
   protected function initProcessors($scope) {
-    $interface = '\Drupal\Core\PathProcessor\\' . Unicode::ucfirst($scope) . 'PathProcessorInterface';
+    $interface = 'Drupal\Core\PathProcessor\\' . Unicode::ucfirst($scope) . 'PathProcessorInterface';
     $this->processors[$scope] = [];
     $weights = [];
     foreach ($this->languageManager->getLanguageTypes() as $type) {
       foreach ($this->negotiator->getNegotiationMethods($type) as $method_id => $method) {
         if (!isset($this->processors[$scope][$method_id])) {
-          $reflector = new \ReflectionClass($method['class']);
-          if ($reflector->implementsInterface($interface)) {
+          if (is_subclass_of($method['class'], $interface)) {
             $this->processors[$scope][$method_id] = $this->negotiator->getNegotiationMethodInstance($method_id);
             $weights[$method_id] = $method['weight'];
           }
@@ -148,14 +146,7 @@ class PathProcessorLanguage implements InboundPathProcessorInterface, OutboundPa
     // Sort the processors list, so that their functions are called in the
     // order specified by the weight of the methods.
     uksort($this->processors[$scope], function ($method_id_a, $method_id_b) use ($weights) {
-      $a_weight = $weights[$method_id_a];
-      $b_weight = $weights[$method_id_b];
-
-      if ($a_weight == $b_weight) {
-        return 0;
-      }
-
-      return ($a_weight < $b_weight) ? -1 : 1;
+      return $weights[$method_id_a] <=> $weights[$method_id_b];
     });
   }
 

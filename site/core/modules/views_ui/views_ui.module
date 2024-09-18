@@ -5,9 +5,13 @@
  * Provide structure for the administrative interface to Views.
  */
 
+use Drupal\block\BlockInterface;
 use Drupal\Component\Utility\Unicode;
+use Drupal\Component\Utility\Xss;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Url;
+use Drupal\views\Entity\View;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Analyzer;
 
@@ -18,16 +22,16 @@ function views_ui_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     case 'help.page.views_ui':
       $output = '';
-      $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The Views UI module provides an interface for managing views for the <a href=":views">Views module</a>. For more information, see the <a href=":handbook">online documentation for the Views UI module</a>.', [':views' => \Drupal::url('help.page', ['name' => 'views']), ':handbook' => 'https://www.drupal.org/documentation/modules/views_ui']) . '</p>';
-      $output .= '<h3>' . t('Uses') . '</h3>';
+      $output .= '<h2>' . t('About') . '</h2>';
+      $output .= '<p>' . t('The Views UI module provides an interface for managing views for the <a href=":views">Views module</a>. For more information, see the <a href=":handbook">online documentation for the Views UI module</a>.', [':views' => Url::fromRoute('help.page', ['name' => 'views'])->toString(), ':handbook' => 'https://www.drupal.org/documentation/modules/views_ui']) . '</p>';
+      $output .= '<h2>' . t('Uses') . '</h2>';
       $output .= '<dl>';
       $output .= '<dt>' . t('Creating and managing views') . '</dt>';
-      $output .= '<dd>' . t('Views can be created from the <a href=":list">Views list page</a> by using the "Add view" action. Existing views can be managed from the <a href=":list">Views list page</a> by locating the view in the "Enabled" or "Disabled" list and selecting the desired operation action, for example "Edit".', [':list' => \Drupal::url('entity.view.collection', ['name' => 'views_ui'])]) . '</dd>';
+      $output .= '<dd>' . t('Views can be created from the <a href=":list">Views list page</a> by using the "Add view" action. Existing views can be managed from the <a href=":list">Views list page</a> by locating the view in the "Enabled" or "Disabled" list and selecting the desired operation action, for example "Edit".', [':list' => Url::fromRoute('entity.view.collection', ['name' => 'views_ui'])->toString()]) . '</dd>';
       $output .= '<dt>' . t('Enabling and disabling views') . '<dt>';
-      $output .= '<dd>' . t('Views can be enabled or disabled from the <a href=":list">Views list page</a>. To enable a view, find the view within the "Disabled" list and select the "Enable" operation. To disable a view find the view within the "Enabled" list and select the "Disable" operation.', [':list' => \Drupal::url('entity.view.collection', ['name' => 'views_ui'])]) . '</dd>';
+      $output .= '<dd>' . t('Views can be enabled or disabled from the <a href=":list">Views list page</a>. To enable a view, find the view within the "Disabled" list and select the "Enable" operation. To disable a view find the view within the "Enabled" list and select the "Disable" operation.', [':list' => Url::fromRoute('entity.view.collection', ['name' => 'views_ui'])->toString()]) . '</dd>';
       $output .= '<dt>' . t('Exporting and importing views') . '</dt>';
-      $output .= '<dd>' . t('Views can be exported and imported as configuration files by using the <a href=":config">Configuration Manager module</a>.', [':config' => (\Drupal::moduleHandler()->moduleExists('config')) ? \Drupal::url('help.page', ['name' => 'config']) : '#']) . '</dd>';
+      $output .= '<dd>' . t('Views can be exported and imported as configuration files by using the <a href=":config">Configuration Manager module</a>.', [':config' => (\Drupal::moduleHandler()->moduleExists('config')) ? Url::fromRoute('help.page', ['name' => 'config'])->toString() : '#']) . '</dd>';
       $output .= '</dl>';
       return $output;
   }
@@ -37,7 +41,7 @@ function views_ui_help($route_name, RouteMatchInterface $route_match) {
  * Implements hook_entity_type_build().
  */
 function views_ui_entity_type_build(array &$entity_types) {
-  /** @var $entity_types \Drupal\Core\Entity\EntityTypeInterface[] */
+  /** @var \Drupal\Core\Entity\EntityTypeInterface[] $entity_types */
   $entity_types['view']
     ->setFormClass('edit', 'Drupal\views_ui\ViewEditForm')
     ->setFormClass('add', 'Drupal\views_ui\ViewAddForm')
@@ -62,7 +66,7 @@ function views_ui_entity_type_build(array &$entity_types) {
  */
 function views_ui_theme() {
   return [
-    // edit a view
+    // Edit a view
     'views_ui_display_tab_setting' => [
       'variables' => ['description' => '', 'link' => '', 'settings_links' => [], 'overridden' => FALSE, 'defaulted' => FALSE, 'description_separator' => TRUE, 'class' => []],
       'file' => 'views_ui.theme.inc',
@@ -135,7 +139,8 @@ function views_ui_preprocess_views_view(&$variables) {
   // Render title for the admin preview.
   if (!empty($view->live_preview)) {
     $variables['title'] = [
-      '#markup' => $view->getTitle()
+      '#markup' => $view->getTitle(),
+      '#allowed_tags' => Xss::getHtmlTagList(),
     ];
   }
 
@@ -166,9 +171,9 @@ function views_ui_theme_suggestions_views_ui_view_preview_section(array $variabl
 /**
  * Returns contextual links for each handler of a certain section.
  *
- * @TODO
- *   Bring in relationships
- *   Refactor this function to use much stuff of views_ui_edit_form_get_bucket.
+ * @todo Bring in relationships.
+ * @todo Refactor this function to use much stuff of
+ *    views_ui_edit_form_get_bucket.
  *
  * @param $title
  *   Add a bolded title of this section.
@@ -317,15 +322,14 @@ function views_ui_views_analyze(ViewExecutable $view) {
   if (count($view->displayHandlers) < 2) {
     $ret[] = Analyzer::formatMessage(t('This view has only a default display and therefore will not be placed anywhere on your site; perhaps you want to add a page or a block display.'), 'warning');
   }
-  // You can give a page display the same path as an alias existing in the
-  // system, so the alias will not work anymore. Report this to the user,
-  // because he probably wanted something else.
+  // If a display has a path, check that it does not match an existing path
+  // alias. This results in the path alias not working.
   foreach ($view->displayHandlers as $display) {
     if (empty($display)) {
       continue;
     }
     if ($display->hasPath() && $path = $display->getOption('path')) {
-      $normal_path = \Drupal::service('path.alias_manager')->getPathByAlias($path);
+      $normal_path = \Drupal::service('path_alias.manager')->getPathByAlias($path);
       if ($path != $normal_path) {
         $ret[] = Analyzer::formatMessage(t('You have configured display %display with a path which is an path alias as well. This might lead to unwanted effects so better use an internal path.', ['%display' => $display->display['display_title']]), 'warning');
       }
@@ -339,12 +343,41 @@ function views_ui_views_analyze(ViewExecutable $view) {
  * Truncate strings to a set length and provide a '...' if they truncated.
  *
  * This is often used in the UI to ensure long strings fit.
+ *
+ * @deprecated in drupal:10.3.0 and is removed from drupal:12.0.0.
+ *   Use \Drupal\Component\Utility\Unicode::truncate().
+ *
+ * @see https://www.drupal.org/node/3408283
  */
 function views_ui_truncate($string, $length) {
-  if (Unicode::strlen($string) > $length) {
-    $string = Unicode::substr($string, 0, $length);
-    $string .= '...';
+  @trigger_error('views_ui_truncate() is deprecated in drupal:10.3.0 and is removed from drupal:12.0.0. Use \Drupal\Component\Utility\Unicode::truncate(). See https://www.drupal.org/node/3408283', E_USER_DEPRECATED);
+  return Unicode::truncate($string, $length, FALSE, TRUE);
+}
+
+/**
+ * Implements hook_entity_operation().
+ */
+function views_ui_entity_operation(EntityInterface $entity): array {
+  $operations = [];
+  if ($entity instanceof BlockInterface) {
+    $plugin = $entity->getPlugin();
+    if ($plugin->getBaseId() === 'views_block') {
+      $view_id_parts = explode('-', $plugin->getDerivativeId());
+      $view_id = $view_id_parts[0] ?? '';
+      $display_id = $view_id_parts[1] ?? '';
+      $view = View::load($view_id);
+      if ($view && $view->access('edit')) {
+        $operations['view-edit'] = [
+          'title' => t('Edit view'),
+          'url' => Url::fromRoute('entity.view.edit_display_form', [
+            'view' => $view_id,
+            'display_id' => $display_id,
+          ]),
+          'weight' => 50,
+        ];
+      }
+    }
   }
 
-  return $string;
+  return $operations;
 }

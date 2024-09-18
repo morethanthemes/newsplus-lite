@@ -1,0 +1,152 @@
+# Schema for the configuration files of the superfish module.
+block.settings.superfish:*:
+  type: block_settings
+  label: 'Superfish menu'
+  mapping:
+    level:
+      type: integer
+      label: 'Starting level'
+    depth:
+      type: integer
+      label: 'Maximum number of levels'
+    expand_all_items:
+      type: boolean
+      label: 'Expand all items'
+    menu_type:
+      type: string
+      label: 'Menu type'
+    style:
+      type: string
+      label: 'Style'
+    arrow:
+      type: integer
+      label: 'Add arrows to parent menus'
+    shadow:
+      type: integer
+      label: 'Drop shadows'
+    speed:
+      type: string
+      label: 'Animation speed'
+    delay:
+      type: integer
+      label: 'Mouse delay'
+    slide:
+      type: string
+      label: 'Slide-in effect'
+    supposition:
+      type: integer
+      label: 'jQuery Supposition'
+    hoverintent:
+      type: integer
+      label: 'jQuery hoverIntent'
+    touch:
+      type: integer
+      label: 'sf-Touchscreen'
+    touchbh:
+      type: integer
+      label: 'sf-Touchscreen behavior'
+    touchbp:
+      type: integer
+      label: 'sf-Touchscreen Breakpoint'
+    touchua:
+      type: integer
+      label: 'sf-Touchscreen User agent settings'
+    touchual:
+      type: string
+      label: 'sf-Touchscreen Custom list of the user agents'
+    touchuam:
+      type: integer
+      label: 'sf-Touchscreen User agent detection method'
+    small:
+      type: integer
+      label: 'sf-Smallscreen'
+    smallbp:
+      type: integer
+      label: 'sf-Smallscreen Breakpoint'
+    smallua:
+      type: integer
+      label: 'sf-Smallscreen User agent settings'
+    smallual:
+      type: string
+      label: 'sf-Smallscreen Custom list of the user agents'
+    smalluam:
+      type: integer
+      label: 'sf-Smallscreen User agent detection method'
+    smallact:
+      type: integer
+      label: 'sf-Smallscreen type'
+    smallset:
+      type: integer
+      label: 'sf-Smallscreen select title'
+    smallasa:
+      type: integer
+      label: 'sf-Smallscreen select option attributes'
+    smallcmc:
+      type: integer
+      label: 'sf-Smallscreen select copy classes'
+    smallecm:
+      type: string
+      label: 'sf-Smallscreen select exclude classes'
+    smallchc:
+      type: integer
+      label: 'sf-Smallscreen select copy link classes'
+    smallech:
+      type: integer
+      label: 'sf-Smallscreen select exclude link classes'
+    smallicm:
+      type: string
+      label: 'sf-Smallscreen select include these classes in select'
+    smallich:
+      type: string
+      label: 'sf-Smallscreen select include these classes in option'
+    smallamt:
+      type: string
+      label: 'sf-Smallscreen Accordion menu title'
+    smallabt:
+      type: integer
+      label: 'sf-Smallscreen Accordion button type'
+    supersubs:
+      type: integer
+      label: 'Supersubs'
+    minwidth:
+      type: integer
+      label: 'Minimum width'
+    maxwidth:
+      type: integer
+      label: 'Max width'
+    multicolumn:
+      type: integer
+      label: 'Enable multi-column sub-menus'
+    multicolumn_depth:
+      type: integer
+      label: 'Start from depth'
+    multicolumn_levels:
+      type: integer
+      label: 'Levels'
+    pathlevels:
+      type: integer
+      label: 'Path levels'
+    expanded:
+      type: integer
+      label: 'Take "Expanded" option into effect'
+    clone_parent:
+      type: integer
+      label: 'Add cloned parent links to the top of sub-menus'
+    hide_linkdescription:
+      type: integer
+      label: 'Disable hyperlink descriptions ("title" attribute)'
+    add_linkdescription:
+      type: integer
+      label: 'Insert hyperlink descriptions ("title" attribute) into hyperlink texts'
+    link_depth_class:
+      type: integer
+      label: 'Add item depth classes to menu items and their hyperlinks'
+    custom_list_class:
+      type: string
+      label: 'Class for the main UL'
+    custom_item_class:
+      type: string
+      label: 'For the list items'
+    custom_link_class:
+      type: string
+      label: 'For the hyperlinks'

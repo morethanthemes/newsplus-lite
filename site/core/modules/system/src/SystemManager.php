@@ -2,7 +2,6 @@
 
 namespace Drupal\system;
 
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Menu\MenuActiveTrailInterface;
 use Drupal\Core\Menu\MenuLinkTreeInterface;
 use Drupal\Core\Menu\MenuLinkInterface;
@@ -70,8 +69,6 @@ class SystemManager {
    *
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager.
    * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    *   The request stack.
    * @param \Drupal\Core\Menu\MenuLinkTreeInterface $menu_tree
@@ -79,7 +76,7 @@ class SystemManager {
    * @param \Drupal\Core\Menu\MenuActiveTrailInterface $menu_active_trail
    *   The active menu trail service.
    */
-  public function __construct(ModuleHandlerInterface $module_handler, EntityManagerInterface $entity_manager, RequestStack $request_stack, MenuLinkTreeInterface $menu_tree, MenuActiveTrailInterface $menu_active_trail) {
+  public function __construct(ModuleHandlerInterface $module_handler, RequestStack $request_stack, MenuLinkTreeInterface $menu_tree, MenuActiveTrailInterface $menu_active_trail) {
     $this->moduleHandler = $module_handler;
     $this->requestStack = $request_stack;
     $this->menuTree = $menu_tree;
@@ -110,6 +107,7 @@ class SystemManager {
 
     // Check run-time requirements and status information.
     $requirements = $this->moduleHandler->invokeAll('requirements', ['runtime']);
+    $this->moduleHandler->alter('requirements', $requirements);
     uasort($requirements, function ($a, $b) {
       if (!isset($a['weight'])) {
         if (!isset($b['weight'])) {
@@ -130,7 +128,7 @@ class SystemManager {
    *   An array of requirements, in the same format as is returned by
    *   hook_requirements().
    *
-   * @return
+   * @return int
    *   The highest severity in the array.
    */
   public function getMaxSeverity(&$requirements) {
@@ -203,7 +201,7 @@ class SystemManager {
         continue;
       }
 
-      /** @var $link \Drupal\Core\Menu\MenuLinkInterface */
+      /** @var \Drupal\Core\Menu\MenuLinkInterface $link */
       $link = $element->link;
       $content[$key]['title'] = $link->getTitle();
       $content[$key]['options'] = $link->getOptions();

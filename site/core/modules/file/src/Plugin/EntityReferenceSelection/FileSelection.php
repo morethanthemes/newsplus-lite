@@ -2,19 +2,21 @@
 
 namespace Drupal\file\Plugin\EntityReferenceSelection;
 
+use Drupal\Core\Entity\Attribute\EntityReferenceSelection;
 use Drupal\Core\Entity\Plugin\EntityReferenceSelection\DefaultSelection;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\file\FileInterface;
 
 /**
  * Provides specific access control for the file entity type.
- *
- * @EntityReferenceSelection(
- *   id = "default:file",
- *   label = @Translation("File selection"),
- *   entity_types = {"file"},
- *   group = "default",
- *   weight = 1
- * )
  */
+#[EntityReferenceSelection(
+  id: "default:file",
+  label: new TranslatableMarkup("File selection"),
+  entity_types: ["file"],
+  group: "default",
+  weight: 1
+)]
 class FileSelection extends DefaultSelection {
 
   /**
@@ -28,7 +30,7 @@ class FileSelection extends DefaultSelection {
     //   become "permanent" after the containing entity gets validated and
     //   saved.)
     $query->condition($query->orConditionGroup()
-      ->condition('status', FILE_STATUS_PERMANENT)
+      ->condition('status', FileInterface::STATUS_PERMANENT)
       ->condition('uid', $this->currentUser->id()));
     return $query;
   }

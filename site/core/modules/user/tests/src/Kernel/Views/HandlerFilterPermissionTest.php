@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\user\Kernel\Views;
 
 use Drupal\Component\Utility\Html;
@@ -28,7 +30,7 @@ class HandlerFilterPermissionTest extends UserKernelTestBase {
    * @todo Fix the different commented out tests by fixing the many to one
    *   handler handling with the NOT operator.
    */
-  public function testFilterPermission() {
+  public function testFilterPermission(): void {
     $this->setupPermissionTestData();
 
     $column_map = ['uid' => 'uid'];
@@ -38,7 +40,7 @@ class HandlerFilterPermissionTest extends UserKernelTestBase {
     $view->initHandlers();
     $view->filter['permission']->value = ['non_existent_permission'];
     $this->executeView($view);
-    $this->assertEqual(count($view->result), 4, 'A non existent permission is not filtered so everything is the result.');
+    $this->assertCount(4, $view->result, 'A non existent permission is not filtered so everything is the result.');
     $expected[] = ['uid' => 1];
     $expected[] = ['uid' => 2];
     $expected[] = ['uid' => 3];
@@ -50,7 +52,7 @@ class HandlerFilterPermissionTest extends UserKernelTestBase {
     $view->initHandlers();
     $view->filter['permission']->value = ['administer permissions'];
     $this->executeView($view);
-    $this->assertEqual(count($view->result), 2);
+    $this->assertCount(2, $view->result);
     $expected = [];
     $expected[] = ['uid' => 3];
     $expected[] = ['uid' => 4];
@@ -62,7 +64,7 @@ class HandlerFilterPermissionTest extends UserKernelTestBase {
     $view->filter['permission']->operator = 'not';
     $view->filter['permission']->value = ['administer users'];
     $this->executeView($view);
-    $this->assertEqual(count($view->result), 3);
+    $this->assertCount(3, $view->result);
     $expected = [];
     $expected[] = ['uid' => 1];
     $expected[] = ['uid' => 2];
@@ -75,7 +77,7 @@ class HandlerFilterPermissionTest extends UserKernelTestBase {
     $view->filter['permission']->operator = 'not';
     $view->filter['permission']->value = ['administer users', 'administer permissions'];
     $this->executeView($view);
-    $this->assertEqual(count($view->result), 2);
+    $this->assertCount(2, $view->result);
     $expected = [];
     $expected[] = ['uid' => 1];
     $expected[] = ['uid' => 2];
@@ -86,7 +88,7 @@ class HandlerFilterPermissionTest extends UserKernelTestBase {
     $view->initHandlers();
     $view->filter['permission']->value = ['administer users'];
     $this->executeView($view);
-    $this->assertEqual(count($view->result), 1);
+    $this->assertCount(1, $view->result);
     $expected = [];
     $expected[] = ['uid' => 4];
     $this->assertIdenticalResultset($view, $expected, $column_map);
@@ -105,10 +107,10 @@ class HandlerFilterPermissionTest extends UserKernelTestBase {
     }
     foreach (['system' => 'System', 'user' => 'User'] as $module => $title) {
       $expected = array_map(function ($permission) {
-        return Html::escape(strip_tags($permission['title']));
+        return Html::escape(strip_tags((string) $permission['title']));
       }, $permission_by_module[$module]);
 
-      $this->assertEqual($expected, $value_options[$title], 'Ensure the all permissions are available');
+      $this->assertEquals($expected, $value_options[$title], 'Ensure the all permissions are available');
     }
   }
 

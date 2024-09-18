@@ -12,39 +12,43 @@ use Psr\Http\Message\ResponseInterface;
 class TestHttpClientMiddleware {
 
   /**
-   * {@inheritdoc}
-   *
-   * HTTP middleware that replaces the user agent for simpletest requests.
+   * HTTP middleware that replaces the user agent for test requests.
    */
   public function __invoke() {
-    // If the database prefix is being used by SimpleTest to run the tests in a copied
-    // database then set the user-agent header to the database prefix so that any
-    // calls to other Drupal pages will run the SimpleTest prefixed database. The
-    // user-agent is used to ensure that multiple testing sessions running at the
-    // same time won't interfere with each other as they would if the database
-    // prefix were stored statically in a file or database variable.
+    // If the database prefix is being used to run the tests in a copied
+    // database, then set the User-Agent header to the database prefix so that
+    // any calls to other Drupal pages will run the test-prefixed database. The
+    // user agent is used to ensure that multiple testing sessions running at
+    // the same time won't interfere with each other as they would if the
+    // database prefix were stored statically in a file or database variable.
     return function ($handler) {
       return function (RequestInterface $request, array $options) use ($handler) {
         if ($test_prefix = drupal_valid_test_ua()) {
           $request = $request->withHeader('User-Agent', drupal_generate_test_ua($test_prefix));
         }
         return $handler($request, $options)
-          ->then(function (ResponseInterface $response) use ($request) {
+          ->then(function (ResponseInterface $response) {
             if (!drupal_valid_test_ua()) {
               return $response;
+            }
+            if (!empty($response->getHeader('X-Drupal-Wait-Terminate')[0])) {
+              $lock = \Drupal::lock();
+              if (!$lock->acquire('test_wait_terminate')) {
+                $lock->wait('test_wait_terminate');
+              }
+              $lock->release('test_wait_terminate');
             }
             $headers = $response->getHeaders();
             foreach ($headers as $header_name => $header_values) {
               if (preg_match('/^X-Drupal-Assertion-[0-9]+$/', $header_name, $matches)) {
                 foreach ($header_values as $header_value) {
-                  // Call \Drupal\simpletest\WebTestBase::error() with the parameters from
-                  // the header.
                   $parameters = unserialize(urldecode($header_value));
                   if (count($parameters) === 3) {
                     if ($parameters[1] === 'User deprecated function') {
                       // Fire the same deprecation message to allow it to be
                       // collected by
                       // \Symfony\Bridge\PhpUnit\DeprecationErrorHandler::collectDeprecations().
+                      // phpcs:ignore Drupal.Semantics.FunctionTriggerError
                       @trigger_error((string) $parameters[0], E_USER_DEPRECATED);
                     }
                     else {

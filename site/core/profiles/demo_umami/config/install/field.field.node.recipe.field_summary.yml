@@ -13,8 +13,9 @@ bundle: recipe
 label: Summary
 description: 'Provide a short overview of this recipe.'
 required: true
-translatable: false
+translatable: true
 default_value: {  }
 default_value_callback: ''
-settings: {  }
+settings:
+  allowed_formats: {  }
 field_type: text_long

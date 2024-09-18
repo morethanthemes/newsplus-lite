@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\migrate\Unit;
 
 use Drupal\migrate\Plugin\MigrateIdMapInterface;
@@ -32,6 +34,43 @@ class RowTest extends UnitTestCase {
   ];
 
   /**
+   * Test source properties for testing get and getMultiple.
+   *
+   * @var array
+   */
+  protected $testGetSourceProperties = [
+    'source_key_1' => 'source_value_1',
+    'source_key_2' => 'source_value_2',
+    '@source_key_3' => 'source_value_3',
+    'shared_key_1' => 'source_shared_value_1',
+    '@shared_key_2' => 'source_shared_value_2',
+    '@@@@shared_key_3' => 'source_shared_value_3',
+  ];
+
+  /**
+   * Test source keys for testing get and getMultiple.
+   *
+   * @var array
+   */
+  protected $testGetSourceIds = [
+    'source_key_1' => [],
+  ];
+
+  /**
+   * Test destination properties for testing get and getMultiple.
+   *
+   * @var array
+   */
+  protected $testGetDestinationProperties = [
+    'destination_key_1' => 'destination_value_1',
+    'destination_key_2' => 'destination_value_2',
+    '@destination_key_3' => 'destination_value_3',
+    'shared_key_1' => 'destination_shared_value_1',
+    '@shared_key_2' => 'destination_shared_value_2',
+    '@@@@shared_key_3' => 'destination_shared_value_3',
+  ];
+
+  /**
    * The test hash.
    *
    * @var string
@@ -48,7 +87,7 @@ class RowTest extends UnitTestCase {
   /**
    * Tests object creation: empty.
    */
-  public function testRowWithoutData() {
+  public function testRowWithoutData(): void {
     $row = new Row();
     $this->assertSame([], $row->getSource(), 'Empty row');
   }
@@ -56,7 +95,7 @@ class RowTest extends UnitTestCase {
   /**
    * Tests object creation: basic.
    */
-  public function testRowWithBasicData() {
+  public function testRowWithBasicData(): void {
     $row = new Row($this->testValues, $this->testSourceIds);
     $this->assertSame($this->testValues, $row->getSource(), 'Row with data, simple id.');
   }
@@ -64,28 +103,28 @@ class RowTest extends UnitTestCase {
   /**
    * Tests object creation: multiple source IDs.
    */
-  public function testRowWithMultipleSourceIds() {
+  public function testRowWithMultipleSourceIds(): void {
     $multi_source_ids = $this->testSourceIds + ['vid' => 'Node revision'];
     $multi_source_ids_values = $this->testValues + ['vid' => 1];
     $row = new Row($multi_source_ids_values, $multi_source_ids);
-    $this->assertSame($multi_source_ids_values, $row->getSource(), 'Row with data, multifield id.');
+    $this->assertSame($multi_source_ids_values, $row->getSource(), 'Row with data, multiple source id.');
   }
 
   /**
    * Tests object creation: invalid values.
    */
-  public function testRowWithInvalidData() {
+  public function testRowWithInvalidData(): void {
     $invalid_values = [
       'title' => 'node X',
     ];
-    $this->setExpectedException(\Exception::class);
-    $row = new Row($invalid_values, $this->testSourceIds);
+    $this->expectException(\Exception::class);
+    new Row($invalid_values, $this->testSourceIds);
   }
 
   /**
    * Tests source immutability after freeze.
    */
-  public function testSourceFreeze() {
+  public function testSourceFreeze(): void {
     $row = new Row($this->testValues, $this->testSourceIds);
     $row->rehash();
     $this->assertSame($this->testHash, $row->getHash(), 'Correct hash.');
@@ -93,24 +132,25 @@ class RowTest extends UnitTestCase {
     $row->rehash();
     $this->assertSame($this->testHashMod, $row->getHash(), 'Hash changed correctly.');
     $row->freezeSource();
-    $this->setExpectedException(\Exception::class);
+    $this->expectException(\Exception::class);
     $row->setSourceProperty('title', 'new title');
   }
 
   /**
    * Tests setting on a frozen row.
    */
-  public function testSetFrozenRow() {
+  public function testSetFrozenRow(): void {
     $row = new Row($this->testValues, $this->testSourceIds);
     $row->freezeSource();
-    $this->setExpectedException(\Exception::class, "The source is frozen and can't be changed any more");
+    $this->expectException(\Exception::class);
+    $this->expectExceptionMessage("The source is frozen and can't be changed any more");
     $row->setSourceProperty('title', 'new title');
   }
 
   /**
    * Tests hashing.
    */
-  public function testHashing() {
+  public function testHashing(): void {
     $row = new Row($this->testValues, $this->testSourceIds);
     $this->assertSame('', $row->getHash(), 'No hash at creation');
     $row->rehash();
@@ -173,7 +213,7 @@ class RowTest extends UnitTestCase {
    * @covers ::setIdMap
    * @covers ::getIdMap
    */
-  public function testGetSetIdMap() {
+  public function testGetSetIdMap(): void {
     $row = new Row($this->testValues, $this->testSourceIds);
     $test_id_map = [
       'original_hash' => '',
@@ -187,7 +227,7 @@ class RowTest extends UnitTestCase {
   /**
    * Tests the source ID.
    */
-  public function testSourceIdValues() {
+  public function testSourceIdValues(): void {
     $row = new Row($this->testValues, $this->testSourceIds);
     $this->assertSame(['nid' => $this->testValues['nid']], $row->getSourceIdValues());
   }
@@ -195,32 +235,32 @@ class RowTest extends UnitTestCase {
   /**
    * Tests the multiple source IDs.
    */
-  public function testMultipleSourceIdValues() {
+  public function testMultipleSourceIdValues(): void {
     // Set values in same order as ids.
     $multi_source_ids = $this->testSourceIds + [
-        'vid' => 'Node revision',
-        'type' => 'Node type',
-        'langcode' => 'Node language',
-      ];
+      'vid' => 'Node revision',
+      'type' => 'Node type',
+      'langcode' => 'Node language',
+    ];
     $multi_source_ids_values = $this->testValues + [
-        'vid' => 1,
-        'type' => 'page',
-        'langcode' => 'en',
-      ];
+      'vid' => 1,
+      'type' => 'page',
+      'langcode' => 'en',
+    ];
     $row = new Row($multi_source_ids_values, $multi_source_ids);
     $this->assertSame(array_keys($multi_source_ids), array_keys($row->getSourceIdValues()));
 
     // Set values in different order.
     $multi_source_ids = $this->testSourceIds + [
-        'vid' => 'Node revision',
-        'type' => 'Node type',
-        'langcode' => 'Node language',
-      ];
+      'vid' => 'Node revision',
+      'type' => 'Node type',
+      'langcode' => 'Node language',
+    ];
     $multi_source_ids_values = $this->testValues + [
-        'langcode' => 'en',
-        'type' => 'page',
-        'vid' => 1,
-      ];
+      'langcode' => 'en',
+      'type' => 'page',
+      'vid' => 1,
+    ];
     $row = new Row($multi_source_ids_values, $multi_source_ids);
     $this->assertSame(array_keys($multi_source_ids), array_keys($row->getSourceIdValues()));
   }
@@ -230,7 +270,7 @@ class RowTest extends UnitTestCase {
    *
    * @covers ::getSourceProperty
    */
-  public function testGetSourceProperty() {
+  public function testGetSourceProperty(): void {
     $row = new Row($this->testValues, $this->testSourceIds);
     $this->assertSame($this->testValues['nid'], $row->getSourceProperty('nid'));
     $this->assertSame($this->testValues['title'], $row->getSourceProperty('title'));
@@ -240,7 +280,7 @@ class RowTest extends UnitTestCase {
   /**
    * Tests setting and getting the destination.
    */
-  public function testDestination() {
+  public function testDestination(): void {
     $row = new Row($this->testValues, $this->testSourceIds);
     $this->assertEmpty($row->getDestination());
     $this->assertFalse($row->hasDestinationProperty('nid'));
@@ -254,7 +294,7 @@ class RowTest extends UnitTestCase {
   /**
    * Tests setting/getting multiple destination IDs.
    */
-  public function testMultipleDestination() {
+  public function testMultipleDestination(): void {
     $row = new Row($this->testValues, $this->testSourceIds);
     // Set some deep nested values.
     $row->setDestinationProperty('image/alt', 'alt text');
@@ -269,6 +309,148 @@ class RowTest extends UnitTestCase {
     $this->assertEquals(3, $destination['image']['fid']);
     $this->assertEquals('alt text', $row->getDestinationProperty('image/alt'));
     $this->assertEquals(3, $row->getDestinationProperty('image/fid'));
+  }
+
+  /**
+   * Tests getting source and destination properties.
+   *
+   * @param string $key
+   *   The key to look up.
+   * @param string $expected_value
+   *   The expected value.
+   *
+   * @dataProvider getDataProvider
+   * @covers ::get
+   */
+  public function testGet($key, $expected_value): void {
+    $row = $this->createRowWithDestinationProperties($this->testGetSourceProperties, $this->testGetSourceIds, $this->testGetDestinationProperties);
+    $this->assertSame($expected_value, $row->get($key));
+  }
+
+  /**
+   * Data Provider for testGet.
+   *
+   * @return array
+   *   The keys and expected values.
+   */
+  public static function getDataProvider() {
+    return [
+      ['source_key_1', 'source_value_1'],
+      ['source_key_2', 'source_value_2'],
+      ['@@source_key_3', 'source_value_3'],
+      ['shared_key_1', 'source_shared_value_1'],
+      ['@@shared_key_2', 'source_shared_value_2'],
+      ['@@@@@@@@shared_key_3', 'source_shared_value_3'],
+      ['@destination_key_1', 'destination_value_1'],
+      ['@destination_key_2', 'destination_value_2'],
+      ['@@@destination_key_3', 'destination_value_3'],
+      ['@shared_key_1', 'destination_shared_value_1'],
+      ['@@@shared_key_2', 'destination_shared_value_2'],
+      ['@@@@@@@@@shared_key_3', 'destination_shared_value_3'],
+      ['destination_key_1', NULL],
+      ['@shared_key_2', NULL],
+      ['@source_key_1', NULL],
+      ['random_source_key', NULL],
+      ['@random_destination_key', NULL],
+    ];
+  }
+
+  /**
+   * Tests getting multiple source and destination properties.
+   *
+   * @param array $keys
+   *   An array of keys to look up.
+   * @param array $expected_values
+   *   An array of expected values.
+   *
+   * @covers ::getMultiple
+   * @dataProvider getMultipleDataProvider
+   */
+  public function testGetMultiple(array $keys, array $expected_values): void {
+    $row = $this->createRowWithDestinationProperties($this->testGetSourceProperties, $this->testGetSourceIds, $this->testGetDestinationProperties);
+    $this->assertEquals(array_combine($keys, $expected_values), $row->getMultiple($keys));
+  }
+
+  /**
+   * Data Provider for testGetMultiple.
+   *
+   * @return array
+   *   The keys and expected values.
+   */
+  public static function getMultipleDataProvider() {
+    return [
+      'Single Key' => [
+        'keys' => ['source_key_1'],
+        'expected_values' => ['source_value_1'],
+      ],
+      'All Source Keys' => [
+        'keys' => [
+          'source_key_1',
+          'source_key_2',
+          '@@source_key_3',
+        ],
+        'expected_values' => [
+          'source_value_1',
+          'source_value_2',
+          'source_value_3',
+        ],
+      ],
+      'All Destination Keys' => [
+        'keys' => [
+          '@destination_key_1',
+          '@destination_key_2',
+          '@@@destination_key_3',
+        ],
+        'expected_values' => [
+          'destination_value_1',
+          'destination_value_2',
+          'destination_value_3',
+        ],
+      ],
+      'Mix of keys including non-existent' => [
+        'keys' => [
+          'shared_key_1',
+          '@shared_key_1',
+          '@@shared_key_2',
+          '@@@shared_key_2',
+          '@@@@@@@@@shared_key_3',
+          'non_existent_source_key',
+          '@non_existent_destination_key',
+        ],
+        'expected_values' => [
+          'source_shared_value_1',
+          'destination_shared_value_1',
+          'source_shared_value_2',
+          'destination_shared_value_2',
+          'destination_shared_value_3',
+          NULL,
+          NULL,
+        ],
+      ],
+    ];
+  }
+
+  /**
+   * Create a row and load it with destination properties.
+   *
+   * @param array $source_properties
+   *   The source property array.
+   * @param array $source_ids
+   *   The source ids array.
+   * @param array $destination_properties
+   *   The destination properties to load.
+   * @param bool $is_stub
+   *   Whether this row is a stub row, defaults to FALSE.
+   *
+   * @return \Drupal\migrate\Row
+   *   The row, populated with destination properties.
+   */
+  protected function createRowWithDestinationProperties(array $source_properties, array $source_ids, array $destination_properties, $is_stub = FALSE) {
+    $row = new Row($source_properties, $source_ids, $is_stub);
+    foreach ($destination_properties as $key => $property) {
+      $row->setDestinationProperty($key, $property);
+    }
+    return $row;
   }
 
 }

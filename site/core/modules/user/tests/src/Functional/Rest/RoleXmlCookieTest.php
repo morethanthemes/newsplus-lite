@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\user\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\CookieResourceTestTrait;
@@ -27,5 +29,10 @@ class RoleXmlCookieTest extends RoleResourceTestBase {
    * {@inheritdoc}
    */
   protected static $auth = 'cookie';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
 }

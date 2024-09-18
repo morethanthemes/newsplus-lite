@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\language\Kernel;
 
 use Drupal\language\Entity\ConfigurableLanguage;
@@ -13,16 +15,14 @@ use Drupal\KernelTests\KernelTestBase;
 class LanguageConfigFactoryOverrideTest extends KernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['system', 'language'];
+  protected static $modules = ['system', 'language'];
 
   /**
    * Tests language.config_factory_override service has the default language.
    */
-  public function testLanguageConfigFactoryOverride() {
+  public function testLanguageConfigFactoryOverride(): void {
     $this->installConfig('system');
     $this->installConfig('language');
 
@@ -34,7 +34,7 @@ class LanguageConfigFactoryOverrideTest extends KernelTestBase {
 
     // Invalidate the container.
     $this->config('system.site')->set('default_langcode', 'de')->save();
-    drupal_flush_all_caches();
+    $this->container->get('kernel')->rebuildContainer();
 
     $config_factory_override = \Drupal::service('language.config_factory_override');
     $this->assertEquals('de', $config_factory_override->getLanguage()->getId());

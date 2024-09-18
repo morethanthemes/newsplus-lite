@@ -8,7 +8,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\node\NodeInterface;
-use Drupal\user\UserInterface;
+use Drupal\user\EntityOwnerTrait;
 
 /**
  * Defines the node entity class.
@@ -33,7 +33,8 @@ use Drupal\user\UserInterface;
  *     "form" = {
  *       "default" = "Drupal\node\NodeForm",
  *       "delete" = "Drupal\node\Form\NodeDeleteForm",
- *       "edit" = "Drupal\node\NodeForm"
+ *       "edit" = "Drupal\node\NodeForm",
+ *       "delete-multiple-confirm" = "Drupal\node\Form\DeleteMultiple"
  *     },
  *     "route_provider" = {
  *       "html" = "Drupal\node\Entity\NodeRouteProvider",
@@ -58,6 +59,7 @@ use Drupal\user\UserInterface;
  *     "status" = "status",
  *     "published" = "status",
  *     "uid" = "uid",
+ *     "owner" = "uid",
  *   },
  *   revision_metadata_keys = {
  *     "revision_user" = "revision_uid",
@@ -68,9 +70,11 @@ use Drupal\user\UserInterface;
  *   field_ui_base_route = "entity.node_type.edit_form",
  *   common_reference_target = TRUE,
  *   permission_granularity = "bundle",
+ *   collection_permission = "access content overview",
  *   links = {
  *     "canonical" = "/node/{node}",
  *     "delete-form" = "/node/{node}/delete",
+ *     "delete-multiple-form" = "/admin/content/node/delete",
  *     "edit-form" = "/node/{node}/edit",
  *     "version-history" = "/node/{node}/revisions",
  *     "revision" = "/node/{node}/revisions/{node_revision}/view",
@@ -79,6 +83,8 @@ use Drupal\user\UserInterface;
  * )
  */
 class Node extends EditorialContentEntityBase implements NodeInterface {
+
+  use EntityOwnerTrait;
 
   /**
    * Whether the node is being previewed or not.
@@ -89,6 +95,7 @@ class Node extends EditorialContentEntityBase implements NodeInterface {
    * @var true|null
    *   TRUE if the node is being previewed and NULL if it is not.
    */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
   public $in_preview = NULL;
 
   /**
@@ -139,7 +146,7 @@ class Node extends EditorialContentEntityBase implements NodeInterface {
     // is new.
     if ($this->isDefaultRevision()) {
       /** @var \Drupal\node\NodeAccessControlHandlerInterface $access_control_handler */
-      $access_control_handler = \Drupal::entityManager()->getAccessControlHandler('node');
+      $access_control_handler = \Drupal::entityTypeManager()->getAccessControlHandler('node');
       $grants = $access_control_handler->acquireGrants($this);
       \Drupal::service('node.grant_storage')->write($this, $grants, NULL, $update);
     }
@@ -158,9 +165,11 @@ class Node extends EditorialContentEntityBase implements NodeInterface {
     parent::preDelete($storage, $entities);
 
     // Ensure that all nodes deleted are removed from the search index.
-    if (\Drupal::moduleHandler()->moduleExists('search')) {
+    if (\Drupal::hasService('search.index')) {
+      /** @var \Drupal\search\SearchIndexInterface $search_index */
+      $search_index = \Drupal::service('search.index');
       foreach ($entities as $entity) {
-        search_index_clear('node_search', $entity->nid->value);
+        $search_index->clear('node_search', $entity->nid->value);
       }
     }
   }
@@ -183,7 +192,7 @@ class Node extends EditorialContentEntityBase implements NodeInterface {
   /**
    * {@inheritdoc}
    */
-  public function access($operation = 'view', AccountInterface $account = NULL, $return_as_object = FALSE) {
+  public function access($operation = 'view', ?AccountInterface $account = NULL, $return_as_object = FALSE) {
     // This override exists to set the operation to the default value "view".
     return parent::access($operation, $account, $return_as_object);
   }
@@ -209,7 +218,6 @@ class Node extends EditorialContentEntityBase implements NodeInterface {
   public function getCreatedTime() {
     return $this->get('created')->value;
   }
-
 
   /**
    * {@inheritdoc}
@@ -252,53 +260,9 @@ class Node extends EditorialContentEntityBase implements NodeInterface {
   /**
    * {@inheritdoc}
    */
-  public function getOwner() {
-    return $this->get('uid')->entity;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getOwnerId() {
-    return $this->getEntityKey('uid');
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setOwnerId($uid) {
-    $this->set('uid', $uid);
-    return $this;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setOwner(UserInterface $account) {
-    $this->set('uid', $account->id());
-    return $this;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getRevisionAuthor() {
-    return $this->getRevisionUser();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setRevisionAuthorId($uid) {
-    $this->setRevisionUserId($uid);
-    return $this;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     $fields = parent::baseFieldDefinitions($entity_type);
+    $fields += static::ownerBaseFieldDefinitions($entity_type);
 
     $fields['title'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Title'))
@@ -317,13 +281,10 @@ class Node extends EditorialContentEntityBase implements NodeInterface {
       ])
       ->setDisplayConfigurable('form', TRUE);
 
-    $fields['uid'] = BaseFieldDefinition::create('entity_reference')
+    $fields['uid']
       ->setLabel(t('Authored by'))
       ->setDescription(t('The username of the content author.'))
       ->setRevisionable(TRUE)
-      ->setSetting('target_type', 'user')
-      ->setDefaultValueCallback('Drupal\node\Entity\Node::getCurrentUserId')
-      ->setTranslatable(TRUE)
       ->setDisplayOptions('view', [
         'label' => 'hidden',
         'type' => 'author',
@@ -352,7 +313,7 @@ class Node extends EditorialContentEntityBase implements NodeInterface {
 
     $fields['created'] = BaseFieldDefinition::create('created')
       ->setLabel(t('Authored on'))
-      ->setDescription(t('The time that the node was created.'))
+      ->setDescription(t('The date and time that the content was created.'))
       ->setRevisionable(TRUE)
       ->setTranslatable(TRUE)
       ->setDisplayOptions('view', [
@@ -401,18 +362,6 @@ class Node extends EditorialContentEntityBase implements NodeInterface {
       ->setDisplayConfigurable('form', TRUE);
 
     return $fields;
-  }
-
-  /**
-   * Default value callback for 'uid' base field definition.
-   *
-   * @see ::baseFieldDefinitions()
-   *
-   * @return array
-   *   An array of default values.
-   */
-  public static function getCurrentUserId() {
-    return [\Drupal::currentUser()->id()];
   }
 
 }

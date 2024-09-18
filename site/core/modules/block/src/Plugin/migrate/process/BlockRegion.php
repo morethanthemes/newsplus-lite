@@ -3,16 +3,13 @@
 namespace Drupal\block\Plugin\migrate\process;
 
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\migrate\Attribute\MigrateProcess;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\Plugin\migrate\process\StaticMap;
 use Drupal\migrate\Row;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
-/**
- * @MigrateProcessPlugin(
- *   id = "block_region"
- * )
- */
+#[MigrateProcess('block_region')]
 class BlockRegion extends StaticMap implements ContainerFactoryPluginInterface {
 
   /**
@@ -56,7 +53,7 @@ class BlockRegion extends StaticMap implements ContainerFactoryPluginInterface {
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
     // Set the destination region, based on the source region and theme as well
     // as the current destination default theme.
-    list($source_theme, $destination_theme, $region) = $value;
+    [$source_theme, $destination_theme, $region] = $value;
 
     // Theme is the same on both source and destination, so ensure that the
     // region exists in the destination theme.

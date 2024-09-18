@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\layout_builder\Kernel;
 
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\layout_builder\Plugin\SectionStorage\OverridesSectionStorage;
 use Drupal\layout_builder\Section;
 
 /**
@@ -16,7 +19,7 @@ class LayoutBuilderInstallTest extends LayoutBuilderCompatibilityTestBase {
   /**
    * Tests the compatibility of Layout Builder with existing entity displays.
    */
-  public function testCompatibility() {
+  public function testCompatibility(): void {
     // Ensure that the fields are shown.
     $expected_fields = [
       'field field--name-name field--type-string field--label-hidden field__item',
@@ -33,7 +36,9 @@ class LayoutBuilderInstallTest extends LayoutBuilderCompatibilityTestBase {
     $this->assertFieldAttributes($this->entity, $expected_fields);
 
     // Add a layout override.
-    $this->entity->get('layout_builder__layout')->appendSection(new Section('layout_onecol'));
+    $this->enableOverrides();
+    $this->entity = $this->reloadEntity($this->entity);
+    $this->entity->get(OverridesSectionStorage::FIELD_NAME)->appendSection(new Section('layout_onecol'));
     $this->entity->save();
 
     // The rendered entity has now changed. The non-configurable field is shown
@@ -48,7 +53,7 @@ class LayoutBuilderInstallTest extends LayoutBuilderCompatibilityTestBase {
     $this->assertNotEmpty($this->cssSelect('.layout--onecol'));
 
     // Removing the layout restores the original rendering of the entity.
-    $this->entity->get('layout_builder__layout')->removeSection(0);
+    $this->entity->get(OverridesSectionStorage::FIELD_NAME)->removeAllSections();
     $this->entity->save();
     $this->assertFieldAttributes($this->entity, $expected_fields);
 

@@ -112,13 +112,6 @@ class ThemeInitialization implements ThemeInitializationInterface {
     while ($ancestor && isset($themes[$ancestor]->base_theme)) {
       $ancestor = $themes[$ancestor]->base_theme;
       if (!$this->themeHandler->themeExists($ancestor)) {
-        if ($ancestor == 'stable') {
-          // Themes that depend on Stable will be fixed by system_update_8014().
-          // There is no harm in not adding it as an ancestor since at worst
-          // some people might experience slight visual regressions on
-          // update.php.
-          continue;
-        }
         throw new MissingThemeDependencyException(sprintf('Base theme %s has not been installed.', $ancestor), $ancestor);
       }
       $base_themes[] = $themes[$ancestor];
@@ -135,26 +128,23 @@ class ThemeInitialization implements ThemeInitializationInterface {
    */
   public function loadActiveTheme(ActiveTheme $active_theme) {
     // Initialize the theme.
-    if ($theme_engine = $active_theme->getEngine()) {
+    if ($active_theme->getEngine()) {
       // Include the engine.
       include_once $this->root . '/' . $active_theme->getOwner();
-
-      if (function_exists($theme_engine . '_init')) {
-        foreach ($active_theme->getBaseThemes() as $base) {
-          call_user_func($theme_engine . '_init', $base->getExtension());
-        }
-        call_user_func($theme_engine . '_init', $active_theme->getExtension());
+      foreach (array_reverse($active_theme->getBaseThemeExtensions()) as $base) {
+        $base->load();
       }
+      $active_theme->getExtension()->load();
     }
     else {
-      // include non-engine theme files
-      foreach ($active_theme->getBaseThemes() as $base) {
+      // Include non-engine theme files
+      foreach (array_reverse($active_theme->getBaseThemeExtensions()) as $base) {
         // Include the theme file or the engine.
-        if ($base->getOwner()) {
-          include_once $this->root . '/' . $base->getOwner();
+        if ($base->owner) {
+          include_once $this->root . '/' . $base->owner;
         }
       }
-      // and our theme gets one too.
+      // And our theme gets one too.
       if ($active_theme->getOwner()) {
         include_once $this->root . '/' . $active_theme->getOwner();
       }
@@ -173,8 +163,14 @@ class ThemeInitialization implements ThemeInitializationInterface {
     $values['path'] = $theme_path;
     $values['name'] = $theme->getName();
 
-    // @todo Remove in Drupal 9.0.x.
-    $values['stylesheets_remove'] = $this->prepareStylesheetsRemove($theme, $base_themes);
+    // Use the logo declared in this themes info file, otherwise use logo.svg
+    // from the themes root.
+    if (!empty($theme->info['logo'])) {
+      $values['logo'] = $theme->getPath() . '/' . $theme->info['logo'];
+    }
+    else {
+      $values['logo'] = $theme->getPath() . '/logo.svg';
+    }
 
     // Prepare libraries overrides from this theme and ancestor themes. This
     // allows child themes to easily remove CSS files from base themes and
@@ -182,7 +178,7 @@ class ThemeInitialization implements ThemeInitializationInterface {
     $values['libraries_override'] = [];
 
     // Get libraries overrides declared by base themes.
-    foreach ($base_themes as $base) {
+    foreach (array_reverse($base_themes) as $base) {
       if (!empty($base->info['libraries-override'])) {
         foreach ($base->info['libraries-override'] as $library => $override) {
           $values['libraries_override'][$base->getPath()][$library] = $override;
@@ -245,16 +241,16 @@ class ThemeInitialization implements ThemeInitializationInterface {
       }
     }
 
-    $values['engine'] = isset($theme->engine) ? $theme->engine : NULL;
-    $values['owner'] = isset($theme->owner) ? $theme->owner : NULL;
+    $values['engine'] = $theme->engine ?? NULL;
+    $values['owner'] = $theme->owner ?? NULL;
     $values['extension'] = $theme;
 
     $base_active_themes = [];
     foreach ($base_themes as $base_theme) {
-      $base_active_themes[$base_theme->getName()] = $this->getActiveTheme($base_theme, array_slice($base_themes, 1));
+      $base_active_themes[$base_theme->getName()] = $base_theme;
     }
 
-    $values['base_themes'] = $base_active_themes;
+    $values['base_theme_extensions'] = $base_active_themes;
     if (!empty($theme->info['regions'])) {
       $values['regions'] = $theme->info['regions'];
     }
@@ -298,44 +294,6 @@ class ThemeInitialization implements ThemeInitializationInterface {
     if (isset($extensions[$token])) {
       return str_replace($token_candidate, $extensions[$token]->getPath(), $css_file);
     }
-  }
-
-  /**
-   * Prepares stylesheets-remove specified in the *.info.yml file.
-   *
-   * @param \Drupal\Core\Extension\Extension $theme
-   *   The theme extension object.
-   * @param \Drupal\Core\Extension\Extension[] $base_themes
-   *   An array of base themes.
-   *
-   * @return string[]
-   *   The list of stylesheets-remove specified in the *.info.yml file.
-   *
-   * @todo Remove in Drupal 9.0.x.
-   */
-  protected function prepareStylesheetsRemove(Extension $theme, $base_themes) {
-    // Prepare stylesheets from this theme as well as all ancestor themes.
-    // We work it this way so that we can have child themes remove CSS files
-    // easily from parent.
-    $stylesheets_remove = [];
-    // Grab stylesheets from base theme.
-    foreach ($base_themes as $base) {
-      if (!empty($base->info['stylesheets-remove'])) {
-        foreach ($base->info['stylesheets-remove'] as $css_file) {
-          $css_file = $this->resolveStyleSheetPlaceholders($css_file);
-          $stylesheets_remove[$css_file] = $css_file;
-        }
-      }
-    }
-
-    // Add stylesheets used by this theme.
-    if (!empty($theme->info['stylesheets-remove'])) {
-      foreach ($theme->info['stylesheets-remove'] as $css_file) {
-        $css_file = $this->resolveStyleSheetPlaceholders($css_file);
-        $stylesheets_remove[$css_file] = $css_file;
-      }
-    }
-    return $stylesheets_remove;
   }
 
 }

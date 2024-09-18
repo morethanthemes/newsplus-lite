@@ -4,6 +4,7 @@ namespace Drupal\locale;
 
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\DestructableInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
@@ -18,6 +19,8 @@ use Symfony\Component\HttpFoundation\RequestStack;
  * database caching.
  */
 class LocaleTranslation implements TranslatorInterface, DestructableInterface {
+
+  use DependencySerializationTrait;
 
   /**
    * Storage for strings.
@@ -116,6 +119,11 @@ class LocaleTranslation implements TranslatorInterface, DestructableInterface {
       $this->translations[$langcode][$context] = new LocaleLookup($langcode, $context, $this->storage, $this->cache, $this->lock, $this->configFactory, $this->languageManager, $this->requestStack);
     }
     $translation = $this->translations[$langcode][$context]->get($string);
+    // If the translation is TRUE, no translation exists, but that string needs
+    // to be stored in the persistent cache for performance reasons (so for
+    // example, we don't have hundreds of queries to locale tables on each
+    // request). That cache is persisted when the request ends, and the lookup
+    // service is destroyed.
     return $translation === TRUE ? FALSE : $translation;
   }
 

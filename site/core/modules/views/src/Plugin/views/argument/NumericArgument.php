@@ -4,22 +4,19 @@ namespace Drupal\views\Plugin\views\argument;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\Context\ContextDefinition;
+use Drupal\views\Attribute\ViewsArgument;
 
 /**
- * Basic argument handler for arguments that are numeric. Incorporates
- * break_phrase.
+ * Basic argument handler for arguments that are numeric.
+ *
+ * Incorporates break_phrase.
  *
  * @ingroup views_argument_handlers
- *
- * @ViewsArgument("numeric")
  */
+#[ViewsArgument(
+  id: 'numeric',
+)]
 class NumericArgument extends ArgumentPluginBase {
-
-  /**
-   * The operator used for the query: or|and.
-   * @var string
-   */
-  public $operator;
 
   /**
    * The actual value which is used for querying.
@@ -39,7 +36,7 @@ class NumericArgument extends ArgumentPluginBase {
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     parent::buildOptionsForm($form, $form_state);
 
-    // allow + for or, , for and
+    // Allow '+' for "or". Allow ',' for "and".
     $form['break_phrase'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Allow multiple values'),
@@ -105,16 +102,16 @@ class NumericArgument extends ArgumentPluginBase {
     }
 
     $placeholder = $this->placeholder();
-    $null_check = empty($this->options['not']) ? '' : "OR $this->tableAlias.$this->realField IS NULL";
+    $null_check = empty($this->options['not']) ? '' : " OR $this->tableAlias.$this->realField IS NULL";
 
     if (count($this->value) > 1) {
       $operator = empty($this->options['not']) ? 'IN' : 'NOT IN';
       $placeholder .= '[]';
-      $this->query->addWhereExpression(0, "$this->tableAlias.$this->realField $operator($placeholder) $null_check", [$placeholder => $this->value]);
+      $this->query->addWhereExpression(0, "$this->tableAlias.$this->realField $operator($placeholder)" . $null_check, [$placeholder => $this->value]);
     }
     else {
       $operator = empty($this->options['not']) ? '=' : '!=';
-      $this->query->addWhereExpression(0, "$this->tableAlias.$this->realField $operator $placeholder $null_check", [$placeholder => $this->argument]);
+      $this->query->addWhereExpression(0, "$this->tableAlias.$this->realField $operator $placeholder" . $null_check, [$placeholder => $this->argument]);
     }
   }
 

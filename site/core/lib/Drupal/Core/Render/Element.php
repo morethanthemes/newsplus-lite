@@ -2,7 +2,6 @@
 
 namespace Drupal\Core\Render;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Access\AccessResultInterface;
 
 /**
@@ -24,7 +23,7 @@ class Element {
    *   TRUE of the key is a property, FALSE otherwise.
    */
   public static function property($key) {
-    return $key[0] == '#';
+    return is_string($key) && $key[0] == '#';
   }
 
   /**
@@ -37,7 +36,7 @@ class Element {
    *   An array of property keys for the element.
    */
   public static function properties(array $element) {
-    return array_filter(array_keys($element), 'static::property');
+    return array_filter(array_keys($element), [static::class, 'property']);
   }
 
   /**
@@ -56,8 +55,9 @@ class Element {
   /**
    * Identifies the children of an element array, optionally sorted by weight.
    *
-   * The children of a element array are those key/value pairs whose key does
-   * not start with a '#'. See drupal_render() for details.
+   * The children of an element array are those key/value pairs whose key does
+   * not start with a '#'. See \Drupal\Core\Render\RendererInterface::render()
+   * for details.
    *
    * @param array $elements
    *   The element array whose children are to be identified. Passed by
@@ -78,7 +78,7 @@ class Element {
     $i = 0;
     $sortable = FALSE;
     foreach ($elements as $key => $value) {
-      if ($key === '' || $key[0] !== '#') {
+      if (is_int($key) || $key === '' || $key[0] !== '#') {
         if (is_array($value)) {
           if (isset($value['#weight'])) {
             $weight = $value['#weight'];
@@ -91,10 +91,10 @@ class Element {
           // the insertion order.
           $child_weights[$key] = floor($weight * 1000) + $i / $count;
         }
-        // Only trigger an error if the value is not null.
+        // Only trigger an exception if the value is not null.
         // @see https://www.drupal.org/node/1283892
         elseif (isset($value)) {
-          trigger_error(SafeMarkup::format('"@key" is an invalid render array key', ['@key' => $key]), E_USER_ERROR);
+          throw new \InvalidArgumentException(sprintf('"%s" is an invalid render array key. Value should be an array but got a %s.', $key, gettype($value)));
         }
       }
       $i++;
@@ -166,9 +166,9 @@ class Element {
    * @param array $map
    *   An associative array whose keys are element property names and whose
    *   values are the HTML attribute names to set on the corresponding
-   *   property; e.g., array('#propertyname' => 'attributename'). If both names
-   *   are identical except for the leading '#', then an attribute name value is
-   *   sufficient and no property name needs to be specified.
+   *   property; e.g., array('#property_name' => 'attribute_name'). If both
+   *   names are identical except for the leading '#', then an attribute name
+   *   value is sufficient and no property name needs to be specified.
    */
   public static function setAttributes(array &$element, array $map) {
     foreach ($map as $property => $attribute) {
@@ -186,8 +186,8 @@ class Element {
   /**
    * Indicates whether the given element is empty.
    *
-   * An element that only has #cache set is considered empty, because it will
-   * render to the empty string.
+   * An element that only has #cache or #weight set is considered
+   * empty, because it will render to the empty string.
    *
    * @param array $elements
    *   The element.
@@ -196,7 +196,37 @@ class Element {
    *   Whether the given element is empty.
    */
   public static function isEmpty(array $elements) {
-    return empty($elements) || (count($elements) === 1 && array_keys($elements) === ['#cache']);
+    return \array_diff(\array_keys($elements), ['#cache', '#weight']) === [];
+  }
+
+  /**
+   * Checks if a candidate is a render array.
+   *
+   * @param mixed $candidate
+   *   The candidate.
+   *
+   * @return bool
+   *   TRUE if it's a render array. FALSE otherwise.
+   */
+  public static function isRenderArray($candidate): bool {
+    if (!is_array($candidate)) {
+      return FALSE;
+    }
+    if (empty($candidate)) {
+      return FALSE;
+    }
+    foreach ($candidate as $key => $value) {
+      if (!is_int($key) && $key !== '' && $key[0] === '#') {
+        continue;
+      }
+      if (!is_array($value)) {
+        return FALSE;
+      }
+      if (!static::isRenderArray($value)) {
+        return FALSE;
+      }
+    }
+    return TRUE;
   }
 
 }

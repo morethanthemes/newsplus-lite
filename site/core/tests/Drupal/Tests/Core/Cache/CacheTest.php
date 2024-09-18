@@ -1,9 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Cache;
 
 use Drupal\Core\Cache\Cache;
+use Drupal\Tests\Core\Database\Stub\Select;
+use Drupal\Tests\Core\Database\Stub\StubConnection;
+use Drupal\Tests\Core\Database\Stub\StubPDO;
 use Drupal\Tests\UnitTestCase;
+use Prophecy\Argument;
+use Drupal\Core\Cache\Context\CacheContextsManager;
+use Drupal\Core\DependencyInjection\Container;
 
 /**
  * @coversDefaultClass \Drupal\Core\Cache\Cache
@@ -41,33 +49,20 @@ class CacheTest extends UnitTestCase {
   }
 
   /**
-   * @covers ::validateTags
-   *
-   * @dataProvider validateTagsProvider
-   */
-  public function testValidateTags(array $tags, $expected_exception_message) {
-    if ($expected_exception_message !== FALSE) {
-      $this->setExpectedException('LogicException', $expected_exception_message);
-    }
-    // If it doesn't throw an exception, validateTags() returns NULL.
-    $this->assertNull(Cache::validateTags($tags));
-  }
-
-
-  /**
    * Provides a list of pairs of cache tags arrays to be merged.
    *
    * @return array
    */
-  public function mergeTagsProvider() {
+  public static function mergeTagsProvider() {
     return [
       [[], [], []],
-      [['bar'], ['foo'], ['bar', 'foo']],
-      [['foo'], ['bar'], ['bar', 'foo']],
-      [['foo'], ['bar', 'foo'], ['bar', 'foo']],
-      [['foo'], ['foo', 'bar'], ['bar', 'foo']],
-      [['bar', 'foo'], ['foo', 'bar'], ['bar', 'foo']],
-      [['foo', 'bar'], ['foo', 'bar'], ['bar', 'foo']],
+      [['bar', 'foo'], ['bar'], ['foo']],
+      [['foo', 'bar'], ['foo'], ['bar']],
+      [['foo', 'bar'], ['foo'], ['bar', 'foo']],
+      [['foo', 'bar'], ['foo'], ['foo', 'bar']],
+      [['bar', 'foo'], ['bar', 'foo'], ['foo', 'bar']],
+      [['foo', 'bar'], ['foo', 'bar'], ['foo', 'bar']],
+      [['bar', 'foo', 'llama'], ['bar', 'foo'], ['foo', 'bar'], ['llama', 'foo']],
     ];
   }
 
@@ -76,8 +71,8 @@ class CacheTest extends UnitTestCase {
    *
    * @dataProvider mergeTagsProvider
    */
-  public function testMergeTags(array $a, array $b, array $expected) {
-    $this->assertEquals($expected, Cache::mergeTags($a, $b));
+  public function testMergeTags(array $expected, ...$cache_tags): void {
+    $this->assertEqualsCanonicalizing($expected, Cache::mergeTags(...$cache_tags));
   }
 
   /**
@@ -85,31 +80,77 @@ class CacheTest extends UnitTestCase {
    *
    * @return array
    */
-  public function mergeMaxAgesProvider() {
+  public static function mergeMaxAgesProvider() {
     return [
       [Cache::PERMANENT, Cache::PERMANENT, Cache::PERMANENT],
       [60, 60, 60],
       [0, 0, 0],
 
-      [60, 0, 0],
       [0, 60, 0],
+      [0, 0, 60],
 
-      [Cache::PERMANENT, 0, 0],
       [0, Cache::PERMANENT, 0],
+      [0, 0, Cache::PERMANENT],
 
-      [Cache::PERMANENT, 60, 60],
       [60, Cache::PERMANENT, 60],
+      [60, 60, Cache::PERMANENT],
+
+      [Cache::PERMANENT, Cache::PERMANENT, Cache::PERMANENT, Cache::PERMANENT],
+      [30, 60, 60, 30],
+      [0, 0, 0, 0],
+
+      [60, Cache::PERMANENT, 60, Cache::PERMANENT],
+      [60, 60, Cache::PERMANENT, Cache::PERMANENT],
+      [60, Cache::PERMANENT, Cache::PERMANENT, 60],
     ];
   }
-
 
   /**
    * @covers ::mergeMaxAges
    *
    * @dataProvider mergeMaxAgesProvider
    */
-  public function testMergeMaxAges($a, $b, $expected) {
-    $this->assertSame($expected, Cache::mergeMaxAges($a, $b));
+  public function testMergeMaxAges($expected, ...$max_ages): void {
+    $this->assertSame($expected, Cache::mergeMaxAges(...$max_ages));
+  }
+
+  /**
+   * Provides a list of pairs of cache contexts arrays to be merged.
+   *
+   * @return array
+   */
+  public static function mergeCacheContextsProvide() {
+    return [
+      [[], [], []],
+      [['foo'], [], ['foo']],
+      [['foo'], ['foo'], []],
+
+      [['bar', 'foo'], ['foo'], ['bar']],
+      [['bar', 'foo'], ['bar'], ['foo']],
+
+      [['foo.bar', 'foo.foo'], ['foo.foo'], ['foo.bar']],
+      [['foo.bar', 'foo.foo'], ['foo.bar'], ['foo.foo']],
+
+      [['bar', 'foo', 'llama'], [], ['foo', 'bar', 'llama']],
+      [['bar', 'foo', 'llama'], ['foo', 'bar', 'llama'], []],
+
+      [['bar', 'foo', 'llama'], ['foo'], ['foo', 'bar', 'llama']],
+      [['bar', 'foo', 'llama'], ['foo', 'bar', 'llama'], ['foo']],
+    ];
+  }
+
+  /**
+   * @covers ::mergeContexts
+   *
+   * @dataProvider mergeCacheContextsProvide
+   */
+  public function testMergeCacheContexts(array $expected, ...$contexts): void {
+    $cache_contexts_manager = $this->prophesize(CacheContextsManager::class);
+    $cache_contexts_manager->assertValidTokens(Argument::any())->willReturn(TRUE);
+    $container = $this->prophesize(Container::class);
+    $container->get('cache_contexts_manager')->willReturn($cache_contexts_manager->reveal());
+    \Drupal::setContainer($container->reveal());
+    $this->assertEqualsCanonicalizing($expected, Cache::mergeContexts(...$contexts));
   }
 
   /**
@@ -117,7 +158,7 @@ class CacheTest extends UnitTestCase {
    *
    * @return array
    */
-  public function buildTagsProvider() {
+  public static function buildTagsProvider() {
     return [
       ['node', [1], ['node:1']],
       ['node', [1, 2, 3], ['node:1', 'node:2', 'node:3']],
@@ -144,8 +185,18 @@ class CacheTest extends UnitTestCase {
    *
    * @dataProvider buildTagsProvider
    */
-  public function testBuildTags($prefix, array $suffixes, array $expected, $glue = ':') {
+  public function testBuildTags($prefix, array $suffixes, array $expected, $glue = ':'): void {
     $this->assertEquals($expected, Cache::buildTags($prefix, $suffixes, $glue));
+  }
+
+  /**
+   * @covers ::keyFromQuery
+   * @group legacy
+   */
+  public function testKeyFromQuery(): void {
+    $this->expectDeprecation('Drupal\Core\Cache\Cache::keyFromQuery is deprecated in drupal:10.1.0 and is removed from drupal:11.0.0. No replacement provided. See https://www.drupal.org/node/3322044');
+    $query = new Select(new StubConnection(new StubPDO(), []), 'dne');
+    Cache::keyFromQuery($query);
   }
 
 }

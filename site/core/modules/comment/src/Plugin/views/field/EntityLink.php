@@ -3,6 +3,7 @@
 namespace Drupal\comment\Plugin\views\field;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\views\Attribute\ViewsField;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
 
@@ -10,13 +11,12 @@ use Drupal\views\ResultRow;
  * Handler for showing comment module's entity links.
  *
  * @ingroup views_field_handlers
- *
- * @ViewsField("comment_entity_link")
  */
+#[ViewsField("comment_entity_link")]
 class EntityLink extends FieldPluginBase {
 
   /**
-   * Stores the result of node_view_multiple for all rows to reuse it later.
+   * Stores the result of parent entities build for all rows to reuse it later.
    *
    * @var array
    */
@@ -61,7 +61,11 @@ class EntityLink extends FieldPluginBase {
       $entities[$entity->id()] = $entity;
     }
     if ($entities) {
-      $this->build = entity_view_multiple($entities, $this->options['teaser'] ? 'teaser' : 'full');
+      $entityTypeId = reset($entities)->getEntityTypeId();
+      $viewMode = $this->options['teaser'] ? 'teaser' : 'full';
+      $this->build = \Drupal::entityTypeManager()
+        ->getViewBuilder($entityTypeId)
+        ->viewMultiple($entities, $viewMode);
     }
   }
 
@@ -72,7 +76,10 @@ class EntityLink extends FieldPluginBase {
     $entity = $this->getEntity($values);
 
     // Only render the links, if they are defined.
-    return !empty($this->build[$entity->id()]['links']['comment__comment']) ? \Drupal::service('renderer')->render($this->build[$entity->id()]['links']['comment__comment']) : '';
+    if (!$entity || empty($this->build[$entity->id()]['links']['comment__comment'])) {
+      return '';
+    }
+    return \Drupal::service('renderer')->render($this->build[$entity->id()]['links']['comment__comment']);
   }
 
 }

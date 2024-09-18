@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Entity;
 
 use Drupal\Component\Uuid\Uuid;
-use Drupal\Component\Utility\SafeMarkup;
 
 /**
  * Tests default values for entity fields.
@@ -19,7 +20,10 @@ class EntityFieldDefaultValueTest extends EntityKernelTestBase {
    */
   protected $uuid;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
     // Initiate the generator object.
     $this->uuid = $this->container->get('uuid');
@@ -28,7 +32,7 @@ class EntityFieldDefaultValueTest extends EntityKernelTestBase {
   /**
    * Tests default values on entities and fields.
    */
-  public function testDefaultValues() {
+  public function testDefaultValues(): void {
     // All entity variations have to have the same results.
     foreach (entity_test_entity_types() as $entity_type) {
       $this->assertDefaultValues($entity_type);
@@ -40,23 +44,25 @@ class EntityFieldDefaultValueTest extends EntityKernelTestBase {
    *
    * @param string $entity_type_id
    *   The entity type to run the tests with.
+   *
+   * @internal
    */
-  protected function assertDefaultValues($entity_type_id) {
+  protected function assertDefaultValues(string $entity_type_id): void {
     $entity = $this->container->get('entity_type.manager')
       ->getStorage($entity_type_id)
       ->create();
-    $definition = $this->entityManager->getDefinition($entity_type_id);
+    $definition = $this->entityTypeManager->getDefinition($entity_type_id);
     $langcode_key = $definition->getKey('langcode');
-    $this->assertEqual($entity->{$langcode_key}->value, 'en', SafeMarkup::format('%entity_type: Default language', ['%entity_type' => $entity_type_id]));
-    $this->assertTrue(Uuid::isValid($entity->uuid->value), SafeMarkup::format('%entity_type: Default UUID', ['%entity_type' => $entity_type_id]));
-    $this->assertEqual($entity->name->getValue(), [], 'Field has one empty value by default.');
+    $this->assertEquals('en', $entity->{$langcode_key}->value, "$entity_type_id: Default language");
+    $this->assertTrue(Uuid::isValid($entity->uuid->value), "$entity_type_id: Default UUID");
+    $this->assertEquals([], $entity->name->getValue(), 'Field has one empty value by default.');
   }
 
   /**
    * Tests custom default value callbacks.
    */
-  public function testDefaultValueCallback() {
-    $entity = $this->entityManager->getStorage('entity_test_default_value')->create();
+  public function testDefaultValueCallback(): void {
+    $entity = $this->entityTypeManager->getStorage('entity_test_default_value')->create();
     // The description field has a default value callback for testing, see
     // entity_test_field_default_value().
     $string = 'description_' . $entity->language()->getId();
@@ -70,7 +76,7 @@ class EntityFieldDefaultValueTest extends EntityKernelTestBase {
         'color' => "color:1:$string",
       ],
     ];
-    $this->assertEqual($entity->description->getValue(), $expected);
+    $this->assertEquals($expected, $entity->description->getValue());
   }
 
 }

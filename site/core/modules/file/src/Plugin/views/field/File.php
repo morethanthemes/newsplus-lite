@@ -2,25 +2,58 @@
 
 namespace Drupal\file\Plugin\views\field;
 
+use Drupal\Core\File\FileUrlGeneratorInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\views\Attribute\ViewsField;
 use Drupal\views\ResultRow;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Field handler to provide simple renderer that allows linking to a file.
  *
  * @ingroup views_field_handlers
- *
- * @ViewsField("file")
  */
+#[ViewsField("file")]
 class File extends FieldPluginBase {
+
+  /**
+   * The file URL generator.
+   *
+   * @var \Drupal\Core\File\FileUrlGeneratorInterface
+   */
+  protected $fileUrlGenerator;
+
+  /**
+   * Constructs a File object.
+   *
+   * @param array $configuration
+   *   A configuration array containing information about the plugin instance.
+   * @param string $plugin_id
+   *   The plugin_id for the plugin instance.
+   * @param mixed $plugin_definition
+   *   The plugin implementation definition.
+   * @param \Drupal\Core\File\FileUrlGeneratorInterface $file_url_generator
+   *   The file URL generator.
+   */
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, FileUrlGeneratorInterface $file_url_generator) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
+    $this->fileUrlGenerator = $file_url_generator;
+  }
 
   /**
    * {@inheritdoc}
    */
-  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static($configuration, $plugin_id, $plugin_definition, $container->get('file_url_generator'));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function init(ViewExecutable $view, DisplayPluginBase $display, ?array &$options = NULL) {
     parent::init($view, $display, $options);
 
     if (!empty($options['link_to_file'])) {
@@ -38,7 +71,7 @@ class File extends FieldPluginBase {
   }
 
   /**
-   * Provide link to file option
+   * Provide link to file option.
    */
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     $form['link_to_file'] = [
@@ -64,13 +97,7 @@ class File extends FieldPluginBase {
   protected function renderLink($data, ResultRow $values) {
     if (!empty($this->options['link_to_file']) && $data !== NULL && $data !== '') {
       $this->options['alter']['make_link'] = TRUE;
-      // @todo Wrap in file_url_transform_relative(). This is currently
-      // impossible. As a work-around, we could add the 'url.site' cache context
-      // to ensure different file URLs are generated for different sites in a
-      // multisite setup, including HTTP and HTTPS versions of the same site.
-      // But unfortunately it's impossible to bubble a cache context here.
-      // Fix in https://www.drupal.org/node/2646744.
-      $this->options['alter']['path'] = file_create_url($this->getValue($values, 'uri'));
+      $this->options['alter']['url'] = $this->fileUrlGenerator->generate($this->getValue($values, 'uri'));
     }
 
     return $data;

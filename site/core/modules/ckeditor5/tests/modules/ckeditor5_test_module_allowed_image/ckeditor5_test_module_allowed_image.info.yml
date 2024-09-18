@@ -1,0 +1,11 @@
+name: CKEditor 5 Module Allowed Image
+type: module
+description: Alters the allowed image types.
+package: Testing
+dependencies:
+  - drupal:ckeditor5
+
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
+project: 'drupal'
+datestamp: 1726135113

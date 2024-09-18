@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\options\Functional;
 
 use Drupal\field\Entity\FieldConfig;
-use Drupal\field\Tests\FieldTestBase;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\entity_test\Entity\EntityTestRev;
+use Drupal\Tests\field\Functional\FieldTestBase;
 
 /**
  * Base class for testing allowed values of options fields.
@@ -13,16 +15,14 @@ use Drupal\entity_test\Entity\EntityTestRev;
 abstract class OptionsDynamicValuesTestBase extends FieldTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['options', 'entity_test', 'options_test'];
+  protected static $modules = ['options', 'entity_test', 'options_test'];
 
   /**
    * The created entity.
    *
-   * @var \Drupal\Core\Entity\Entity
+   * @var \Drupal\Core\Entity\EntityInterface
    */
   protected $entity;
 
@@ -33,7 +33,22 @@ abstract class OptionsDynamicValuesTestBase extends FieldTestBase {
    */
   protected $fieldStorage;
 
-  protected function setUp() {
+  /**
+   * @var int
+   */
+  protected int $field;
+
+  /**
+   * Test data.
+   *
+   * @var array
+   */
+  protected array $test;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $field_name = 'test_options';
@@ -54,7 +69,8 @@ abstract class OptionsDynamicValuesTestBase extends FieldTestBase {
       'bundle' => 'entity_test_rev',
       'required' => TRUE,
     ])->save();
-    entity_get_form_display('entity_test_rev', 'entity_test_rev', 'default')
+    \Drupal::service('entity_display.repository')
+      ->getFormDisplay('entity_test_rev', 'entity_test_rev')
       ->setComponent($field_name, [
         'type' => 'options_select',
       ])
@@ -72,7 +88,7 @@ abstract class OptionsDynamicValuesTestBase extends FieldTestBase {
       'label' => $this->entity->label(),
       'uuid' => $this->entity->uuid(),
       'bundle' => $this->entity->bundle(),
-      'uri' => $this->entity->url(),
+      'uri' => $this->entity->toUrl()->toString(),
     ];
   }
 

@@ -6,16 +6,18 @@ use Drupal\Core\Database\Connection;
 use Drupal\Core\State\StateInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
+// cspell:ignore daycount totalcount
+
 /**
  * Provides the default database storage backend for statistics.
  */
 class NodeStatisticsDatabaseStorage implements StatisticsStorageInterface {
 
   /**
-  * The database connection used.
-  *
-  * @var \Drupal\Core\Database\Connection
-  */
+   * The database connection used.
+   *
+   * @var \Drupal\Core\Database\Connection
+   */
   protected $connection;
 
   /**
@@ -39,6 +41,8 @@ class NodeStatisticsDatabaseStorage implements StatisticsStorageInterface {
    *   The database connection for the node view storage.
    * @param \Drupal\Core\State\StateInterface $state
    *   The state service.
+   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
+   *   The request stack.
    */
   public function __construct(Connection $connection, StateInterface $state, RequestStack $request_stack) {
     $this->connection = $connection;
@@ -58,8 +62,8 @@ class NodeStatisticsDatabaseStorage implements StatisticsStorageInterface {
         'totalcount' => 1,
         'timestamp' => $this->getRequestTime(),
       ])
-      ->expression('daycount', 'daycount + 1')
-      ->expression('totalcount', 'totalcount + 1')
+      ->expression('daycount', '[daycount] + 1')
+      ->expression('totalcount', '[totalcount] + 1')
       ->execute();
   }
 
@@ -116,7 +120,7 @@ class NodeStatisticsDatabaseStorage implements StatisticsStorageInterface {
    * {@inheritdoc}
    */
   public function resetDayCount() {
-    $statistics_timestamp = $this->state->get('statistics.day_timestamp') ?: 0;
+    $statistics_timestamp = $this->state->get('statistics.day_timestamp', 0);
     if (($this->getRequestTime() - $statistics_timestamp) >= 86400) {
       $this->state->set('statistics.day_timestamp', $this->getRequestTime());
       $this->connection->update('node_counter')
@@ -130,7 +134,7 @@ class NodeStatisticsDatabaseStorage implements StatisticsStorageInterface {
    */
   public function maxTotalCount() {
     $query = $this->connection->select('node_counter', 'nc');
-    $query->addExpression('MAX(totalcount)');
+    $query->addExpression('MAX([totalcount])');
     $max_total_count = (int) $query->execute()->fetchField();
     return $max_total_count;
   }

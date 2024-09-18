@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Entity;
 
 use Drupal\Core\Entity\FieldableEntityInterface;
@@ -25,21 +27,32 @@ class CreateSampleEntityTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['system', 'field', 'filter', 'text', 'file', 'user', 'node', 'comment', 'taxonomy'];
+  protected static $modules = [
+    'path_alias',
+    'system',
+    'field',
+    'filter',
+    'text',
+    'file',
+    'user',
+    'node',
+    'comment',
+    'taxonomy',
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
-    parent::setup();
+  protected function setUp(): void {
+    parent::setUp();
 
     $this->installEntitySchema('file');
     $this->installEntitySchema('user');
     $this->installEntitySchema('node');
     $this->installEntitySchema('node_type');
-    $this->installEntitySchema('file');
     $this->installEntitySchema('comment');
     $this->installEntitySchema('comment_type');
+    $this->installEntitySchema('path_alias');
     $this->installEntitySchema('taxonomy_vocabulary');
     $this->installEntitySchema('taxonomy_term');
     $this->entityTypeManager = $this->container->get('entity_type.manager');
@@ -53,7 +66,7 @@ class CreateSampleEntityTest extends KernelTestBase {
    *
    * @covers ::createWithSampleValues
    */
-  public function testSampleValueContentEntity() {
+  public function testSampleValueContentEntity(): void {
     foreach ($this->entityTypeManager->getDefinitions() as $entity_type_id => $definition) {
       if ($definition->entityClassImplements(FieldableEntityInterface::class)) {
         $label = $definition->getKey('label');

@@ -2,26 +2,72 @@
  * @file
  * This file is used to style form buttons generically, with overrides per form
  */
-.form-actions {
-  display: inline-flex;
-}
 
-.form-actions .button {
-  margin-left: 1em;
-}
-.form-actions .button:first-child {
-  margin-left: 0;
-}
-
-.form-submit {
-  padding: 0.6em 1.25em 0.4em;
+.button {
+  display: inline-block;
+  min-width: inherit;
+  max-width: inherit;
   margin: 0;
-  border: 1px solid #dbdbdb;
-  font-size: 0.875rem;
-  background-color: #fff;
-  color: #000;
+  padding: 0.7rem 1.3rem;
+  cursor: pointer;
+  transition: background-color 0.5s ease;
+  text-align: center;
+  text-decoration: none;
+  color: #fff;
+  border: 2px solid #008068;
+  border-radius: 3px;
+  background-color: #008068;
+  font-family: "Scope One", Georgia, serif;
+  font-size: 1.2rem;
 }
-.form-submit:hover,
-.form-submit:focus {
-  padding: calc(0.6em - 2px) calc(1.25em - 2px) calc(0.4em - 2px) calc(1.25em - 2px);
+
+.button:hover,
+.button:active,
+.button:focus {
+  transition: background-color 0.5s ease;
+  text-decoration: none;
+  color: #000;
+  background-color: #e6eee0;
+}
+
+.button--primary {
+  border-color: #d93760;
+  background-color: #d93760;
+}
+
+.button--primary:hover,
+.button--primary:active,
+.button--primary:focus {
+  outline-color: #fff;
+  outline-offset: 2px;
+  background-color: #fcece7;
+}
+
+.button[disabled]:hover,
+.button[disabled]:active,
+.button[disabled]:focus,
+.button[disabled] {
+  cursor: default;
+  color: #464646;
+  background: #767775;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  margin: -0.5rem;
+  padding: 0.75rem 0;
+}
+
+@media screen and (min-width: 77em) {
+  .form-actions {
+    margin: 1rem -0.5rem;
+    padding: 0;
+  }
+}
+
+.form-actions > .button,
+.form-actions > .form-wrapper {
+  margin: 0.5rem;
+  line-height: normal;
 }

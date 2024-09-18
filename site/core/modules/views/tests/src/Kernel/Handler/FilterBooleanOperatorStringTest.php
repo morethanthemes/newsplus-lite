@@ -1,13 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Kernel\Handler;
 
 use Drupal\Tests\views\Kernel\ViewsKernelTestBase;
 use Drupal\views\Views;
 
 /**
- * Tests the core Drupal\views\Plugin\views\filter\BooleanOperatorString
- * handler.
+ * Tests core's BooleanOperatorString views filter handler.
  *
  * @group views
  * @see \Drupal\views\Plugin\views\filter\BooleanOperatorString
@@ -15,11 +16,9 @@ use Drupal\views\Views;
 class FilterBooleanOperatorStringTest extends ViewsKernelTestBase {
 
   /**
-   * The modules to enable for this test.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['system'];
+  protected static $modules = ['system'];
 
   /**
    * Views used by this test.
@@ -86,7 +85,7 @@ class FilterBooleanOperatorStringTest extends ViewsKernelTestBase {
   /**
    * Tests the BooleanOperatorString filter.
    */
-  public function testFilterBooleanOperatorString() {
+  public function testFilterBooleanOperatorString(): void {
     $view = Views::getView('test_view');
     $view->setDisplay();
 
@@ -106,7 +105,7 @@ class FilterBooleanOperatorStringTest extends ViewsKernelTestBase {
       ['id' => 4],
     ];
 
-    $this->assertEqual(2, count($view->result));
+    $this->assertCount(2, $view->result);
     $this->assertIdenticalResultset($view, $expected_result, $this->columnMap);
 
     $view->destroy();
@@ -129,14 +128,14 @@ class FilterBooleanOperatorStringTest extends ViewsKernelTestBase {
       ['id' => 5],
     ];
 
-    $this->assertEqual(3, count($view->result));
+    $this->assertCount(3, $view->result);
     $this->assertIdenticalResultset($view, $expected_result, $this->columnMap);
   }
 
   /**
    * Tests the Boolean filter with grouped exposed form enabled.
    */
-  public function testFilterGroupedExposed() {
+  public function testFilterGroupedExposed(): void {
     $filters = $this->getGroupedExposedFilters();
     $view = Views::getView('test_view');
 
@@ -152,7 +151,7 @@ class FilterBooleanOperatorStringTest extends ViewsKernelTestBase {
       ['id' => 5],
     ];
 
-    $this->assertEqual(3, count($view->result));
+    $this->assertCount(3, $view->result);
     $this->assertIdenticalResultset($view, $expected_result, $this->columnMap);
     $view->destroy();
 
@@ -167,7 +166,7 @@ class FilterBooleanOperatorStringTest extends ViewsKernelTestBase {
       ['id' => 4],
     ];
 
-    $this->assertEqual(2, count($view->result));
+    $this->assertCount(2, $view->result);
     $this->assertIdenticalResultset($view, $expected_result, $this->columnMap);
   }
 

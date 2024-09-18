@@ -4,12 +4,12 @@ namespace Drupal\field\Plugin\migrate\process;
 
 use Drupal\Component\Plugin\Exception\PluginNotFoundException;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\migrate\Attribute\MigrateProcess;
 use Drupal\migrate\MigrateException;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\ProcessPluginBase;
 use Drupal\migrate\Row;
-use Drupal\migrate_drupal\Plugin\MigrateCckFieldPluginManagerInterface;
 use Drupal\migrate_drupal\Plugin\MigrateFieldPluginManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -37,19 +37,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @see \Drupal\migrate\Plugin\MigrateProcessInterface
  * @see \Drupal\migrate_drupal\Plugin\MigrateFieldInterface;
- *
- * @MigrateProcessPlugin(
- *   id = "process_field"
- * )
  */
+#[MigrateProcess('process_field')]
 class ProcessField extends ProcessPluginBase implements ContainerFactoryPluginInterface {
-
-  /**
-   * The cckfield plugin manager.
-   *
-   * @var \Drupal\migrate_drupal\Plugin\MigrateCckFieldPluginManagerInterface
-   */
-  protected $cckPluginManager;
 
   /**
    * The field plugin manager.
@@ -74,16 +64,13 @@ class ProcessField extends ProcessPluginBase implements ContainerFactoryPluginIn
    *   The plugin ID.
    * @param mixed $plugin_definition
    *   The plugin definition.
-   * @param \Drupal\migrate_drupal\Plugin\MigrateCckFieldPluginManagerInterface $cck_plugin_manager
-   *   The cckfield plugin manager.
    * @param \Drupal\migrate_drupal\Plugin\MigrateFieldPluginManagerInterface $field_plugin_manager
    *   The field plugin manager.
    * @param \Drupal\migrate\Plugin\MigrationInterface $migration
    *   The migration being run.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, MigrateCckFieldPluginManagerInterface $cck_plugin_manager, MigrateFieldPluginManagerInterface $field_plugin_manager, MigrationInterface $migration = NULL) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, MigrateFieldPluginManagerInterface $field_plugin_manager, ?MigrationInterface $migration = NULL) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
-    $this->cckPluginManager = $cck_plugin_manager;
     $this->fieldPluginManager = $field_plugin_manager;
     $this->migration = $migration;
   }
@@ -91,12 +78,11 @@ class ProcessField extends ProcessPluginBase implements ContainerFactoryPluginIn
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, ?MigrationInterface $migration = NULL) {
     return new static(
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('plugin.manager.migrate.cckfield'),
       $container->get('plugin.manager.migrate.field'),
       $migration
     );
@@ -119,12 +105,7 @@ class ProcessField extends ProcessPluginBase implements ContainerFactoryPluginIn
       return $this->callMethodOnFieldPlugin($this->fieldPluginManager, $value, $method, $row);
     }
     catch (PluginNotFoundException $e) {
-      try {
-        return $this->callMethodOnFieldPlugin($this->cckPluginManager, $value, $method, $row);
-      }
-      catch (PluginNotFoundException $e) {
-        return NULL;
-      }
+      return NULL;
     }
   }
 
@@ -147,7 +128,7 @@ class ProcessField extends ProcessPluginBase implements ContainerFactoryPluginIn
     $plugin_id = $field_plugin_manager->getPluginIdFromFieldType($field_type, [], $this->migration);
     $plugin_instance = $field_plugin_manager->createInstance($plugin_id, [], $this->migration);
     if (!is_callable([$plugin_instance, $method])) {
-      throw new MigrateException('The specified method does not exists or is not callable.');
+      throw new MigrateException('The specified method does not exist or is not callable.');
     }
     return call_user_func_array([$plugin_instance, $method], [$row]);
   }

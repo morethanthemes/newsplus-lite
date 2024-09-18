@@ -3,10 +3,12 @@
 namespace Drupal\language\Config;
 
 use Drupal\Core\Cache\Cache;
+use Drupal\Core\Config\ConfigCollectionEvents;
+use Drupal\Core\Config\ConfigCrudEvent;
 use Drupal\Core\Config\StorableConfigBase;
 use Drupal\Core\Config\StorageInterface;
 use Drupal\Core\Config\TypedConfigManagerInterface;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Defines language configuration overrides.
@@ -18,7 +20,7 @@ class LanguageConfigOverride extends StorableConfigBase {
   /**
    * The event dispatcher.
    *
-   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface
+   * @var \Symfony\Contracts\EventDispatcher\EventDispatcherInterface
    */
   protected $eventDispatcher;
 
@@ -32,7 +34,7 @@ class LanguageConfigOverride extends StorableConfigBase {
    *   configuration override.
    * @param \Drupal\Core\Config\TypedConfigManagerInterface $typed_config
    *   The typed configuration manager service.
-   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
+   * @param \Symfony\Contracts\EventDispatcher\EventDispatcherInterface $event_dispatcher
    *   The event dispatcher.
    */
   public function __construct($name, StorageInterface $storage, TypedConfigManagerInterface $typed_config, EventDispatcherInterface $event_dispatcher) {
@@ -62,7 +64,12 @@ class LanguageConfigOverride extends StorableConfigBase {
     // an update of configuration, but only for a specific language.
     Cache::invalidateTags($this->getCacheTags());
     $this->isNew = FALSE;
-    $this->eventDispatcher->dispatch(LanguageConfigOverrideEvents::SAVE_OVERRIDE, new LanguageConfigOverrideCrudEvent($this));
+    // Dispatch configuration override event as detailed in
+    // \Drupal\Core\Config\ConfigFactoryOverrideInterface::createConfigObject().
+    $this->eventDispatcher->dispatch(new ConfigCrudEvent($this), ConfigCollectionEvents::SAVE_IN_COLLECTION);
+    // Dispatch an event specifically for language configuration override
+    // changes.
+    $this->eventDispatcher->dispatch(new LanguageConfigOverrideCrudEvent($this), LanguageConfigOverrideEvents::SAVE_OVERRIDE);
     $this->originalData = $this->data;
     return $this;
   }
@@ -75,7 +82,12 @@ class LanguageConfigOverride extends StorableConfigBase {
     $this->storage->delete($this->name);
     Cache::invalidateTags($this->getCacheTags());
     $this->isNew = TRUE;
-    $this->eventDispatcher->dispatch(LanguageConfigOverrideEvents::DELETE_OVERRIDE, new LanguageConfigOverrideCrudEvent($this));
+    // Dispatch configuration override event as detailed in
+    // \Drupal\Core\Config\ConfigFactoryOverrideInterface::createConfigObject().
+    $this->eventDispatcher->dispatch(new ConfigCrudEvent($this), ConfigCollectionEvents::DELETE_IN_COLLECTION);
+    // Dispatch an event specifically for language configuration override
+    // changes.
+    $this->eventDispatcher->dispatch(new LanguageConfigOverrideCrudEvent($this), LanguageConfigOverrideEvents::DELETE_OVERRIDE);
     $this->originalData = $this->data;
     return $this;
   }

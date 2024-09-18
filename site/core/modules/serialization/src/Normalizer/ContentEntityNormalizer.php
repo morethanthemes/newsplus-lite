@@ -2,6 +2,7 @@
 
 namespace Drupal\serialization\Normalizer;
 
+use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\TypedData\TypedDataInternalPropertiesHelper;
 
 /**
@@ -12,12 +13,7 @@ class ContentEntityNormalizer extends EntityNormalizer {
   /**
    * {@inheritdoc}
    */
-  protected $supportedInterfaceOrClass = ['Drupal\Core\Entity\ContentEntityInterface'];
-
-  /**
-   * {@inheritdoc}
-   */
-  public function normalize($entity, $format = NULL, array $context = []) {
+  public function normalize($entity, $format = NULL, array $context = []): array|string|int|float|bool|\ArrayObject|NULL {
     $context += [
       'account' => NULL,
     ];
@@ -31,6 +27,15 @@ class ContentEntityNormalizer extends EntityNormalizer {
     }
 
     return $attributes;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getSupportedTypes(?string $format): array {
+    return [
+      ContentEntityInterface::class => TRUE,
+    ];
   }
 
 }

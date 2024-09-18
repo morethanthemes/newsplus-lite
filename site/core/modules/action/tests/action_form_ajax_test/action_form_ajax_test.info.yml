@@ -3,11 +3,9 @@ type: module
 description: 'module used for testing ajax in action config entity forms.'
 package: Core
 # version: VERSION
-# core: 8.x
 hidden: true
 
-# Information added by Drupal.org packaging script on 2018-06-06
-version: '8.5.4'
-core: '8.x'
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
 project: 'drupal'
-datestamp: 1528319624
+datestamp: 1726135113

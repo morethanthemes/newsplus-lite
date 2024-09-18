@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\content_translation\FunctionalJavascript;
 
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 use Drupal\language\Entity\ConfigurableLanguage;
 
 /**
@@ -10,7 +12,7 @@ use Drupal\language\Entity\ConfigurableLanguage;
  *
  * @group content_translation
  */
-class ContentTranslationContextualLinksTest extends JavascriptTestBase {
+class ContentTranslationContextualLinksTest extends WebDriverTestBase {
 
   /**
    * The 'translator' user to use during testing.
@@ -22,12 +24,17 @@ class ContentTranslationContextualLinksTest extends JavascriptTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['content_translation', 'contextual', 'node'];
+  protected static $modules = ['content_translation', 'contextual', 'node'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     // Set up an additional language.
@@ -37,14 +44,9 @@ class ContentTranslationContextualLinksTest extends JavascriptTestBase {
     $this->drupalCreateContentType(['type' => 'page']);
 
     // Enable content translation.
-    $this->drupalLogin($this->rootUser);
-    $this->drupalGet('admin/config/regional/content-language');
-    $edit = [
-      'entity_types[node]' => TRUE,
-      'settings[node][page][translatable]' => TRUE,
-    ];
-    $this->drupalPostForm(NULL, $edit, t('Save configuration'));
-    $this->drupalLogout();
+    $content_translation_manager = $this->container->get('content_translation.manager');
+    $content_translation_manager->setEnabled('node', 'page', TRUE);
+    $this->rebuildContainer();
 
     // Create a translator user.
     $permissions = [
@@ -59,14 +61,14 @@ class ContentTranslationContextualLinksTest extends JavascriptTestBase {
   /**
    * Tests that a contextual link is available for translating a node.
    */
-  public function testContentTranslationContextualLinks() {
+  public function testContentTranslationContextualLinks(): void {
     $node = $this->drupalCreateNode(['type' => 'page', 'title' => 'Test']);
 
     // Check that the translate link appears on the node page.
     $this->drupalLogin($this->translator);
     $this->drupalGet('node/' . $node->id());
     $link = $this->assertSession()->waitForElement('css', '[data-contextual-id^="node:node=1"] .contextual-links a:contains("Translate")');
-    $this->assertContains('node/1/translations', $link->getAttribute('href'));
+    $this->assertStringContainsString('node/1/translations', $link->getAttribute('href'));
   }
 
 }

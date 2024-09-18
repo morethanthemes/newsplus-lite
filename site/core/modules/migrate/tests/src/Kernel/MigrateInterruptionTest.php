@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\migrate\Kernel;
 
 use Drupal\migrate\Event\MigratePostRowSaveEvent;
@@ -16,16 +18,14 @@ use Drupal\KernelTests\KernelTestBase;
 class MigrateInterruptionTest extends KernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['migrate', 'migrate_events_test'];
+  protected static $modules = ['migrate', 'migrate_events_test'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     \Drupal::service('event_dispatcher')->addListener(MigrateEvents::POST_ROW_SAVE,
       [$this, 'postRowSaveEventRecorder']);
@@ -34,7 +34,7 @@ class MigrateInterruptionTest extends KernelTestBase {
   /**
    * Tests migration interruptions.
    */
-  public function testMigrateEvents() {
+  public function testMigrateEvents(): void {
     // Run a simple little migration, which should trigger one of each event
     // other than map_delete.
     $definition = [
@@ -60,16 +60,16 @@ class MigrateInterruptionTest extends KernelTestBase {
     // interruption.
     $result = $executable->import();
 
-    $this->assertEqual($result, MigrationInterface::RESULT_INCOMPLETE);
+    $this->assertEquals(MigrationInterface::RESULT_INCOMPLETE, $result);
 
     // The status should have been reset to IDLE.
-    $this->assertEqual($migration->getStatus(), MigrationInterface::STATUS_IDLE);
+    $this->assertEquals(MigrationInterface::STATUS_IDLE, $migration->getStatus());
   }
 
   /**
    * Reacts to post-row-save event.
    *
-   * @param \Drupal\Migrate\Event\MigratePostRowSaveEvent $event
+   * @param \Drupal\migrate\Event\MigratePostRowSaveEvent $event
    *   The migration event.
    * @param string $name
    *   The event name.

@@ -1,3 +1,4 @@
+# cspell:ignore imagecache presetname
 id: d6_imagecache_presets
 label: ImageCache Presets
 migration_tags:
@@ -14,7 +15,7 @@ process:
       plugin: make_unique_entity_field
       entity_type: image_style
       field: name
-      length: 32
+      length: 30
   label: presetname
   effects:
     plugin: d6_imagecache_actions

@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Kernel\Handler;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Tests\views\Kernel\ViewsKernelTestBase;
 use Drupal\views\Views;
 
@@ -33,6 +35,7 @@ class SortDateTest extends ViewsKernelTestBase {
             ['name' => 'George'],
           ];
           break;
+
         case 'minute':
           $expected = [
             ['name' => 'John'],
@@ -42,6 +45,7 @@ class SortDateTest extends ViewsKernelTestBase {
             ['name' => 'George'],
           ];
           break;
+
         case 'hour':
           $expected = [
             ['name' => 'John'],
@@ -51,6 +55,7 @@ class SortDateTest extends ViewsKernelTestBase {
             ['name' => 'George'],
           ];
           break;
+
         case 'day':
           $expected = [
             ['name' => 'John'],
@@ -60,6 +65,7 @@ class SortDateTest extends ViewsKernelTestBase {
             ['name' => 'George'],
           ];
           break;
+
         case 'month':
           $expected = [
             ['name' => 'John'],
@@ -69,6 +75,7 @@ class SortDateTest extends ViewsKernelTestBase {
             ['name' => 'Meredith'],
           ];
           break;
+
         case 'year':
           $expected = [
             ['name' => 'John'],
@@ -91,6 +98,7 @@ class SortDateTest extends ViewsKernelTestBase {
             ['name' => 'John'],
           ];
           break;
+
         case 'minute':
           $expected = [
             ['name' => 'George'],
@@ -98,8 +106,9 @@ class SortDateTest extends ViewsKernelTestBase {
             ['name' => 'Meredith'],
             ['name' => 'Paul'],
             ['name' => 'John'],
-           ];
+          ];
           break;
+
         case 'hour':
           $expected = [
             ['name' => 'George'],
@@ -109,6 +118,7 @@ class SortDateTest extends ViewsKernelTestBase {
             ['name' => 'John'],
           ];
           break;
+
         case 'day':
           $expected = [
             ['name' => 'George'],
@@ -118,6 +128,7 @@ class SortDateTest extends ViewsKernelTestBase {
             ['name' => 'Meredith'],
           ];
           break;
+
         case 'month':
           $expected = [
             ['name' => 'John'],
@@ -127,6 +138,7 @@ class SortDateTest extends ViewsKernelTestBase {
             ['name' => 'Meredith'],
           ];
           break;
+
         case 'year':
           $expected = [
             ['name' => 'John'],
@@ -145,7 +157,7 @@ class SortDateTest extends ViewsKernelTestBase {
   /**
    * Tests numeric ordering of the result set.
    */
-  public function testDateOrdering() {
+  public function testDateOrdering(): void {
     foreach (['second', 'minute', 'hour', 'day', 'month', 'year'] as $granularity) {
       foreach ([FALSE, TRUE] as $reverse) {
         $view = Views::getView('test_view');
@@ -190,10 +202,9 @@ class SortDateTest extends ViewsKernelTestBase {
         $this->executeView($view);
 
         // Verify the result.
-        $this->assertEqual(count($this->dataSet()), count($view->result), 'The number of returned rows match.');
         $this->assertIdenticalResultset($view, $this->expectedResultSet($granularity, $reverse), [
           'views_test_data_name' => 'name',
-        ], SafeMarkup::format('Result is returned correctly when ordering by granularity @granularity, @reverse.', ['@granularity' => $granularity, '@reverse' => $reverse ? 'reverse' : 'forward']));
+        ], new FormattableMarkup('Result is returned correctly when ordering by granularity @granularity, @reverse.', ['@granularity' => $granularity, '@reverse' => $reverse ? 'reverse' : 'forward']));
         $view->destroy();
         unset($view);
       }

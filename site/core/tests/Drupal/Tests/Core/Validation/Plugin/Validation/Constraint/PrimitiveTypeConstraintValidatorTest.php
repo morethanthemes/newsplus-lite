@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Validation\Plugin\Validation\Constraint;
 
 use Drupal\Core\TypedData\DataDefinition;
@@ -26,8 +28,8 @@ class PrimitiveTypeConstraintValidatorTest extends UnitTestCase {
    *
    * @dataProvider provideTestValidate
    */
-  public function testValidate(PrimitiveInterface $typed_data, $value, $valid) {
-    $context = $this->getMock(ExecutionContextInterface::class);
+  public function testValidate(PrimitiveInterface $typed_data, string|TranslatableMarkup|int|float|array|null $value, bool $valid): void {
+    $context = $this->createMock(ExecutionContextInterface::class);
     $context->expects($this->any())
       ->method('getObject')
       ->willReturn($typed_data);
@@ -48,7 +50,7 @@ class PrimitiveTypeConstraintValidatorTest extends UnitTestCase {
     $validate->validate($value, $constraint);
   }
 
-  public function provideTestValidate() {
+  public static function provideTestValidate(): array {
     $data = [];
     $data[] = [new BooleanData(DataDefinition::create('boolean')), NULL, TRUE];
 
@@ -62,10 +64,10 @@ class PrimitiveTypeConstraintValidatorTest extends UnitTestCase {
     $data[] = [new StringData(DataDefinition::create('string')), 'test', TRUE];
     $data[] = [new StringData(DataDefinition::create('string')), new TranslatableMarkup('test'), TRUE];
     // It is odd that 1 is a valid string.
-    // $data[] = [$this->getMock('Drupal\Core\TypedData\Type\StringInterface'), 1, FALSE];
+    // $data[] = [$this->createMock('Drupal\Core\TypedData\Type\StringInterface'), 1, FALSE];
     $data[] = [new StringData(DataDefinition::create('string')), [], FALSE];
-    $data[] = [new Uri(DataDefinition::create('uri')), 'http://www.drupal.org', TRUE];
-    $data[] = [new Uri(DataDefinition::create('uri')), 'https://www.drupal.org', TRUE];
+    $data[] = [new Uri(DataDefinition::create('uri')), 'http://www.example.com', TRUE];
+    $data[] = [new Uri(DataDefinition::create('uri')), 'https://www.example.com', TRUE];
     $data[] = [new Uri(DataDefinition::create('uri')), 'Invalid', FALSE];
     $data[] = [new Uri(DataDefinition::create('uri')), 'entity:node/1', TRUE];
     $data[] = [new Uri(DataDefinition::create('uri')), 'base:', TRUE];
@@ -75,7 +77,7 @@ class PrimitiveTypeConstraintValidatorTest extends UnitTestCase {
     $data[] = [new Uri(DataDefinition::create('uri')), 'public://foo.png', TRUE];
     $data[] = [new Uri(DataDefinition::create('uri')), 'private://', FALSE];
     $data[] = [new Uri(DataDefinition::create('uri')), 'private://foo.png', TRUE];
-    $data[] = [new Uri(DataDefinition::create('uri')), 'drupal.org', FALSE];
+    $data[] = [new Uri(DataDefinition::create('uri')), 'example.com', FALSE];
 
     return $data;
   }

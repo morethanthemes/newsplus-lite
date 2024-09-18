@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\comment\Kernel\Migrate\d6;
 
 use Drupal\field\Entity\FieldConfig;
@@ -16,12 +18,12 @@ class MigrateCommentFieldInstanceTest extends MigrateDrupal6TestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['comment', 'menu_ui'];
+  protected static $modules = ['comment', 'menu_ui'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installConfig(['comment']);
     $this->migrateContentTypes();
@@ -45,14 +47,16 @@ class MigrateCommentFieldInstanceTest extends MigrateDrupal6TestBase {
    *   The field's default_mode setting.
    * @param int $per_page
    *   The field's per_page setting.
-   * @param bool $anonymous
+   * @param int $anonymous
    *   The field's anonymous setting.
-   * @param int $form_location
+   * @param bool $form_location
    *   The field's form_location setting.
-   * @param bool $preview
+   * @param int $preview
    *   The field's preview setting.
+   *
+   * @internal
    */
-  protected function assertEntity($bundle, $field_name, $default_value, $default_mode, $per_page, $anonymous, $form_location, $preview) {
+  protected function assertEntity(string $bundle, string $field_name, int $default_value, int $default_mode, int $per_page, int $anonymous, bool $form_location, int $preview): void {
     $entity = FieldConfig::load("node.$bundle.$field_name");
     $this->assertInstanceOf(FieldConfig::class, $entity);
     $this->assertSame('node', $entity->getTargetEntityTypeId());
@@ -69,9 +73,9 @@ class MigrateCommentFieldInstanceTest extends MigrateDrupal6TestBase {
   }
 
   /**
-   * Test the migrated field instance values.
+   * Tests the migrated field instance values.
    */
-  public function testMigration() {
+  public function testMigration(): void {
     $this->assertEntity('article', 'comment_node_article', 2, 1, 50, 0, FALSE, 1);
     $this->assertEntity('company', 'comment_node_company', 2, 1, 50, 0, FALSE, 1);
     $this->assertEntity('employee', 'comment_node_employee', 2, 1, 50, 0, FALSE, 1);

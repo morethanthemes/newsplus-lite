@@ -11,78 +11,104 @@
 
 namespace Symfony\Component\Serializer\Normalizer;
 
+use Symfony\Component\PropertyInfo\Type;
 use Symfony\Component\Serializer\Exception\BadMethodCallException;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Exception\NotNormalizableValueException;
-use Symfony\Component\Serializer\SerializerAwareInterface;
-use Symfony\Component\Serializer\SerializerInterface;
 
 /**
  * Denormalizes arrays of objects.
  *
  * @author Alexander M. Turek <me@derrabus.de>
  *
- * @final since version 3.3.
+ * @final
  */
-class ArrayDenormalizer implements DenormalizerInterface, SerializerAwareInterface
+class ArrayDenormalizer implements ContextAwareDenormalizerInterface, DenormalizerAwareInterface, CacheableSupportsMethodInterface
 {
-    /**
-     * @var SerializerInterface|DenormalizerInterface
-     */
-    private $serializer;
+    use DenormalizerAwareTrait;
+
+    public function setDenormalizer(DenormalizerInterface $denormalizer): void
+    {
+        if (!method_exists($denormalizer, 'getSupportedTypes')) {
+            trigger_deprecation('symfony/serializer', '6.3', 'Not implementing the "DenormalizerInterface::getSupportedTypes()" in "%s" is deprecated.', get_debug_type($denormalizer));
+        }
+
+        $this->denormalizer = $denormalizer;
+    }
+
+    public function getSupportedTypes(?string $format): array
+    {
+        return ['object' => null, '*' => false];
+    }
 
     /**
-     * {@inheritdoc}
-     *
      * @throws NotNormalizableValueException
      */
-    public function denormalize($data, $class, $format = null, array $context = array())
+    public function denormalize(mixed $data, string $type, ?string $format = null, array $context = []): array
     {
-        if (null === $this->serializer) {
-            throw new BadMethodCallException('Please set a serializer before calling denormalize()!');
+        if (null === $this->denormalizer) {
+            throw new BadMethodCallException('Please set a denormalizer before calling denormalize()!');
         }
-        if (!is_array($data)) {
-            throw new InvalidArgumentException('Data expected to be an array, '.gettype($data).' given.');
+        if (!\is_array($data)) {
+            throw NotNormalizableValueException::createForUnexpectedDataType(sprintf('Data expected to be "%s", "%s" given.', $type, get_debug_type($data)), $data, [Type::BUILTIN_TYPE_ARRAY], $context['deserialization_path'] ?? null);
         }
-        if ('[]' !== substr($class, -2)) {
-            throw new InvalidArgumentException('Unsupported class: '.$class);
+        if (!str_ends_with($type, '[]')) {
+            throw new InvalidArgumentException('Unsupported class: '.$type);
         }
 
-        $serializer = $this->serializer;
-        $class = substr($class, 0, -2);
+        $type = substr($type, 0, -2);
 
-        $builtinType = isset($context['key_type']) ? $context['key_type']->getBuiltinType() : null;
+        $builtinTypes = array_map(static function (Type $keyType) {
+            return $keyType->getBuiltinType();
+        }, \is_array($keyType = $context['key_type'] ?? []) ? $keyType : [$keyType]);
+
         foreach ($data as $key => $value) {
-            if (null !== $builtinType && !call_user_func('is_'.$builtinType, $key)) {
-                throw new NotNormalizableValueException(sprintf('The type of the key "%s" must be "%s" ("%s" given).', $key, $builtinType, gettype($key)));
-            }
+            $subContext = $context;
+            $subContext['deserialization_path'] = ($context['deserialization_path'] ?? false) ? sprintf('%s[%s]', $context['deserialization_path'], $key) : "[$key]";
 
-            $data[$key] = $serializer->denormalize($value, $class, $format, $context);
+            $this->validateKeyType($builtinTypes, $key, $subContext['deserialization_path']);
+
+            $data[$key] = $this->denormalizer->denormalize($value, $type, $format, $subContext);
         }
 
         return $data;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function supportsDenormalization($data, $type, $format = null/*, array $context = array()*/)
+    public function supportsDenormalization(mixed $data, string $type, ?string $format = null, array $context = []): bool
     {
-        $context = \func_num_args() > 3 ? func_get_arg(3) : array();
+        if (null === $this->denormalizer) {
+            throw new BadMethodCallException(sprintf('The nested denormalizer needs to be set to allow "%s()" to be used.', __METHOD__));
+        }
 
-        return '[]' === substr($type, -2)
-            && $this->serializer->supportsDenormalization($data, substr($type, 0, -2), $format, $context);
+        return str_ends_with($type, '[]')
+            && $this->denormalizer->supportsDenormalization($data, substr($type, 0, -2), $format, $context);
     }
 
     /**
-     * {@inheritdoc}
+     * @deprecated since Symfony 6.3, use "getSupportedTypes()" instead
      */
-    public function setSerializer(SerializerInterface $serializer)
+    public function hasCacheableSupportsMethod(): bool
     {
-        if (!$serializer instanceof DenormalizerInterface) {
-            throw new InvalidArgumentException('Expected a serializer that also implements DenormalizerInterface.');
+        trigger_deprecation('symfony/serializer', '6.3', 'The "%s()" method is deprecated, use "getSupportedTypes()" instead.', __METHOD__);
+
+        return $this->denormalizer instanceof CacheableSupportsMethodInterface && $this->denormalizer->hasCacheableSupportsMethod();
+    }
+
+    /**
+     * @param mixed $key
+     */
+    private function validateKeyType(array $builtinTypes, $key, string $path): void
+    {
+        if (!$builtinTypes) {
+            return;
         }
 
-        $this->serializer = $serializer;
+        foreach ($builtinTypes as $builtinType) {
+            if (('is_'.$builtinType)($key)) {
+                return;
+            }
+        }
+
+        throw NotNormalizableValueException::createForUnexpectedDataType(sprintf('The type of the key "%s" must be "%s" ("%s" given).', $key, implode('", "', $builtinTypes), get_debug_type($key)), $key, $builtinTypes, $path, true);
     }
 }

@@ -24,13 +24,14 @@ class TestHelperPlugin extends PluginBase {
    * @see \Drupal\views\Plugin\views\PluginBase::setOptionDefaults()
    */
   public function testSetOptionDefaults(&$storage, $options, $level = 0) {
-    $this->setOptionDefaults($storage, $options, $level);
+    $this->setOptionDefaults($storage, $options);
   }
 
   /**
    * Allows to set the defined options.
    *
    * @param array $options
+   *   The options to set.
    *
    * @return $this
    */

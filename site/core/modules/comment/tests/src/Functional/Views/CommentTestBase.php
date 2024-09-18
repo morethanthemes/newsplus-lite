@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\comment\Functional\Views;
 
 use Drupal\comment\Tests\CommentTestTrait;
 use Drupal\Tests\views\Functional\ViewTestBase;
-use Drupal\views\Tests\ViewTestData;
 use Drupal\comment\Entity\Comment;
 
 /**
@@ -15,11 +16,9 @@ abstract class CommentTestBase extends ViewTestBase {
   use CommentTestTrait;
 
   /**
-   * Modules to install.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['node', 'comment', 'comment_test_views'];
+  protected static $modules = ['node', 'comment', 'comment_test_views'];
 
   /**
    * A normal user with permission to post comments (without approval).
@@ -56,10 +55,11 @@ abstract class CommentTestBase extends ViewTestBase {
    */
   protected $comment;
 
-  protected function setUp($import_test_views = TRUE) {
-    parent::setUp($import_test_views);
-
-    ViewTestData::createTestViews(get_class($this), ['comment_test_views']);
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp($import_test_views = TRUE, $modules = ['comment_test_views']): void {
+    parent::setUp($import_test_views, $modules);
 
     // Add two users, create a node with the user1 as author and another node
     // with user2 as author. For the second node add a comment from user1.

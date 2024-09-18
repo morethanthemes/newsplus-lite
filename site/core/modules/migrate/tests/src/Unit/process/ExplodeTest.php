@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\migrate\Unit\process;
 
 use Drupal\migrate\MigrateException;
@@ -16,7 +18,7 @@ class ExplodeTest extends MigrateProcessTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     $configuration = [
       'delimiter' => ',',
     ];
@@ -25,39 +27,40 @@ class ExplodeTest extends MigrateProcessTestCase {
   }
 
   /**
-   * Test explode transform process works.
+   * Tests explode transform process works.
    */
-  public function testTransform() {
-    $value = $this->plugin->transform('foo,bar,tik', $this->migrateExecutable, $this->row, 'destinationproperty');
+  public function testTransform(): void {
+    $value = $this->plugin->transform('foo,bar,tik', $this->migrateExecutable, $this->row, 'destination_property');
     $this->assertSame(['foo', 'bar', 'tik'], $value);
   }
 
   /**
-   * Test explode transform process works with a limit.
+   * Tests explode transform process works with a limit.
    */
-  public function testTransformLimit() {
+  public function testTransformLimit(): void {
     $plugin = new Explode(['delimiter' => '_', 'limit' => 2], 'map', []);
-    $value = $plugin->transform('foo_bar_tik', $this->migrateExecutable, $this->row, 'destinationproperty');
+    $value = $plugin->transform('foo_bar_tik', $this->migrateExecutable, $this->row, 'destination_property');
     $this->assertSame(['foo', 'bar_tik'], $value);
   }
 
   /**
-   * Test if the explode process can be chained with a handles_multiple process.
+   * Tests if the explode process can be chained with handles_multiple process.
    */
-  public function testChainedTransform() {
-    $exploded = $this->plugin->transform('foo,bar,tik', $this->migrateExecutable, $this->row, 'destinationproperty');
+  public function testChainedTransform(): void {
+    $exploded = $this->plugin->transform('One,Two,Three', $this->migrateExecutable, $this->row, 'destination_property');
 
     $concat = new Concat([], 'map', []);
-    $concatenated = $concat->transform($exploded, $this->migrateExecutable, $this->row, 'destinationproperty');
-    $this->assertSame('foobartik', $concatenated);
+    $concatenated = $concat->transform($exploded, $this->migrateExecutable, $this->row, 'destination_property');
+    $this->assertSame('OneTwoThree', $concatenated);
   }
 
   /**
-   * Test explode fails properly on non-strings.
+   * Tests explode fails properly on non-strings.
    */
-  public function testExplodeWithNonString() {
-    $this->setExpectedException(MigrateException::class, 'is not a string');
-    $this->plugin->transform(['foo'], $this->migrateExecutable, $this->row, 'destinationproperty');
+  public function testExplodeWithNonString(): void {
+    $this->expectException(MigrateException::class);
+    $this->expectExceptionMessage('is not a string');
+    $this->plugin->transform(['foo'], $this->migrateExecutable, $this->row, 'destination_property');
   }
 
   /**
@@ -65,17 +68,17 @@ class ExplodeTest extends MigrateProcessTestCase {
    *
    * @dataProvider providerExplodeWithNonStrictAndEmptySource
    */
-  public function testExplodeWithNonStrictAndEmptySource($value, $expected) {
+  public function testExplodeWithNonStrictAndEmptySource($value, $expected): void {
     $plugin = new Explode(['delimiter' => '|', 'strict' => FALSE], 'map', []);
 
-    $processed = $plugin->transform($value, $this->migrateExecutable, $this->row, 'destinationproperty');
+    $processed = $plugin->transform($value, $this->migrateExecutable, $this->row, 'destination_property');
     $this->assertSame($expected, $processed);
   }
 
   /**
    * Data provider for ::testExplodeWithNonStrictAndEmptySource().
    */
-  public function providerExplodeWithNonStrictAndEmptySource() {
+  public static function providerExplodeWithNonStrictAndEmptySource() {
     return [
       'normal_string' => ['a|b|c', ['a', 'b', 'c']],
       'integer_cast_to_string' => [123, ['123']],
@@ -88,33 +91,33 @@ class ExplodeTest extends MigrateProcessTestCase {
   }
 
   /**
-   * Tests that explode raises an exception when the value cannot be casted to
-   * string.
+   * Tests Explode exception handling when string-cast fails.
    */
-  public function testExplodeWithNonStrictAndNonCastable() {
+  public function testExplodeWithNonStrictAndNonCastable(): void {
     $plugin = new Explode(['delimiter' => '|', 'strict' => FALSE], 'map', []);
-    $this->setExpectedException(MigrateException::class, 'cannot be casted to a string');
-    $processed = $plugin->transform(['foo'], $this->migrateExecutable, $this->row, 'destinationproperty');
+    $this->expectException(MigrateException::class);
+    $this->expectExceptionMessage('cannot be casted to a string');
+    $processed = $plugin->transform(['foo'], $this->migrateExecutable, $this->row, 'destination_property');
     $this->assertSame(['foo'], $processed);
   }
 
   /**
-   * Tests that explode with an empty string and strict check returns a
-   * non-empty array.
+   * Tests Explode return values with an empty string and strict check.
    */
-  public function testExplodeWithStrictAndEmptyString() {
+  public function testExplodeWithStrictAndEmptyString(): void {
     $plugin = new Explode(['delimiter' => '|'], 'map', []);
-    $processed = $plugin->transform('', $this->migrateExecutable, $this->row, 'destinationproperty');
+    $processed = $plugin->transform('', $this->migrateExecutable, $this->row, 'destination_property');
     $this->assertSame([''], $processed);
   }
 
   /**
-   * Test explode fails with empty delimiter.
+   * Tests explode fails with empty delimiter.
    */
-  public function testExplodeWithEmptyDelimiter() {
-    $this->setExpectedException(MigrateException::class, 'delimiter is empty');
+  public function testExplodeWithEmptyDelimiter(): void {
+    $this->expectException(MigrateException::class);
+    $this->expectExceptionMessage('delimiter is empty');
     $plugin = new Explode(['delimiter' => ''], 'map', []);
-    $plugin->transform('foo,bar', $this->migrateExecutable, $this->row, 'destinationproperty');
+    $plugin->transform('foo,bar', $this->migrateExecutable, $this->row, 'destination_property');
   }
 
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\rest\Unit\Entity;
 
 use Drupal\rest\Entity\RestResourceConfig;
@@ -19,7 +21,7 @@ class RestResourceConfigTest extends UnitTestCase {
    * This also tests that no exceptions are thrown during that method so that
    * alternate methods such as OPTIONS and PUT are supported.
    */
-  public function testNormalizeRestMethod() {
+  public function testNormalizeRestMethod(): void {
     $expected = ['GET', 'PUT', 'POST', 'PATCH', 'DELETE', 'OPTIONS', 'FOO'];
     $methods = ['get', 'put', 'post', 'patch', 'delete', 'options', 'foo'];
     $configuration = [];
@@ -36,7 +38,7 @@ class RestResourceConfigTest extends UnitTestCase {
       'configuration' => $configuration,
     ], 'rest_resource_config');
 
-    $this->assertArrayEquals($expected, $entity->getMethods());
+    $this->assertEquals($expected, $entity->getMethods());
   }
 
 }

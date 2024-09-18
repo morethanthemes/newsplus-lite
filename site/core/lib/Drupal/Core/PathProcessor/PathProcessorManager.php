@@ -86,7 +86,6 @@ class PathProcessorManager implements InboundPathProcessorInterface, OutboundPat
     return $this->sortedInbound;
   }
 
-
   /**
    * Adds an outbound processor object to the $outboundProcessors property.
    *
@@ -103,7 +102,7 @@ class PathProcessorManager implements InboundPathProcessorInterface, OutboundPat
   /**
    * {@inheritdoc}
    */
-  public function processOutbound($path, &$options = [], Request $request = NULL, BubbleableMetadata $bubbleable_metadata = NULL) {
+  public function processOutbound($path, &$options = [], ?Request $request = NULL, ?BubbleableMetadata $bubbleable_metadata = NULL) {
     $processors = $this->getOutbound();
     foreach ($processors as $processor) {
       $path = $processor->processOutbound($path, $options, $request, $bubbleable_metadata);
@@ -132,13 +131,8 @@ class PathProcessorManager implements InboundPathProcessorInterface, OutboundPat
    *   The processor type to sort, e.g. 'inboundProcessors'.
    */
   protected function sortProcessors($type) {
-    $sorted = [];
     krsort($this->{$type});
-
-    foreach ($this->{$type} as $processors) {
-      $sorted = array_merge($sorted, $processors);
-    }
-    return $sorted;
+    return array_merge(...$this->{$type});
   }
 
 }

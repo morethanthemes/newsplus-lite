@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Rest;
 
 use Drupal\Tests\rest\Functional\AnonResourceTestTrait;
@@ -20,5 +22,10 @@ class EntityFormDisplayJsonAnonTest extends EntityFormDisplayResourceTestBase {
    * {@inheritdoc}
    */
   protected static $mimeType = 'application/json';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
 }

@@ -2,14 +2,13 @@
 
 namespace Drupal\Core\Routing;
 
-use Symfony\Cmf\Component\Routing\PagedRouteProviderInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
  * A Route Provider front-end for all Drupal-stored routes.
  */
-class RouteProviderLazyBuilder implements PreloadableRouteProviderInterface, PagedRouteProviderInterface, EventSubscriberInterface {
+class RouteProviderLazyBuilder implements PreloadableRouteProviderInterface, EventSubscriberInterface {
 
   /**
    * The route provider service.
@@ -66,7 +65,6 @@ class RouteProviderLazyBuilder implements PreloadableRouteProviderInterface, Pag
   protected function getRouteProvider() {
     if (!$this->rebuilt && !$this->rebuilding) {
       $this->routeBuilder->rebuild();
-      $this->rebuilt = TRUE;
     }
     return $this->routeProvider;
   }
@@ -122,20 +120,6 @@ class RouteProviderLazyBuilder implements PreloadableRouteProviderInterface, Pag
   }
 
   /**
-   * {@inheritdoc}
-   */
-  public function getRoutesPaged($offset, $length = NULL) {
-    return $this->getRouteProvider()->getRoutesPaged($offset, $length);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getRoutesCount() {
-    return $this->getRouteProvider()->getRoutesCount();
-  }
-
-  /**
    * Determines if the router has been rebuilt.
    *
    * @return bool
@@ -148,7 +132,7 @@ class RouteProviderLazyBuilder implements PreloadableRouteProviderInterface, Pag
   /**
    * {@inheritdoc}
    */
-  public static function getSubscribedEvents() {
+  public static function getSubscribedEvents(): array {
     $events[RoutingEvents::DYNAMIC][] = ['routerRebuilding', 3000];
     $events[RoutingEvents::FINISHED][] = ['routerRebuildFinished', -3000];
     return $events;
@@ -166,6 +150,7 @@ class RouteProviderLazyBuilder implements PreloadableRouteProviderInterface, Pag
    */
   public function routerRebuildFinished() {
     $this->rebuilding = FALSE;
+    $this->rebuilt = TRUE;
   }
 
 }

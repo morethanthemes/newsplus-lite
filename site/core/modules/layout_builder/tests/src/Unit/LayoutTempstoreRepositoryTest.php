@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\layout_builder\Unit;
 
 use Drupal\Core\TempStore\SharedTempStore;
@@ -16,8 +18,9 @@ class LayoutTempstoreRepositoryTest extends UnitTestCase {
 
   /**
    * @covers ::get
+   * @covers ::has
    */
-  public function testGetEmptyTempstore() {
+  public function testGetEmptyTempstore(): void {
     $section_storage = $this->prophesize(SectionStorageInterface::class);
     $section_storage->getStorageType()->willReturn('my_storage_type');
     $section_storage->getStorageId()->willReturn('my_storage_id');
@@ -30,14 +33,17 @@ class LayoutTempstoreRepositoryTest extends UnitTestCase {
 
     $repository = new LayoutTempstoreRepository($tempstore_factory->reveal());
 
+    $this->assertFalse($repository->has($section_storage->reveal()));
+
     $result = $repository->get($section_storage->reveal());
     $this->assertSame($section_storage->reveal(), $result);
   }
 
   /**
    * @covers ::get
+   * @covers ::has
    */
-  public function testGetLoadedTempstore() {
+  public function testGetLoadedTempstore(): void {
     $section_storage = $this->prophesize(SectionStorageInterface::class);
     $section_storage->getStorageType()->willReturn('my_storage_type');
     $section_storage->getStorageId()->willReturn('my_storage_id');
@@ -50,6 +56,8 @@ class LayoutTempstoreRepositoryTest extends UnitTestCase {
 
     $repository = new LayoutTempstoreRepository($tempstore_factory->reveal());
 
+    $this->assertTrue($repository->has($section_storage->reveal()));
+
     $result = $repository->get($section_storage->reveal());
     $this->assertSame($tempstore_section_storage->reveal(), $result);
     $this->assertNotSame($section_storage->reveal(), $result);
@@ -58,7 +66,7 @@ class LayoutTempstoreRepositoryTest extends UnitTestCase {
   /**
    * @covers ::get
    */
-  public function testGetInvalidEntry() {
+  public function testGetInvalidEntry(): void {
     $section_storage = $this->prophesize(SectionStorageInterface::class);
     $section_storage->getStorageType()->willReturn('my_storage_type');
     $section_storage->getStorageId()->willReturn('my_storage_id');
@@ -71,7 +79,8 @@ class LayoutTempstoreRepositoryTest extends UnitTestCase {
 
     $repository = new LayoutTempstoreRepository($tempstore_factory->reveal());
 
-    $this->setExpectedException(\UnexpectedValueException::class, 'The entry with storage type "my_storage_type" and ID "my_storage_id" is invalid');
+    $this->expectException(\UnexpectedValueException::class);
+    $this->expectExceptionMessage('The entry with storage type "my_storage_type" and ID "my_storage_id" is invalid');
     $repository->get($section_storage->reveal());
   }
 

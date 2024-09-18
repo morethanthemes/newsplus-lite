@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\tour\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\BasicAuthResourceTestTrait;
@@ -7,6 +9,7 @@ use Drupal\Tests\rest\Functional\EntityResource\XmlEntityNormalizationQuirksTrai
 
 /**
  * @group rest
+ * @group legacy
  */
 class TourXmlBasicAuthTest extends TourResourceTestBase {
 
@@ -16,7 +19,12 @@ class TourXmlBasicAuthTest extends TourResourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['basic_auth'];
+  protected static $modules = ['basic_auth'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

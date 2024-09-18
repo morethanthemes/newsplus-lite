@@ -1,13 +1,12 @@
 langcode: en
 status: true
 dependencies: {  }
-label: ''
+label: test_argument
 module: views
 description: ''
 tag: ''
 base_table: views_test_data
 base_field: nid
-core: '8'
 id: test_argument
 display:
   default:
@@ -62,7 +61,6 @@ display:
           default_argument_type: fixed
           default_argument_options:
             argument: ''
-          default_argument_skip_url: false
           summary_options:
             base_path: ''
             count: true
@@ -99,7 +97,6 @@ display:
           default_argument_type: fixed
           default_argument_options:
             argument: ''
-          default_argument_skip_url: false
           summary_options:
             base_path: ''
             count: true
@@ -124,6 +121,6 @@ display:
           entity_field: name
           plugin_id: string
     display_plugin: default
-    display_title: Master
+    display_title: Default
     id: default
     position: 0

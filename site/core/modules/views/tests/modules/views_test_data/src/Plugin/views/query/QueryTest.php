@@ -3,6 +3,8 @@
 namespace Drupal\views_test_data\Plugin\views\query;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\views\Attribute\ViewsQuery;
 use Drupal\views\Plugin\views\query\QueryPluginBase;
 use Drupal\views\Plugin\views\join\JoinPluginBase;
 use Drupal\views\ResultRow;
@@ -10,13 +12,12 @@ use Drupal\views\ViewExecutable;
 
 /**
  * Defines a query test plugin.
- *
- * @ViewsQuery(
- *   id = "query_test",
- *   title = @Translation("Query test"),
- *   help = @Translation("Defines a query test plugin.")
- * )
  */
+#[ViewsQuery(
+  id: 'query_test',
+  title: new TranslatableMarkup('Query test'),
+  help: new TranslatableMarkup('Defines a query test plugin.')
+)]
 class QueryTest extends QueryPluginBase {
   protected $conditions = [];
   protected $fields = [];
@@ -60,7 +61,7 @@ class QueryTest extends QueryPluginBase {
     $this->conditions[] = [
       'field' => $field,
       'value' => $value,
-      'operator' => $operator
+      'operator' => $operator,
     ];
 
   }
@@ -74,8 +75,7 @@ class QueryTest extends QueryPluginBase {
     $this->orderBy = ['field' => $field, 'order' => $order];
   }
 
-
-  public function ensureTable($table, $relationship = NULL, JoinPluginBase $join = NULL) {
+  public function ensureTable($table, $relationship = NULL, ?JoinPluginBase $join = NULL) {
     // There is no concept of joins.
   }
 
@@ -83,6 +83,7 @@ class QueryTest extends QueryPluginBase {
    * Implements Drupal\views\Plugin\views\query\QueryPluginBase::build().
    *
    * @param \Drupal\views\ViewExecutable $view
+   *   The view executable.
    */
   public function build(ViewExecutable $view) {
     $this->view = $view;
@@ -136,6 +137,7 @@ class QueryTest extends QueryPluginBase {
     switch ($condition['operator']) {
       case '=':
         return $value == $condition['value'];
+
       case 'IN':
         return in_array($value, $condition['value']);
     }

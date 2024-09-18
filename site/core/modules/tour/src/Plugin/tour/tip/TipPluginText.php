@@ -2,7 +2,6 @@
 
 namespace Drupal\tour\Plugin\tour\tip;
 
-use Drupal\Component\Utility\Html;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Utility\Token;
 use Drupal\tour\TipPluginBase;
@@ -33,20 +32,6 @@ class TipPluginText extends TipPluginBase implements ContainerFactoryPluginInter
   protected $token;
 
   /**
-   * The forced position of where the tip will be located.
-   *
-   * @var string
-   */
-  protected $location;
-
-  /**
-   * Unique aria-id.
-   *
-   * @var string
-   */
-  protected $ariaId;
-
-  /**
    * Constructs a \Drupal\tour\Plugin\tour\tip\TipPluginText object.
    *
    * @param array $configuration
@@ -71,58 +56,17 @@ class TipPluginText extends TipPluginBase implements ContainerFactoryPluginInter
   }
 
   /**
-   * Returns a ID that is guaranteed uniqueness.
-   *
-   * @return string
-   *   A unique id to be used to generate aria attributes.
-   */
-  public function getAriaId() {
-    if (!$this->ariaId) {
-      $this->ariaId = Html::getUniqueId($this->get('id'));
-    }
-    return $this->ariaId;
-  }
-
-  /**
-   * Returns body of the text tip.
-   *
-   * @return string
-   *   The tip body.
-   */
-  public function getBody() {
-    return $this->get('body');
-  }
-
-  /**
-   * Returns location of the text tip.
-   *
-   * @return string
-   *   The tip location.
-   */
-  public function getLocation() {
-    return $this->get('location');
-  }
-
-  /**
    * {@inheritdoc}
    */
-  public function getAttributes() {
-    $attributes = parent::getAttributes();
-    $attributes['data-aria-describedby'] = 'tour-tip-' . $this->getAriaId() . '-contents';
-    $attributes['data-aria-labelledby'] = 'tour-tip-' . $this->getAriaId() . '-label';
-    if ($location = $this->get('location')) {
-      $attributes['data-options'] = 'tipLocation:' . $location;
-    }
-    return $attributes;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getOutput() {
-    $output = '<h2 class="tour-tip-label" id="tour-tip-' . $this->getAriaId() . '-label">' . Html::escape($this->getLabel()) . '</h2>';
-    $output .= '<p class="tour-tip-body" id="tour-tip-' . $this->getAriaId() . '-contents">' . $this->token->replace($this->getBody()) . '</p>';
-    return ['#markup' => $output];
+  public function getBody(): array {
+    return [
+      '#type' => 'html_tag',
+      '#tag' => 'p',
+      '#value' => $this->token->replace($this->get('body')),
+      '#attributes' => [
+        'class' => ['tour-tip-body'],
+      ],
+    ];
   }
 
 }

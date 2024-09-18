@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\image\Kernel;
 
-use Drupal\Core\Entity\EntityStorageException;
+use Drupal\Core\Database\Database;
 use Drupal\Core\Field\FieldItemInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
@@ -21,11 +23,9 @@ use Drupal\user\Entity\Role;
 class ImageItemTest extends FieldKernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['file', 'image'];
+  protected static $modules = ['file', 'image'];
 
   /**
    * Created file entity.
@@ -39,7 +39,10 @@ class ImageItemTest extends FieldKernelTestBase {
    */
   protected $imageFactory;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installEntitySchema('user');
@@ -59,6 +62,13 @@ class ImageItemTest extends FieldKernelTestBase {
       'type' => 'image',
       'cardinality' => FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED,
     ])->save();
+    FieldStorageConfig::create([
+      'entity_type' => 'entity_test',
+      'field_name' => 'image_test_generation',
+      'type' => 'image',
+      'cardinality' => FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED,
+    ])->save();
+
     FieldConfig::create([
       'entity_type' => 'entity_test',
       'field_name' => 'image_test',
@@ -67,7 +77,16 @@ class ImageItemTest extends FieldKernelTestBase {
         'file_extensions' => 'jpg',
       ],
     ])->save();
-    file_unmanaged_copy(\Drupal::root() . '/core/misc/druplicon.png', 'public://example.jpg');
+    FieldConfig::create([
+      'entity_type' => 'entity_test',
+      'field_name' => 'image_test_generation',
+      'bundle' => 'entity_test',
+      'settings' => [
+        'min_resolution' => '800x800',
+      ],
+    ])->save();
+
+    \Drupal::service('file_system')->copy($this->root . '/core/misc/druplicon.png', 'public://example.jpg');
     $this->image = File::create([
       'uri' => 'public://example.jpg',
     ]);
@@ -78,7 +97,7 @@ class ImageItemTest extends FieldKernelTestBase {
   /**
    * Tests using entity fields of the image field type.
    */
-  public function testImageItem() {
+  public function testImageItem(): void {
     // Create a test entity with the image field set.
     $entity = EntityTest::create();
     $entity->image_test->target_id = $this->image->id();
@@ -88,19 +107,19 @@ class ImageItemTest extends FieldKernelTestBase {
     $entity->save();
 
     $entity = EntityTest::load($entity->id());
-    $this->assertTrue($entity->image_test instanceof FieldItemListInterface, 'Field implements interface.');
-    $this->assertTrue($entity->image_test[0] instanceof FieldItemInterface, 'Field item implements interface.');
-    $this->assertEqual($entity->image_test->target_id, $this->image->id());
-    $this->assertEqual($entity->image_test->alt, $alt);
-    $this->assertEqual($entity->image_test->title, $title);
+    $this->assertInstanceOf(FieldItemListInterface::class, $entity->image_test);
+    $this->assertInstanceOf(FieldItemInterface::class, $entity->image_test[0]);
+    $this->assertEquals($this->image->id(), $entity->image_test->target_id);
+    $this->assertEquals($alt, $entity->image_test->alt);
+    $this->assertEquals($title, $entity->image_test->title);
     $image = $this->imageFactory->get('public://example.jpg');
-    $this->assertEqual($entity->image_test->width, $image->getWidth());
-    $this->assertEqual($entity->image_test->height, $image->getHeight());
-    $this->assertEqual($entity->image_test->entity->id(), $this->image->id());
-    $this->assertEqual($entity->image_test->entity->uuid(), $this->image->uuid());
+    $this->assertEquals($image->getWidth(), $entity->image_test->width);
+    $this->assertEquals($image->getHeight(), $entity->image_test->height);
+    $this->assertEquals($this->image->id(), $entity->image_test->entity->id());
+    $this->assertEquals($this->image->uuid(), $entity->image_test->entity->uuid());
 
     // Make sure the computed entity reflects updates to the referenced file.
-    file_unmanaged_copy(\Drupal::root() . '/core/misc/druplicon.png', 'public://example-2.jpg');
+    \Drupal::service('file_system')->copy($this->root . '/core/misc/druplicon.png', 'public://example-2.jpg');
     $image2 = File::create([
       'uri' => 'public://example-2.jpg',
     ]);
@@ -111,54 +130,72 @@ class ImageItemTest extends FieldKernelTestBase {
     // The width and height is only updated when width is not set.
     $entity->image_test->width = NULL;
     $entity->save();
-    $this->assertEqual($entity->image_test->entity->id(), $image2->id());
-    $this->assertEqual($entity->image_test->entity->getFileUri(), $image2->getFileUri());
+    $this->assertEquals($image2->id(), $entity->image_test->entity->id());
+    $this->assertEquals($image2->getFileUri(), $entity->image_test->entity->getFileUri());
     $image = $this->imageFactory->get('public://example-2.jpg');
-    $this->assertEqual($entity->image_test->width, $image->getWidth());
-    $this->assertEqual($entity->image_test->height, $image->getHeight());
-    $this->assertEqual($entity->image_test->alt, $new_alt);
+    $this->assertEquals($image->getWidth(), $entity->image_test->width);
+    $this->assertEquals($image->getHeight(), $entity->image_test->height);
+    $this->assertEquals($new_alt, $entity->image_test->alt);
 
     // Check that the image item can be set to the referenced file directly.
     $entity->image_test = $this->image;
-    $this->assertEqual($entity->image_test->target_id, $this->image->id());
+    $this->assertEquals($this->image->id(), $entity->image_test->target_id);
 
     // Delete the image and try to save the entity again.
     $this->image->delete();
-    $entity = EntityTest::create(['mame' => $this->randomMachineName()]);
+    $entity = EntityTest::create(['name' => $this->randomMachineName()]);
     $entity->save();
 
     // Test image item properties.
     $expected = ['target_id', 'entity', 'alt', 'title', 'width', 'height'];
     $properties = $entity->getFieldDefinition('image_test')->getFieldStorageDefinition()->getPropertyDefinitions();
-    $this->assertEqual(array_keys($properties), $expected);
+    $this->assertEquals($expected, array_keys($properties));
 
-    // Test the generateSampleValue() method.
+  }
+
+  /**
+   * Tests generateSampleItems() method under different dimensions.
+   */
+  public function testImageItemSampleValueGeneration(): void {
+
+    // Default behavior. No dimensions configuration.
     $entity = EntityTest::create();
     $entity->image_test->generateSampleItems();
     $this->entityValidateAndSave($entity);
-    $this->assertEqual($entity->image_test->entity->get('filemime')->value, 'image/jpeg');
+    $this->assertEquals('image/jpeg', $entity->image_test->entity->get('filemime')->value);
+
+    // Max dimensions bigger than 600x600.
+    $entity->image_test_generation->generateSampleItems();
+    $this->entityValidateAndSave($entity);
+    $imageItem = $entity->image_test_generation->first()->getValue();
+    $this->assertEquals('800', $imageItem['width']);
+    $this->assertEquals('800', $imageItem['height']);
   }
 
   /**
    * Tests a malformed image.
    */
-  public function testImageItemMalformed() {
+  public function testImageItemMalformed(): void {
+    \Drupal::service('module_installer')->install(['dblog']);
+
     // Validate entity is an image and don't gather dimensions if it is not.
     $entity = EntityTest::create();
     $entity->image_test = NULL;
     $entity->image_test->target_id = 9999;
-    // PHPUnit re-throws E_USER_WARNING as an exception.
-    try {
-      $entity->save();
-      $this->fail('Exception did not fail');
-    }
-    catch (EntityStorageException $exception) {
-      $this->assertInstanceOf(\PHPUnit_Framework_Error_Warning::class, $exception->getPrevious());
-      $this->assertEquals($exception->getMessage(), 'Missing file with ID 9999.');
-      $this->assertEmpty($entity->image_test->width);
-      $this->assertEmpty($entity->image_test->height);
-    }
-
+    $entity->save();
+    // Check that the proper warning has been logged.
+    $arguments = [
+      '%id' => 9999,
+    ];
+    $logged = Database::getConnection()->select('watchdog')
+      ->fields('watchdog', ['variables'])
+      ->condition('type', 'image')
+      ->condition('message', "Missing file with ID %id.")
+      ->execute()
+      ->fetchField();
+    $this->assertEquals(serialize($arguments), $logged);
+    $this->assertEmpty($entity->image_test->width);
+    $this->assertEmpty($entity->image_test->height);
   }
 
 }

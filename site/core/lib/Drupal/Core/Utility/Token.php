@@ -4,6 +4,7 @@ namespace Drupal\Core\Utility;
 
 use Drupal\Component\Render\HtmlEscapedText;
 use Drupal\Component\Render\MarkupInterface;
+use Drupal\Component\Render\PlainTextOutput;
 use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Cache\CacheTagsInvalidatorInterface;
@@ -43,8 +44,10 @@ use Drupal\Core\Render\RendererInterface;
  * $user = User::load(1);
  *
  * // [date:...] tokens use the current date automatically.
- * $data = array('node' => $node, 'user' => $user);
- * return Token::replace($text, $data);
+ * $token_service = \Drupal::token();
+ * $data = ['node' => $node, 'user' => $user];
+ * $result = $token_service->replace($text, $data);
+ * return $result
  * @endcode
  *
  * Some tokens may be chained in the form of [$type:$pointer:$name], where $type
@@ -134,12 +137,10 @@ class Token {
   }
 
   /**
-   * Replaces all tokens in a given string with appropriate values.
+   * Replaces all tokens in given markup with appropriate values.
    *
-   * @param string $text
-   *   An HTML string containing replaceable tokens. The caller is responsible
-   *   for calling \Drupal\Component\Utility\Html::escape() in case the $text
-   *   was plain text.
+   * @param string $markup
+   *   An HTML string containing replaceable tokens.
    * @param array $data
    *   (optional) An array of keyed objects. For simple replacement scenarios
    *   'node', 'user', and others are common keys, with an accompanying node or
@@ -175,14 +176,58 @@ class Token {
    *
    * @return string
    *   The token result is the entered HTML text with tokens replaced. The
-   *   caller is responsible for choosing the right escaping / sanitization. If
-   *   the result is intended to be used as plain text, using
-   *   PlainTextOutput::renderFromHtml() is recommended. If the result is just
-   *   printed as part of a template relying on Twig autoescaping is possible,
-   *   otherwise for example the result can be put into #markup, in which case
-   *   it would be sanitized by Xss::filterAdmin().
+   *   caller is responsible for choosing the right sanitization, for example
+   *   the result can be put into #markup, in which case it would be sanitized
+   *   by Xss::filterAdmin().
+   *
+   *   The return value must be treated as unsafe even if the input was safe
+   *   markup. This is necessary because an attacker could craft an input
+   *   string and token value that, although each safe individually, would be
+   *   unsafe when combined by token replacement.
+   *
+   * @see static::replacePlain()
    */
-  public function replace($text, array $data = [], array $options = [], BubbleableMetadata $bubbleable_metadata = NULL) {
+  public function replace($markup, array $data = [], array $options = [], ?BubbleableMetadata $bubbleable_metadata = NULL) {
+    return $this->doReplace(TRUE, (string) $markup, $data, $options, $bubbleable_metadata);
+  }
+
+  /**
+   * Replaces all tokens in a given plain text string with appropriate values.
+   *
+   * @param string $plain
+   *   Plain text string.
+   * @param array $data
+   *   (optional) An array of keyed objects. See replace().
+   * @param array $options
+   *   (optional) A keyed array of options. See replace().
+   * @param \Drupal\Core\Render\BubbleableMetadata|null $bubbleable_metadata
+   *   (optional) Target for adding metadata. See replace().
+   *
+   * @return string
+   *   The entered plain text with tokens replaced.
+   */
+  public function replacePlain(string $plain, array $data = [], array $options = [], ?BubbleableMetadata $bubbleable_metadata = NULL): string {
+    return $this->doReplace(FALSE, $plain, $data, $options, $bubbleable_metadata);
+  }
+
+  /**
+   * Replaces all tokens in a given string with appropriate values.
+   *
+   * @param bool $markup
+   *   TRUE to convert token values to markup, FALSE to convert to plain text.
+   * @param string $text
+   *   A string containing replaceable tokens.
+   * @param array $data
+   *   An array of keyed objects. See replace().
+   * @param array $options
+   *   A keyed array of options. See replace().
+   * @param \Drupal\Core\Render\BubbleableMetadata|null $bubbleable_metadata
+   *   (optional) Target for adding metadata. See replace().
+   *
+   * @return string
+   *   The token result is the entered string with tokens replaced.
+   */
+  protected function doReplace(bool $markup, string $text, array $data, array $options, ?BubbleableMetadata $bubbleable_metadata = NULL): string {
     $text_tokens = $this->scan($text);
     if (empty($text_tokens)) {
       return $text;
@@ -199,9 +244,19 @@ class Token {
       }
     }
 
-    // Escape the tokens, unless they are explicitly markup.
+    // Each token value is markup if it implements MarkupInterface otherwise it
+    // is plain text. Convert them, but only if needed. It can cause corruption
+    // to render a string that's already plain text or to escape a string
+    // that's already markup.
     foreach ($replacements as $token => $value) {
-      $replacements[$token] = $value instanceof MarkupInterface ? $value : new HtmlEscapedText($value);
+      if ($markup) {
+        // Escape plain text tokens.
+        $replacements[$token] = $value instanceof MarkupInterface ? $value : new HtmlEscapedText($value);
+      }
+      else {
+        // Render markup tokens to plain text.
+        $replacements[$token] = $value instanceof MarkupInterface ? PlainTextOutput::renderFromHtml($value) : $value;
+      }
     }
 
     // Optionally alter the list of replacement values.
@@ -234,6 +289,11 @@ class Token {
    *   An associative array of discovered tokens, grouped by type.
    */
   public function scan($text) {
+    if (!is_string($text)) {
+      @trigger_error('Calling ' . __METHOD__ . '() with a $text parameter of type other than string is deprecated in drupal:10.1.0 and will cause an error in drupal:11.0.0. See https://www.drupal.org/node/3334317', E_USER_DEPRECATED);
+      $text = (string) $text;
+    }
+
     // Matches tokens with the following pattern: [$type:$name]
     // $type and $name may not contain [ ] characters.
     // $type may not contain : or whitespace characters, but $name may.
@@ -321,13 +381,13 @@ class Token {
    * Used to extract a group of 'chained' tokens (such as [node:author:name])
    * from the full list of tokens found in text. For example:
    * @code
-   *   $data = array(
+   *   $data = [
    *     'author:name' => '[node:author:name]',
    *     'title'       => '[node:title]',
    *     'created'     => '[node:created]',
-   *   );
+   *   ];
    *   $results = Token::findWithPrefix($data, 'author');
-   *   $results == array('name' => '[node:author:name]');
+   *   $results == ['name' => '[node:author:name]'];
    * @endcode
    *
    * @param array $tokens

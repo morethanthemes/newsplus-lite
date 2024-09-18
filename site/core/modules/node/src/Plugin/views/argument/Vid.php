@@ -2,24 +2,18 @@
 
 namespace Drupal\node\Plugin\views\argument;
 
-use Drupal\Core\Database\Connection;
+use Drupal\views\Attribute\ViewsArgument;
 use Drupal\views\Plugin\views\argument\NumericArgument;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\node\NodeStorageInterface;
 
 /**
  * Argument handler to accept a node revision id.
- *
- * @ViewsArgument("node_vid")
  */
+#[ViewsArgument(
+  id: 'node_vid',
+)]
 class Vid extends NumericArgument {
-
-  /**
-   * Database Service Object.
-   *
-   * @var \Drupal\Core\Database\Connection
-   */
-  protected $database;
 
   /**
    * The node storage.
@@ -29,7 +23,7 @@ class Vid extends NumericArgument {
   protected $nodeStorage;
 
   /**
-   * Constructs a Drupal\Component\Plugin\PluginBase object.
+   * Constructs a \Drupal\node\Plugin\views\argument\Vid object.
    *
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.
@@ -37,15 +31,11 @@ class Vid extends NumericArgument {
    *   The plugin_id for the plugin instance.
    * @param mixed $plugin_definition
    *   The plugin implementation definition.
-   * @param \Drupal\Core\Database\Connection $database
-   *   Database Service Object.
    * @param \Drupal\node\NodeStorageInterface $node_storage
    *   The node storage.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, Connection $database, NodeStorageInterface $node_storage) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, NodeStorageInterface $node_storage) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
-
-    $this->database = $database;
     $this->nodeStorage = $node_storage;
   }
 
@@ -57,8 +47,7 @@ class Vid extends NumericArgument {
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('database'),
-      $container->get('entity.manager')->getStorage('node')
+      $container->get('entity_type.manager')->getStorage('node')
     );
   }
 
@@ -68,17 +57,15 @@ class Vid extends NumericArgument {
   public function titleQuery() {
     $titles = [];
 
-    $results = $this->database->query('SELECT nr.vid, nr.nid, npr.title FROM {node_revision} nr WHERE nr.vid IN ( :vids[] )', [':vids[]' => $this->value])->fetchAllAssoc('vid', PDO::FETCH_ASSOC);
-    $nids = [];
-    foreach ($results as $result) {
-      $nids[] = $result['nid'];
-    }
+    $results = $this->nodeStorage->getAggregateQuery()
+      ->accessCheck(FALSE)
+      ->allRevisions()
+      ->groupBy('title')
+      ->condition('vid', $this->value, 'IN')
+      ->execute();
 
-    $nodes = $this->nodeStorage->loadMultiple(array_unique($nids));
-
     foreach ($results as $result) {
-      $nodes[$result['nid']]->set('title', $result['title']);
-      $titles[] = $nodes[$result['nid']]->label();
+      $titles[] = $result['title'];
     }
 
     return $titles;

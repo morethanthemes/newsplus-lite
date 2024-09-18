@@ -7,7 +7,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\content_translation\ContentTranslationHandler;
 
 /**
- * Defines the translation handler for custom blocks.
+ * Defines the translation handler for content blocks.
  */
 class BlockContentTranslationHandler extends ContentTranslationHandler {
 
@@ -16,7 +16,7 @@ class BlockContentTranslationHandler extends ContentTranslationHandler {
    */
   protected function entityFormTitle(EntityInterface $entity) {
     $block_type = BlockContentType::load($entity->bundle());
-    return t('<em>Edit @type</em> @title', ['@type' => $block_type->label(), '@title' => $entity->label()]);
+    return $this->t('<em>Edit @type</em> @title', ['@type' => $block_type->label(), '@title' => $entity->label()]);
   }
 
 }

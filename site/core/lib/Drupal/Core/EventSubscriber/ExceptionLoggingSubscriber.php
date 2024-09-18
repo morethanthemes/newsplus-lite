@@ -5,7 +5,7 @@ namespace Drupal\Core\EventSubscriber;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Utility\Error;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
+use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 
@@ -34,21 +34,26 @@ class ExceptionLoggingSubscriber implements EventSubscriberInterface {
   /**
    * Log 403 errors.
    *
-   * @param \Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\ExceptionEvent $event
    *   The event to process.
    */
-  public function on403(GetResponseForExceptionEvent $event) {
-    $request = $event->getRequest();
-    $this->logger->get('access denied')->warning('@uri', ['@uri' => $request->getRequestUri()]);
+  public function on403(ExceptionEvent $event) {
+    // Log the exception with the page where it happened so that admins know
+    // why access was denied.
+    $exception = $event->getThrowable();
+    $error = Error::decodeException($exception);
+    unset($error['@backtrace_string']);
+    $error['@uri'] = $event->getRequest()->getRequestUri();
+    $this->logger->get('access denied')->warning('Path: @uri. ' . Error::DEFAULT_ERROR_MESSAGE, $error);
   }
 
   /**
    * Log 404 errors.
    *
-   * @param \Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\ExceptionEvent $event
    *   The event to process.
    */
-  public function on404(GetResponseForExceptionEvent $event) {
+  public function on404(ExceptionEvent $event) {
     $request = $event->getRequest();
     $this->logger->get('page not found')->warning('@uri', ['@uri' => $request->getRequestUri()]);
   }
@@ -56,13 +61,13 @@ class ExceptionLoggingSubscriber implements EventSubscriberInterface {
   /**
    * Log not-otherwise-specified errors, including HTTP 500.
    *
-   * @param \Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\ExceptionEvent $event
    *   The event to process.
    */
-  public function onError(GetResponseForExceptionEvent $event) {
-    $exception = $event->getException();
+  public function onError(ExceptionEvent $event) {
+    $exception = $event->getThrowable();
     $error = Error::decodeException($exception);
-    $this->logger->get('php')->log($error['severity_level'], '%type: @message in %function (line %line of %file).', $error);
+    $this->logger->get('php')->log($error['severity_level'], Error::DEFAULT_ERROR_MESSAGE, $error);
 
     $is_critical = !$exception instanceof HttpExceptionInterface || $exception->getStatusCode() >= 500;
     if ($is_critical) {
@@ -71,21 +76,42 @@ class ExceptionLoggingSubscriber implements EventSubscriberInterface {
   }
 
   /**
-   * Log all exceptions.
+   * Log 4xx errors that are not 403 or 404.
    *
-   * @param \Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\ExceptionEvent $event
    *   The event to process.
    */
-  public function onException(GetResponseForExceptionEvent $event) {
-    $exception = $event->getException();
+  public function onClientError(ExceptionEvent $event) {
+    $exception = $event->getThrowable();
+    $error = Error::decodeException($exception);
+    $error += [
+      'status_code' => $exception->getStatusCode(),
+    ];
+    unset($error['@backtrace_string']);
+    $this->logger->get('client error')
+      ->warning(Error::DEFAULT_ERROR_MESSAGE, $error);
+  }
+
+  /**
+   * Log all exceptions.
+   *
+   * @param \Symfony\Component\HttpKernel\Event\ExceptionEvent $event
+   *   The event to process.
+   */
+  public function onException(ExceptionEvent $event) {
+    $exception = $event->getThrowable();
 
     $method = 'onError';
 
     // Treat any non-HTTP exception as if it were one, so we log it the same.
     if ($exception instanceof HttpExceptionInterface) {
-      $possible_method = 'on' . $exception->getStatusCode();
+      $status_code = $exception->getStatusCode();
+      $possible_method = 'on' . $status_code;
       if (method_exists($this, $possible_method)) {
         $method = $possible_method;
+      }
+      elseif ($status_code >= 400 && $status_code < 500) {
+        $method = 'onClientError';
       }
     }
 
@@ -95,7 +121,7 @@ class ExceptionLoggingSubscriber implements EventSubscriberInterface {
   /**
    * {@inheritdoc}
    */
-  public static function getSubscribedEvents() {
+  public static function getSubscribedEvents(): array {
     $events[KernelEvents::EXCEPTION][] = ['onException', 50];
     return $events;
   }

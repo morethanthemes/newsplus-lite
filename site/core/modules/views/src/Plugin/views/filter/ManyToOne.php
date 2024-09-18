@@ -3,22 +3,23 @@
 namespace Drupal\views\Plugin\views\filter;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\views\Attribute\ViewsFilter;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\ManyToOneHelper;
 
 /**
- * Complex filter to handle filtering for many to one relationships,
- * such as terms (many terms per node) or roles (many roles per user).
+ * Complex filter to handle filtering for many to one relationships.
+ *
+ * Examples are terms (many terms per node) or roles (many roles per user).
  *
  * The construct method needs to be overridden to provide a list of options;
  * alternately, the valueForm and adminSummary methods need to be overridden
  * to provide something that isn't just a select list.
  *
  * @ingroup views_filter_handlers
- *
- * @ViewsFilter("many_to_one")
  */
+#[ViewsFilter("many_to_one")]
 class ManyToOne extends InOperator {
 
   /**
@@ -31,7 +32,7 @@ class ManyToOne extends InOperator {
   /**
    * {@inheritdoc}
    */
-  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+  public function init(ViewExecutable $view, DisplayPluginBase $display, ?array &$options = NULL) {
     parent::init($view, $display, $options);
 
     $this->helper = new ManyToOneHelper($this);
@@ -54,6 +55,9 @@ class ManyToOne extends InOperator {
     return $options;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function operators() {
     $operators = [
       'or' => [
@@ -81,7 +85,7 @@ class ManyToOne extends InOperator {
         'ensure_my_table' => 'helper',
       ],
     ];
-    // if the definition allows for the empty operator, add it.
+    // If the definition allows for the empty operator, add it.
     if (!empty($this->definition['allow empty'])) {
       $operators += [
         'empty' => [
@@ -103,6 +107,7 @@ class ManyToOne extends InOperator {
   }
 
   protected $valueFormType = 'select';
+
   protected function valueForm(&$form, FormStateInterface $form_state) {
     parent::valueForm($form, $form_state);
 
@@ -112,8 +117,7 @@ class ManyToOne extends InOperator {
   }
 
   /**
-   * Override ensureMyTable so we can control how this joins in.
-   * The operator actually has influence over joining.
+   * {@inheritdoc}
    */
   public function ensureMyTable() {
     // Defer to helper if the operator specifies it.
@@ -131,7 +135,7 @@ class ManyToOne extends InOperator {
     }
     // Form API returns unchecked options in the form of option_id => 0. This
     // breaks the generated query for "is all of" filters so we remove them.
-    $this->value = array_filter($this->value, 'static::arrayFilterZero');
+    $this->value = array_filter($this->value, [static::class, 'arrayFilterZero']);
     $this->helper->addFilter();
   }
 

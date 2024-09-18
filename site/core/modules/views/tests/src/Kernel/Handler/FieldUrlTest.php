@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Kernel\Handler;
 
+use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Drupal\Tests\views\Kernel\ViewsKernelTestBase;
 use Drupal\views\Views;
@@ -13,7 +16,7 @@ use Drupal\views\Views;
  */
 class FieldUrlTest extends ViewsKernelTestBase {
 
-  public static $modules = ['system'];
+  protected static $modules = ['system'];
 
   /**
    * Views used by this test.
@@ -28,7 +31,7 @@ class FieldUrlTest extends ViewsKernelTestBase {
     return $data;
   }
 
-  public function testFieldUrl() {
+  public function testFieldUrl(): void {
     $view = Views::getView('test_view');
     $view->setDisplay();
 
@@ -44,9 +47,9 @@ class FieldUrlTest extends ViewsKernelTestBase {
 
     $this->executeView($view);
 
-    $this->assertEqual('John', $view->field['name']->advancedRender($view->result[0]));
+    $this->assertEquals('John', $view->field['name']->advancedRender($view->result[0]));
 
-    // Make the url a link.
+    // Make the URL a link.
     $view->destroy();
     $view->setDisplay();
 
@@ -61,7 +64,7 @@ class FieldUrlTest extends ViewsKernelTestBase {
 
     $this->executeView($view);
 
-    $this->assertEqual(\Drupal::l('John', Url::fromUri('base:John'))->getGeneratedLink(), $view->field['name']->advancedRender($view->result[0]));
+    $this->assertEquals(Link::fromTextAndUrl('John', Url::fromUri('base:John'))->toString(), $view->field['name']->advancedRender($view->result[0]));
   }
 
 }

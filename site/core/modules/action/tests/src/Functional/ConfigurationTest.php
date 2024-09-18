@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\action\Functional;
 
 use Drupal\system\Entity\Action;
 use Drupal\Tests\BrowserTestBase;
 
 /**
- * Tests complex actions configuration by adding, editing, and deleting a
- * complex action.
+ * Tests complex actions configuration.
  *
  * @group action
+ * @group legacy
  */
 class ConfigurationTest extends BrowserTestBase {
 
@@ -18,12 +20,18 @@ class ConfigurationTest extends BrowserTestBase {
    *
    * @var array
    */
-  public static $modules = ['action'];
+  protected static $modules = ['action'];
+
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Tests configuration of advanced actions through administration interface.
    */
-  public function testActionConfiguration() {
+  public function testActionConfiguration(): void {
     // Create a user with permission to view the actions administration pages.
     $user = $this->drupalCreateUser(['administer actions']);
     $this->drupalLogin($user);
@@ -31,8 +39,9 @@ class ConfigurationTest extends BrowserTestBase {
     // Make a POST request to admin/config/system/actions.
     $edit = [];
     $edit['action'] = 'action_goto_action';
-    $this->drupalPostForm('admin/config/system/actions', $edit, t('Create'));
-    $this->assertResponse(200);
+    $this->drupalGet('admin/config/system/actions');
+    $this->submitForm($edit, 'Create');
+    $this->assertSession()->statusCodeEquals(200);
 
     // Make a POST request to the individual action configuration page.
     $edit = [];
@@ -40,50 +49,56 @@ class ConfigurationTest extends BrowserTestBase {
     $edit['label'] = $action_label;
     $edit['id'] = strtolower($action_label);
     $edit['url'] = 'admin';
-    $this->drupalPostForm('admin/config/system/actions/add/action_goto_action', $edit, t('Save'));
-    $this->assertResponse(200);
+    $this->drupalGet('admin/config/system/actions/add/action_goto_action');
+    $this->submitForm($edit, 'Save');
+    $this->assertSession()->statusCodeEquals(200);
 
     $action_id = $edit['id'];
 
     // Make sure that the new complex action was saved properly.
-    $this->assertText(t('The action has been successfully saved.'), "Make sure we get a confirmation that we've successfully saved the complex action.");
-    $this->assertText($action_label, "Make sure the action label appears on the configuration page after we've saved the complex action.");
+    $this->assertSession()->pageTextContains('The action has been successfully saved.');
+    // The action label appears on the configuration page.
+    $this->assertSession()->pageTextContains($action_label);
 
     // Make another POST request to the action edit page.
-    $this->clickLink(t('Configure'));
+    $this->clickLink('Configure');
 
     $edit = [];
     $new_action_label = $this->randomMachineName();
     $edit['label'] = $new_action_label;
     $edit['url'] = 'admin';
-    $this->drupalPostForm(NULL, $edit, t('Save'));
-    $this->assertResponse(200);
+    $this->submitForm($edit, 'Save');
+    $this->assertSession()->statusCodeEquals(200);
 
     // Make sure that the action updated properly.
-    $this->assertText(t('The action has been successfully saved.'), "Make sure we get a confirmation that we've successfully updated the complex action.");
-    $this->assertNoText($action_label, "Make sure the old action label does NOT appear on the configuration page after we've updated the complex action.");
-    $this->assertText($new_action_label, "Make sure the action label appears on the configuration page after we've updated the complex action.");
+    $this->assertSession()->pageTextContains('The action has been successfully saved.');
+    // The old action label does NOT appear on the configuration page.
+    $this->assertSession()->pageTextNotContains($action_label);
+    // The action label appears on the configuration page after we've updated
+    // the complex action.
+    $this->assertSession()->pageTextContains($new_action_label);
 
-    $this->clickLink(t('Configure'));
-    $element = $this->xpath('//input[@type="text" and @value="admin"]');
-    $this->assertTrue(!empty($element), 'Make sure the URL appears when re-editing the action.');
+    // Make sure the URL appears when re-editing the action.
+    $this->clickLink('Configure');
+    $this->assertSession()->fieldValueEquals('url', 'admin');
 
     // Make sure that deletions work properly.
     $this->drupalGet('admin/config/system/actions');
-    $this->clickLink(t('Delete'));
-    $this->assertResponse(200);
+    $this->clickLink('Delete');
+    $this->assertSession()->statusCodeEquals(200);
     $edit = [];
-    $this->drupalPostForm(NULL, $edit, t('Delete'));
-    $this->assertResponse(200);
+    $this->submitForm($edit, 'Delete');
+    $this->assertSession()->statusCodeEquals(200);
 
     // Make sure that the action was actually deleted.
-    $this->assertRaw(t('The action %action has been deleted.', ['%action' => $new_action_label]), 'Make sure that we get a delete confirmation message.');
+    $this->assertSession()->pageTextContains("The action $new_action_label has been deleted.");
     $this->drupalGet('admin/config/system/actions');
-    $this->assertResponse(200);
-    $this->assertNoText($new_action_label, "Make sure the action label does not appear on the overview page after we've deleted the action.");
+    $this->assertSession()->statusCodeEquals(200);
+    // The action label does not appear on the overview page.
+    $this->assertSession()->pageTextNotContains($new_action_label);
 
     $action = Action::load($action_id);
-    $this->assertFalse($action, 'Make sure the action is gone after being deleted.');
+    $this->assertNull($action, 'Make sure the action is gone after being deleted.');
   }
 
 }

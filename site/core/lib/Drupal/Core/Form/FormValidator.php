@@ -3,7 +3,6 @@
 namespace Drupal\Core\Form;
 
 use Drupal\Component\Utility\NestedArray;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Access\CsrfTokenGenerator;
 use Drupal\Core\Render\Element;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -125,10 +124,8 @@ class FormValidator implements FormValidatorInterface {
    * {@inheritdoc}
    */
   public function setInvalidTokenError(FormStateInterface $form_state) {
-    $url = $this->requestStack->getCurrentRequest()->getRequestUri();
-
     // Setting this error will cause the form to fail validation.
-    $form_state->setErrorByName('form_token', $this->t('The form has become outdated. Copy any unsaved work in the form below and then <a href=":link">reload this page</a>.', [':link' => $url]));
+    $form_state->setErrorByName('form_token', $this->t('The form has become outdated. Press the back button, copy any unsaved work in the form, and then reload the page.'));
   }
 
   /**
@@ -226,7 +223,9 @@ class FormValidator implements FormValidatorInterface {
    *   not be repeated in the submission step.
    * @param $form_id
    *   A unique string identifying the form for validation, submission,
-   *   theming, and hook_form_alter functions.
+   *   theming, and hook_form_alter functions. Is only present on the initial
+   *   call to the method, which receives the entire form array as the $element,
+   *   and not on recursive calls.
    */
   protected function doValidateForm(&$elements, FormStateInterface &$form_state, $form_id = NULL) {
     // Recurse through all children, sorting the elements so that the order of
@@ -257,9 +256,8 @@ class FormValidator implements FormValidatorInterface {
         // length if it's a string, and the item count if it's an array.
         // An unchecked checkbox has a #value of integer 0, different than
         // string '0', which could be a valid value.
-        $is_countable = is_array($elements['#value']) || $elements['#value'] instanceof \Countable;
-        $is_empty_multiple = $is_countable && count($elements['#value']) == 0;
-        $is_empty_string = (is_string($elements['#value']) && Unicode::strlen(trim($elements['#value'])) == 0);
+        $is_empty_multiple = is_countable($elements['#value']) && count($elements['#value']) == 0;
+        $is_empty_string = (is_string($elements['#value']) && mb_strlen(trim($elements['#value'])) == 0);
         $is_empty_value = ($elements['#value'] === 0);
         $is_empty_null = is_null($elements['#value']);
         if ($is_empty_multiple || $is_empty_string || $is_empty_value || $is_empty_null) {
@@ -331,11 +329,13 @@ class FormValidator implements FormValidatorInterface {
    */
   protected function performRequiredValidation(&$elements, FormStateInterface &$form_state) {
     // Verify that the value is not longer than #maxlength.
-    if (isset($elements['#maxlength']) && Unicode::strlen($elements['#value']) > $elements['#maxlength']) {
-      $form_state->setError($elements, $this->t('@name cannot be longer than %max characters but is currently %length characters long.', ['@name' => empty($elements['#title']) ? $elements['#parents'][0] : $elements['#title'], '%max' => $elements['#maxlength'], '%length' => Unicode::strlen($elements['#value'])]));
+    if (isset($elements['#maxlength']) && mb_strlen($elements['#value']) > $elements['#maxlength']) {
+      $form_state->setError($elements, $this->t('@name cannot be longer than %max characters but is currently %length characters long.', ['@name' => empty($elements['#title']) ? $elements['#parents'][0] : $elements['#title'], '%max' => $elements['#maxlength'], '%length' => mb_strlen($elements['#value'])]));
     }
 
     if (isset($elements['#options']) && isset($elements['#value'])) {
+      $name = empty($elements['#title']) ? $elements['#parents'][0] : $elements['#title'];
+      $message_arguments = ['%name' => $name];
       if ($elements['#type'] == 'select') {
         $options = OptGroup::flattenOptions($elements['#options']);
       }
@@ -345,9 +345,16 @@ class FormValidator implements FormValidatorInterface {
       if (is_array($elements['#value'])) {
         $value = in_array($elements['#type'], ['checkboxes', 'tableselect']) ? array_keys($elements['#value']) : $elements['#value'];
         foreach ($value as $v) {
+          if (!is_scalar($v)) {
+            $message_arguments['%type'] = gettype($v);
+            $form_state->setError($elements, $this->t('The submitted value type %type in the %name element is not allowed.', $message_arguments));
+            $this->logger->error('The submitted value type %type in the %name element is not allowed.', $message_arguments);
+            continue;
+          }
           if (!isset($options[$v])) {
-            $form_state->setError($elements, $this->t('An illegal choice has been detected. Please contact the site administrator.'));
-            $this->logger->error('Illegal choice %choice in %name element.', ['%choice' => $v, '%name' => empty($elements['#title']) ? $elements['#parents'][0] : $elements['#title']]);
+            $message_arguments['%choice'] = $v;
+            $form_state->setError($elements, $this->t('The submitted value %choice in the %name element is not allowed.', $message_arguments));
+            $this->logger->error('The submitted value %choice in the %name element is not allowed.', $message_arguments);
           }
         }
       }
@@ -365,8 +372,9 @@ class FormValidator implements FormValidatorInterface {
         $form_state->setValueForElement($elements, NULL);
       }
       elseif (!isset($options[$elements['#value']])) {
-        $form_state->setError($elements, $this->t('An illegal choice has been detected. Please contact the site administrator.'));
-        $this->logger->error('Illegal choice %choice in %name element.', ['%choice' => $elements['#value'], '%name' => empty($elements['#title']) ? $elements['#parents'][0] : $elements['#title']]);
+        $message_arguments['%choice'] = $elements['#value'];
+        $form_state->setError($elements, $this->t('The submitted value %choice in the %name element is not allowed.', $message_arguments));
+        $this->logger->error('The submitted value %choice in the %name element is not allowed.', $message_arguments);
       }
     }
   }

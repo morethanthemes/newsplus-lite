@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\options\Kernel;
 
 use Drupal\entity_test\Entity\EntityTest;
@@ -16,26 +18,26 @@ class OptionsFormattersTest extends OptionsFieldUnitTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
   }
 
   /**
    * Tests the formatters.
    */
-  public function testFormatter() {
+  public function testFormatter(): void {
     $entity = EntityTest::create();
     $entity->{$this->fieldName}->value = 1;
 
     $items = $entity->get($this->fieldName);
 
     $build = $items->view();
-    $this->assertEqual($build['#formatter'], 'list_default', 'Ensure to fall back to the default formatter.');
-    $this->assertEqual($build[0]['#markup'], 'One');
+    $this->assertEquals('list_default', $build['#formatter'], 'Ensure to fall back to the default formatter.');
+    $this->assertEquals('One', $build[0]['#markup']);
 
     $build = $items->view(['type' => 'list_key']);
-    $this->assertEqual($build['#formatter'], 'list_key', 'The chosen formatter is used.');
-    $this->assertEqual((string) $build[0]['#markup'], 1);
+    $this->assertEquals('list_key', $build['#formatter'], 'The chosen formatter is used.');
+    $this->assertEquals(1, (string) $build[0]['#markup']);
   }
 
 }

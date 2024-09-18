@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\file\Kernel\Migrate\d6;
 
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
@@ -15,12 +17,12 @@ class MigrateUploadEntityFormDisplayTest extends MigrateDrupal6TestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['menu_ui'];
+  protected static $modules = ['menu_ui'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->migrateFields();
   }
@@ -28,23 +30,23 @@ class MigrateUploadEntityFormDisplayTest extends MigrateDrupal6TestBase {
   /**
    * Tests Drupal 6 upload settings to Drupal 8 entity form display migration.
    */
-  public function testUploadEntityFormDisplay() {
+  public function testUploadEntityFormDisplay(): void {
     $this->executeMigration('d6_upload_entity_form_display');
 
     $display = EntityFormDisplay::load('node.page.default');
     $component = $display->getComponent('upload');
-    $this->assertIdentical('file_generic', $component['type']);
+    $this->assertSame('file_generic', $component['type']);
 
     $display = EntityFormDisplay::load('node.story.default');
     $component = $display->getComponent('upload');
-    $this->assertIdentical('file_generic', $component['type']);
+    $this->assertSame('file_generic', $component['type']);
 
     // Assure this doesn't exist.
     $display = EntityFormDisplay::load('node.article.default');
     $component = $display->getComponent('upload');
-    $this->assertTrue(is_null($component));
+    $this->assertNull($component);
 
-    $this->assertIdentical(['node', 'page', 'default', 'upload'], $this->getMigration('d6_upload_entity_form_display')->getIdMap()->lookupDestinationId(['page']));
+    $this->assertSame([['node', 'page', 'default', 'upload']], $this->getMigration('d6_upload_entity_form_display')->getIdMap()->lookupDestinationIds(['page']));
   }
 
   /**
@@ -53,7 +55,7 @@ class MigrateUploadEntityFormDisplayTest extends MigrateDrupal6TestBase {
    * Entity displays should be ignored when they belong to node types which
    * were not migrated.
    */
-  public function testSkipNonExistentNodeType() {
+  public function testSkipNonExistentNodeType(): void {
     // The "story" node type is migrated by d6_node_type but we need to pretend
     // that it didn't occur, so record that in the map table.
     $this->mockFailure('d6_node_type', ['type' => 'story']);

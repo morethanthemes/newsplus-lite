@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\locale\Functional;
 
 /**
@@ -8,6 +10,11 @@ namespace Drupal\Tests\locale\Functional;
  * @group locale
  */
 class LocaleNonInteractiveDevInstallTest extends LocaleNonInteractiveInstallTest {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

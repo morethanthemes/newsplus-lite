@@ -2,6 +2,7 @@
 
 namespace Drupal\Core\Session;
 
+use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Site\Settings;
 use Symfony\Component\HttpFoundation\Session\Storage\MetadataBag as SymfonyMetadataBag;
 
@@ -49,10 +50,17 @@ class MetadataBag extends SymfonyMetadataBag {
   }
 
   /**
-   * Clear the CSRF token seed.
+   * {@inheritdoc}
+   *
+   * phpcs:ignore Drupal.Commenting.FunctionComment.VoidReturn
+   * @return void
    */
-  public function clearCsrfTokenSeed() {
-    unset($this->meta[static::CSRF_TOKEN_SEED]);
+  public function stampNew($lifetime = NULL) {
+    parent::stampNew($lifetime);
+
+    // Set the token seed immediately to avoid a race condition between two
+    // simultaneous requests without a seed.
+    $this->setCsrfTokenSeed(Crypt::randomBytesBase64());
   }
 
 }

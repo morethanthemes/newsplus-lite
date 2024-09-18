@@ -6,6 +6,7 @@ use Drupal\Component\Utility\Html;
 use Drupal\Component\Render\MarkupInterface;
 use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Datetime\DateFormatterInterface;
+use Drupal\Core\File\FileUrlGeneratorInterface;
 use Drupal\Core\Render\AttachmentsInterface;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Render\Markup;
@@ -14,6 +15,14 @@ use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Core\Theme\ThemeManagerInterface;
 use Drupal\Core\Url;
+use Twig\Environment;
+use Twig\Extension\AbstractExtension;
+use Twig\Markup as TwigMarkup;
+use Twig\Node\Expression\ArrayExpression;
+use Twig\Node\Expression\ConstantExpression;
+use Twig\Node\Node;
+use Twig\TwigFilter;
+use Twig\TwigFunction;
 
 /**
  * A class providing Drupal Twig extensions.
@@ -23,7 +32,7 @@ use Drupal\Core\Url;
  *
  * @see \Drupal\Core\CoreServiceProvider
  */
-class TwigExtension extends \Twig_Extension {
+class TwigExtension extends AbstractExtension {
 
   /**
    * The URL generator.
@@ -54,6 +63,13 @@ class TwigExtension extends \Twig_Extension {
   protected $dateFormatter;
 
   /**
+   * The file URL generator.
+   *
+   * @var \Drupal\Core\File\FileUrlGeneratorInterface
+   */
+  protected $fileUrlGenerator;
+
+  /**
    * Constructs \Drupal\Core\Template\TwigExtension.
    *
    * @param \Drupal\Core\Render\RendererInterface $renderer
@@ -64,71 +80,15 @@ class TwigExtension extends \Twig_Extension {
    *   The theme manager.
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date formatter.
+   * @param \Drupal\Core\File\FileUrlGeneratorInterface $file_url_generator
+   *   The file URL generator.
    */
-  public function __construct(RendererInterface $renderer, UrlGeneratorInterface $url_generator, ThemeManagerInterface $theme_manager, DateFormatterInterface $date_formatter) {
+  public function __construct(RendererInterface $renderer, UrlGeneratorInterface $url_generator, ThemeManagerInterface $theme_manager, DateFormatterInterface $date_formatter, FileUrlGeneratorInterface $file_url_generator) {
     $this->renderer = $renderer;
     $this->urlGenerator = $url_generator;
     $this->themeManager = $theme_manager;
     $this->dateFormatter = $date_formatter;
-  }
-
-  /**
-   * Sets the URL generator.
-   *
-   * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
-   *   The URL generator.
-   *
-   * @return $this
-   *
-   * @deprecated in Drupal 8.0.x-dev, will be removed before Drupal 9.0.0.
-   */
-  public function setGenerators(UrlGeneratorInterface $url_generator) {
-    return $this->setUrlGenerator($url_generator);
-  }
-
-  /**
-   * Sets the URL generator.
-   *
-   * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
-   *   The URL generator.
-   *
-   * @return $this
-   *
-   * @deprecated in Drupal 8.3.x-dev, will be removed before Drupal 9.0.0.
-   */
-  public function setUrlGenerator(UrlGeneratorInterface $url_generator) {
-    $this->urlGenerator = $url_generator;
-    return $this;
-  }
-
-  /**
-   * Sets the theme manager.
-   *
-   * @param \Drupal\Core\Theme\ThemeManagerInterface $theme_manager
-   *   The theme manager.
-   *
-   * @return $this
-   *
-   * @deprecated in Drupal 8.3.x-dev, will be removed before Drupal 9.0.0.
-   */
-  public function setThemeManager(ThemeManagerInterface $theme_manager) {
-    $this->themeManager = $theme_manager;
-    return $this;
-  }
-
-  /**
-   * Sets the date formatter.
-   *
-   * @param \Drupal\Core\Datetime\DateFormatter $date_formatter
-   *   The date formatter.
-   *
-   * @return $this
-   *
-   * @deprecated in Drupal 8.3.x-dev, will be removed before Drupal 9.0.0.
-   */
-  public function setDateFormatter(DateFormatterInterface $date_formatter) {
-    $this->dateFormatter = $date_formatter;
-    return $this;
+    $this->fileUrlGenerator = $file_url_generator;
   }
 
   /**
@@ -137,19 +97,17 @@ class TwigExtension extends \Twig_Extension {
   public function getFunctions() {
     return [
       // This function will receive a renderable array, if an array is detected.
-      new \Twig_SimpleFunction('render_var', [$this, 'renderVar']),
-      // The url and path function are defined in close parallel to those found
+      new TwigFunction('render_var', [$this, 'renderVar']),
+      // The URL and path function are defined in close parallel to those found
       // in \Symfony\Bridge\Twig\Extension\RoutingExtension
-      new \Twig_SimpleFunction('url', [$this, 'getUrl'], ['is_safe_callback' => [$this, 'isUrlGenerationSafe']]),
-      new \Twig_SimpleFunction('path', [$this, 'getPath'], ['is_safe_callback' => [$this, 'isUrlGenerationSafe']]),
-      new \Twig_SimpleFunction('link', [$this, 'getLink']),
-      new \Twig_SimpleFunction('file_url', function ($uri) {
-        return file_url_transform_relative(file_create_url($uri));
-      }),
-      new \Twig_SimpleFunction('attach_library', [$this, 'attachLibrary']),
-      new \Twig_SimpleFunction('active_theme_path', [$this, 'getActiveThemePath']),
-      new \Twig_SimpleFunction('active_theme', [$this, 'getActiveTheme']),
-      new \Twig_SimpleFunction('create_attribute', [$this, 'createAttribute']),
+      new TwigFunction('url', [$this, 'getUrl'], ['is_safe_callback' => [$this, 'isUrlGenerationSafe']]),
+      new TwigFunction('path', [$this, 'getPath'], ['is_safe_callback' => [$this, 'isUrlGenerationSafe']]),
+      new TwigFunction('link', [$this, 'getLink']),
+      new TwigFunction('file_url', [$this, 'getFileUrl']),
+      new TwigFunction('attach_library', [$this, 'attachLibrary']),
+      new TwigFunction('active_theme_path', [$this, 'getActiveThemePath']),
+      new TwigFunction('active_theme', [$this, 'getActiveTheme']),
+      new TwigFunction('create_attribute', [$this, 'createAttribute']),
     ];
   }
 
@@ -159,32 +117,37 @@ class TwigExtension extends \Twig_Extension {
   public function getFilters() {
     return [
       // Translation filters.
-      new \Twig_SimpleFilter('t', 't', ['is_safe' => ['html']]),
-      new \Twig_SimpleFilter('trans', 't', ['is_safe' => ['html']]),
+      new TwigFilter('t', 't', ['is_safe' => ['html']]),
+      new TwigFilter('trans', 't', ['is_safe' => ['html']]),
       // The "raw" filter is not detectable when parsing "trans" tags. To detect
       // which prefix must be used for translation (@, !, %), we must clone the
       // "raw" filter and give it identifiable names. These filters should only
       // be used in "trans" tags.
       // @see TwigNodeTrans::compileString()
-      new \Twig_SimpleFilter('placeholder', [$this, 'escapePlaceholder'], ['is_safe' => ['html'], 'needs_environment' => TRUE]),
+      new TwigFilter('placeholder', [$this, 'escapePlaceholder'], ['is_safe' => ['html'], 'needs_environment' => TRUE]),
 
       // Replace twig's escape filter with our own.
-      new \Twig_SimpleFilter('drupal_escape', [$this, 'escapeFilter'], ['needs_environment' => TRUE, 'is_safe_callback' => 'twig_escape_filter_is_safe']),
+      new TwigFilter('drupal_escape', [$this, 'escapeFilter'], ['needs_environment' => TRUE, 'is_safe_callback' => 'twig_escape_filter_is_safe']),
 
       // Implements safe joining.
       // @todo Make that the default for |join? Upstream issue:
       //   https://github.com/fabpot/Twig/issues/1420
-      new \Twig_SimpleFilter('safe_join', [$this, 'safeJoin'], ['needs_environment' => TRUE, 'is_safe' => ['html']]),
+      new TwigFilter('safe_join', [$this, 'safeJoin'], ['needs_environment' => TRUE, 'is_safe' => ['html']]),
 
       // Array filters.
-      new \Twig_SimpleFilter('without', 'twig_without'),
+      new TwigFilter('without', [$this, 'withoutFilter']),
 
       // CSS class and ID filters.
-      new \Twig_SimpleFilter('clean_class', '\Drupal\Component\Utility\Html::getClass'),
-      new \Twig_SimpleFilter('clean_id', '\Drupal\Component\Utility\Html::getId'),
+      new TwigFilter('clean_class', '\Drupal\Component\Utility\Html::getClass'),
+      new TwigFilter('clean_id', '\Drupal\Component\Utility\Html::getId'),
+      new TwigFilter('clean_unique_id', '\Drupal\Component\Utility\Html::getUniqueId'),
+      new TwigFilter('add_class', [$this, 'addClass']),
+      new TwigFilter('set_attribute', [$this, 'setAttribute']),
       // This filter will render a renderable array to use the string results.
-      new \Twig_SimpleFilter('render', [$this, 'renderVar']),
-      new \Twig_SimpleFilter('format_date', [$this->dateFormatter, 'format']),
+      new TwigFilter('render', [$this, 'renderVar']),
+      new TwigFilter('format_date', [$this->dateFormatter, 'format']),
+      // Add new theme hook suggestions directly from a Twig template.
+      new TwigFilter('add_suggestion', [$this, 'suggestThemeHook']),
     ];
   }
 
@@ -196,6 +159,7 @@ class TwigExtension extends \Twig_Extension {
     // render_var -> TwigExtension->renderVar() function.
     return [
       new TwigNodeVisitor(),
+      new TwigNodeVisitorCheckDeprecations(),
     ];
   }
 
@@ -221,7 +185,7 @@ class TwigExtension extends \Twig_Extension {
    * @param $name
    *   The name of the route.
    * @param array $parameters
-   *   An associative array of route parameters names and values.
+   *   (optional) An associative array of route parameters names and values.
    * @param array $options
    *   (optional) An associative array of additional options. The 'absolute'
    *   option is forced to be FALSE.
@@ -232,6 +196,8 @@ class TwigExtension extends \Twig_Extension {
    * @see \Drupal\Core\Routing\UrlGeneratorInterface::generateFromRoute()
    */
   public function getPath($name, $parameters = [], $options = []) {
+    assert($this->urlGenerator instanceof UrlGeneratorInterface, "The URL generator hasn't been set up. Any configuration YAML file with a service directive dealing with the Twig configuration can cause this, most likely found in a recently installed or changed module.");
+
     $options['absolute'] = FALSE;
     return $this->urlGenerator->generateFromRoute($name, $parameters, $options);
   }
@@ -247,12 +213,14 @@ class TwigExtension extends \Twig_Extension {
    *   (optional) An associative array of additional options. The 'absolute'
    *   option is forced to be TRUE.
    *
-   * @return string
-   *   The generated absolute URL for the given route.
+   * @return array
+   *   A render array with generated absolute URL for the given route.
    *
    * @todo Add an option for scheme-relative URLs.
    */
   public function getUrl($name, $parameters = [], $options = []) {
+    assert($this->urlGenerator instanceof UrlGeneratorInterface, "The URL generator hasn't been set up. Any configuration YAML file with a service directive dealing with the Twig configuration can cause this, most likely found in a recently installed or changed module.");
+
     // Generate URL.
     $options['absolute'] = TRUE;
     $generated_url = $this->urlGenerator->generateFromRoute($name, $parameters, $options, TRUE);
@@ -264,7 +232,7 @@ class TwigExtension extends \Twig_Extension {
   }
 
   /**
-   * Gets a rendered link from a url object.
+   * Gets a rendered link from a URL object.
    *
    * @param string $text
    *   The link text for the anchor tag as a translated string.
@@ -277,6 +245,9 @@ class TwigExtension extends \Twig_Extension {
    *   A render array representing a link to the given URL.
    */
   public function getLink($text, $url, $attributes = []) {
+    assert(is_string($url) || $url instanceof Url, '$url must be a string or object of type \Drupal\Core\Url');
+    assert(is_array($attributes) || $attributes instanceof Attribute, '$attributes, if set, must be an array or object of type \Drupal\Core\Template\Attribute');
+
     if (!$url instanceof Url) {
       $url = Url::fromUri($url);
     }
@@ -292,7 +263,7 @@ class TwigExtension extends \Twig_Extension {
     }
     // The text has been processed by twig already, convert it to a safe object
     // for the render system.
-    if ($text instanceof \Twig_Markup) {
+    if ($text instanceof TwigMarkup) {
       $text = Markup::create($text);
     }
     $build = [
@@ -301,6 +272,22 @@ class TwigExtension extends \Twig_Extension {
       '#url' => $url,
     ];
     return $build;
+  }
+
+  /**
+   * Gets the file URL.
+   *
+   * @param string|null $uri
+   *   The file URI.
+   *
+   * @return string
+   *   The file URL.
+   */
+  public function getFileUrl(?string $uri): string {
+    if (is_null($uri)) {
+      return '';
+    }
+    return $this->fileUrlGenerator->generateString($uri);
   }
 
   /**
@@ -344,18 +331,18 @@ class TwigExtension extends \Twig_Extension {
    * If param1 and param2 reference placeholders in the route, it would not
    * need to be escaped, but we don't know that in advance.
    *
-   * @param \Twig_Node $args_node
+   * @param \Twig\Node\Node $args_node
    *   The arguments of the path/url functions.
    *
    * @return array
    *   An array with the contexts the URL is safe
    */
-  public function isUrlGenerationSafe(\Twig_Node $args_node) {
+  public function isUrlGenerationSafe(Node $args_node) {
     // Support named arguments.
     $parameter_node = $args_node->hasNode('parameters') ? $args_node->getNode('parameters') : ($args_node->hasNode(1) ? $args_node->getNode(1) : NULL);
 
-    if (!isset($parameter_node) || $parameter_node instanceof \Twig_Node_Expression_Array && count($parameter_node) <= 2 &&
-        (!$parameter_node->hasNode(1) || $parameter_node->getNode(1) instanceof \Twig_Node_Expression_Constant)) {
+    if (!isset($parameter_node) || $parameter_node instanceof ArrayExpression && count($parameter_node) <= 2 &&
+        (!$parameter_node->hasNode(1) || $parameter_node->getNode(1) instanceof ConstantExpression)) {
       return ['html'];
     }
 
@@ -374,6 +361,8 @@ class TwigExtension extends \Twig_Extension {
    *   An asset library.
    */
   public function attachLibrary($library) {
+    assert(is_string($library), 'Argument must be a string.');
+
     // Use Renderer::render() on a temporary render array to get additional
     // bubbleable metadata on the render stack.
     $template_attached = ['#attached' => ['library' => [$library]]];
@@ -383,16 +372,18 @@ class TwigExtension extends \Twig_Extension {
   /**
    * Provides a placeholder wrapper around ::escapeFilter.
    *
-   * @param \Twig_Environment $env
-   *   A Twig_Environment instance.
+   * @param \Twig\Environment $env
+   *   A Twig Environment instance.
    * @param mixed $string
    *   The value to be escaped.
    *
    * @return string|null
    *   The escaped, rendered output, or NULL if there is no valid output.
    */
-  public function escapePlaceholder($env, $string) {
-    return '<em class="placeholder">' . $this->escapeFilter($env, $string) . '</em>';
+  public function escapePlaceholder(Environment $env, $string) {
+    $return = $this->escapeFilter($env, $string);
+
+    return $return ? '<em class="placeholder">' . $return . '</em>' : NULL;
   }
 
   /**
@@ -400,11 +391,8 @@ class TwigExtension extends \Twig_Extension {
    *
    * Replacement function for Twig's escape filter.
    *
-   * Note: This function should be kept in sync with
-   * theme_render_and_autoescape().
-   *
-   * @param \Twig_Environment $env
-   *   A Twig_Environment instance.
+   * @param \Twig\Environment $env
+   *   A Twig Environment instance.
    * @param mixed $arg
    *   The value to be escaped.
    * @param string $strategy
@@ -421,11 +409,8 @@ class TwigExtension extends \Twig_Extension {
    * @throws \Exception
    *   When $arg is passed as an object which does not implement __toString(),
    *   RenderableInterface or toString().
-   *
-   * @todo Refactor this to keep it in sync with theme_render_and_autoescape()
-   *   in https://www.drupal.org/node/2575065
    */
-  public function escapeFilter(\Twig_Environment $env, $arg, $strategy = 'html', $charset = NULL, $autoescape = FALSE) {
+  public function escapeFilter(Environment $env, $arg, $strategy = 'html', $charset = NULL, $autoescape = FALSE) {
     // Check for a numeric zero int or float.
     if ($arg === 0 || $arg === 0.0) {
       return 0;
@@ -438,8 +423,8 @@ class TwigExtension extends \Twig_Extension {
 
     $this->bubbleArgMetadata($arg);
 
-    // Keep Twig_Markup objects intact to support autoescaping.
-    if ($autoescape && ($arg instanceof \Twig_Markup || $arg instanceof MarkupInterface)) {
+    // Keep \Twig\Markup objects intact to support autoescaping.
+    if ($autoescape && ($arg instanceof TwigMarkup || $arg instanceof MarkupInterface)) {
       return $arg;
     }
 
@@ -527,7 +512,7 @@ class TwigExtension extends \Twig_Extension {
    * If an object is passed which does not implement __toString(),
    * RenderableInterface or toString() then an exception is thrown;
    * Other objects are casted to string. However in the case that the
-   * object is an instance of a Twig_Markup object it is returned directly
+   * object is an instance of a \Twig\Markup object it is returned directly
    * to support auto escaping.
    *
    * If an array is passed it is rendered via render() and scalar values are
@@ -541,7 +526,7 @@ class TwigExtension extends \Twig_Extension {
    *   RenderableInterface or toString().
    *
    * @return mixed
-   *   The rendered output or an Twig_Markup object.
+   *   The rendered output or a \Twig\Markup object.
    *
    * @see render
    * @see TwigNodeVisitor
@@ -552,9 +537,11 @@ class TwigExtension extends \Twig_Extension {
       return 0;
     }
 
-    // Return early for NULL and empty arrays.
+    // Return early for NULL, empty arrays, empty strings and FALSE booleans.
+    // @todo https://www.drupal.org/project/drupal/issues/3240093 Determine if
+    //   this behavior is correct or should be deprecated.
     if ($arg == NULL) {
-      return NULL;
+      return '';
     }
 
     // Optimize for scalars as it is likely they come from the escape filter.
@@ -593,8 +580,8 @@ class TwigExtension extends \Twig_Extension {
   /**
    * Joins several strings together safely.
    *
-   * @param \Twig_Environment $env
-   *   A Twig_Environment instance.
+   * @param \Twig\Environment $env
+   *   A Twig Environment instance.
    * @param mixed[]|\Traversable|null $value
    *   The pieces to join.
    * @param string $glue
@@ -605,7 +592,7 @@ class TwigExtension extends \Twig_Extension {
    * @return string
    *   The strings joined together.
    */
-  public function safeJoin(\Twig_Environment $env, $value, $glue = '') {
+  public function safeJoin(Environment $env, $value, $glue = '') {
     if ($value instanceof \Traversable) {
       $value = iterator_to_array($value, FALSE);
     }
@@ -619,15 +606,185 @@ class TwigExtension extends \Twig_Extension {
   /**
    * Creates an Attribute object.
    *
-   * @param array $attributes
-   *   (optional) An associative array of key-value pairs to be converted to
-   *   HTML attributes.
+   * @param Attribute|array $attributes
+   *   (optional) An existing attribute object or an associative array of
+   *   key-value pairs to be converted to HTML attributes.
    *
    * @return \Drupal\Core\Template\Attribute
    *   An attributes object that has the given attributes.
    */
-  public function createAttribute(array $attributes = []) {
-    return new Attribute($attributes);
+  public function createAttribute(Attribute|array $attributes = []) {
+    if (\is_array($attributes)) {
+      return new Attribute($attributes);
+    }
+    return $attributes;
+  }
+
+  /**
+   * Removes child elements from a copy of the original array.
+   *
+   * Creates a copy of the renderable array and removes child elements by key
+   * specified through filter's arguments. The copy can be printed without these
+   * elements. The original renderable array is still available and can be used
+   * to print child elements in their entirety in the twig template.
+   *
+   * @param array|object $element
+   *   The parent renderable array to exclude the child items.
+   * @param string[]|string ...
+   *   The string keys of $element to prevent printing. Arguments can include
+   *   string keys directly, or arrays of string keys to hide.
+   *
+   * @return array
+   *   The filtered renderable array.
+   */
+  public function withoutFilter($element) {
+    if ($element instanceof \ArrayAccess) {
+      $filtered_element = clone $element;
+    }
+    else {
+      $filtered_element = $element;
+    }
+    $args = func_get_args();
+    unset($args[0]);
+    // Since the remaining arguments can be a mix of arrays and strings, we use
+    // some native PHP iterator classes to allow us to recursively iterate over
+    // everything in a single pass.
+    $iterator = new \RecursiveIteratorIterator(new \RecursiveArrayIterator($args));
+    foreach ($iterator as $key) {
+      unset($filtered_element[$key]);
+    }
+    return $filtered_element;
+  }
+
+  /**
+   * Adds a theme suggestion to the element.
+   *
+   * @param array|null $element
+   *   A theme element render array.
+   * @param string|\Stringable $suggestion
+   *   The theme suggestion part to append to the existing theme hook(s).
+   *
+   * @return array|null
+   *   The element with the full theme suggestion added as the highest priority.
+   */
+  public function suggestThemeHook(?array $element, string|\Stringable $suggestion): ?array {
+    // Make sure we have a valid theme element render array.
+    if (empty($element['#theme'])) {
+      // Throw assertion for render arrays that contain more than just metadata
+      // (e.g., don't assert on empty field content).
+      assert(array_diff_key($element ?? [], [
+        '#cache' => TRUE,
+        '#weight' => TRUE,
+        '#attached' => TRUE,
+      ]) === [], 'Invalid target for the "|add_suggestion" Twig filter; element does not have a "#theme" key.');
+      return $element;
+    }
+
+    // Replace dashes with underscores to support suggestions that match the
+    // target template name rather than the underlying theme hook.
+    $suggestion = str_replace('-', '_', $suggestion);
+
+    // Transform the theme hook to a format that supports multiple suggestions.
+    if (!is_iterable($element['#theme'])) {
+      $element['#theme'] = [$element['#theme']];
+    }
+
+    // Add _new_ suggestions for each existing theme hook. Simply modifying the
+    // existing items (appending to each theme hook instead of adding new ones)
+    // would cause the original hooks to be unavailable as fallbacks.
+    //
+    // Start with the lowest priority theme hook.
+    foreach (array_reverse($element['#theme']) as $theme_hook) {
+      // Add new suggestions to the front (highest priority).
+      array_unshift($element['#theme'], $theme_hook . '__' . $suggestion);
+    }
+
+    // Reset the "#printed" flag to make sure the content gets rendered with the
+    // new suggestion in place.
+    unset($element['#printed']);
+
+    // Add a cache key to prevent using render cache from before the suggestion
+    // was added. If there are no cache keys already set, don't add one, as that
+    // would enable caching on this element where there wasn't any before.
+    if (isset($element['#cache']['keys'])) {
+      $element['#cache']['keys'][] = $suggestion;
+    }
+
+    return $element;
+  }
+
+  /**
+   * Triggers a deprecation error if a variable is deprecated.
+   *
+   * @param array $context
+   *   A Twig context array.
+   * @param array $used_variables
+   *   The names of the variables used in a template.
+   *
+   * @see \Drupal\Core\Template\TwigNodeCheckDeprecations
+   */
+  public function checkDeprecations(array $context, array $used_variables): void {
+    if (!isset($context['deprecations'])) {
+      return;
+    }
+
+    foreach ($used_variables as $name) {
+      if (isset($context['deprecations'][$name]) && \array_key_exists($name, $context)) {
+        @trigger_error($context['deprecations'][$name], E_USER_DEPRECATED);
+      }
+    }
+  }
+
+  /**
+   * Adds a value into the class attributes of a given element.
+   *
+   * Assumes element is an array.
+   *
+   * @param array $element
+   *   A render element.
+   * @param string[]|string ...$classes
+   *   The class(es) to add to the element. Arguments can include string keys
+   *   directly, or arrays of string keys.
+   *
+   * @return array
+   *   The element with the given class(es) in attributes.
+   */
+  public function addClass(array $element, ...$classes): array {
+    $attributes = new Attribute($element['#attributes'] ?? []);
+    $attributes->addClass(...$classes);
+    $element['#attributes'] = $attributes->toArray();
+
+    // Make sure element gets rendered again.
+    unset($element['#printed']);
+
+    return $element;
+  }
+
+  /**
+   * Sets an attribute on a given element.
+   *
+   * Assumes the element is an array.
+   *
+   * @param array $element
+   *   A render element.
+   * @param string $name
+   *   The attribute name.
+   * @param mixed $value
+   *   (optional) The attribute value.
+   *
+   * @return array
+   *   The element with the given sanitized attribute's value.
+   */
+  public function setAttribute(array $element, string $name, mixed $value = NULL): array {
+    $element['#attributes'] = AttributeHelper::mergeCollections(
+      $element['#attributes'] ?? [],
+      new Attribute([$name => $value])
+    );
+
+    // Make sure element gets rendered again.
+    unset($element['#printed']);
+
+    return $element;
   }
 
 }

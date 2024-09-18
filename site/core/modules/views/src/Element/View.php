@@ -2,21 +2,22 @@
 
 namespace Drupal\views\Element;
 
-use Drupal\Core\Render\Element\RenderElement;
+use Drupal\Core\Render\Attribute\RenderElement;
+use Drupal\Core\Render\Element\RenderElementBase;
+use Drupal\views\Exception\ViewRenderElementException;
 use Drupal\views\Views;
 
 /**
  * Provides a render element to display a view.
- *
- * @RenderElement("view")
  */
-class View extends RenderElement {
+#[RenderElement('view')]
+class View extends RenderElementBase {
 
   /**
    * {@inheritdoc}
    */
   public function getInfo() {
-    $class = get_class($this);
+    $class = static::class;
     return [
       '#pre_render' => [
         [$class, 'preRenderViewElement'],
@@ -41,6 +42,9 @@ class View extends RenderElement {
 
     if (!isset($element['#view'])) {
       $view = Views::getView($element['#name']);
+      if (!$view) {
+        throw new ViewRenderElementException("Invalid View name ({$element['#name']}) given.");
+      }
     }
     else {
       $view = $element['#view'];

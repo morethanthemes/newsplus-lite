@@ -1,0 +1,36 @@
+{
+  "name": "drupal/newsplus_lite",
+  "description": "A free Drupal theme for your news, blog or magazine site.",
+  "type": "drupal-theme",
+  "license": "GPL-2.0-or-later",
+  "homepage": "https://www.drupal.org/project/newsplus_lite",
+  "authors": [
+    {
+      "name": "Stavros Kounis (skounis)",
+      "homepage": "https://www.drupal.org/u/skounis",
+      "role": "Maintainer"
+    },
+    {
+      "name": "Soukri Kechagia (skechagia)",
+      "homepage": "https://www.drupal.org/u/skech",
+      "role": "Maintainer"
+    },
+    {
+      "name": "Vasilis Kechagias (vkech)",
+      "homepage": "https://www.drupal.org/u/vkech",
+      "role": "Maintainer"
+    },
+    {
+      "name": "Giorgos Konispoliatis (Geokon)",
+      "homepage": "https://www.drupal.org/u/geokon",
+      "role": "Maintainer"
+    }
+  ],
+  "support": {
+    "issues": "https://www.drupal.org/project/issues/newsplus_lite",
+    "source": "https://git.drupalcode.org/project/newsplus_lite"
+  },
+  "require": {
+    "drupal/core": "^8 || ^9 || ^10"
+  }
+}

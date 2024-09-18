@@ -6,7 +6,6 @@ use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityChangesDetectionTrait;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Field\ChangedFieldItemList;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
@@ -101,9 +100,10 @@ class EntityUntranslatableFieldsConstraintValidator extends ConstraintValidator 
       $original = $entity->original;
     }
     else {
-      $original = $this->entityTypeManager
-        ->getStorage($entity->getEntityTypeId())
-        ->loadRevision($entity->getLoadedRevisionId());
+      /** @var \Drupal\Core\Entity\RevisionableStorageInterface $storage */
+      $storage = $this->entityTypeManager
+        ->getStorage($entity->getEntityTypeId());
+      $original = $storage->loadRevision($entity->getLoadedRevisionId());
     }
 
     foreach ($entity->getFieldDefinitions() as $field_name => $definition) {
@@ -111,19 +111,9 @@ class EntityUntranslatableFieldsConstraintValidator extends ConstraintValidator 
         continue;
       }
 
-      // When saving entities in the user interface, the changed timestamp is
-      // automatically incremented by ContentEntityForm::submitForm() even if
-      // nothing was actually changed. Thus, the changed time needs to be
-      // ignored when determining whether there are any actual changes in the
-      // entity.
-      $field = $entity->get($field_name);
-      if ($field instanceof ChangedFieldItemList) {
-        continue;
-      }
-
-      $items = $field->filterEmptyItems();
+      $items = $entity->get($field_name)->filterEmptyItems();
       $original_items = $original->get($field_name)->filterEmptyItems();
-      if (!$items->equals($original_items)) {
+      if ($items->hasAffectingChanges($original_items, $entity->getUntranslated()->language()->getId())) {
         return TRUE;
       }
     }

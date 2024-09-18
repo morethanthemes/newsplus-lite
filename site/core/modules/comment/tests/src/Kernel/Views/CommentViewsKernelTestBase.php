@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\comment\Kernel\Views;
 
 use Drupal\Tests\views\Kernel\ViewsKernelTestBase;
@@ -12,11 +14,9 @@ use Drupal\views\Tests\ViewTestData;
 abstract class CommentViewsKernelTestBase extends ViewsKernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['comment_test_views', 'user', 'comment'];
+  protected static $modules = ['comment_test_views', 'user', 'comment'];
 
   /**
    * Admin user.
@@ -39,18 +39,21 @@ abstract class CommentViewsKernelTestBase extends ViewsKernelTestBase {
    */
   protected $userStorage;
 
-  protected function setUp($import_test_views = TRUE) {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp($import_test_views = TRUE): void {
     parent::setUp($import_test_views);
 
-    ViewTestData::createTestViews(get_class($this), ['comment_test_views']);
+    ViewTestData::createTestViews(static::class, ['comment_test_views']);
 
     $this->installEntitySchema('user');
     $this->installEntitySchema('comment');
     $this->installConfig(['user']);
 
-    $entity_manager = $this->container->get('entity.manager');
-    $this->commentStorage = $entity_manager->getStorage('comment');
-    $this->userStorage = $entity_manager->getStorage('user');
+    $entity_type_manager = $this->container->get('entity_type.manager');
+    $this->commentStorage = $entity_type_manager->getStorage('comment');
+    $this->userStorage = $entity_type_manager->getStorage('user');
 
     // Insert a row for the anonymous user.
     $this->userStorage
@@ -61,18 +64,25 @@ abstract class CommentViewsKernelTestBase extends ViewsKernelTestBase {
       ])
       ->save();
 
-    $admin_role = Role::create(['id' => 'admin']);
+    // Create user 1 so that the user created later in the test has a different
+    // user ID.
+    // @todo Remove in https://www.drupal.org/node/540008.
+    $this->userStorage->create(['uid' => 1, 'name' => 'user1'])->save();
+
+    $admin_role = Role::create(['id' => 'admin', 'label' => 'Admin']);
     $admin_role->grantPermission('administer comments');
+    $admin_role->grantPermission('access comments');
+    $admin_role->grantPermission('post comments');
+    $admin_role->grantPermission('view test entity');
     $admin_role->save();
 
-    /* @var \Drupal\user\RoleInterface $anonymous_role */
+    /** @var \Drupal\user\RoleInterface $anonymous_role */
     $anonymous_role = Role::load(Role::ANONYMOUS_ID);
     $anonymous_role->grantPermission('access comments');
     $anonymous_role->save();
 
     $this->adminUser = $this->userStorage->create(['name' => $this->randomMachineName()]);
-    $this->adminUser->addRole('admin');
-    $this->adminUser->save();
+    $this->adminUser->addRole('admin')->save();
   }
 
 }

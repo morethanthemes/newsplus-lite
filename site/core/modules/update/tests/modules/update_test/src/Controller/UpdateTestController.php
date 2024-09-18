@@ -55,15 +55,14 @@ class UpdateTestController extends ControllerBase {
       $availability_scenario = $xml_map['#all'];
     }
     else {
-      // The test didn't specify (for example, the webroot has other modules and
-      // themes installed but they're disabled by the version of the site
-      // running the test. So, we default to a file we know won't exist, so at
-      // least we'll get an empty xml response instead of a bunch of Drupal page
+      // The test didn't specify a project nor '#all' (for all extensions on the
+      // system). So, we default to a file we know won't exist, so at least
+      // we'll get an empty xml response instead of a bunch of Drupal page
       // output.
       $availability_scenario = '#broken#';
     }
 
-    $file = __DIR__ . "/../../$project_name.$availability_scenario.xml";
+    $file = __DIR__ . "/../../../../fixtures/release-history/$project_name.$availability_scenario.xml";
     $headers = ['Content-Type' => 'text/xml; charset=utf-8'];
     if (!is_file($file)) {
       // Return an empty response.

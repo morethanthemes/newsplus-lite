@@ -3,6 +3,8 @@
 namespace Drupal\migrate\Plugin\migrate\process;
 
 use Drupal\Component\Utility\NestedArray;
+use Drupal\Component\Utility\Variable;
+use Drupal\migrate\Attribute\MigrateProcess;
 use Drupal\migrate\ProcessPluginBase;
 use Drupal\migrate\MigrateException;
 use Drupal\migrate\MigrateExecutableInterface;
@@ -26,6 +28,13 @@ use Drupal\migrate\MigrateSkipRowException;
  *   - FALSE: Throw a MigrateSkipRowException.
  * - default_value: (optional) The value to return if the source is not found in
  *   the map array.
+ *
+ * While this plugin supports map key values which contain a dot (.), Drupal
+ * configuration export does not export keys which contain a dot. Be careful
+ * when using this feature with migrations that are stored as configuration
+ * entities. These entities cannot contain keys with a dot. In this case,
+ * additional manipulation with either custom or contrib process plugins is
+ * needed.
  *
  * Examples:
  *
@@ -104,18 +113,38 @@ use Drupal\migrate\MigrateSkipRowException;
  *       'TRUE': to
  * @endcode
  *
- * Mapping from a string which contains a period is not supported. A custom
- * process plugin can be written to handle this kind of a transformation.
- * Another option which may be feasible in certain use cases is to first pass
- * the value through the machine_name process plugin.
+ * A NULL can be mapped. If the value of the source property 'foo' is NULL then
+ * the value of the destination property bar will be 'to'.
+ *
+ * @code
+ * process:
+ *   bar:
+ *     plugin: static_map
+ *     source: foo
+ *     map:
+ *       NULL: to
+ * @endcode
+ *
+ * If your source data contains booleans, the boolean is treated as a numeric 0
+ * or 1. If the value of the source property 'foo' is TRUE then the value of the
+ * destination property bar will be 'bar'. And if the value of the source
+ * property 'foo' is FALSE then the value of the destination property bar will
+ * be 'bar'.
+ *
+ * @code
+ * process:
+ *   bar:
+ *     plugin: static_map
+ *     source: foo
+ *     map:
+ *       0: foo
+ *       1: bar
+ * @endcode
  *
  * @see https://www.drupal.org/project/drupal/issues/2827897
  * @see \Drupal\migrate\Plugin\MigrateProcessInterface
- *
- * @MigrateProcessPlugin(
- *   id = "static_map"
- * )
  */
+#[MigrateProcess('static_map')]
 class StaticMap extends ProcessPluginBase {
 
   /**
@@ -140,7 +169,7 @@ class StaticMap extends ProcessPluginBase {
         return $this->configuration['default_value'];
       }
       if (empty($this->configuration['bypass'])) {
-        throw new MigrateSkipRowException();
+        throw new MigrateSkipRowException(sprintf("No static mapping found for '%s' and no default value provided for destination '%s'.", Variable::export($value), $destination_property));
       }
       else {
         return $value;

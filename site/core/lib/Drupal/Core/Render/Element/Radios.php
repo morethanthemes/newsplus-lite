@@ -3,6 +3,7 @@
 namespace Drupal\Core\Render\Element;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Attribute\FormElement;
 use Drupal\Component\Utility\Html as HtmlUtility;
 
 /**
@@ -14,21 +15,26 @@ use Drupal\Component\Utility\Html as HtmlUtility;
  *
  * Usage example:
  * @code
- * $form['settings']['active'] = array(
+ * $form['settings']['active'] = [
  *   '#type' => 'radios',
  *   '#title' => $this->t('Poll status'),
  *   '#default_value' => 1,
- *   '#options' => array(0 => $this->t('Closed'), 1 => $this->t('Active')),
- * );
+ *   '#options' => [0 => $this->t('Closed'), 1 => $this->t('Active')],
+ * ];
+ * @endcode
+ *
+ * Element properties may be set on single option items as follows.
+ *
+ * @code
+ * $form['settings']['active'][0]['#description'] = $this->t('Description for the Closed option.');
  * @endcode
  *
  * @see \Drupal\Core\Render\Element\Checkboxes
  * @see \Drupal\Core\Render\Element\Radio
  * @see \Drupal\Core\Render\Element\Select
- *
- * @FormElement("radios")
  */
-class Radios extends FormElement {
+#[FormElement('radios')]
+class Radios extends FormElementBase {
 
   use CompositeFormElementTrait;
 
@@ -36,7 +42,7 @@ class Radios extends FormElement {
    * {@inheritdoc}
    */
   public function getInfo() {
-    $class = get_class($this);
+    $class = static::class;
     return [
       '#input' => TRUE,
       '#process' => [
@@ -73,11 +79,11 @@ class Radios extends FormElement {
           '#return_value' => $key,
           // Use default or FALSE. A value of FALSE means that the radio button is
           // not 'checked'.
-          '#default_value' => isset($element['#default_value']) ? $element['#default_value'] : FALSE,
+          '#default_value' => $element['#default_value'] ?? FALSE,
           '#attributes' => $element['#attributes'],
           '#parents' => $element['#parents'],
           '#id' => HtmlUtility::getUniqueId('edit-' . implode('-', $parents_for_id)),
-          '#ajax' => isset($element['#ajax']) ? $element['#ajax'] : NULL,
+          '#ajax' => $element['#ajax'] ?? NULL,
           // Errors should only be shown on the parent radios element.
           '#error_no_message' => TRUE,
           '#weight' => $weight,
@@ -108,7 +114,7 @@ class Radios extends FormElement {
       // FormBuilder::handleInputElement() converting the NULL to an empty
       // string, so that code can distinguish between nothing selected and the
       // selection of a radio button whose value is an empty string.
-      $value = isset($element['#default_value']) ? $element['#default_value'] : NULL;
+      $value = $element['#default_value'] ?? NULL;
       if (!isset($value)) {
         $element['#has_garbage_value'] = TRUE;
       }

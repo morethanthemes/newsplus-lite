@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\block\Functional;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Tests\BrowserTestBase;
 
 /**
@@ -13,13 +14,19 @@ use Drupal\Tests\BrowserTestBase;
 class BlockHookOperationTest extends BrowserTestBase {
 
   /**
-   * Modules to install.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['block', 'entity_test'];
+  protected static $modules = ['block', 'entity_test'];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $permissions = [
@@ -34,10 +41,10 @@ class BlockHookOperationTest extends BrowserTestBase {
   /**
    * Tests the block list to see if the test_operation link is added.
    */
-  public function testBlockOperationAlter() {
+  public function testBlockOperationAlter(): void {
     // Add a test block, any block will do.
     // Set the machine name so the test_operation link can be built later.
-    $block_id = Unicode::strtolower($this->randomMachineName(16));
+    $block_id = $this->randomMachineName(16);
     $this->drupalPlaceBlock('system_powered_by_block', ['id' => $block_id]);
 
     // Get the Block listing.
@@ -45,7 +52,7 @@ class BlockHookOperationTest extends BrowserTestBase {
 
     $test_operation_link = 'admin/structure/block/manage/' . $block_id . '/test_operation';
     // Test if the test_operation link is on the page.
-    $this->assertLinkByHref($test_operation_link);
+    $this->assertSession()->linkByHrefExists($test_operation_link);
   }
 
 }

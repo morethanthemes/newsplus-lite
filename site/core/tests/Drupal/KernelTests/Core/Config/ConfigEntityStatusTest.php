@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Config;
 
 use Drupal\KernelTests\KernelTestBase;
@@ -12,18 +14,16 @@ use Drupal\KernelTests\KernelTestBase;
 class ConfigEntityStatusTest extends KernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['config_test'];
+  protected static $modules = ['config_test'];
 
   /**
    * Tests the enabling/disabling of entities.
    */
-  public function testCRUD() {
+  public function testCRUD(): void {
     $entity = \Drupal::entityTypeManager()->getStorage('config_test')->create([
-      'id' => strtolower($this->randomMachineName()),
+      'id' => $this->randomMachineName(),
     ]);
     $this->assertTrue($entity->status(), 'Default status is enabled.');
     $entity->save();
@@ -35,7 +35,7 @@ class ConfigEntityStatusTest extends KernelTestBase {
     $entity->enable()->save();
     $this->assertTrue($entity->status(), 'Entity is enabled after enabling.');
 
-    $entity = entity_load('config_test', $entity->id());
+    $entity = \Drupal::entityTypeManager()->getStorage('config_test')->load($entity->id());
     $this->assertTrue($entity->status(), 'Status is enabled after reload.');
   }
 

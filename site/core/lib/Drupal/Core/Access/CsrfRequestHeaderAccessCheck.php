@@ -49,16 +49,7 @@ class CsrfRequestHeaderAccessCheck implements AccessCheckInterface {
    */
   public function applies(Route $route) {
     $requirements = $route->getRequirements();
-    // Check for current requirement _csrf_request_header_token and deprecated
-    // REST requirement.
-    $applicable_requirements = [
-      '_csrf_request_header_token',
-      // @todo Remove _access_rest_csrf in Drupal 9.0.0.
-      '_access_rest_csrf',
-    ];
-    $requirement_keys = array_keys($requirements);
-
-    if (array_intersect($applicable_requirements, $requirement_keys)) {
+    if (array_key_exists('_csrf_request_header_token', $requirements)) {
       if (isset($requirements['_method'])) {
         // There could be more than one method requirement separated with '|'.
         $methods = explode('|', $requirements['_method']);
@@ -89,12 +80,15 @@ class CsrfRequestHeaderAccessCheck implements AccessCheckInterface {
   public function access(Request $request, AccountInterface $account) {
     $method = $request->getMethod();
 
+    // Read-only operations are always allowed.
+    if (in_array($method, ['GET', 'HEAD', 'OPTIONS', 'TRACE'], TRUE)) {
+      return AccessResult::allowed();
+    }
+
     // This check only applies if
-    // 1. this is a write operation
-    // 2. the user was successfully authenticated and
-    // 3. the request comes with a session cookie.
-    if (!in_array($method, ['GET', 'HEAD', 'OPTIONS', 'TRACE'])
-      && $account->isAuthenticated()
+    // 1. the user was successfully authenticated and
+    // 2. the request comes with a session cookie.
+    if ($account->isAuthenticated()
       && $this->sessionConfiguration->hasSession($request)
     ) {
       if (!$request->headers->has('X-CSRF-Token')) {

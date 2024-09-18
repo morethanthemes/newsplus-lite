@@ -2,11 +2,14 @@
 
 namespace Drupal\views\Plugin\views\argument;
 
+use Drupal\views\Attribute\ViewsArgument;
+
 /**
  * Argument handler for a full date (CCYYMMDD)
- *
- * @ViewsArgument("date_fulldate")
  */
+#[ViewsArgument(
+  id: 'date_fulldate',
+)]
 class FullDate extends Date {
 
   /**
@@ -20,18 +23,18 @@ class FullDate extends Date {
   protected $argFormat = 'Ymd';
 
   /**
-   * Provide a link to the next level of the view
+   * {@inheritdoc}
    */
   public function summaryName($data) {
     $created = $data->{$this->name_alias};
-    return format_date(strtotime($created . " 00:00:00 UTC"), 'custom', $this->format, 'UTC');
+    return $this->dateFormatter->format(strtotime($created . " 00:00:00 UTC"), 'custom', $this->format, 'UTC');
   }
 
   /**
-   * Provide a link to the next level of the view
+   * {@inheritdoc}
    */
   public function title() {
-    return format_date(strtotime($this->argument . " 00:00:00 UTC"), 'custom', $this->format, 'UTC');
+    return $this->dateFormatter->format(strtotime($this->argument . " 00:00:00 UTC"), 'custom', $this->format, 'UTC');
   }
 
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Plugin\Discovery;
 
 use Drupal\Core\StringTranslation\TranslatableMarkup;
@@ -32,7 +34,10 @@ class YamlDiscoveryTest extends UnitTestCase {
     'test_2' => 'test_2_b',
   ];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $base_path = __DIR__ . '/Fixtures';
@@ -48,10 +53,10 @@ class YamlDiscoveryTest extends UnitTestCase {
   /**
    * Tests the getDefinitions() method.
    */
-  public function testGetDefinitions() {
+  public function testGetDefinitions(): void {
     $definitions = $this->discovery->getDefinitions();
 
-    $this->assertInternalType('array', $definitions);
+    $this->assertIsArray($definitions);
     $this->assertCount(4, $definitions);
 
     foreach ($this->expectedKeys as $expected_key) {
@@ -70,7 +75,7 @@ class YamlDiscoveryTest extends UnitTestCase {
   /**
    * @covers ::getDefinitions
    */
-  public function testGetDefinitionsWithTranslatableDefinitions() {
+  public function testGetDefinitionsWithTranslatableDefinitions(): void {
     vfsStream::setup('root');
 
     $file_1 = <<<'EOS'
@@ -108,7 +113,7 @@ EOS;
   /**
    * Tests the getDefinition() method.
    */
-  public function testGetDefinition() {
+  public function testGetDefinition(): void {
     $definitions = $this->discovery->getDefinitions();
     // Test the getDefinition() method.
     foreach ($this->expectedKeys as $expected_key) {

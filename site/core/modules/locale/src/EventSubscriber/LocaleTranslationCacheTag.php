@@ -32,13 +32,13 @@ class LocaleTranslationCacheTag implements EventSubscriberInterface {
    * Invalidate cache tags whenever a string is translated.
    */
   public function saveTranslation() {
-    $this->cacheTagsInvalidator->invalidateTags(['rendered', 'locale']);
+    $this->cacheTagsInvalidator->invalidateTags(['rendered', 'locale', 'library_info']);
   }
 
   /**
    * {@inheritdoc}
    */
-  public static function getSubscribedEvents() {
+  public static function getSubscribedEvents(): array {
     $events[LocaleEvents::SAVE_TRANSLATION][] = ['saveTranslation'];
     return $events;
   }

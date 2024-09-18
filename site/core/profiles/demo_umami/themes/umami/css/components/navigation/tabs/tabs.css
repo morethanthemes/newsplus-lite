@@ -3,33 +3,32 @@
  * Visual styles for tabs.
  */
 
-.layout-tabs {
-  background-color: #79bd8f;
-}
 .tabs.primary {
   display: flex;
-  list-style: none;
+  flex-wrap: wrap;
   margin: 0 0 0.5em;
   padding: 0;
+  list-style: none;
 }
-.tabs .tab {
-  margin: 0;
+.tabs__tab {
+  margin: 0; /* LTR */
   background-color: #e6eee0;
 }
-.tabs .tab.is-active {
+.tabs__tab.is-active {
   background-color: #fff;
 }
-.tabs a {
+.tabs__link {
   display: block;
   padding: 0.75rem 1rem;
-  background-color: inherit;
-  color: inherit;
   text-decoration: none;
-}
-.tabs a.is-active {
+  color: inherit;
   background-color: inherit;
 }
-.tabs a:focus,
-.tabs a:hover {
+.tabs__link.is-active {
+  background-color: inherit;
+}
+.tabs__link:focus,
+.tabs__link:hover {
+  outline-offset: -5px;
   background-color: #fff;
 }

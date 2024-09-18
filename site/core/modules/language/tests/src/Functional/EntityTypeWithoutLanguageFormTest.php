@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\language\Functional;
 
 use Drupal\Tests\BrowserTestBase;
@@ -10,16 +12,15 @@ use Drupal\Tests\BrowserTestBase;
  * This is to ensure that an entity type without language support can not
  * enable the language select from the content language settings page.
  *
+ * @covers \Drupal\language\Form\ContentLanguageSettingsForm
  * @group language
  */
 class EntityTypeWithoutLanguageFormTest extends BrowserTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'language',
     'language_test',
   ];
@@ -27,7 +28,12 @@ class EntityTypeWithoutLanguageFormTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     // Create and log in administrative user.
@@ -40,11 +46,11 @@ class EntityTypeWithoutLanguageFormTest extends BrowserTestBase {
   /**
    * Tests configuration options with an entity without language definition.
    */
-  public function testEmptyLangcode() {
+  public function testEmptyLangcode(): void {
     // Assert that we can not enable language select from
     // content language settings page.
     $this->drupalGet('admin/config/regional/content-language');
-    $this->assertNoField('entity_types[no_language_entity_test]');
+    $this->assertSession()->fieldNotExists('entity_types[no_language_entity_test]');
   }
 
 }

@@ -2,6 +2,7 @@
 
 namespace Drupal\views_ui;
 
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -81,8 +82,11 @@ abstract class ViewFormBase extends EntityForm {
    * having them as secondary local tasks isn't desired. The caller is responsible
    * for setting the active tab's #active property to TRUE.
    *
-   * @param $display_id
-   *   The display_id which is edited on the current request.
+   * @param \Drupal\views_ui\ViewUI $view
+   *   The ViewUI entity.
+   *
+   * @return array
+   *   An array of tab definitions.
    */
   public function getDisplayTabs(ViewUI $view) {
     $executable = $view->getExecutable();
@@ -105,7 +109,7 @@ abstract class ViewFormBase extends EntityForm {
         '#link' => [
           'title' => $this->getDisplayLabel($view, $id),
           'localized_options' => [],
-          'url' => $view->urlInfo('edit-display-form')->setRouteParameter('display_id', $id),
+          'url' => $view->toUrl('edit-display-form')->setRouteParameter('display_id', $id),
         ],
       ];
       if (!empty($display['deleted'])) {
@@ -141,7 +145,7 @@ abstract class ViewFormBase extends EntityForm {
    */
   public function isDefaultDisplayShown(ViewUI $view) {
     // Always show the default display for advanced users who prefer that mode.
-    $advanced_mode = \Drupal::config('views.settings')->get('ui.show.master_display');
+    $advanced_mode = \Drupal::config('views.settings')->get('ui.show.default_display');
     // For other users, show the default display only if there are no others, and
     // hide it if there's at least one "real" display.
     $additional_displays = (count($view->getExecutable()->displayHandlers) == 1);
@@ -156,8 +160,8 @@ abstract class ViewFormBase extends EntityForm {
    */
   public function getDisplayLabel(ViewUI $view, $display_id, $check_changed = TRUE) {
     $display = $view->get('display');
-    $title = $display_id == 'default' ? $this->t('Master') : $display[$display_id]['display_title'];
-    $title = views_ui_truncate($title, 25);
+    $title = $display_id == 'default' ? $this->t('Default') : $display[$display_id]['display_title'];
+    $title = Unicode::truncate($title, 25, FALSE, TRUE);
 
     if ($check_changed && !empty($view->changed_display[$display_id])) {
       $changed = '*';

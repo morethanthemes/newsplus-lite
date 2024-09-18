@@ -11,6 +11,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  * Provides routes for the Layout Builder UI.
  *
  * @internal
+ *   Tagged services are internal.
  */
 class LayoutBuilderRoutes implements EventSubscriberInterface {
 
@@ -47,7 +48,7 @@ class LayoutBuilderRoutes implements EventSubscriberInterface {
   /**
    * {@inheritdoc}
    */
-  public static function getSubscribedEvents() {
+  public static function getSubscribedEvents(): array {
     // Run after \Drupal\field_ui\Routing\RouteSubscriber.
     $events[RoutingEvents::ALTER] = ['onAlterRoutes', -110];
     return $events;

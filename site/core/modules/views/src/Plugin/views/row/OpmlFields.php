@@ -3,18 +3,19 @@
 namespace Drupal\views\Plugin\views\row;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\views\Attribute\ViewsRow;
 
 /**
  * Renders an OPML item based on fields.
- *
- * @ViewsRow(
- *   id = "opml_fields",
- *   title = @Translation("OPML fields"),
- *   help = @Translation("Display fields as OPML items."),
- *   theme = "views_view_row_opml",
- *   display_types = {"feed"}
- * )
  */
+#[ViewsRow(
+  id: "opml_fields",
+  title: new TranslatableMarkup("OPML fields"),
+  help: new TranslatableMarkup("Display fields as OPML items."),
+  theme: "views_view_row_opml",
+  display_types: ["feed"]
+)]
 class OpmlFields extends RowPluginBase {
 
   /**
@@ -117,7 +118,7 @@ class OpmlFields extends RowPluginBase {
     $form['xml_url_field'] = [
       '#type' => 'select',
       '#title' => $this->t('XML URL attribute'),
-      '#description' => $this->t('The field that is going to be used as the OPML text attribute for each row.'),
+      '#description' => $this->t('The field that is going to be used as the OPML XML URL attribute for each row.'),
       '#options' => $view_fields_labels,
       '#default_value' => $this->options['xml_url_field'],
       '#states' => [
@@ -195,7 +196,7 @@ class OpmlFields extends RowPluginBase {
       '#view' => $this->view,
       '#options' => $this->options,
       '#row' => $item,
-      '#field_alias' => isset($this->field_alias) ? $this->field_alias : '',
+      '#field_alias' => $this->field_alias ?? '',
     ];
     return $build;
   }

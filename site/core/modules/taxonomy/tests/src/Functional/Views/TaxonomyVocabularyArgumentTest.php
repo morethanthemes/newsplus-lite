@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Functional\Views;
 
 use Drupal\taxonomy\Entity\Vocabulary;
@@ -14,7 +16,12 @@ class TaxonomyVocabularyArgumentTest extends TaxonomyTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['taxonomy', 'taxonomy_test_views', 'views'];
+  protected static $modules = ['taxonomy', 'taxonomy_test_views', 'views'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
@@ -36,8 +43,8 @@ class TaxonomyVocabularyArgumentTest extends TaxonomyTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
-    parent::setUp($import_test_views);
+  protected function setUp($import_test_views = TRUE, $modules = []): void {
+    parent::setUp($import_test_views, $modules);
 
     // Add default vocabulary to list of vocabularies.
     $this->vocabularies[] = $this->vocabulary;
@@ -65,12 +72,12 @@ class TaxonomyVocabularyArgumentTest extends TaxonomyTestBase {
    *
    * @see Drupal\taxonomy\Plugin\views\argument\VocabularyVid
    */
-  public function testTermWithVocabularyArgument() {
+  public function testTermWithVocabularyArgument(): void {
     $this->drupalGet('test_argument_taxonomy_vocabulary/' . $this->vocabularies[0]->id());
     // First term should be present.
-    $this->assertText($this->terms[0]->label());
+    $this->assertSession()->pageTextContains($this->terms[0]->label());
     // Second term should not be present.
-    $this->assertNoText($this->terms[1]->label());
+    $this->assertSession()->pageTextNotContains($this->terms[1]->label());
   }
 
 }

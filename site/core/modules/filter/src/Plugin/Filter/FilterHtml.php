@@ -4,9 +4,15 @@ namespace Drupal\filter\Plugin\Filter;
 
 use Drupal\Component\Utility\Xss;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Component\Utility\Html;
+use Drupal\filter\Attribute\Filter;
 use Drupal\filter\FilterProcessResult;
 use Drupal\filter\Plugin\FilterBase;
+use Drupal\filter\Plugin\FilterInterface;
+use Masterminds\HTML5\Parser\DOMTreeBuilder;
+use Masterminds\HTML5\Parser\Scanner;
+use Masterminds\HTML5\Parser\Tokenizer;
 
 /**
  * Provides a filter to limit allowed HTML tags.
@@ -14,19 +20,18 @@ use Drupal\filter\Plugin\FilterBase;
  * The attributes in the annotation show examples of allowing all attributes
  * by only having the attribute name, or allowing a fixed list of values, or
  * allowing a value with a wildcard prefix.
- *
- * @Filter(
- *   id = "filter_html",
- *   title = @Translation("Limit allowed HTML tags and correct faulty HTML"),
- *   type = Drupal\filter\Plugin\FilterInterface::TYPE_HTML_RESTRICTOR,
- *   settings = {
- *     "allowed_html" = "<a href hreflang> <em> <strong> <cite> <blockquote cite> <code> <ul type> <ol start type='1 A I'> <li> <dl> <dt> <dd> <h2 id='jump-*'> <h3 id> <h4 id> <h5 id> <h6 id>",
- *     "filter_html_help" = TRUE,
- *     "filter_html_nofollow" = FALSE
- *   },
- *   weight = -10
- * )
  */
+#[Filter(
+  id: "filter_html",
+  title: new TranslatableMarkup("Limit allowed HTML tags and correct faulty HTML"),
+  type: FilterInterface::TYPE_HTML_RESTRICTOR,
+  weight: -10,
+  settings: [
+    "allowed_html" => "<a href hreflang> <em> <strong> <cite> <blockquote cite> <code> <ul type> <ol start type='1 A I'> <li> <dl> <dt> <dd> <h2 id='jump-*'> <h3 id> <h4 id> <h5 id> <h6 id>",
+    "filter_html_help" => TRUE,
+    "filter_html_nofollow" => FALSE,
+  ],
+)]
 class FilterHtml extends FilterBase {
 
   /**
@@ -45,11 +50,6 @@ class FilterHtml extends FilterBase {
       '#title' => $this->t('Allowed HTML tags'),
       '#default_value' => $this->settings['allowed_html'],
       '#description' => $this->t('A list of HTML tags that can be used. By default only the <em>lang</em> and <em>dir</em> attributes are allowed for all HTML tags. Each HTML tag may have attributes which are treated as allowed attribute names for that HTML tag. Each attribute may allow all values, or only allow specific values. Attribute names or values may be written as a prefix and wildcard like <em>jump-*</em>. JavaScript event attributes, JavaScript URLs, and CSS are always stripped.'),
-      '#attached' => [
-        'library' => [
-          'filter/drupal.filter.filter_html.admin',
-        ],
-      ],
     ];
     $form['filter_html_help'] = [
       '#type' => 'checkbox',
@@ -113,7 +113,7 @@ class FilterHtml extends FilterBase {
     $xpath = new \DOMXPath($html_dom);
     foreach ($restrictions['allowed'] as $allowed_tag => $tag_attributes) {
       // By default, no attributes are allowed for a tag, but due to the
-      // globally whitelisted attributes, it is impossible for a tag to actually
+      // globally allowed attributes, it is impossible for a tag to actually
       // completely disallow attributes.
       if ($tag_attributes === FALSE) {
         $tag_attributes = [];
@@ -121,7 +121,7 @@ class FilterHtml extends FilterBase {
       $allowed_attributes = ['exact' => [], 'prefix' => []];
       foreach (($global_allowed_attributes + $tag_attributes) as $name => $values) {
         // A trailing * indicates wildcard, but it must have some prefix.
-        if (substr($name, -1) === '*' && $name[0] !== '*') {
+        if (str_ends_with($name, '*') && $name[0] !== '*') {
           $allowed_attributes['prefix'][str_replace('*', '', $name)] = $this->prepareAttributeValues($values);
         }
         else {
@@ -149,23 +149,23 @@ class FilterHtml extends FilterBase {
   }
 
   /**
-   * Filter attributes on an element by name and value according to a whitelist.
+   * Filters attributes on an element according to a list of allowed values.
    *
    * @param \DOMElement $element
    *   The element to be processed.
    * @param array $allowed_attributes
-   *   The attributes whitelist as an array of names and values.
+   *   The list of allowed attributes as an array of names and values.
    */
   protected function filterElementAttributes(\DOMElement $element, array $allowed_attributes) {
     $modified_attributes = [];
     foreach ($element->attributes as $name => $attribute) {
-      // Remove attributes not in the whitelist.
+      // Remove attributes not in the list of allowed attributes.
       $allowed_value = $this->findAllowedValue($allowed_attributes, $name);
       if (empty($allowed_value)) {
         $modified_attributes[$name] = FALSE;
       }
       elseif ($allowed_value !== TRUE) {
-        // Check the attribute values whitelist.
+        // Check the list of allowed attribute values.
         $attribute_values = preg_split('/\s+/', $attribute->value, -1, PREG_SPLIT_NO_EMPTY);
         $modified_attributes[$name] = [];
         foreach ($attribute_values as $value) {
@@ -203,7 +203,7 @@ class FilterHtml extends FilterBase {
     }
     // Handle prefix (wildcard) matches.
     foreach ($allowed['prefix'] as $prefix => $value) {
-      if (strpos($name, $prefix) === 0) {
+      if (str_starts_with($name, $prefix)) {
         return $value;
       }
     }
@@ -228,7 +228,7 @@ class FilterHtml extends FilterBase {
     $result = ['exact' => [], 'prefix' => []];
     foreach ($attribute_values as $name => $allowed) {
       // A trailing * indicates wildcard, but it must have some prefix.
-      if (substr($name, -1) === '*' && $name[0] !== '*') {
+      if (str_ends_with($name, '*') && $name[0] !== '*') {
         $result['prefix'][str_replace('*', '', $name)] = $allowed;
       }
       else {
@@ -247,31 +247,57 @@ class FilterHtml extends FilterBase {
       return $this->restrictions;
     }
 
-    // Parse the allowed HTML setting, and gradually make the whitelist more
-    // specific.
+    // Parse the allowed HTML setting, and gradually make the list of allowed
+    // tags more specific.
     $restrictions = ['allowed' => []];
+    $html = $this->settings['allowed_html'];
 
-    // Make all the tags self-closing, so they will be parsed into direct
-    // children of the body tag in the DomDocument.
-    $html = str_replace('>', ' />', $this->settings['allowed_html']);
     // Protect any trailing * characters in attribute names, since DomDocument
     // strips them as invalid.
+    // cSpell:disable-next-line
     $star_protector = '__zqh6vxfbk3cg__';
     $html = str_replace('*', $star_protector, $html);
-    $body_child_nodes = Html::load($html)->getElementsByTagName('body')->item(0)->childNodes;
 
-    foreach ($body_child_nodes as $node) {
-      if ($node->nodeType !== XML_ELEMENT_NODE) {
-        // Skip the empty text nodes inside tags.
+    // Use HTML5 parser with a custom tokenizer to correctly parse tags that
+    // normally use text mode, such as iframe.
+    $events = new DOMTreeBuilder(FALSE, ['disable_html_ns' => TRUE]);
+    $scanner = new Scanner('<body>' . $html);
+    $parser = new class($scanner, $events) extends Tokenizer {
+
+      public function setTextMode($textMode, $untilTag = NULL) {
+        // Do nothing, we never enter text mode.
+      }
+
+    };
+    $parser->parse();
+
+    $dom = $events->document();
+    $xpath = new \DOMXPath($dom);
+    foreach ($xpath->query('//body//*') as $node) {
+      $tag = $node->tagName;
+
+      // All attributes are already allowed on this tag, this is the most
+      // permissive configuration, no additional processing is required.
+      if (isset($restrictions['allowed'][$tag]) && $restrictions['allowed'][$tag] === TRUE) {
         continue;
       }
-      $tag = $node->tagName;
+
       if ($node->hasAttributes()) {
-        // Mark the tag as allowed, assigning TRUE for each attribute name if
-        // all values are allowed, or an array of specific allowed values.
-        $restrictions['allowed'][$tag] = [];
+        // If the tag is not yet present, prepare to add attribute restrictions.
+        // Otherwise, check if a more restrictive configuration (FALSE, meaning
+        // no attributes were allowed) is present: then override the existing
+        // value to prepare to add attribute restrictions.
+        if (!isset($restrictions['allowed'][$tag]) || $restrictions['allowed'][$tag] === FALSE) {
+          $restrictions['allowed'][$tag] = [];
+        }
+
         // Iterate over any attributes, and mark them as allowed.
         foreach ($node->attributes as $name => $attribute) {
+          // Only add specific attribute values if all values are not already
+          // allowed.
+          if (isset($restrictions['allowed'][$tag][$name]) && $restrictions['allowed'][$tag][$name] === TRUE) {
+            continue;
+          }
           // Put back any trailing * on wildcard attribute name.
           $name = str_replace($star_protector, '*', $name);
 
@@ -283,9 +309,9 @@ class FilterHtml extends FilterBase {
           // but one allowed attribute value that some may be tempted to use
           // is specifically nonsensical: the asterisk. A prefix is required for
           // allowed attribute values with a wildcard. A wildcard by itself
-          // would mean whitelisting all possible attribute values. But in that
+          // would mean allowing all possible attribute values. But in that
           // case, one would not specify an attribute value at all.
-          $allowed_attribute_values = array_filter($allowed_attribute_values, function ($value) use ($star_protector) {
+          $allowed_attribute_values = array_filter($allowed_attribute_values, function ($value) {
             return $value !== '*';
           });
 
@@ -302,7 +328,8 @@ class FilterHtml extends FilterBase {
           }
         }
       }
-      else {
+
+      if (empty($restrictions['allowed'][$tag])) {
         // Mark the tag as allowed, but with no attributes allowed.
         $restrictions['allowed'][$tag] = FALSE;
       }
@@ -311,14 +338,14 @@ class FilterHtml extends FilterBase {
     // The 'style' and 'on*' ('onClick' etc.) attributes are always forbidden,
     // and are removed by Xss::filter().
     // The 'lang', and 'dir' attributes apply to all elements and are always
-    // allowed. The value whitelist for the 'dir' attribute is enforced by
-    // self::filterAttributes().  Note that those two attributes are in the
+    // allowed. The list of allowed values for the 'dir' attribute is enforced
+    // by self::filterAttributes(). Note that those two attributes are in the
     // short list of globally usable attributes in HTML5. They are always
     // allowed since the correct values of lang and dir may only be known to
     // the content author. Of the other global attributes, they are not usually
     // added by hand to content, and especially the class attribute can have
     // undesired visual effects by allowing content authors to apply any
-    // available style, so specific values should be explicitly whitelisted.
+    // available style, so specific values should be explicitly allowed.
     // @see http://www.w3.org/TR/html5/dom.html#global-attributes
     $restrictions['allowed']['*'] = [
       'style' => FALSE,
@@ -352,7 +379,7 @@ class FilterHtml extends FilterBase {
     }
 
     $output .= '<p>' . $this->t('This site allows HTML content. While learning all of HTML may feel intimidating, learning how to use a very small number of the most basic HTML "tags" is very easy. This table provides examples for each tag that is enabled on this site.') . '</p>';
-    $output .= '<p>' . $this->t('For more information see W3C\'s <a href=":html-specifications">HTML Specifications</a> or use your favorite search engine to find other sites that explain HTML.', [':html-specifications' => 'http://www.w3.org/TR/html/']) . '</p>';
+    $output .= '<p>' . $this->t('For more information see the <a href=":html-specifications">HTML Living Standard</a> or use your favorite search engine to find other sites that explain HTML.', [':html-specifications' => 'https://html.spec.whatwg.org/']) . '</p>';
     $tips = [
       'a' => [$this->t('Anchors are used to make links to other pages.'), '<a href="' . $base_url . '">' . Html::escape(\Drupal::config('system.site')->get('name')) . '</a>'],
       'br' => [$this->t('By default line break tags are automatically added, so use this tag to add additional ones. Use of this tag is different because it is not used with an open/close pair like all the others. Use the extra " /" inside the tag to maintain XHTML 1.0 compatibility'), $this->t('Text with <br />line break')],
@@ -391,7 +418,7 @@ class FilterHtml extends FilterBase {
       'h3' => [$this->t('Heading'), '<h3>' . $this->t('Subtitle three') . '</h3>'],
       'h4' => [$this->t('Heading'), '<h4>' . $this->t('Subtitle four') . '</h4>'],
       'h5' => [$this->t('Heading'), '<h5>' . $this->t('Subtitle five') . '</h5>'],
-      'h6' => [$this->t('Heading'), '<h6>' . $this->t('Subtitle six') . '</h6>']
+      'h6' => [$this->t('Heading'), '<h6>' . $this->t('Subtitle six') . '</h6>'],
     ];
     $header = [$this->t('Tag Description'), $this->t('You Type'), $this->t('You Get')];
     preg_match_all('/<([a-z0-9]+)[^a-z0-9]/i', $allowed_html, $out);

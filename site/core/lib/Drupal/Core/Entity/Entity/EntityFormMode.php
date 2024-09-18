@@ -19,21 +19,26 @@ use Drupal\Core\Entity\EntityFormModeInterface;
  * display settings, or just replicate the settings of the 'default' form mode,
  * thus reducing the amount of form display configurations to keep track of.
  *
- * @see \Drupal\Core\Entity\EntityManagerInterface::getAllFormModes()
- * @see \Drupal\Core\Entity\EntityManagerInterface::getFormModes()
+ * @see \Drupal\Core\Entity\EntityDisplayRepositoryInterface::getAllFormModes()
+ * @see \Drupal\Core\Entity\EntityDisplayRepositoryInterface::getFormModes()
  *
  * @ConfigEntityType(
  *   id = "entity_form_mode",
  *   label = @Translation("Form mode"),
  *   entity_keys = {
  *     "id" = "id",
- *     "label" = "label"
+ *     "label" = "label",
+ *     "description" = "description",
  *   },
  *   config_export = {
  *     "id",
  *     "label",
+ *     "description",
  *     "targetEntityType",
  *     "cache",
+ *   },
+ *   constraints = {
+ *     "ImmutableProperties" = {"id", "targetEntityType"},
  *   }
  * )
  */

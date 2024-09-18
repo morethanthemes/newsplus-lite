@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests;
 
 use Symfony\Component\HttpFoundation\Request;
@@ -31,11 +33,16 @@ trait XdebugRequestTrait {
     }
     // For CLI requests, the information is stored in $_SERVER.
     $server = $request->server;
-    if ($server->has('XDEBUG_CONFIG')) {
+    if ($server->has('XDEBUG_SESSION')) {
+      $cookies['XDEBUG_SESSION'][] = $server->get('XDEBUG_SESSION');
+    }
+    elseif ($server->has('XDEBUG_CONFIG')) {
       // $_SERVER['XDEBUG_CONFIG'] has the form "key1=value1 key2=value2 ...".
-      $pairs = explode(' ', $server->get('XDEBUG_CONFIG'));
+      $pairs = array_filter(explode(' ', $server->get('XDEBUG_CONFIG')), function ($value) {
+        return str_contains($value, '=');
+      });
       foreach ($pairs as $pair) {
-        list($key, $value) = explode('=', $pair);
+        [$key, $value] = explode('=', $pair, 2);
         // Account for key-value pairs being separated by multiple spaces.
         if (trim($key, ' ') == 'idekey') {
           $cookies['XDEBUG_SESSION'][] = trim($value, ' ');

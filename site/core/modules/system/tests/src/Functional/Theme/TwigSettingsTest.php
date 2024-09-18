@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\system\Functional\Theme;
 
 use Drupal\Tests\BrowserTestBase;
@@ -13,16 +15,19 @@ use Drupal\Core\PhpStorage\PhpStorageFactory;
 class TwigSettingsTest extends BrowserTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['theme_test'];
+  protected static $modules = ['theme_test'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Ensures Twig template auto reload setting can be overridden.
    */
-  public function testTwigAutoReloadOverride() {
+  public function testTwigAutoReloadOverride(): void {
     // Enable auto reload and rebuild the service container.
     $parameters = $this->container->getParameter('twig.config');
     $parameters['auto_reload'] = TRUE;
@@ -44,7 +49,7 @@ class TwigSettingsTest extends BrowserTestBase {
   /**
    * Ensures Twig engine debug setting can be overridden.
    */
-  public function testTwigDebugOverride() {
+  public function testTwigDebugOverride(): void {
     // Enable debug and rebuild the service container.
     $parameters = $this->container->getParameter('twig.config');
     $parameters['debug'] = TRUE;
@@ -74,10 +79,10 @@ class TwigSettingsTest extends BrowserTestBase {
   /**
    * Ensures Twig template cache setting can be overridden.
    */
-  public function testTwigCacheOverride() {
+  public function testTwigCacheOverride(): void {
     $extension = twig_extension();
-    $theme_handler = $this->container->get('theme_handler');
-    $theme_handler->install(['test_theme']);
+    $theme_installer = $this->container->get('theme_installer');
+    $theme_installer->install(['test_theme']);
     $this->config('system.theme')->set('default', 'test_theme')->save();
 
     // The registry still works on theme globals, so set them here.
@@ -87,7 +92,7 @@ class TwigSettingsTest extends BrowserTestBase {
     $this->container->set('theme.registry', NULL);
 
     // Load array of Twig templates.
-    // reset() is necessary to invalidate caches tagged with 'theme_registry'.
+    // reset() is necessary to invalidate caches.
     $registry = $this->container->get('theme.registry');
     $registry->reset();
     $templates = $registry->getRuntime();
@@ -96,7 +101,11 @@ class TwigSettingsTest extends BrowserTestBase {
     // theme_test.template_test.html.twig.
     $info = $templates->get('theme_test_template_test');
     $template_filename = $info['path'] . '/' . $info['template'] . $extension;
-    $cache_filename = $this->container->get('twig')->getCacheFilename($template_filename);
+
+    $environment = $this->container->get('twig');
+    $cache = $environment->getCache();
+    $class = $environment->getTemplateClass($template_filename);
+    $cache_filename = $cache->generateKey($template_filename, $class);
 
     // Navigate to the page and make sure the template gets cached.
     $this->drupalGet('theme-test/template-test');
@@ -115,7 +124,7 @@ class TwigSettingsTest extends BrowserTestBase {
   /**
    * Tests twig inline templates with auto_reload.
    */
-  public function testTwigInlineWithAutoReload() {
+  public function testTwigInlineWithAutoReload(): void {
     $parameters = $this->container->getParameter('twig.config');
     $parameters['auto_reload'] = TRUE;
     $parameters['debug'] = TRUE;
@@ -123,9 +132,9 @@ class TwigSettingsTest extends BrowserTestBase {
     $this->rebuildContainer();
 
     $this->drupalGet('theme-test/inline-template-test');
-    $this->assertResponse(200);
+    $this->assertSession()->statusCodeEquals(200);
     $this->drupalGet('theme-test/inline-template-test');
-    $this->assertResponse(200);
+    $this->assertSession()->statusCodeEquals(200);
   }
 
 }

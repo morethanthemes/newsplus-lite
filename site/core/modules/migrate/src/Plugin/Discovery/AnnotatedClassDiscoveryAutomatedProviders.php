@@ -3,8 +3,8 @@
 namespace Drupal\migrate\Plugin\Discovery;
 
 use Doctrine\Common\Annotations\AnnotationRegistry;
-use Doctrine\Common\Reflection\StaticReflectionParser as BaseStaticReflectionParser;
 use Drupal\Component\Annotation\AnnotationInterface;
+use Drupal\Component\Annotation\Doctrine\StaticReflectionParser as BaseStaticReflectionParser;
 use Drupal\Component\Annotation\Reflection\MockFileFinder;
 use Drupal\Component\ClassFinder\ClassFinder;
 use Drupal\Core\Plugin\Discovery\AnnotatedClassDiscovery;
@@ -23,7 +23,7 @@ class AnnotatedClassDiscoveryAutomatedProviders extends AnnotatedClassDiscovery 
   /**
    * A utility object that can use active autoloaders to find files for classes.
    *
-   * @var \Doctrine\Common\Reflection\ClassFinderInterface
+   * @var \Drupal\Component\ClassFinder\ClassFinderInterface
    */
   protected $finder;
 
@@ -48,11 +48,10 @@ class AnnotatedClassDiscoveryAutomatedProviders extends AnnotatedClassDiscovery 
     $this->finder = new ClassFinder();
   }
 
-
   /**
    * {@inheritdoc}
    */
-  protected function prepareAnnotationDefinition(AnnotationInterface $annotation, $class, BaseStaticReflectionParser $parser = NULL) {
+  protected function prepareAnnotationDefinition(AnnotationInterface $annotation, $class, ?BaseStaticReflectionParser $parser = NULL) {
     if (!($annotation instanceof MultipleProviderAnnotationInterface)) {
       throw new \LogicException('AnnotatedClassDiscoveryAutomatedProviders annotations must implement \Drupal\migrate\Annotation\MultipleProviderAnnotationInterface');
     }
@@ -82,7 +81,7 @@ class AnnotatedClassDiscoveryAutomatedProviders extends AnnotatedClassDiscovery 
     // Register the namespaces of classes that can be used for annotations.
     AnnotationRegistry::registerLoader('class_exists');
 
-    // Search for classes within all PSR-0 namespace locations.
+    // Search for classes within all PSR-4 namespace locations.
     foreach ($this->getPluginNamespaces() as $namespace => $dirs) {
       foreach ($dirs as $dir) {
         if (file_exists($dir)) {
@@ -109,7 +108,7 @@ class AnnotatedClassDiscoveryAutomatedProviders extends AnnotatedClassDiscovery 
               $finder = MockFileFinder::create($fileinfo->getPathName());
               $parser = new BaseStaticReflectionParser($class, $finder, FALSE);
 
-              /** @var $annotation \Drupal\Component\Annotation\AnnotationInterface */
+              /** @var \Drupal\Component\Annotation\AnnotationInterface $annotation */
               if ($annotation = $reader->getClassAnnotation($parser->getReflectionClass(), $this->pluginDefinitionAnnotationName)) {
                 $this->prepareAnnotationDefinition($annotation, $class, $parser);
 
@@ -120,7 +119,7 @@ class AnnotatedClassDiscoveryAutomatedProviders extends AnnotatedClassDiscovery 
                 $this->fileCache->set($fileinfo->getPathName(), ['id' => $id, 'content' => serialize($content)]);
               }
               else {
-                // Store a NULL object, so the file is not reparsed again.
+                // Store a NULL object, so the file is not parsed again.
                 $this->fileCache->set($fileinfo->getPathName(), [NULL]);
               }
             }

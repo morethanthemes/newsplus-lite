@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\config\Functional;
 
 use Drupal\Tests\BrowserTestBase;
@@ -19,11 +21,14 @@ class ConfigImportInstallProfileTest extends BrowserTestBase {
   protected $profile = 'testing_config_import';
 
   /**
-   * Modules to install.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['config'];
+  protected static $modules = ['config'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * A user with the 'synchronize configuration' permission.
@@ -32,7 +37,10 @@ class ConfigImportInstallProfileTest extends BrowserTestBase {
    */
   protected $webUser;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->webUser = $this->drupalCreateUser(['synchronize configuration']);
@@ -41,11 +49,14 @@ class ConfigImportInstallProfileTest extends BrowserTestBase {
   }
 
   /**
-   * Tests config importer cannot uninstall install profiles.
+   * Tests config importer can uninstall install profiles.
+   *
+   * Install profiles can be uninstalled when none of the modules or themes
+   * they contain are installed.
    *
    * @see \Drupal\Core\EventSubscriber\ConfigImportSubscriber
    */
-  public function testInstallProfileValidation() {
+  public function testInstallProfileValidation(): void {
     $sync = $this->container->get('config.storage.sync');
     $this->copyConfig($this->container->get('config.storage'), $sync);
     $core = $sync->read('core.extension');
@@ -54,27 +65,47 @@ class ConfigImportInstallProfileTest extends BrowserTestBase {
     unset($core['module']['testing_config_import']);
     $sync->write('core.extension', $core);
 
-    $this->drupalPostForm('admin/config/development/configuration', [], t('Import all'));
-    $this->assertText('The configuration cannot be imported because it failed validation for the following reasons:');
-    $this->assertText('Unable to uninstall the Testing config import profile since it is the install profile.');
+    $this->drupalGet('admin/config/development/configuration');
+    $this->submitForm([], 'Import all');
+    $this->assertSession()->pageTextContains('The configuration cannot be imported because it failed validation for the following reasons:');
+    $this->assertSession()->pageTextContains("The install profile 'Testing config import' is providing the following module(s): testing_config_import_module");
 
     // Uninstall dependencies of testing_config_import.
-    $core['module']['testing_config_import'] = 0;
     unset($core['module']['syslog']);
+    unset($core['module']['testing_config_import_module']);
     unset($core['theme']['stark']);
-    $core['theme']['stable'] = 0;
-    $core['theme']['classy'] = 0;
+    $core['module']['testing_config_import'] = 0;
+    $core['theme']['test_theme_theme'] = 0;
     $sync->write('core.extension', $core);
     $sync->deleteAll('syslog.');
     $theme = $sync->read('system.theme');
-    $theme['default'] = 'classy';
+    $theme['default'] = 'test_theme_theme';
     $sync->write('system.theme', $theme);
-    $this->drupalPostForm('admin/config/development/configuration', [], t('Import all'));
-    $this->assertText('The configuration was imported successfully.');
+    $this->drupalGet('admin/config/development/configuration');
+    $this->submitForm([], 'Import all');
+    $this->assertSession()->pageTextContains('The configuration was imported successfully.');
     $this->rebuildContainer();
     $this->assertFalse(\Drupal::moduleHandler()->moduleExists('syslog'), 'The syslog module has been uninstalled.');
+    $this->assertFalse(\Drupal::moduleHandler()->moduleExists('testing_config_import_module'), 'The testing_config_import_module module has been uninstalled.');
     $this->assertFalse(\Drupal::service('theme_handler')->themeExists('stark'), 'The stark theme has been uninstalled.');
-    $this->assertTrue(\Drupal::service('theme_handler')->themeExists('classy'), 'The classy theme has been installed.');
+    $this->assertTrue(\Drupal::service('theme_handler')->themeExists('test_theme_theme'), 'The test_theme_theme theme has been installed.');
+
+    // Uninstall testing_config_import profile without removing the profile key.
+    unset($core['module']['testing_config_import']);
+    $sync->write('core.extension', $core);
+    $this->drupalGet('admin/config/development/configuration');
+    $this->submitForm([], 'Import all');
+    $this->assertSession()->pageTextContains('The configuration cannot be imported because it failed validation for the following reasons:');
+    $this->assertSession()->pageTextContains('The install profile testing_config_import is not in the list of installed modules.');
+
+    // Uninstall testing_config_import profile properly.
+    unset($core['profile']);
+    $sync->write('core.extension', $core);
+    $this->drupalGet('admin/config/development/configuration');
+    $this->submitForm([], 'Import all');
+    $this->assertSession()->pageTextContains('The configuration was imported successfully.');
+    $this->rebuildContainer();
+    $this->assertFalse(\Drupal::moduleHandler()->moduleExists('testing_config_import'), 'The testing_config_import profile has been uninstalled.');
   }
 
 }

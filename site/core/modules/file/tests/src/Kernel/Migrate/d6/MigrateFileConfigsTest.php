@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\file\Kernel\Migrate\d6;
 
 use Drupal\Tests\SchemaCheckTestTrait;
@@ -17,7 +19,7 @@ class MigrateFileConfigsTest extends MigrateDrupal6TestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->executeMigration('file_settings');
   }
@@ -25,11 +27,11 @@ class MigrateFileConfigsTest extends MigrateDrupal6TestBase {
   /**
    * Tests migration of file variables to file.settings.yml.
    */
-  public function testFileSettings() {
+  public function testFileSettings(): void {
     $config = $this->config('file.settings');
-    $this->assertIdentical('textfield', $config->get('description.type'));
-    $this->assertIdentical(128, $config->get('description.length'));
-    $this->assertIdentical('sites/default/files/icons', $config->get('icon.directory'));
+    $this->assertSame('textfield', $config->get('description.type'));
+    $this->assertSame(128, $config->get('description.length'));
+    $this->assertSame('sites/default/files/icons', $config->get('icon.directory'));
     $this->assertConfigSchema(\Drupal::service('config.typed'), 'file.settings', $config->get());
   }
 

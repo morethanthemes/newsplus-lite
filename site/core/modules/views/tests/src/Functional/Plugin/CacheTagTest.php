@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Functional\Plugin;
 
 use Drupal\Core\Cache\Cache;
@@ -27,7 +29,12 @@ class CacheTagTest extends ViewTestBase {
    *
    * @var array
    */
-  public static $modules = ['node'];
+  protected static $modules = ['node'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * The node storage.
@@ -71,15 +78,18 @@ class CacheTagTest extends ViewTestBase {
    */
   protected $user;
 
-  protected function setUp($import_test_views = TRUE) {
-    parent::setUp($import_test_views);
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp($import_test_views = TRUE, $modules = ['views_test_config']): void {
+    parent::setUp($import_test_views, $modules);
 
     $this->drupalCreateContentType(['type' => 'page', 'name' => 'Basic page']);
     $this->drupalCreateContentType(['type' => 'article', 'name' => 'Article']);
 
-    $this->nodeStorage = $this->container->get('entity.manager')->getStorage('node');
-    $this->nodeViewBuilder = $this->container->get('entity.manager')->getViewBuilder('node');
-    $this->userViewBuilder = $this->container->get('entity.manager')->getViewBuilder('user');
+    $this->nodeStorage = $this->container->get('entity_type.manager')->getStorage('node');
+    $this->nodeViewBuilder = $this->container->get('entity_type.manager')->getViewBuilder('node');
+    $this->userViewBuilder = $this->container->get('entity_type.manager')->getViewBuilder('user');
 
     for ($i = 1; $i <= 5; $i++) {
       $this->pages[] = $this->drupalCreateNode(['title' => "Test $i", 'type' => 'page']);
@@ -114,17 +124,17 @@ class CacheTagTest extends ViewTestBase {
   /**
    * Tests the tag cache plugin.
    */
-  public function testTagCaching() {
+  public function testTagCaching(): void {
     /** @var \Drupal\Core\Render\RendererInterface $renderer */
     $renderer = \Drupal::service('renderer');
     $view = Views::getView('test_tag_cache');
     $build = $view->buildRenderable();
-    $renderer->renderPlain($build);
+    $renderer->renderInIsolation($build);
 
     // Saving the view should invalidate the tags.
     $cache_plugin = $view->display_handler->getPlugin('cache');
     $this->assertTrue($cache_plugin->cacheGet('results'), 'Results cache found.');
-    $this->assertTrue($this->getRenderCache($view), 'Output cache found.');
+    $this->assertNotEmpty($this->getRenderCache($view), 'Output cache found.');
 
     $view->storage->save();
 
@@ -133,12 +143,12 @@ class CacheTagTest extends ViewTestBase {
 
     $view->destroy();
     $build = $view->buildRenderable();
-    $renderer->renderPlain($build);
+    $renderer->renderInIsolation($build);
 
     // Test invalidating the nodes in this view invalidates the cache.
     $cache_plugin = $view->display_handler->getPlugin('cache');
     $this->assertTrue($cache_plugin->cacheGet('results'), 'Results cache found.');
-    $this->assertTrue($this->getRenderCache($view), 'Output cache found.');
+    $this->assertNotEmpty($this->getRenderCache($view), 'Output cache found.');
 
     $this->nodeViewBuilder->resetCache($this->pages);
 
@@ -147,12 +157,12 @@ class CacheTagTest extends ViewTestBase {
 
     $view->destroy();
     $build = $view->buildRenderable();
-    $renderer->renderPlain($build);
+    $renderer->renderInIsolation($build);
 
     // Test saving a node in this view invalidates the cache.
     $cache_plugin = $view->display_handler->getPlugin('cache');
     $this->assertTrue($cache_plugin->cacheGet('results'), 'Results cache found.');
-    $this->assertTrue($this->getRenderCache($view), 'Output cache found.');
+    $this->assertNotEmpty($this->getRenderCache($view), 'Output cache found.');
 
     $node = reset($this->pages);
     $node->save();
@@ -162,12 +172,12 @@ class CacheTagTest extends ViewTestBase {
 
     $view->destroy();
     $build = $view->buildRenderable();
-    $renderer->renderPlain($build);
+    $renderer->renderInIsolation($build);
 
     // Test saving a node not in this view invalidates the cache too.
     $cache_plugin = $view->display_handler->getPlugin('cache');
     $this->assertTrue($cache_plugin->cacheGet('results'), 'Results cache found.');
-    $this->assertTrue($this->getRenderCache($view), 'Output cache found.');
+    $this->assertNotEmpty($this->getRenderCache($view), 'Output cache found.');
 
     $this->article->save();
 
@@ -176,31 +186,31 @@ class CacheTagTest extends ViewTestBase {
 
     $view->destroy();
     $build = $view->buildRenderable();
-    $renderer->renderPlain($build);
+    $renderer->renderInIsolation($build);
 
     // Test that invalidating a tag for a user, does not invalidate the cache,
     // as the user entity type will not be contained in the views cache tags.
     $cache_plugin = $view->display_handler->getPlugin('cache');
     $this->assertTrue($cache_plugin->cacheGet('results'), 'Results cache found.');
-    $this->assertTrue($this->getRenderCache($view), 'Output cache found.');
+    $this->assertNotEmpty($this->getRenderCache($view), 'Output cache found.');
 
     $this->userViewBuilder->resetCache([$this->user]);
 
     $cache_plugin = $view->display_handler->getPlugin('cache');
     $this->assertTrue($cache_plugin->cacheGet('results'), 'Results cache found after a user is invalidated.');
-    $this->assertTrue($this->getRenderCache($view), 'Output cache found after a user is invalidated.');
+    $this->assertNotEmpty($this->getRenderCache($view), 'Output cache found after a user is invalidated.');
 
     $view->destroy();
     // Invalidate the views cache tags in order to invalidate the render
     // caching.
     \Drupal::service('cache_tags.invalidator')->invalidateTags($view->storage->getCacheTagsToInvalidate());
     $build = $view->buildRenderable();
-    $renderer->renderPlain($build);
+    $renderer->renderInIsolation($build);
 
     // Test the cacheFlush method invalidates the cache.
     $cache_plugin = $view->display_handler->getPlugin('cache');
     $this->assertTrue($cache_plugin->cacheGet('results'), 'Results cache found.');
-    $this->assertTrue($this->getRenderCache($view), 'Output cache found.');
+    $this->assertNotEmpty($this->getRenderCache($view), 'Output cache found.');
 
     $cache_plugin->cacheFlush();
 

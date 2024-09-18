@@ -4,6 +4,7 @@ namespace Drupal\views\Plugin\views\field;
 
 use Drupal\Component\Utility\Xss as UtilityXss;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\views\Attribute\ViewsField;
 use Drupal\views\Render\ViewsRenderPipelineMarkup;
 use Drupal\views\ResultRow;
 use Drupal\views\ViewExecutable;
@@ -18,16 +19,20 @@ use Drupal\views\Plugin\views\display\DisplayPluginBase;
  *   - output formats: An array where the first entry is displayed on boolean true
  *      and the second is displayed on boolean false. An example for sticky is:
  *      @code
- *      'output formats' => array(
- *        'sticky' => array(t('Sticky'), ''),
- *      ),
+ *      'output formats' => [
+ *        'sticky' => [t('Sticky'), ''],
+ *      ],
  *      @endcode
  *
  * @ingroup views_field_handlers
- *
- * @ViewsField("boolean")
  */
+#[ViewsField("boolean")]
 class Boolean extends FieldPluginBase {
+
+  /**
+   * The allowed formats.
+   */
+  public array $formats;
 
   /**
    * {@inheritdoc}
@@ -45,19 +50,19 @@ class Boolean extends FieldPluginBase {
   /**
    * {@inheritdoc}
    */
-  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+  public function init(ViewExecutable $view, DisplayPluginBase $display, ?array &$options = NULL) {
     parent::init($view, $display, $options);
 
     $default_formats = [
-      'yes-no' => [t('Yes'), $this->t('No')],
-      'true-false' => [t('True'), $this->t('False')],
-      'on-off' => [t('On'), $this->t('Off')],
-      'enabled-disabled' => [t('Enabled'), $this->t('Disabled')],
+      'yes-no' => [$this->t('Yes'), $this->t('No')],
+      'true-false' => [$this->t('True'), $this->t('False')],
+      'on-off' => [$this->t('On'), $this->t('Off')],
+      'enabled-disabled' => [$this->t('Enabled'), $this->t('Disabled')],
       'boolean' => [1, 0],
       'unicode-yes-no' => ['✔', '✖'],
     ];
-    $output_formats = isset($this->definition['output formats']) ? $this->definition['output formats'] : [];
-    $custom_format = ['custom' => [t('Custom')]];
+    $output_formats = $this->definition['output formats'] ?? [];
+    $custom_format = ['custom' => [$this->t('Custom')]];
     $this->formats = array_merge($default_formats, $output_formats, $custom_format);
   }
 

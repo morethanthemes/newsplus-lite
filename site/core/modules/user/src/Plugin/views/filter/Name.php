@@ -5,18 +5,24 @@ namespace Drupal\user\Plugin\views\filter;
 use Drupal\Core\Entity\Element\EntityAutocomplete;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\Entity\User;
+use Drupal\views\Attribute\ViewsFilter;
 use Drupal\views\Plugin\views\filter\InOperator;
 
 /**
  * Filter handler for usernames.
  *
  * @ingroup views_filter_handlers
- *
- * @ViewsFilter("user_name")
  */
+#[ViewsFilter("user_name")]
 class Name extends InOperator {
 
   protected $alwaysMultiple = TRUE;
+
+  /**
+   * The validated exposed input.
+   */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
+  protected array $validated_exposed_input;
 
   protected function valueForm(&$form, FormStateInterface $form_state) {
     $users = $this->value ? User::loadMultiple($this->value) : [];
@@ -93,7 +99,7 @@ class Name extends InOperator {
   }
 
   protected function valueSubmit($form, FormStateInterface $form_state) {
-    // prevent array filter from removing our anonymous user.
+    // Prevent array filter from removing our anonymous user.
   }
 
   /**
@@ -104,7 +110,7 @@ class Name extends InOperator {
   }
 
   public function adminSummary() {
-    // set up $this->valueOptions for the parent summary
+    // Set up $this->valueOptions for the parent summary
     $this->valueOptions = [];
 
     if ($this->value) {

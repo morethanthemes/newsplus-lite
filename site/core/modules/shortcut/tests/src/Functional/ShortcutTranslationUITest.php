@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\shortcut\Functional;
 
 use Drupal\Tests\content_translation\Functional\ContentTranslationUITestBase;
@@ -14,30 +16,34 @@ use Drupal\Core\Language\Language;
 class ShortcutTranslationUITest extends ContentTranslationUITestBase {
 
   /**
-   * {inheritdoc}
+   * {@inheritdoc}
    */
   protected $defaultCacheContexts = ['languages:language_interface', 'session', 'theme', 'user', 'url.path', 'url.query_args', 'url.site'];
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'language',
     'content_translation',
     'link',
     'shortcut',
-    'toolbar'
+    'toolbar',
   ];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     $this->entityTypeId = 'shortcut';
     $this->bundle = 'default';
     parent::setUp();
+    $this->doSetup();
   }
 
   /**
@@ -77,8 +83,7 @@ class ShortcutTranslationUITest extends ContentTranslationUITestBase {
         $this->drupalGet('<front>', ['language' => $language]);
         $expected_path = \Drupal::urlGenerator()->generateFromRoute('user.page', [], ['language' => $language]);
         $label = $entity->getTranslation($langcode)->label();
-        $elements = $this->xpath('//nav[contains(@class, "toolbar-lining")]/ul[@class="toolbar-menu"]/li/a[contains(@href, :href) and normalize-space(text())=:label]', [':href' => $expected_path, ':label' => $label]);
-        $this->assertTrue(!empty($elements), format_string('Translated @language shortcut link @label found.', ['@label' => $label, '@language' => $language->getName()]));
+        $this->assertSession()->elementExists('xpath', "//nav[contains(@class, 'toolbar-lining')]/ul[@class='toolbar-menu']/li/a[contains(@href, '{$expected_path}') and normalize-space(text())='{$label}']");
       }
     }
   }
@@ -97,14 +102,9 @@ class ShortcutTranslationUITest extends ContentTranslationUITestBase {
       // We only want to test the title for non-english translations.
       if ($langcode != 'en') {
         $options = ['language' => $languages[$langcode]];
-        $url = $entity->urlInfo('edit-form', $options);
+        $url = $entity->toUrl('edit-form', $options);
         $this->drupalGet($url);
-
-        $title = t('@title [%language translation]', [
-          '@title' => $entity->getTranslation($langcode)->label(),
-          '%language' => $languages[$langcode]->getName(),
-        ]);
-        $this->assertRaw($title);
+        $this->assertSession()->pageTextContains("{$entity->getTranslation($langcode)->label()} [{$languages[$langcode]->getName()} translation]");
       }
     }
   }
@@ -120,7 +120,7 @@ class ShortcutTranslationUITest extends ContentTranslationUITestBase {
 
     $this->assertFalse(
       $entity instanceof EntityChangedInterface,
-      format_string('%entity is not implementing EntityChangedInterface.', ['%entity' => $this->entityTypeId])
+      "$this->entityTypeId is not implementing EntityChangedInterface."
     );
   }
 

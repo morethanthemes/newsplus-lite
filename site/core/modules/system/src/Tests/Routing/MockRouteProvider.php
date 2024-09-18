@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\system\Tests\Routing;
 
 use Symfony\Component\HttpFoundation\Request;
@@ -30,7 +32,7 @@ class MockRouteProvider implements RouteProviderInterface {
   }
 
   /**
-   * Implements \Symfony\Cmf\Component\Routing\RouteProviderInterface::getRouteCollectionForRequest().
+   * Implements \Drupal\Core\Routing\RouteProviderInterface::getRouteCollectionForRequest().
    *
    * Simply return all routes to prevent
    * \Symfony\Component\Routing\Exception\ResourceNotFoundException.

@@ -1,17 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Rest;
 
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
 use Drupal\node\Entity\NodeType;
-use Drupal\Tests\rest\Functional\EntityResource\EntityResourceTestBase;
+use Drupal\Tests\rest\Functional\EntityResource\ConfigEntityResourceTestBase;
 
-abstract class EntityFormDisplayResourceTestBase extends EntityResourceTestBase {
+abstract class EntityFormDisplayResourceTestBase extends ConfigEntityResourceTestBase {
 
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['node'];
+  protected static $modules = ['node', 'field_ui'];
 
   /**
    * {@inheritdoc}
@@ -109,6 +111,7 @@ abstract class EntityFormDisplayResourceTestBase extends EntityResourceTestBase 
           'weight' => 5,
           'settings' => [
             'match_operator' => 'CONTAINS',
+            'match_limit' => 10,
             'size' => 60,
             'placeholder' => '',
           ],
@@ -136,6 +139,7 @@ abstract class EntityFormDisplayResourceTestBase extends EntityResourceTestBase 
    */
   protected function getNormalizedPostEntity() {
     // @todo Update in https://www.drupal.org/node/2300677.
+    return [];
   }
 
   /**
@@ -151,10 +155,6 @@ abstract class EntityFormDisplayResourceTestBase extends EntityResourceTestBase 
    * {@inheritdoc}
    */
   protected function getExpectedUnauthorizedAccessMessage($method) {
-    if ($this->config('rest.settings')->get('bc_entity_resource_permissions')) {
-      return parent::getExpectedUnauthorizedAccessMessage($method);
-    }
-
     return "The 'administer node form display' permission is required.";
   }
 

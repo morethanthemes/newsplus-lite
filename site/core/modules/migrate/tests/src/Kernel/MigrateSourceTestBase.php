@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\migrate\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
@@ -9,13 +11,36 @@ use Drupal\migrate\Row;
 
 /**
  * Base class for tests of Migrate source plugins.
+ *
+ * Implementing classes must declare a providerSource() method for this class
+ * to work, defined as follows:
+ *
+ * @code
+ * abstract public static function providerSource(): array;
+ * @endcode
+ *
+ * The returned array should be as follows:
+ *
+ * @code
+ *    Array of data sets to test, each of which is a numerically indexed array
+ *    with the following elements:
+ *    - An array of source data, which can be optionally processed and set up
+ *      by subclasses.
+ *    - An array of expected result rows.
+ *    - (optional) The number of result rows the plugin under test is expected
+ *      to return. If this is not a numeric value, the plugin will not be
+ *      counted.
+ *    - (optional) Array of configuration options for the plugin under test.
+ * @endcode
+ *
+ * @see \Drupal\Tests\migrate\Kernel\MigrateSourceTestBase::testSource
  */
 abstract class MigrateSourceTestBase extends KernelTestBase {
 
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['migrate'];
+  protected static $modules = ['migrate', 'migrate_skip_all_rows_test'];
 
   /**
    * The mocked migration.
@@ -32,27 +57,9 @@ abstract class MigrateSourceTestBase extends KernelTestBase {
   protected $plugin;
 
   /**
-   * The data provider.
-   *
-   * @see \Drupal\Tests\migrate\Kernel\MigrateSourceTestBase::testSource
-   *
-   * @return array
-   *   Array of data sets to test, each of which is a numerically indexed array
-   *   with the following elements:
-   *   - An array of source data, which can be optionally processed and set up
-   *     by subclasses.
-   *   - An array of expected result rows.
-   *   - (optional) The number of result rows the plugin under test is expected
-   *     to return. If this is not a numeric value, the plugin will not be
-   *     counted.
-   *   - (optional) Array of configuration options for the plugin under test.
-   */
-  abstract public function providerSource();
-
-  /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     // Create a mock migration. This will be injected into the source plugin
@@ -77,10 +84,9 @@ abstract class MigrateSourceTestBase extends KernelTestBase {
    * @return string
    */
   protected function getPluginClass() {
-    $annotations = $this->getAnnotations();
-
-    if (isset($annotations['class']['covers'])) {
-      return $annotations['class']['covers'][0];
+    $covers = $this->getTestClassCovers();
+    if (!empty($covers)) {
+      return $covers[0];
     }
     else {
       $this->fail('No plugin class was specified');
@@ -140,8 +146,9 @@ abstract class MigrateSourceTestBase extends KernelTestBase {
    *
    * @dataProvider providerSource
    */
-  public function testSource(array $source_data, array $expected_data, $expected_count = NULL, array $configuration = [], $high_water = NULL) {
+  public function testSource(array $source_data, array $expected_data, $expected_count = NULL, array $configuration = [], $high_water = NULL): void {
     $plugin = $this->getPlugin($configuration);
+    $clone_plugin = clone $plugin;
 
     // All source plugins must define IDs.
     $this->assertNotEmpty($plugin->getIds());
@@ -175,13 +182,14 @@ abstract class MigrateSourceTestBase extends KernelTestBase {
       foreach ($expected as $key => $value) {
         $this->assertArrayHasKey($key, $actual);
 
+        $msg = sprintf("Value at 'array[%s][%s]' is not correct.", $i - 1, $key);
         if (is_array($value)) {
           ksort($value);
           ksort($actual[$key]);
-          $this->assertEquals($value, $actual[$key]);
+          $this->assertEquals($value, $actual[$key], $msg);
         }
         else {
-          $this->assertSame((string) $value, (string) $actual[$key]);
+          $this->assertEquals((string) $value, (string) $actual[$key], $msg);
         }
       }
     }
@@ -189,6 +197,12 @@ abstract class MigrateSourceTestBase extends KernelTestBase {
     // foreach loop was entered if the expected count is greater than 0.
     if ($expected_count > 0) {
       $this->assertGreaterThan(0, $i);
+
+      // Test that we can skip all rows.
+      \Drupal::state()->set('migrate_skip_all_rows_test_migrate_prepare_row', TRUE);
+      foreach ($clone_plugin as $row) {
+        $this->fail('Row not skipped');
+      }
     }
   }
 

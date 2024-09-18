@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\user\Unit;
 
 use Drupal\Core\Access\AccessResult;
@@ -28,21 +30,28 @@ class UserAccessControlHandlerTest extends UnitTestCase {
   /**
    * The mock user account with view access.
    *
-   * @var \Drupal\Core\Session\AccountInterface
+   * @var \Drupal\user\UserInterface
    */
   protected $viewer;
 
   /**
+   * The mock user account with 'view user email addresses' permission.
+   *
+   * @var \Drupal\user\UserInterface
+   */
+  protected $emailViewer;
+
+  /**
    * The mock user account that is able to change their own account name.
    *
-   * @var \Drupal\Core\Session\AccountInterface
+   * @var \Drupal\user\UserInterface
    */
   protected $owner;
 
   /**
    * The mock administrative test user.
    *
-   * @var \Drupal\Core\Session\AccountInterface
+   * @var \Drupal\user\UserInterface
    */
   protected $admin;
 
@@ -56,7 +65,7 @@ class UserAccessControlHandlerTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $cache_contexts_manager = $this->prophesize(CacheContextsManager::class);
@@ -66,43 +75,52 @@ class UserAccessControlHandlerTest extends UnitTestCase {
     $container->set('cache_contexts_manager', $cache_contexts_manager);
     \Drupal::setContainer($container);
 
-    $this->viewer = $this->getMock('\Drupal\Core\Session\AccountInterface');
+    $this->viewer = $this->createMock('\Drupal\user\UserInterface');
     $this->viewer
       ->expects($this->any())
       ->method('hasPermission')
-      ->will($this->returnValue(FALSE));
+      ->willReturn(FALSE);
     $this->viewer
       ->expects($this->any())
       ->method('id')
-      ->will($this->returnValue(1));
+      ->willReturn(1);
 
-    $this->owner = $this->getMock('\Drupal\Core\Session\AccountInterface');
+    $this->owner = $this->createMock('\Drupal\user\UserInterface');
     $this->owner
       ->expects($this->any())
       ->method('hasPermission')
-      ->will($this->returnValueMap([
+      ->willReturnMap([
         ['administer users', FALSE],
         ['change own username', TRUE],
-      ]));
+      ]);
 
     $this->owner
       ->expects($this->any())
       ->method('id')
-      ->will($this->returnValue(2));
+      ->willReturn(2);
 
-    $this->admin = $this->getMock('\Drupal\Core\Session\AccountInterface');
+    $this->admin = $this->createMock('\Drupal\user\UserInterface');
     $this->admin
       ->expects($this->any())
       ->method('hasPermission')
-      ->will($this->returnValue(TRUE));
+      ->willReturn(TRUE);
 
-    $entity_type = $this->getMock('Drupal\Core\Entity\EntityTypeInterface');
+    $this->emailViewer = $this->createMock('\Drupal\user\UserInterface');
+    $this->emailViewer
+      ->expects($this->any())
+      ->method('hasPermission')
+      ->willReturnMap([
+        ['view user email addresses', TRUE],
+      ]);
+    $this->emailViewer
+      ->expects($this->any())
+      ->method('id')
+      ->willReturn(3);
+
+    $entity_type = $this->createMock('Drupal\Core\Entity\EntityTypeInterface');
 
     $this->accessControlHandler = new UserAccessControlHandler($entity_type);
-    $module_handler = $this->getMock('Drupal\Core\Extension\ModuleHandlerInterface');
-    $module_handler->expects($this->any())
-      ->method('getImplementations')
-      ->will($this->returnValue([]));
+    $module_handler = $this->createMock('Drupal\Core\Extension\ModuleHandlerInterface');
     $this->accessControlHandler->setModuleHandler($module_handler);
 
     $this->items = $this->getMockBuilder('Drupal\Core\Field\FieldItemList')
@@ -111,22 +129,24 @@ class UserAccessControlHandlerTest extends UnitTestCase {
     $this->items
       ->expects($this->any())
       ->method('defaultAccess')
-      ->will($this->returnValue(AccessResult::allowed()));
+      ->willReturn(AccessResult::allowed());
   }
 
   /**
    * Asserts correct field access grants for a field.
+   *
+   * @internal
    */
-  public function assertFieldAccess($field, $viewer, $target, $view, $edit) {
-    $field_definition = $this->getMock('Drupal\Core\Field\FieldDefinitionInterface');
+  public function assertFieldAccess(string $field, string $viewer, string $target, bool $view, bool $edit): void {
+    $field_definition = $this->createMock('Drupal\Core\Field\FieldDefinitionInterface');
     $field_definition->expects($this->any())
       ->method('getName')
-      ->will($this->returnValue($field));
+      ->willReturn($field);
 
     $this->items
       ->expects($this->any())
       ->method('getEntity')
-      ->will($this->returnValue($this->{$target}));
+      ->willReturn($this->{$target});
 
     foreach (['view' => $view, 'edit' => $edit] as $operation => $result) {
       $result_text = !isset($result) ? 'null' : ($result ? 'true' : 'false');
@@ -140,14 +160,14 @@ class UserAccessControlHandlerTest extends UnitTestCase {
    *
    * @dataProvider userNameProvider
    */
-  public function testUserNameAccess($viewer, $target, $view, $edit) {
+  public function testUserNameAccess($viewer, $target, $view, $edit): void {
     $this->assertFieldAccess('name', $viewer, $target, $view, $edit);
   }
 
   /**
    * Provides test data for testUserNameAccess().
    */
-  public function userNameProvider() {
+  public static function userNameProvider() {
     $name_access = [
       // The viewer user is allowed to see user names on all accounts.
       [
@@ -191,14 +211,14 @@ class UserAccessControlHandlerTest extends UnitTestCase {
    *
    * @dataProvider hiddenUserSettingsProvider
    */
-  public function testHiddenUserSettings($field, $viewer, $target, $view, $edit) {
+  public function testHiddenUserSettings($field, $viewer, $target, $view, $edit): void {
     $this->assertFieldAccess($field, $viewer, $target, $view, $edit);
   }
 
   /**
    * Provides test data for testHiddenUserSettings().
    */
-  public function hiddenUserSettingsProvider() {
+  public static function hiddenUserSettingsProvider() {
     $access_info = [];
 
     $fields = [
@@ -240,6 +260,14 @@ class UserAccessControlHandlerTest extends UnitTestCase {
         'view' => TRUE,
         'edit' => TRUE,
       ];
+      $access_info[] = [
+        'field' => $field,
+        'viewer' => 'emailViewer',
+        'target' => 'owner',
+        'view' => $field === 'mail',
+        // See note above.
+        'edit' => TRUE,
+      ];
     }
 
     return $access_info;
@@ -250,14 +278,14 @@ class UserAccessControlHandlerTest extends UnitTestCase {
    *
    * @dataProvider adminFieldAccessProvider
    */
-  public function testAdminFieldAccess($field, $viewer, $target, $view, $edit) {
+  public function testAdminFieldAccess($field, $viewer, $target, $view, $edit): void {
     $this->assertFieldAccess($field, $viewer, $target, $view, $edit);
   }
 
   /**
    * Provides test data for testAdminFieldAccess().
    */
-  public function adminFieldAccessProvider() {
+  public static function adminFieldAccessProvider() {
     $access_info = [];
 
     $fields = [
@@ -300,14 +328,14 @@ class UserAccessControlHandlerTest extends UnitTestCase {
    *
    * @dataProvider passwordAccessProvider
    */
-  public function testPasswordAccess($viewer, $target, $view, $edit) {
+  public function testPasswordAccess($viewer, $target, $view, $edit): void {
     $this->assertFieldAccess('pass', $viewer, $target, $view, $edit);
   }
 
   /**
    * Provides test data for passwordAccessProvider().
    */
-  public function passwordAccessProvider() {
+  public static function passwordAccessProvider() {
     $pass_access = [
       [
         'viewer' => 'viewer',
@@ -345,14 +373,14 @@ class UserAccessControlHandlerTest extends UnitTestCase {
    *
    * @dataProvider createdAccessProvider
    */
-  public function testCreatedAccess($viewer, $target, $view, $edit) {
+  public function testCreatedAccess($viewer, $target, $view, $edit): void {
     $this->assertFieldAccess('created', $viewer, $target, $view, $edit);
   }
 
   /**
    * Provides test data for testCreatedAccess().
    */
-  public function createdAccessProvider() {
+  public static function createdAccessProvider() {
     $created_access = [
       [
         'viewer' => 'viewer',
@@ -381,7 +409,7 @@ class UserAccessControlHandlerTest extends UnitTestCase {
    *
    * @dataProvider NonExistingFieldAccessProvider
    */
-  public function testNonExistingFieldAccess($viewer, $target, $view, $edit) {
+  public function testNonExistingFieldAccess($viewer, $target, $view, $edit): void {
     // By default everyone has access to all fields that do not have explicit
     // access control.
     // @see EntityAccessControlHandler::checkFieldAccess()
@@ -391,7 +419,7 @@ class UserAccessControlHandlerTest extends UnitTestCase {
   /**
    * Provides test data for testNonExistingFieldAccess().
    */
-  public function NonExistingFieldAccessProvider() {
+  public static function NonExistingFieldAccessProvider() {
     $created_access = [
       [
         'viewer' => 'viewer',

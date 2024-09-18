@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Installer;
 
 use Drupal\Core\DrupalKernel;
@@ -7,24 +9,32 @@ use Drupal\Core\Language\Language;
 use Drupal\Core\Session\UserSession;
 use Drupal\Core\Site\Settings;
 use Drupal\Core\Test\HttpClientMiddleware\TestHttpClientMiddleware;
+use Drupal\Core\Utility\PhpRequirements;
 use Drupal\Tests\BrowserTestBase;
+use Drupal\Tests\RequirementsPageTrait;
 use GuzzleHttp\HandlerStack;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 
 /**
  * Base class for testing the interactive installer.
  */
 abstract class InstallerTestBase extends BrowserTestBase {
 
+  use RequirementsPageTrait;
+
   /**
    * Custom settings.php values to write for a test run.
    *
    * @var array
    *   An array of settings to write out, in the format expected by
-   *   drupal_rewrite_settings().
+   *   SettingsEditor::rewrite().
+   *
+   * @see \Drupal\Core\Site\SettingsEditor::rewrite()
    */
   protected $settings = [];
 
@@ -72,16 +82,20 @@ abstract class InstallerTestBase extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
-    $this->isInstalled = FALSE;
+  protected function installParameters() {
+    $params = parent::installParameters();
+    // Set the checkbox values to FALSE so that
+    // \Drupal\Tests\BrowserTestBase::translatePostValues() does not remove
+    // them.
+    $params['forms']['install_configure_form']['enable_update_status_module'] = FALSE;
+    $params['forms']['install_configure_form']['enable_update_status_emails'] = FALSE;
+    return $params;
+  }
 
-    $this->setupBaseUrl();
-
-    $this->prepareDatabasePrefix();
-
-    // Install Drupal test site.
-    $this->prepareEnvironment();
-
+  /**
+   * We are testing the installer, so set up a minimal environment for that.
+   */
+  public function installDrupal() {
     // Define information about the user 1 account.
     $this->rootUser = new UserSession([
       'uid' => 1,
@@ -108,6 +122,7 @@ abstract class InstallerTestBase extends BrowserTestBase {
     // server information so that XDebug works.
     // @see install_begin_request()
     $request = Request::create($GLOBALS['base_url'] . '/core/install.php', 'GET', [], $_COOKIE, [], $_SERVER);
+    $request->setSession(new Session(new MockArraySessionStorage()));
     $this->container = new ContainerBuilder();
     $request_stack = new RequestStack();
     $request_stack->push($request);
@@ -134,11 +149,15 @@ abstract class InstallerTestBase extends BrowserTestBase {
       ->set('http_handler_stack', $handler_stack);
 
     $this->container
-      ->set('app.root', DRUPAL_ROOT);
+      ->setParameter('app.root', DRUPAL_ROOT);
     \Drupal::setContainer($this->container);
+  }
 
-    // Setup Mink.
-    $this->initMink();
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
+    parent::setUp();
 
     $this->visitInstaller();
 
@@ -163,11 +182,8 @@ abstract class InstallerTestBase extends BrowserTestBase {
     if ($this->isInstalled) {
       // Import new settings.php written by the installer.
       $request = Request::createFromGlobals();
-      $class_loader = require $this->container->get('app.root') . '/autoload.php';
-      Settings::initialize($this->container->get('app.root'), DrupalKernel::findSitePath($request), $class_loader);
-      foreach ($GLOBALS['config_directories'] as $type => $path) {
-        $this->configDirectories[$type] = $path;
-      }
+      $class_loader = require $this->container->getParameter('app.root') . '/autoload.php';
+      Settings::initialize($this->container->getParameter('app.root'), DrupalKernel::findSitePath($request), $class_loader);
 
       // After writing settings.php, the installer removes write permissions
       // from the site directory. To allow drupal_generate_test_ua() to write
@@ -175,9 +191,10 @@ abstract class InstallerTestBase extends BrowserTestBase {
       // directory has to be writable.
       // BrowserTestBase::tearDown() will delete the entire test site directory.
       // Not using File API; a potential error must trigger a PHP warning.
-      chmod($this->container->get('app.root') . '/' . $this->siteDirectory, 0777);
+      chmod($this->container->getParameter('app.root') . '/' . $this->siteDirectory, 0777);
       $this->kernel = DrupalKernel::createFromRequest($request, $class_loader, 'prod', FALSE);
-      $this->kernel->prepareLegacyRequest($request);
+      $this->kernel->boot();
+      $this->kernel->preHandle($request);
       $this->container = $this->kernel->getContainer();
 
       // Manually configure the test mail collector implementation to prevent
@@ -185,7 +202,17 @@ abstract class InstallerTestBase extends BrowserTestBase {
       $this->container->get('config.factory')
         ->getEditable('system.mail')
         ->set('interface.default', 'test_mail_collector')
+        ->set('mailer_dsn', [
+          'scheme' => 'null',
+          'host' => 'null',
+          'user' => NULL,
+          'password' => NULL,
+          'port' => NULL,
+          'options' => [],
+        ])
         ->save();
+
+      $this->installDefaultThemeFromClassProperty($this->container);
     }
   }
 
@@ -206,12 +233,15 @@ abstract class InstallerTestBase extends BrowserTestBase {
 
   /**
    * Installer step: Select language.
+   *
+   * @see \Drupal\Core\Installer\Form\SelectLanguageForm
    */
   protected function setUpLanguage() {
     $edit = [
       'langcode' => $this->langcode,
     ];
-    $this->drupalPostForm(NULL, $edit, $this->translations['Save and continue']);
+    // The 'Select Language' step is always English.
+    $this->submitForm($edit, 'Save and continue');
   }
 
   /**
@@ -221,15 +251,18 @@ abstract class InstallerTestBase extends BrowserTestBase {
     $edit = [
       'profile' => $this->profile,
     ];
-    $this->drupalPostForm(NULL, $edit, $this->translations['Save and continue']);
+    $this->submitForm($edit, $this->translations['Save and continue']);
   }
 
   /**
    * Installer step: Configure settings.
    */
   protected function setUpSettings() {
-    $edit = $this->translatePostValues($this->parameters['forms']['install_settings_form']);
-    $this->drupalPostForm(NULL, $edit, $this->translations['Save and continue']);
+    $parameters = $this->parameters['forms']['install_settings_form'];
+    $driver = $parameters['driver'];
+    unset($parameters[$driver]['dependencies']);
+    $edit = $this->translatePostValues($parameters);
+    $this->submitForm($edit, $this->translations['Save and continue']);
   }
 
   /**
@@ -241,10 +274,7 @@ abstract class InstallerTestBase extends BrowserTestBase {
    * @see system_requirements()
    */
   protected function setUpRequirementsProblem() {
-    // By default, skip the "recommended PHP version" warning on older test
-    // environments. This allows the installer to be tested consistently on
-    // both recommended PHP versions and older (but still supported) versions.
-    if (version_compare(phpversion(), '7.0') < 0) {
+    if (version_compare(phpversion(), PhpRequirements::getMinimumSupportedPhp()) < 0) {
       $this->continueOnExpectedWarnings(['PHP']);
     }
   }
@@ -254,7 +284,7 @@ abstract class InstallerTestBase extends BrowserTestBase {
    */
   protected function setUpSite() {
     $edit = $this->translatePostValues($this->parameters['forms']['install_configure_form']);
-    $this->drupalPostForm(NULL, $edit, $this->translations['Save and continue']);
+    $this->submitForm($edit, $this->translations['Save and continue']);
     // If we've got to this point the site is installed using the regular
     // installation workflow.
     $this->isInstalled = TRUE;
@@ -270,47 +300,6 @@ abstract class InstallerTestBase extends BrowserTestBase {
     if ($this->isInstalled) {
       parent::refreshVariables();
     }
-  }
-
-  /**
-   * Continues installation when an expected warning is found.
-   *
-   * @param string[] $expected_warnings
-   *   A list of warning summaries to expect on the requirements screen (e.g.
-   *   'PHP', 'PHP OPcode caching', etc.). If only the expected warnings
-   *   are found, the test will click the "continue anyway" link to go to the
-   *   next screen of the installer. If an expected warning is not found, or if
-   *   a warning not in the list is present, a fail is raised.
-   */
-  protected function continueOnExpectedWarnings($expected_warnings = []) {
-    // Don't try to continue if there are errors.
-    if (strpos($this->getTextContent(), 'Errors found') !== FALSE) {
-      return;
-    }
-    // Allow only details elements that are directly after the warning header
-    // or each other. There is no guaranteed wrapper we can rely on across
-    // distributions. When there are multiple warnings, the selectors will be:
-    // - h3#warning+details summary
-    // - h3#warning+details+details summary
-    // - etc.
-    // We add one more selector than expected warnings to confirm that there
-    // isn't any other warning before clicking the link.
-    // @todo Make this more reliable in
-    //   https://www.drupal.org/project/drupal/issues/2927345.
-    $selectors = [];
-    for ($i = 0; $i <= count($expected_warnings); $i++) {
-      $selectors[] = 'h3#warning' . implode('', array_fill(0, $i + 1, '+details')) . ' summary';
-    }
-    $warning_elements = $this->cssSelect(implode(', ', $selectors));
-
-    // Confirm that there are only the expected warnings.
-    $warnings = [];
-    foreach ($warning_elements as $warning) {
-      $warnings[] = trim($warning->getText());
-    }
-    $this->assertEquals($expected_warnings, $warnings);
-    $this->clickLink('continue anyway');
-    $this->checkForMetaRefresh();
   }
 
 }

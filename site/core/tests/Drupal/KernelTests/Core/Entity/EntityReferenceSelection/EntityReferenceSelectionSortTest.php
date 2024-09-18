@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Entity\EntityReferenceSelection;
 
 use Drupal\Component\Utility\Html;
@@ -17,30 +19,32 @@ use Drupal\field\Entity\FieldStorageConfig;
 class EntityReferenceSelectionSortTest extends EntityKernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['node'];
+  protected static $modules = ['node'];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     // Create an Article node type.
     $article = NodeType::create([
       'type' => 'article',
+      'name' => 'Article',
     ]);
     $article->save();
 
     // Test as a non-admin.
-    $normal_user = $this->createUser([], ['access content']);
+    $normal_user = $this->createUser(['access content']);
     \Drupal::currentUser()->setAccount($normal_user);
   }
 
   /**
    * Assert sorting by field and property.
    */
-  public function testSort() {
+  public function testSort(): void {
     // Add text field to entity, to sort by.
     FieldStorageConfig::create([
       'field_name' => 'field_text',
@@ -112,7 +116,7 @@ class EntityReferenceSelectionSortTest extends EntityKernelTestBase {
       $nodes['published2']->id() => $node_labels['published2'],
       $nodes['published1']->id() => $node_labels['published1'],
     ];
-    $this->assertIdentical($result['article'], $expected_result, 'Query sorted by field returned expected values.');
+    $this->assertSame($expected_result, $result['article'], 'Query sorted by field returned expected values.');
 
     // Assert sort by base field.
     $selection_options['sort'] = [
@@ -125,7 +129,7 @@ class EntityReferenceSelectionSortTest extends EntityKernelTestBase {
       $nodes['published1']->id() => $node_labels['published1'],
       $nodes['published2']->id() => $node_labels['published2'],
     ];
-    $this->assertIdentical($result['article'], $expected_result, 'Query sorted by property returned expected values.');
+    $this->assertSame($expected_result, $result['article'], 'Query sorted by property returned expected values.');
   }
 
 }

@@ -20,6 +20,13 @@ class ActiveTheme {
   protected $name;
 
   /**
+   * The path to the logo.
+   *
+   * @var string
+   */
+  protected $logo;
+
+  /**
    * The path to the theme.
    *
    * @var string
@@ -40,12 +47,13 @@ class ActiveTheme {
    */
   protected $owner;
 
+
   /**
-   * An array of base theme active theme objects keyed by name.
+   * An array of base theme extension objects keyed by name.
    *
-   * @var static[]
+   * @var \Drupal\Core\Extension\Extension[]
    */
-  protected $baseThemes;
+  protected $baseThemeExtensions = [];
 
   /**
    * The extension object.
@@ -53,13 +61,6 @@ class ActiveTheme {
    * @var \Drupal\Core\Extension\Extension
    */
   protected $extension;
-
-  /**
-   * The stylesheets which are set to be removed by the theme.
-   *
-   * @var array
-   */
-  protected $styleSheetsRemove;
 
   /**
    * The libraries provided by the theme.
@@ -83,6 +84,13 @@ class ActiveTheme {
   protected $librariesOverride;
 
   /**
+   * The list of libraries-extend definitions.
+   *
+   * @var array
+   */
+  protected $librariesExtend;
+
+  /**
    * Constructs an ActiveTheme object.
    *
    * @param array $values
@@ -93,23 +101,23 @@ class ActiveTheme {
       'path' => '',
       'engine' => 'twig',
       'owner' => 'twig',
-      'stylesheets_remove' => [],
+      'logo' => '',
       'libraries' => [],
       'extension' => 'html.twig',
-      'base_themes' => [],
+      'base_theme_extensions' => [],
       'regions' => [],
       'libraries_override' => [],
       'libraries_extend' => [],
     ];
 
     $this->name = $values['name'];
+    $this->logo = $values['logo'];
     $this->path = $values['path'];
     $this->engine = $values['engine'];
     $this->owner = $values['owner'];
-    $this->styleSheetsRemove = $values['stylesheets_remove'];
     $this->libraries = $values['libraries'];
     $this->extension = $values['extension'];
-    $this->baseThemes = $values['base_themes'];
+    $this->baseThemeExtensions = $values['base_theme_extensions'];
     $this->regions = $values['regions'];
     $this->librariesOverride = $values['libraries_override'];
     $this->librariesExtend = $values['libraries_extend'];
@@ -145,7 +153,7 @@ class ActiveTheme {
   /**
    * Returns the path to the theme engine for root themes.
    *
-   * @see \Drupal\Core\Extension\ThemeHandler::rebuildThemeData
+   * @see \Drupal\Core\Extension\ThemeExtensionList::doList()
    *
    * @return mixed
    */
@@ -172,28 +180,26 @@ class ActiveTheme {
   }
 
   /**
-   * Returns the removed stylesheets by the theme.
+   * Returns an array of base theme extension objects keyed by name.
    *
-   * @return mixed
+   * The order starts with the base theme of $this and ends with the root of
+   * the dependency chain. For most use cases, parent themes are expected to
+   * be called first, so this order needs to be reversed with array_reverse()
    *
-   * @deprecated in Drupal 8.0.0, will be removed before Drupal 9.0.0.
-   *
-   * @see https://www.drupal.org/node/2497313
+   * @return \Drupal\Core\Extension\Extension[]
    */
-  public function getStyleSheetsRemove() {
-    return $this->styleSheetsRemove;
+  public function getBaseThemeExtensions() {
+    return $this->baseThemeExtensions;
   }
 
   /**
-   * Returns an array of base theme active theme objects keyed by name.
+   * Returns the logo provided by the theme.
    *
-   * The order starts with the base theme of $this and ends with the root of
-   * the dependency chain.
-   *
-   * @return static[]
+   * @return string
+   *   The logo path.
    */
-  public function getBaseThemes() {
-    return $this->baseThemes;
+  public function getLogo() {
+    return $this->logo;
   }
 
   /**

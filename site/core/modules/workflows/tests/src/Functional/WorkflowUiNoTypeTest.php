@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\workflows\Functional;
 
+use Drupal\Core\Url;
 use Drupal\Tests\BrowserTestBase;
 
 /**
@@ -12,16 +15,19 @@ use Drupal\Tests\BrowserTestBase;
 class WorkflowUiNoTypeTest extends BrowserTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['workflows', 'block'];
+  protected static $modules = ['workflows', 'block'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
     // We're testing local actions.
     $this->drupalPlaceBlock('local_actions_block');
@@ -30,7 +36,7 @@ class WorkflowUiNoTypeTest extends BrowserTestBase {
   /**
    * Tests the creation of a workflow through the UI.
    */
-  public function testWorkflowUiWithNoType() {
+  public function testWorkflowUiWithNoType(): void {
     $this->drupalLogin($this->createUser(['access administration pages', 'administer workflows']));
     $this->drupalGet('admin/config/workflow/workflows/add');
     // There are no workflow types so this should be a 403.
@@ -41,6 +47,16 @@ class WorkflowUiNoTypeTest extends BrowserTestBase {
     $this->assertSession()->linkExists('Content Moderation');
     $this->assertSession()->pageTextNotContains('Add workflow');
 
+    $this->clickLink('Content Moderation');
+
+    $modules_list_url_absolute = Url::fromRoute('system.modules_list', [], [
+      'fragment' => 'module-content-moderation',
+      'absolute' => TRUE,
+    ])->toString();
+    $this->assertSame($this->getSession()->getCurrentUrl(), $modules_list_url_absolute);
+    // The current user does not have the 'administer modules' permission.
+    $this->assertSession()->statusCodeEquals(403);
+
     $this->container->get('module_installer')->install(['workflow_type_test']);
     // The render cache needs to be cleared because although the cache tags are
     // correctly set the render cache does not pick it up.
@@ -49,7 +65,7 @@ class WorkflowUiNoTypeTest extends BrowserTestBase {
     $this->drupalGet('admin/config/workflow/workflows');
     $this->assertSession()->pageTextNotContains('There are no workflow types available. In order to create workflows you need to install a module that provides a workflow type. For example, the Content Moderation module provides a workflow type that enables workflows for content entities.');
     $this->assertSession()->linkExists('Add workflow');
-    $this->assertSession()->pageTextContains('There is no Workflow yet.');
+    $this->assertSession()->pageTextContains('There are no workflows yet.');
   }
 
 }

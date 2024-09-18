@@ -2,15 +2,29 @@
 
 namespace Drupal\editor\Entity;
 
+use Drupal\Component\Plugin\Exception\PluginNotFoundException;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
+use Drupal\Core\StreamWrapper\StreamWrapperInterface;
 use Drupal\editor\EditorInterface;
 
 /**
  * Defines the configured text editor entity.
  *
+ * An Editor entity is created when a filter format entity (Text format) is
+ * saved after selecting an editor plugin (eg: CKEditor). The ID of the
+ * Editor entity will be same as the ID of the filter format entity in which
+ * the editor plugin was selected.
+ *
  * @ConfigEntityType(
  *   id = "editor",
- *   label = @Translation("Text Editor"),
+ *   label = @Translation("Text editor"),
+ *   label_collection = @Translation("Text editors"),
+ *   label_singular = @Translation("text editor"),
+ *   label_plural = @Translation("text editors"),
+ *   label_count = @PluralTranslation(
+ *     singular = "@count text editor",
+ *     plural = "@count text editors",
+ *   ),
  *   handlers = {
  *     "access" = "Drupal\editor\EditorAccessControlHandler",
  *   },
@@ -22,14 +36,18 @@ use Drupal\editor\EditorInterface;
  *     "editor",
  *     "settings",
  *     "image_upload",
+ *   },
+ *   constraints = {
+ *     "RequiredConfigDependencies" = {
+ *       "filter_format"
+ *     }
  *   }
  * )
  */
 class Editor extends ConfigEntityBase implements EditorInterface {
 
   /**
-   * The machine name of the text format with which this configured text editor
-   * is associated.
+   * Machine name of the text format for this configured text editor.
    *
    * @var string
    *
@@ -83,8 +101,15 @@ class Editor extends ConfigEntityBase implements EditorInterface {
   public function __construct(array $values, $entity_type) {
     parent::__construct($values, $entity_type);
 
-    $plugin = $this->editorPluginManager()->createInstance($this->editor);
-    $this->settings += $plugin->getDefaultSettings();
+    try {
+      $plugin = $this->editorPluginManager()->createInstance($this->editor);
+      $this->settings += $plugin->getDefaultSettings();
+    }
+    catch (PluginNotFoundException $e) {
+      // When a Text Editor plugin has gone missing, still allow the Editor
+      // config entity to be constructed. The only difference is that default
+      // settings are not added.
+    }
   }
 
   /**
@@ -120,7 +145,7 @@ class Editor extends ConfigEntityBase implements EditorInterface {
    */
   public function getFilterFormat() {
     if (!$this->filterFormat) {
-      $this->filterFormat = \Drupal::entityManager()->getStorage('filter_format')->load($this->format);
+      $this->filterFormat = \Drupal::entityTypeManager()->getStorage('filter_format')->load($this->format);
     }
     return $this->filterFormat;
   }
@@ -181,6 +206,20 @@ class Editor extends ConfigEntityBase implements EditorInterface {
   public function setImageUploadSettings(array $image_upload_settings) {
     $this->image_upload = $image_upload_settings;
     return $this;
+  }
+
+  /**
+   * Computes all valid choices for the "image_upload.scheme" setting.
+   *
+   * @see editor.schema.yml
+   *
+   * @return string[]
+   *   All valid choices.
+   *
+   * @internal
+   */
+  public static function getValidStreamWrappers(): array {
+    return array_keys(\Drupal::service('stream_wrapper_manager')->getNames(StreamWrapperInterface::WRITE_VISIBLE));
   }
 
 }

@@ -17,16 +17,25 @@ use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 
 /**
  * @author Bernhard Schussek <bschussek@gmail.com>
+ * @author Kévin Dunglas <dunglas@gmail.com>
  */
 class NotBlankValidator extends ConstraintValidator
 {
     /**
-     * {@inheritdoc}
+     * @return void
      */
-    public function validate($value, Constraint $constraint)
+    public function validate(mixed $value, Constraint $constraint)
     {
         if (!$constraint instanceof NotBlank) {
-            throw new UnexpectedTypeException($constraint, __NAMESPACE__.'\NotBlank');
+            throw new UnexpectedTypeException($constraint, NotBlank::class);
+        }
+
+        if ($constraint->allowNull && null === $value) {
+            return;
+        }
+
+        if (\is_string($value) && null !== $constraint->normalizer) {
+            $value = ($constraint->normalizer)($value);
         }
 
         if (false === $value || (empty($value) && '0' != $value)) {

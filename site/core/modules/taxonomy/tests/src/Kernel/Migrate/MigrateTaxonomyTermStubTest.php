@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Kernel\Migrate;
 
 use Drupal\migrate\MigrateExecutable;
@@ -20,12 +22,12 @@ class MigrateTaxonomyTermStubTest extends MigrateDrupalTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['taxonomy', 'text', 'taxonomy_term_stub_test'];
+  protected static $modules = ['taxonomy', 'text', 'taxonomy_term_stub_test'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installEntitySchema('taxonomy_term');
   }
@@ -33,7 +35,7 @@ class MigrateTaxonomyTermStubTest extends MigrateDrupalTestBase {
   /**
    * Tests creation of taxonomy term stubs.
    */
-  public function testStub() {
+  public function testStub(): void {
     Vocabulary::create([
       'vid' => 'test_vocabulary',
       'name' => 'Test vocabulary',
@@ -44,7 +46,7 @@ class MigrateTaxonomyTermStubTest extends MigrateDrupalTestBase {
   /**
    * Tests creation of stubs when weight is mapped.
    */
-  public function testStubWithWeightMapping() {
+  public function testStubWithWeightMapping(): void {
     // Create a vocabulary via migration for the terms to reference.
     $vocabulary_data_rows = [
       ['id' => '1', 'name' => 'tags'],
@@ -72,14 +74,14 @@ class MigrateTaxonomyTermStubTest extends MigrateDrupalTestBase {
     $migration = $this->getMigration('taxonomy_term_stub_test');
     $term_executable = new MigrateExecutable($migration, $this);
     $term_executable->import();
-    $this->assertTrue($migration->getIdMap()->getRowBySource(['2']), 'Stub row exists in the ID map table');
+    $this->assertNotEmpty($migration->getIdMap()->getRowBySource(['2']), 'Stub row exists in the ID map table');
 
     // Load the referenced term, which should exist as a stub.
     /** @var \Drupal\Core\Entity\ContentEntityBase $stub_entity */
     $stub_entity = Term::load(2);
-    $this->assertTrue($stub_entity, 'Stub successfully created');
+    $this->assertNotEmpty($stub_entity, 'Stub successfully created');
     if ($stub_entity) {
-      $this->assertIdentical(count($stub_entity->validate()), 0, 'Stub is a valid entity');
+      $this->assertCount(0, $stub_entity->validate(), 'Stub is a valid entity');
     }
   }
 

@@ -13,9 +13,9 @@ use Drupal\Core\Session\AccountInterface;
  *
  * Display plugins are responsible for controlling where a view is rendered;
  * that is, how it is exposed to other parts of Drupal. 'Page' and 'block' are
- * the most commonly used display plugins. Each view also has a 'master' (or
- * 'default') display that includes information shared between all its
- * displays (see \Drupal\views\Plugin\views\display\DefaultDisplay).
+ * the most commonly used display plugins. Each view also has a 'default'
+ * display that includes information shared between all its displays
+ * (see \Drupal\views\Plugin\views\display\DefaultDisplay).
  *
  * Display plugins extend \Drupal\views\Plugin\views\display\DisplayPluginBase.
  * They must be annotated with \Drupal\views\Annotation\ViewsDisplay
@@ -42,7 +42,7 @@ interface DisplayPluginInterface {
    * @param array $options
    *   (optional) The options for the display plugin. Defaults to NULL.
    */
-  public function initDisplay(ViewExecutable $view, array &$display, array &$options = NULL);
+  public function initDisplay(ViewExecutable $view, array &$display, ?array &$options = NULL);
 
   /**
    * Destroys the display's components and the display itself.
@@ -247,7 +247,7 @@ interface DisplayPluginInterface {
   /**
    * Determines if an option is set to use the default or current display.
    *
-   * @return
+   * @return bool
    *   TRUE for the default display.
    */
   public function isDefaulted($option);
@@ -391,6 +391,9 @@ interface DisplayPluginInterface {
 
   /**
    * Renders this display.
+   *
+   * @return array
+   *   A render array.
    */
   public function render();
 
@@ -424,7 +427,7 @@ interface DisplayPluginInterface {
   /**
    * Determines if the user has access to this display of the view.
    */
-  public function access(AccountInterface $account = NULL);
+  public function access(?AccountInterface $account = NULL);
 
   /**
    * Sets up any variables on the view prior to execution.
@@ -456,7 +459,6 @@ interface DisplayPluginInterface {
    * The base class cannot be executed.
    */
   public function execute();
-
 
   /**
    * Builds a basic render array which can be properly render cached.
@@ -496,6 +498,9 @@ interface DisplayPluginInterface {
    * Renders the display for the purposes of a live preview.
    *
    * Also might be used for some other AJAXy reason.
+   *
+   * @return array
+   *   The render array of live preview.
    */
   public function preview();
 
@@ -517,7 +522,7 @@ interface DisplayPluginInterface {
   /**
    * Make sure the display and all associated handlers are valid.
    *
-   * @return
+   * @return array
    *   Empty array if the display is valid; an array of error strings if it is
    *   not.
    */
@@ -567,8 +572,8 @@ interface DisplayPluginInterface {
   /**
    * Renders the exposed form as block.
    *
-   * @return string|null
-   *   The rendered exposed form as string or NULL otherwise.
+   * @return array|null
+   *   The renderable exposed form as array or NULL otherwise.
    */
   public function viewExposedFormBlocks();
 
@@ -583,7 +588,7 @@ interface DisplayPluginInterface {
    *     where you can configure what should be done if the argument does not
    *     exist.
    *   - description: A description about how arguments are passed
-   *     to the display. For example blocks can't get arguments from url.
+   *     to the display. For example blocks can't get arguments from URL.
    */
   public function getArgumentText();
 

@@ -2,61 +2,49 @@
 
 namespace Drupal\node\Plugin\views\row;
 
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\views\Attribute\ViewsRow;
 use Drupal\views\Plugin\views\row\RssPluginBase;
 
 /**
- * Plugin which performs a node_view on the resulting object
- * and formats it as an RSS item.
- *
- * @ViewsRow(
- *   id = "node_rss",
- *   title = @Translation("Content"),
- *   help = @Translation("Display the content with standard node view."),
- *   theme = "views_view_row_rss",
- *   register_theme = FALSE,
- *   base = {"node_field_data"},
- *   display_types = {"feed"}
- * )
+ * Performs a node_view on the resulting object and formats it as an RSS item.
  */
+#[ViewsRow(
+  id: "node_rss",
+  title: new TranslatableMarkup("Content"),
+  help: new TranslatableMarkup("Display the content with standard node view."),
+  theme: "views_view_row_rss",
+  register_theme: FALSE,
+  base: ["node_field_data"],
+  display_types: ["feed"]
+)]
 class Rss extends RssPluginBase {
 
-  // Basic properties that let the row style follow relationships.
+  /**
+   * The base table for this row plugin.
+   *
+   * @var string
+   */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
   public $base_table = 'node_field_data';
 
-  public $base_field = 'nid';
+  /**
+   * The base field for this row plugin.
+   */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
+  public string $base_field = 'nid';
 
-  // Stores the nodes loaded with preRender.
+  /**
+   * Stores the nodes loaded with preRender.
+   *
+   * @var array
+   */
   public $nodes = [];
 
   /**
    * {@inheritdoc}
    */
   protected $entityTypeId = 'node';
-
-  /**
-   * The node storage
-   *
-   * @var \Drupal\node\NodeStorageInterface
-   */
-  protected $nodeStorage;
-
-  /**
-   * Constructs the Rss object.
-   *
-   * @param array $configuration
-   *   A configuration array containing information about the plugin instance.
-   * @param string $plugin_id
-   *   The plugin_id for the plugin instance.
-   * @param mixed $plugin_definition
-   *   The plugin implementation definition.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager.
-   */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityManagerInterface $entity_manager) {
-    parent::__construct($configuration, $plugin_id, $plugin_definition, $entity_manager);
-    $this->nodeStorage = $entity_manager->getStorage('node');
-  }
 
   /**
    * {@inheritdoc}
@@ -79,7 +67,7 @@ class Rss extends RssPluginBase {
       $nids[] = $row->{$this->field_alias};
     }
     if (!empty($nids)) {
-      $this->nodes = $this->nodeStorage->loadMultiple($nids);
+      $this->nodes = $this->entityTypeManager->getStorage('node')->loadMultiple($nids);
     }
   }
 
@@ -103,7 +91,6 @@ class Rss extends RssPluginBase {
       return;
     }
 
-    $node->link = $node->url('canonical', ['absolute' => TRUE]);
     $node->rss_namespaces = [];
     $node->rss_elements = [
       [
@@ -126,20 +113,16 @@ class Rss extends RssPluginBase {
 
     $build_mode = $display_mode;
 
-    $build = node_view($node, $build_mode);
+    $build = \Drupal::entityTypeManager()
+      ->getViewBuilder('node')
+      ->view($node, $build_mode);
+    // Add rss key to cache to differentiate this from other caches.
+    $build['#cache']['keys'][] = 'view_rss';
+
     unset($build['#theme']);
 
     if (!empty($node->rss_namespaces)) {
       $this->view->style_plugin->namespaces = array_merge($this->view->style_plugin->namespaces, $node->rss_namespaces);
-    }
-    elseif (function_exists('rdf_get_namespaces')) {
-      // Merge RDF namespaces in the XML namespaces in case they are used
-      // further in the RSS content.
-      $xml_rdf_namespaces = [];
-      foreach (rdf_get_namespaces() as $prefix => $uri) {
-        $xml_rdf_namespaces['xmlns:' . $prefix] = $uri;
-      }
-      $this->view->style_plugin->namespaces += $xml_rdf_namespaces;
     }
 
     $item = new \stdClass();
@@ -148,7 +131,7 @@ class Rss extends RssPluginBase {
       $item->description = $build;
     }
     $item->title = $node->label();
-    $item->link = $node->link;
+    $item->link = $node->toUrl('canonical', ['absolute' => TRUE])->toString();
     // Provide a reference so that the render call in
     // template_preprocess_views_view_row_rss() can still access it.
     $item->elements = &$node->rss_elements;

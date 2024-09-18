@@ -42,7 +42,7 @@ class RoleForm extends EntityForm {
       '#value' => $entity->getWeight(),
     ];
 
-    return parent::form($form, $form_state, $entity);
+    return parent::form($form, $form_state);
   }
 
   /**
@@ -55,14 +55,14 @@ class RoleForm extends EntityForm {
     $entity->set('label', trim($entity->label()));
     $status = $entity->save();
 
-    $edit_link = $this->entity->link($this->t('Edit'));
+    $edit_link = $this->entity->toLink($this->t('Edit'), 'edit-form')->toString();
     if ($status == SAVED_UPDATED) {
-      drupal_set_message($this->t('Role %label has been updated.', ['%label' => $entity->label()]));
-      $this->logger('user')->notice('Role %label has been updated.', ['%label' => $entity->label(), 'link' => $edit_link]);
+      $this->messenger()->addStatus($this->t('Role %label has been updated.', ['%label' => $entity->label()]));
+      $this->logger('user')->info('Role %label has been updated.', ['%label' => $entity->label(), 'link' => $edit_link]);
     }
     else {
-      drupal_set_message($this->t('Role %label has been added.', ['%label' => $entity->label()]));
-      $this->logger('user')->notice('Role %label has been added.', ['%label' => $entity->label(), 'link' => $edit_link]);
+      $this->messenger()->addStatus($this->t('Role %label has been added.', ['%label' => $entity->label()]));
+      $this->logger('user')->info('Role %label has been added.', ['%label' => $entity->label(), 'link' => $edit_link]);
     }
     $form_state->setRedirect('entity.user_role.collection');
   }

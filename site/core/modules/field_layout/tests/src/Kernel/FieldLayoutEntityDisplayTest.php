@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\field_layout\Kernel;
 
 use Drupal\field_layout\Entity\FieldLayoutEntityViewDisplay;
@@ -14,13 +16,20 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected static $modules = ['layout_discovery', 'field_layout', 'entity_test', 'field_layout_test', 'system'];
+  protected static $modules = [
+    'layout_discovery',
+    'field_layout',
+    'entity_test',
+    'field_layout_test',
+    'field_test',
+    'system',
+  ];
 
   /**
    * @covers ::preSave
    * @covers ::calculateDependencies
    */
-  public function testPreSave() {
+  public function testPreSave(): void {
     // Create an entity display with one hidden and one visible field.
     $entity_display = FieldLayoutEntityViewDisplay::create([
       'targetEntityType' => 'entity_test',
@@ -28,9 +37,11 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
       'mode' => 'default',
       'status' => TRUE,
       'content' => [
-        'foo' => ['type' => 'visible'],
-        'bar' => ['type' => 'hidden'],
+        'foo' => ['type' => 'field_no_settings'],
         'name' => ['type' => 'hidden', 'region' => 'content'],
+      ],
+      'hidden' => [
+        'bar' => TRUE,
       ],
     ]);
 
@@ -41,7 +52,9 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
       'third_party_settings' => [
         'field_layout' => [
           'id' => 'layout_onecol',
-          'settings' => [],
+          'settings' => [
+            'label' => '',
+          ],
         ],
       ],
       'id' => 'entity_test.entity_test.default',
@@ -50,13 +63,12 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
       'mode' => 'default',
       'content' => [
         'foo' => [
-          'type' => 'visible',
-        ],
-        'bar' => [
-          'type' => 'hidden',
+          'type' => 'field_no_settings',
         ],
       ],
-      'hidden' => [],
+      'hidden' => [
+        'bar' => TRUE,
+      ],
     ];
     $this->assertEntityValues($expected, $entity_display->toArray());
 
@@ -74,10 +86,6 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
     $expected['third_party_settings']['entity_test'] = ['foo' => 'bar'];
     // The visible field is assigned the default region.
     $expected['content']['foo']['region'] = 'content';
-    // The hidden field is removed from the list of visible fields, and marked
-    // as hidden.
-    unset($expected['content']['bar']);
-    $expected['hidden'] = ['bar' => TRUE];
 
     $this->assertEntityValues($expected, $entity_display->toArray());
 
@@ -94,7 +102,7 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
     ];
     // The field was moved to the default region.
     $expected['content']['foo'] = [
-      'type' => 'visible',
+      'type' => 'field_no_settings',
       'region' => 'main',
       'weight' => -4,
       'settings' => [],
@@ -105,11 +113,11 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
     // After saving, the dependencies have been updated.
     $entity_display->save();
     $expected['dependencies']['module'] = [
-      'dependency_from_annotation',
-      'dependency_from_calculateDependencies',
       'entity_test',
       'field_layout',
       'field_layout_test',
+      'layout_discovery',
+      'system',
     ];
     $this->assertEntityValues($expected, $entity_display->toArray());
 
@@ -144,7 +152,9 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
     // The layout has been updated.
     $expected['third_party_settings']['field_layout'] = [
       'id' => 'test_layout_content_and_footer',
-      'settings' => [],
+      'settings' => [
+        'label' => '',
+      ],
     ];
     // The field remains in its current region instead of moving to the default.
     $this->assertEntityValues($expected, $entity_display->toArray());
@@ -168,11 +178,16 @@ class FieldLayoutEntityDisplayTest extends KernelTestBase {
   /**
    * Asserts than an entity has the correct values.
    *
-   * @param mixed $expected
+   * @param array $expected
+   *   The expected values.
    * @param array $values
+   *   The actual values.
    * @param string $message
+   *   (optional) An error message.
+   *
+   * @internal
    */
-  public static function assertEntityValues($expected, array $values, $message = '') {
+  public static function assertEntityValues(array $expected, array $values, string $message = ''): void {
 
     static::assertArrayHasKey('uuid', $values);
     unset($values['uuid']);

@@ -2,8 +2,10 @@
 
 namespace Drupal\Core\TempStore;
 
+use Drupal\Component\Utility\Crypt;
 use Drupal\Core\KeyValueStore\KeyValueExpirableFactoryInterface;
 use Drupal\Core\Lock\LockBackendInterface;
+use Drupal\Core\Session\AccountProxyInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
@@ -33,6 +35,13 @@ class SharedTempStoreFactory {
   protected $requestStack;
 
   /**
+   * The current user.
+   *
+   * @var \Drupal\Core\Session\AccountProxyInterface
+   */
+  protected $currentUser;
+
+  /**
    * The time to live for items in seconds.
    *
    * @var int
@@ -48,13 +57,16 @@ class SharedTempStoreFactory {
    *   The lock object used for this data.
    * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    *   The request stack.
+   * @param \Drupal\Core\Session\AccountProxyInterface $current_user
+   *   The current user.
    * @param int $expire
    *   The time to live for items, in seconds.
    */
-  public function __construct(KeyValueExpirableFactoryInterface $storage_factory, LockBackendInterface $lock_backend, RequestStack $request_stack, $expire = 604800) {
+  public function __construct(KeyValueExpirableFactoryInterface $storage_factory, LockBackendInterface $lock_backend, RequestStack $request_stack, AccountProxyInterface $current_user, $expire = 604800) {
     $this->storageFactory = $storage_factory;
     $this->lockBackend = $lock_backend;
     $this->requestStack = $request_stack;
+    $this->currentUser = $current_user;
     $this->expire = $expire;
   }
 
@@ -76,12 +88,15 @@ class SharedTempStoreFactory {
     // Use the currently authenticated user ID or the active user ID unless
     // the owner is overridden.
     if (!isset($owner)) {
-      $owner = \Drupal::currentUser()->id() ?: session_id();
+      $owner = $this->currentUser->id();
+      if ($this->currentUser->isAnonymous()) {
+        $owner = $this->requestStack->getSession()->get('core.tempstore.shared.owner', Crypt::randomBytesBase64());
+      }
     }
 
     // Store the data for this collection in the database.
     $storage = $this->storageFactory->get("tempstore.shared.$collection");
-    return new SharedTempStore($storage, $this->lockBackend, $owner, $this->requestStack, $this->expire);
+    return new SharedTempStore($storage, $this->lockBackend, $owner, $this->requestStack, $this->currentUser, $this->expire);
   }
 
 }

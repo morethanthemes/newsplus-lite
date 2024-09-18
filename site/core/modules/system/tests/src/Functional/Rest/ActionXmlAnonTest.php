@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\system\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\AnonResourceTestTrait;
 use Drupal\Tests\rest\Functional\EntityResource\XmlEntityNormalizationQuirksTrait;
 
 /**
- * @group rest
+ * @group Action
  */
 class ActionXmlAnonTest extends ActionResourceTestBase {
 
@@ -22,5 +24,10 @@ class ActionXmlAnonTest extends ActionResourceTestBase {
    * {@inheritdoc}
    */
   protected static $mimeType = 'text/xml; charset=UTF-8';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
 }

@@ -6,17 +6,18 @@ use Drupal\Component\Utility\Color;
 use Drupal\Component\Utility\Rectangle;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Image\ImageInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\image\Attribute\ImageEffect;
 use Drupal\image\ConfigurableImageEffectBase;
 
 /**
  * Rotates an image resource.
- *
- * @ImageEffect(
- *   id = "image_rotate",
- *   label = @Translation("Rotate"),
- *   description = @Translation("Rotating an image may cause the dimensions of an image to increase to fit the diagonal.")
- * )
  */
+#[ImageEffect(
+  id: "image_rotate",
+  label: new TranslatableMarkup("Rotate"),
+  description: new TranslatableMarkup("Rotating an image may cause the dimensions of an image to increase to fit the diagonal.")
+)]
 class RotateImageEffect extends ConfigurableImageEffectBase {
 
   /**
@@ -83,24 +84,24 @@ class RotateImageEffect extends ConfigurableImageEffectBase {
     $form['degrees'] = [
       '#type' => 'number',
       '#default_value' => $this->configuration['degrees'],
-      '#title' => t('Rotation angle'),
-      '#description' => t('The number of degrees the image should be rotated. Positive numbers are clockwise, negative are counter-clockwise.'),
+      '#title' => $this->t('Rotation angle'),
+      '#description' => $this->t('The number of degrees the image should be rotated. Positive numbers are clockwise, negative are counter-clockwise.'),
       '#field_suffix' => '°',
       '#required' => TRUE,
     ];
     $form['bgcolor'] = [
       '#type' => 'textfield',
       '#default_value' => $this->configuration['bgcolor'],
-      '#title' => t('Background color'),
-      '#description' => t('The background color to use for exposed areas of the image. Use web-style hex colors (#FFFFFF for white, #000000 for black). Leave blank for transparency on image types that support it.'),
+      '#title' => $this->t('Background color'),
+      '#description' => $this->t('The background color to use for exposed areas of the image. Use web-style hex colors (#FFFFFF for white, #000000 for black). Leave blank for transparency on image types that support it.'),
       '#size' => 7,
       '#maxlength' => 7,
     ];
     $form['random'] = [
       '#type' => 'checkbox',
       '#default_value' => $this->configuration['random'],
-      '#title' => t('Randomize'),
-      '#description' => t('Randomize the rotation angle for each image. The angle specified above is used as a maximum.'),
+      '#title' => $this->t('Randomize'),
+      '#description' => $this->t('Randomize the rotation angle for each image. The angle specified above is used as a maximum.'),
     ];
     return $form;
   }

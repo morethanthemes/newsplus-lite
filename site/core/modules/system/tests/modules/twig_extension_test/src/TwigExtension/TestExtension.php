@@ -2,10 +2,14 @@
 
 namespace Drupal\twig_extension_test\TwigExtension;
 
+use Twig\Extension\AbstractExtension;
+use Twig\TwigFilter;
+use Twig\TwigFunction;
+
 /**
  * A test Twig extension that adds a custom function and a custom filter.
  */
-class TestExtension extends \Twig_Extension {
+class TestExtension extends AbstractExtension {
 
   /**
    * Generates a list of all Twig functions that this extension defines.
@@ -14,14 +18,14 @@ class TestExtension extends \Twig_Extension {
    *   A key/value array that defines custom Twig functions. The key denotes the
    *   function name used in the tag, e.g.:
    *   @code
-   *   {{ testfunc() }}
+   *   {{ custom_function() }}
    *   @endcode
    *
    *   The value is a standard PHP callback that defines what the function does.
    */
   public function getFunctions() {
     return [
-      'testfunc' => new \Twig_Function_Function(['Drupal\twig_extension_test\TwigExtension\TestExtension', 'testFunction']),
+      'custom_function' => new TwigFunction('custom_function', ['Drupal\twig_extension_test\TwigExtension\TestExtension', 'testFunction']),
     ];
   }
 
@@ -32,14 +36,14 @@ class TestExtension extends \Twig_Extension {
    *   A key/value array that defines custom Twig filters. The key denotes the
    *   filter name used in the tag, e.g.:
    *   @code
-   *   {{ foo|testfilter }}
+   *   {{ foo|test_filter }}
    *   @endcode
    *
    *   The value is a standard PHP callback that defines what the filter does.
    */
   public function getFilters() {
     return [
-      'testfilter' => new \Twig_Filter_Function(['Drupal\twig_extension_test\TwigExtension\TestExtension', 'testFilter']),
+      'test_filter' => new TwigFilter('test_filter', ['Drupal\twig_extension_test\TwigExtension\TestExtension', 'testFilter']),
     ];
   }
 

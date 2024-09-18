@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Plugin\Fixtures;
 
-use Drupal\Component\Plugin\ConfigurablePluginInterface;
+use Drupal\Component\Plugin\ConfigurableInterface;
+use Drupal\Component\Plugin\DependentPluginInterface;
 use Drupal\Component\Plugin\PluginBase;
 
-class TestConfigurablePlugin extends PluginBase implements ConfigurablePluginInterface {
+class TestConfigurablePlugin extends PluginBase implements ConfigurableInterface, DependentPluginInterface {
 
   /**
    * {@inheritdoc}

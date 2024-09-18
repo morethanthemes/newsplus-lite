@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Functional;
 
 use Drupal\Component\Utility\Unicode;
@@ -12,13 +14,19 @@ use Drupal\Component\Utility\Unicode;
 class VocabularyPermissionsTest extends TaxonomyTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['help'];
+  protected static $modules = ['help'];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->drupalPlaceBlock('page_title_block');
@@ -29,7 +37,7 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
   /**
    * Create, edit and delete a vocabulary via the user interface.
    */
-  public function testVocabularyPermissionsVocabulary() {
+  public function testVocabularyPermissionsVocabulary(): void {
     // VocabularyTest.php already tests for user with "administer taxonomy"
     // permission.
 
@@ -55,9 +63,9 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
   }
 
   /**
-   * Test the vocabulary overview permission.
+   * Tests the vocabulary overview permission.
    */
-  public function testTaxonomyVocabularyOverviewPermissions() {
+  public function testTaxonomyVocabularyOverviewPermissions(): void {
     // Create two vocabularies, one with two terms, the other without any term.
     /** @var \Drupal\taxonomy\Entity\Vocabulary $vocabulary1 , $vocabulary2 */
     $vocabulary1 = $this->createVocabulary();
@@ -68,8 +76,9 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
     $this->createTerm($vocabulary1);
 
     // Assert expected help texts on first vocabulary.
-    $edit_help_text = t('You can reorganize the terms in @capital_name using their drag-and-drop handles, and group terms under a parent term by sliding them under and to the right of the parent.', ['@capital_name' => Unicode::ucfirst($vocabulary1->label())]);
-    $no_edit_help_text = t('@capital_name contains the following terms.', ['@capital_name' => Unicode::ucfirst($vocabulary1->label())]);
+    $vocabulary1_label = Unicode::ucfirst($vocabulary1->label());
+    $edit_help_text = "You can reorganize the terms in $vocabulary1_label using their drag-and-drop handles, and group terms under a parent term by sliding them under and to the right of the parent.";
+    $no_edit_help_text = "$vocabulary1_label contains the following terms.";
 
     $assert_session = $this->assertSession();
 
@@ -85,6 +94,9 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
     $assert_session->pageTextContains('Weight');
     $assert_session->fieldExists('Weight');
     $assert_session->pageTextContains($edit_help_text);
+
+    $this->submitForm([], 'Reset to alphabetical');
+    $assert_session->statusCodeEquals(200);
 
     // Visit vocabulary overview without terms. 'Add term' should be shown.
     $this->drupalGet('admin/structure/taxonomy/manage/' . $vocabulary2_id . '/overview');
@@ -109,6 +121,7 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
     $assert_session->linkNotExists('Edit');
     $assert_session->linkNotExists('Delete');
     $assert_session->buttonNotExists('Save');
+    $assert_session->buttonNotExists('Reset to alphabetical');
     $assert_session->pageTextContains('Weight');
     $assert_session->fieldNotExists('Weight');
     $assert_session->linkNotExists('Add term');
@@ -138,6 +151,9 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
     $assert_session->linkNotExists('Add term');
     $assert_session->pageTextContains($edit_help_text);
 
+    $this->submitForm([], 'Reset to alphabetical');
+    $assert_session->statusCodeEquals(200);
+
     // Visit vocabulary overview without terms. 'Add term' should not be shown.
     $this->drupalGet('admin/structure/taxonomy/manage/' . $vocabulary2_id . '/overview');
     $assert_session->statusCodeEquals(200);
@@ -157,6 +173,7 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
     $assert_session->linkExists('Delete');
     $assert_session->linkNotExists('Add term');
     $assert_session->buttonNotExists('Save');
+    $assert_session->buttonNotExists('Reset to alphabetical');
     $assert_session->pageTextContains('Weight');
     $assert_session->fieldNotExists('Weight');
     $assert_session->pageTextContains($no_edit_help_text);
@@ -185,6 +202,8 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
     $assert_session->pageTextContains('Weight');
     $assert_session->fieldExists('Weight');
     $assert_session->pageTextContains($edit_help_text);
+    $this->submitForm([], 'Reset to alphabetical');
+    $assert_session->statusCodeEquals(200);
 
     // Visit vocabulary overview without terms. 'Add term' should not be shown.
     $this->drupalGet('admin/structure/taxonomy/manage/' . $vocabulary2_id . '/overview');
@@ -206,6 +225,7 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
     $assert_session->linkNotExists('Delete');
     $assert_session->linkExists('Add term');
     $assert_session->buttonNotExists('Save');
+    $assert_session->buttonNotExists('Reset to alphabetical');
     $assert_session->pageTextContains('Weight');
     $assert_session->fieldNotExists('Weight');
     $assert_session->pageTextContains($no_edit_help_text);
@@ -215,12 +235,17 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
     $assert_session->statusCodeEquals(200);
     $assert_session->pageTextContains('No terms available');
     $assert_session->linkExists('Add term');
+
+    // Ensure the dynamic vocabulary permissions have the correct dependencies.
+    $permissions = \Drupal::service('user.permissions')->getPermissions();
+    $this->assertTrue(isset($permissions['create terms in ' . $vocabulary1_id]));
+    $this->assertEquals(['config' => [$vocabulary1->getConfigDependencyName()]], $permissions['create terms in ' . $vocabulary1_id]['dependencies']);
   }
 
   /**
    * Create, edit and delete a taxonomy term via the user interface.
    */
-  public function testVocabularyPermissionsTaxonomyTerm() {
+  public function testVocabularyPermissionsTaxonomyTerm(): void {
     // Vocabulary used for creating, removing and editing terms.
     $vocabulary = $this->createVocabulary();
 
@@ -230,19 +255,18 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
 
     // Visit the main taxonomy administration page.
     $this->drupalGet('admin/structure/taxonomy/manage/' . $vocabulary->id() . '/add');
-    $this->assertResponse(200);
-    $this->assertField('edit-name-0-value', 'Add taxonomy term form opened successfully.');
+    $this->assertSession()->statusCodeEquals(200);
+    $this->assertSession()->fieldExists('edit-name-0-value');
 
     // Submit the term.
     $edit = [];
     $edit['name[0][value]'] = $this->randomMachineName();
 
-    $this->drupalPostForm(NULL, $edit, t('Save'));
-    $this->assertText(t('Created new term @name.', ['@name' => $edit['name[0][value]']]), 'Term created successfully.');
+    $this->submitForm($edit, 'Save');
+    $this->assertSession()->pageTextContains('Created new term ' . $edit['name[0][value]'] . '.');
 
     // Verify that the creation message contains a link to a term.
-    $view_link = $this->xpath('//div[@class="messages"]//a[contains(@href, :href)]', [':href' => 'term/']);
-    $this->assert(isset($view_link), 'The message area contains a link to a term');
+    $this->assertSession()->elementExists('xpath', '//div[@data-drupal-messages]//a[contains(@href, "term/")]');
 
     $terms = \Drupal::entityTypeManager()
       ->getStorage('taxonomy_term')
@@ -251,20 +275,20 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
 
     // Edit the term.
     $this->drupalGet('taxonomy/term/' . $term->id() . '/edit');
-    $this->assertResponse(200);
-    $this->assertText($edit['name[0][value]'], 'Edit taxonomy term form opened successfully.');
+    $this->assertSession()->statusCodeEquals(200);
+    $this->assertSession()->pageTextContains($edit['name[0][value]']);
 
     $edit['name[0][value]'] = $this->randomMachineName();
-    $this->drupalPostForm(NULL, $edit, t('Save'));
-    $this->assertText(t('Updated term @name.', ['@name' => $edit['name[0][value]']]), 'Term updated successfully.');
+    $this->submitForm($edit, 'Save');
+    $this->assertSession()->pageTextContains('Updated term ' . $edit['name[0][value]'] . '.');
 
     // Delete the vocabulary.
     $this->drupalGet('taxonomy/term/' . $term->id() . '/delete');
-    $this->assertRaw(t('Are you sure you want to delete the @entity-type %label?', ['@entity-type' => 'taxonomy term', '%label' => $edit['name[0][value]']]), 'Delete taxonomy term form opened successfully.');
+    $this->assertSession()->pageTextContains("Are you sure you want to delete the taxonomy term {$edit['name[0][value]']}?");
 
     // Confirm deletion.
-    $this->drupalPostForm(NULL, NULL, t('Delete'));
-    $this->assertRaw(t('Deleted term %name.', ['%name' => $edit['name[0][value]']]), 'Term deleted.');
+    $this->submitForm([], 'Delete');
+    $this->assertSession()->pageTextContains("Deleted term {$edit['name[0][value]']}.");
 
     // Test as user with "create" permissions.
     $user = $this->drupalCreateUser(["create terms in {$vocabulary->id()}"]);
@@ -281,8 +305,8 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
     $edit = [];
     $edit['name[0][value]'] = $this->randomMachineName();
 
-    $this->drupalPostForm(NULL, $edit, t('Save'));
-    $assert_session->pageTextContains(t('Created new term @name.', ['@name' => $edit['name[0][value]']]));
+    $this->submitForm($edit, 'Save');
+    $assert_session->pageTextContains("Created new term {$edit['name[0][value]']}.");
 
     $terms = \Drupal::entityTypeManager()
       ->getStorage('taxonomy_term')
@@ -299,71 +323,70 @@ class VocabularyPermissionsTest extends TaxonomyTestBase {
     $user = $this->drupalCreateUser(["edit terms in {$vocabulary->id()}"]);
     $this->drupalLogin($user);
 
-    // Visit the main taxonomy administration page.
+    // Ensure the taxonomy term add form is denied.
     $this->drupalGet('admin/structure/taxonomy/manage/' . $vocabulary->id() . '/add');
-    $this->assertResponse(403, 'Add taxonomy term form open failed.');
+    $this->assertSession()->statusCodeEquals(403);
 
     // Create a test term.
     $term = $this->createTerm($vocabulary);
 
     // Edit the term.
     $this->drupalGet('taxonomy/term/' . $term->id() . '/edit');
-    $this->assertResponse(200);
-    $this->assertText($term->getName(), 'Edit taxonomy term form opened successfully.');
+    $this->assertSession()->statusCodeEquals(200);
+    $this->assertSession()->pageTextContains($term->getName());
 
     $edit['name[0][value]'] = $this->randomMachineName();
-    $this->drupalPostForm(NULL, $edit, t('Save'));
-    $this->assertText(t('Updated term @name.', ['@name' => $edit['name[0][value]']]), 'Term updated successfully.');
+    $this->submitForm($edit, 'Save');
+    $this->assertSession()->pageTextContains('Updated term ' . $edit['name[0][value]'] . '.');
 
     // Verify that the update message contains a link to a term.
-    $view_link = $this->xpath('//div[@class="messages"]//a[contains(@href, :href)]', [':href' => 'term/']);
-    $this->assert(isset($view_link), 'The message area contains a link to a term');
+    $this->assertSession()->elementExists('xpath', '//div[@data-drupal-messages]//a[contains(@href, "term/")]');
 
-    // Delete the vocabulary.
+    // Ensure the term cannot be deleted.
     $this->drupalGet('taxonomy/term/' . $term->id() . '/delete');
-    $this->assertResponse(403, 'Delete taxonomy term form open failed.');
+    $this->assertSession()->statusCodeEquals(403);
 
     // Test as user with "delete" permissions.
     $user = $this->drupalCreateUser(["delete terms in {$vocabulary->id()}"]);
     $this->drupalLogin($user);
 
-    // Visit the main taxonomy administration page.
+    // Ensure the taxonomy term add form is denied.
     $this->drupalGet('admin/structure/taxonomy/manage/' . $vocabulary->id() . '/add');
-    $this->assertResponse(403, 'Add taxonomy term form open failed.');
+    $this->assertSession()->statusCodeEquals(403);
 
     // Create a test term.
     $term = $this->createTerm($vocabulary);
 
-    // Edit the term.
+    // Ensure that the term cannot be edited.
     $this->drupalGet('taxonomy/term/' . $term->id() . '/edit');
-    $this->assertResponse(403, 'Edit taxonomy term form open failed.');
+    $this->assertSession()->statusCodeEquals(403);
 
     // Delete the vocabulary.
     $this->drupalGet('taxonomy/term/' . $term->id() . '/delete');
-    $this->assertRaw(t('Are you sure you want to delete the @entity-type %label?', ['@entity-type' => 'taxonomy term', '%label' => $term->getName()]), 'Delete taxonomy term form opened successfully.');
+    $this->assertSession()->pageTextContains("Are you sure you want to delete the taxonomy term {$term->getName()}?");
 
     // Confirm deletion.
-    $this->drupalPostForm(NULL, NULL, t('Delete'));
-    $this->assertRaw(t('Deleted term %name.', ['%name' => $term->getName()]), 'Term deleted.');
+    $this->submitForm([], 'Delete');
+    $this->assertSession()->pageTextContains("Deleted term {$term->getName()}.");
 
     // Test as user without proper permissions.
     $user = $this->drupalCreateUser();
     $this->drupalLogin($user);
 
-    // Visit the main taxonomy administration page.
+    // Ensure the taxonomy term add form is denied.
     $this->drupalGet('admin/structure/taxonomy/manage/' . $vocabulary->id() . '/add');
-    $this->assertResponse(403, 'Add taxonomy term form open failed.');
+    $this->assertSession()->statusCodeEquals(403);
 
     // Create a test term.
     $term = $this->createTerm($vocabulary);
 
-    // Edit the term.
+    // Ensure that the term cannot be edited.
     $this->drupalGet('taxonomy/term/' . $term->id() . '/edit');
-    $this->assertResponse(403, 'Edit taxonomy term form open failed.');
+    $this->assertSession()->statusCodeEquals(403);
 
-    // Delete the vocabulary.
+    // Ensure the term cannot be deleted.
     $this->drupalGet('taxonomy/term/' . $term->id() . '/delete');
-    $this->assertResponse(403, 'Delete taxonomy term form open failed.');
+    $this->assertSession()->statusCodeEquals(403);
   }
 
 }

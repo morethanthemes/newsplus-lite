@@ -53,9 +53,7 @@ class ActionAdminManageForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $actions = [];
     foreach ($this->manager->getDefinitions() as $id => $definition) {
-      if (is_subclass_of($definition['class'], '\Drupal\Core\Plugin\PluginFormInterface')) {
-        $actions[$id] = $definition['label'];
-      }
+      $actions[$id] = $definition['label'];
     }
     asort($actions);
     $form['parent'] = [
@@ -72,7 +70,7 @@ class ActionAdminManageForm extends FormBase {
       '#empty_option' => $this->t('- Select -'),
     ];
     $form['parent']['actions'] = [
-      '#type' => 'actions'
+      '#type' => 'actions',
     ];
     $form['parent']['actions']['submit'] = [
       '#type' => 'submit',

@@ -3,6 +3,7 @@
 namespace Drupal\comment\Plugin\views\field;
 
 use Drupal\user\Entity\User;
+use Drupal\views\Attribute\ViewsField;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
 
@@ -10,10 +11,26 @@ use Drupal\views\ResultRow;
  * Field handler to present the name of the last comment poster.
  *
  * @ingroup views_field_handlers
- *
- * @ViewsField("comment_ces_last_comment_name")
  */
+#[ViewsField("comment_ces_last_comment_name")]
 class StatisticsLastCommentName extends FieldPluginBase {
+
+  /**
+   * The users table.
+   */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
+  protected ?string $user_table;
+
+  /**
+   * The user name field.
+   */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
+  protected string $user_field;
+
+  /**
+   * The user id.
+   */
+  public string $uid;
 
   /**
    * {@inheritdoc}
@@ -22,7 +39,7 @@ class StatisticsLastCommentName extends FieldPluginBase {
     // last_comment_name only contains data if the user is anonymous. So we
     // have to join in a specially related user table.
     $this->ensureMyTable();
-    // join 'users' to this table via vid
+    // Join 'users' to this table via vid
     $definition = [
       'table' => 'users_field_data',
       'field' => 'uid',
@@ -32,9 +49,9 @@ class StatisticsLastCommentName extends FieldPluginBase {
         [
           'field' => 'uid',
           'operator' => '!=',
-          'value' => '0'
-        ]
-      ]
+          'value' => '0',
+        ],
+      ],
     ];
     $join = \Drupal::service('plugin.manager.views.join')->createInstance('standard', $definition);
 

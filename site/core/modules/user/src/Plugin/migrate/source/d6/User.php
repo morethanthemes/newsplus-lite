@@ -8,6 +8,11 @@ use Drupal\migrate_drupal\Plugin\migrate\source\DrupalSqlBase;
 /**
  * Drupal 6 user source from database.
  *
+ * For available configuration keys, refer to the parent classes.
+ *
+ * @see \Drupal\migrate\Plugin\migrate\source\SqlBase
+ * @see \Drupal\migrate\Plugin\migrate\source\SourcePluginBase
+ *
  * @MigrateSource(
  *   id = "d6_user",
  *   source_module = "user"
@@ -64,7 +69,10 @@ class User extends DrupalSqlBase {
     }
 
     // Unserialize Data.
-    $row->setSourceProperty('data', unserialize($row->getSourceProperty('data')));
+    $data = $row->getSourceProperty('data');
+    if ($data !== NULL) {
+      $row->setSourceProperty('data', unserialize($row->getSourceProperty('data')));
+    }
 
     return parent::prepareRow($row);
   }
@@ -107,16 +115,20 @@ class User extends DrupalSqlBase {
       'data' => $this->t('User data'),
     ];
 
-    // Possible field added by Date contributed module.
-    // @see https://api.drupal.org/api/drupal/modules%21user%21user.install/function/user_update_7002/7
-    if ($this->getDatabase()->schema()->fieldExists('users', 'timezone_name')) {
-      $fields['timezone_name'] = $this->t('Timezone (Date)');
-    }
+    // The database connection may not exist, for example, when building
+    // the Migrate Message form.
+    if ($source_database = $this->database) {
+      // Possible field added by Date contributed module.
+      // @see https://api.drupal.org/api/drupal/modules%21user%21user.install/function/user_update_7002/7
+      if ($source_database->schema()->fieldExists('users', 'timezone_name')) {
+        $fields['timezone_name'] = $this->t('Timezone (Date)');
+      }
 
-    // Possible field added by Event contributed module.
-    // @see https://api.drupal.org/api/drupal/modules%21user%21user.install/function/user_update_7002/7
-    if ($this->getDatabase()->schema()->fieldExists('users', 'timezone_id')) {
-      $fields['timezone_id'] = $this->t('Timezone (Event)');
+      // Possible field added by Event contributed module.
+      // @see https://api.drupal.org/api/drupal/modules%21user%21user.install/function/user_update_7002/7
+      if ($source_database->schema()->fieldExists('users', 'timezone_id')) {
+        $fields['timezone_id'] = $this->t('Timezone (Event)');
+      }
     }
 
     return $fields;

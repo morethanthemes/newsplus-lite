@@ -22,11 +22,11 @@ class DummyReadOnlyStreamWrapper extends LocalReadOnlyStream {
    * {@inheritdoc}
    */
   public function getDescription() {
-    return t('Dummy wrapper for simpletest (readonly).');
+    return t('Dummy wrapper for testing (readonly).');
   }
 
   public function getDirectoryPath() {
-    return \Drupal::service('site.path') . '/files';
+    return \Drupal::getContainer()->getParameter('site.path') . '/files';
   }
 
   /**

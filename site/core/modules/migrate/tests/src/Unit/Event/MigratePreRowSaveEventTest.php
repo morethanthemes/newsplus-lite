@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\migrate\Unit\Event;
 
 use Drupal\migrate\Event\MigratePreRowSaveEvent;
@@ -11,12 +13,12 @@ use Drupal\migrate\Event\MigratePreRowSaveEvent;
 class MigratePreRowSaveEventTest extends EventBaseTest {
 
   /**
-   * Test getRow method.
+   * Tests getRow method.
    *
    * @covers ::__construct
    * @covers ::getRow
    */
-  public function testGetRow() {
+  public function testGetRow(): void {
     $migration = $this->prophesize('\Drupal\migrate\Plugin\MigrationInterface')->reveal();
     $message_service = $this->prophesize('\Drupal\migrate\MigrateMessageInterface')->reveal();
     $row = $this->prophesize('\Drupal\migrate\Row')->reveal();

@@ -5,6 +5,8 @@
  * Install, update and uninstall functions for the user module.
  */
 
+use Drupal\Core\StringTranslation\PluralTranslatableMarkup;
+
 /**
  * Implements hook_schema().
  */
@@ -13,7 +15,7 @@ function user_schema() {
     'description' => 'Stores module data as key/value pairs per user.',
     'fields' => [
       'uid' => [
-        'description' => 'Primary key: {users}.uid for user.',
+        'description' => 'The {users}.uid this record affects.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -53,7 +55,12 @@ function user_schema() {
       'name' => ['name'],
     ],
     'foreign keys' => [
-      'uid' => ['users' => 'uid'],
+      'data_user' => [
+        'table' => 'users',
+        'columns' => [
+          'uid' => 'uid',
+        ],
+      ],
     ],
   ];
 
@@ -64,7 +71,7 @@ function user_schema() {
  * Implements hook_install().
  */
 function user_install() {
-  $storage = \Drupal::entityManager()->getStorage('user');
+  $storage = \Drupal::entityTypeManager()->getStorage('user');
   // Insert a row for the anonymous user.
   $storage
     ->create([
@@ -87,14 +94,73 @@ function user_install() {
 }
 
 /**
- * Fix invalid token in the status_blocked email body.
+ * Implements hook_requirements().
  */
-function user_update_8100() {
+function user_requirements($phase): array {
+  if ($phase !== 'runtime') {
+    return [];
+  }
+
+  $result = (bool) \Drupal::entityQuery('user')
+    ->accessCheck(FALSE)
+    ->condition('uid', 0)
+    ->range(0, 1)
+    ->execute();
+
+  if ($result === FALSE) {
+    return [
+      'anonymous user' => [
+        'title' => t('Anonymous user'),
+        'description' => t('The anonymous user does not exist. See the <a href=":url">restore the anonymous (user ID 0) user record</a> for more information', [
+          ':url' => 'https://www.drupal.org/node/1029506',
+        ]),
+        'severity' => REQUIREMENT_WARNING,
+      ],
+    ];
+  }
+  return [];
+}
+
+/**
+ * Implements hook_update_last_removed().
+ */
+function user_update_last_removed() {
+  return 9301;
+}
+
+/**
+ * Remove non-existent permissions created by migrations.
+ */
+function user_update_10000() {
+  $cleaned_roles = [];
+  $existing_permissions = array_keys(\Drupal::service('user.permissions')
+    ->getPermissions());
   $config_factory = \Drupal::configFactory();
-  $config = $config_factory->getEditable('user.mail');
-  $mail = $config->get('status_blocked');
-  if (strpos($mail['body'], '[site:account-name]') !== FALSE) {
-    $mail['body'] = str_replace('[site:account-name]', '[site:name]', $mail['body']);
-    $config->set('status_blocked', $mail)->save(TRUE);
+  $role_ids = $config_factory->listAll('user.role.');
+  foreach ($role_ids as $role_id) {
+    $role_config = $config_factory->getEditable($role_id);
+    $removed_permissions = array_diff($role_config->get('permissions'), $existing_permissions);
+    if (!empty($removed_permissions)) {
+      $cleaned_roles[] = $role_config->get('label');
+      \Drupal::logger('update')->notice(
+        'The role %role has had the following non-existent permission(s) removed: %permissions.',
+        [
+          '%role' => $role_config->get('label'),
+          '%permissions' => implode(', ', $removed_permissions),
+        ]
+      );
+      $permissions = array_intersect($role_config->get('permissions'), $existing_permissions);
+      $role_config->set('permissions', $permissions);
+      $role_config->save();
+    }
+  }
+
+  if (!empty($cleaned_roles)) {
+    return new PluralTranslatableMarkup(
+      count($cleaned_roles),
+      'The role %role_list has had non-existent permissions removed. Check the logs for details.',
+      'The roles %role_list have had non-existent permissions removed. Check the logs for details.',
+      ['%role_list' => implode(', ', $cleaned_roles)]
+    );
   }
 }

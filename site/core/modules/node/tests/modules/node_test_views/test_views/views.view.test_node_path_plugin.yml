@@ -11,12 +11,11 @@ description: ''
 tag: ''
 base_table: node_field_data
 base_field: nid
-core: 8.x
 display:
   default:
     display_plugin: default
     id: default
-    display_title: Master
+    display_title: Default
     position: 0
     display_options:
       access:
@@ -73,7 +72,7 @@ display:
         path:
           id: path
           table: node
-          field: path
+          field: view_node
           relationship: none
           group_type: group
           admin_label: ''
@@ -118,9 +117,10 @@ display:
           hide_empty: false
           empty_zero: false
           hide_alter_empty: true
+          output_url_as_text: true
           absolute: false
           entity_type: node
-          plugin_id: node_path
+          plugin_id: entity_link
       filters:
         status:
           value: '1'

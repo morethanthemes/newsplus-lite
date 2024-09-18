@@ -4,16 +4,19 @@ namespace Drupal\file\Plugin\migrate\field\d6;
 
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\Row;
+use Drupal\migrate_drupal\Attribute\MigrateField;
 use Drupal\migrate_drupal\Plugin\migrate\field\FieldPluginBase;
 
+// cspell:ignore filefield imagefield imagelink nodelink
 /**
- * @MigrateField(
- *   id = "filefield",
- *   core = {6},
- *   source_module = "filefield",
- *   destination_module = "file"
- * )
+ * MigrateField Plugin for Drupal 6 file fields.
  */
+#[MigrateField(
+  id: 'filefield',
+  core: [6],
+  source_module: 'filefield',
+  destination_module: 'file',
+)]
 class FileField extends FieldPluginBase {
 
   /**
@@ -42,7 +45,7 @@ class FileField extends FieldPluginBase {
   /**
    * {@inheritdoc}
    */
-  public function processFieldValues(MigrationInterface $migration, $field_name, $data) {
+  public function defineValueProcessPipeline(MigrationInterface $migration, $field_name, $data) {
     $process = [
       'plugin' => 'd6_field_file',
       'source' => $field_name,

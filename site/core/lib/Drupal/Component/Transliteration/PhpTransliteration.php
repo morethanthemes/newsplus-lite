@@ -2,6 +2,8 @@
 
 namespace Drupal\Component\Transliteration;
 
+// cspell:ignore Brion Vibber
+
 /**
  * Implements transliteration without using the PECL extensions.
  *
@@ -59,6 +61,21 @@ class PhpTransliteration implements TransliterationInterface {
   protected $genericMap = [];
 
   /**
+   * Special characters for ::removeDiacritics().
+   *
+   * Characters which have accented variants but their base character
+   * transliterates to more than one ASCII character require special
+   * treatment: we want to remove their accent and use the un-
+   * transliterated base character.
+   */
+  protected $fixTransliterateForRemoveDiacritics = [
+    'AE' => 'Æ',
+    'ae' => 'æ',
+    'ZH' => 'Ʒ',
+    'zh' => 'ʒ',
+  ];
+
+  /**
    * Constructs a transliteration object.
    *
    * @param string $data_directory
@@ -93,6 +110,9 @@ class PhpTransliteration implements TransliterationInterface {
         if (strlen($to_add) === 1) {
           $replacement = $to_add;
         }
+        elseif (isset($this->fixTransliterateForRemoveDiacritics[$to_add])) {
+          $replacement = $this->fixTransliterateForRemoveDiacritics[$to_add];
+        }
       }
 
       $result .= $replacement;
@@ -107,6 +127,29 @@ class PhpTransliteration implements TransliterationInterface {
   public function transliterate($string, $langcode = 'en', $unknown_character = '?', $max_length = NULL) {
     $result = '';
     $length = 0;
+    $hash = FALSE;
+
+    // Replace question marks with a unique hash if necessary. This because
+    // mb_convert_encoding() replaces all invalid characters with a question
+    // mark.
+    if ($unknown_character != '?' && str_contains($string, '?')) {
+      $hash = hash('sha256', $string);
+      $string = str_replace('?', $hash, $string);
+    }
+
+    // Ensure the string is valid UTF8 for preg_split(). Unknown characters will
+    // be replaced by a question mark.
+    $string = mb_convert_encoding($string, 'UTF-8', 'UTF-8');
+
+    // Use the provided unknown character instead of a question mark.
+    if ($unknown_character != '?') {
+      $string = str_replace('?', $unknown_character, $string);
+      // Restore original question marks if necessary.
+      if ($hash !== FALSE) {
+        $string = str_replace($hash, '?', $string);
+      }
+    }
+
     // Split into Unicode characters and transliterate each one.
     foreach (preg_split('//u', $string, 0, PREG_SPLIT_NO_EMPTY) as $character) {
       $code = self::ordUTF8($character);
@@ -219,7 +262,7 @@ class PhpTransliteration implements TransliterationInterface {
       $this->readGenericData($bank);
     }
     $code = $code & 0xff;
-    return isset($this->genericMap[$bank][$code]) ? $this->genericMap[$bank][$code] : $unknown_character;
+    return $this->genericMap[$bank][$code] ?? $unknown_character;
   }
 
   /**
@@ -242,11 +285,9 @@ class PhpTransliteration implements TransliterationInterface {
 
     // Read in this file, which should set up a variable called $overrides,
     // which will be local to this function.
+    $overrides[$langcode] = [];
     if (is_file($file)) {
       include $file;
-    }
-    if (!isset($overrides) || !is_array($overrides)) {
-      $overrides = [$langcode => []];
     }
     $this->languageOverrides[$langcode] = $overrides[$langcode];
   }
@@ -270,14 +311,10 @@ class PhpTransliteration implements TransliterationInterface {
 
     // Read in this file, which should set up a variable called $base, which
     // will be local to this function.
+    $base = [];
     if (is_file($file)) {
       include $file;
     }
-    if (!isset($base) || !is_array($base)) {
-      $base = [];
-    }
-
-    // Save this data.
     $this->genericMap[$bank] = $base;
   }
 

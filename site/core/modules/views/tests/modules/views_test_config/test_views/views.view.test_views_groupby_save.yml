@@ -2,13 +2,12 @@ langcode: en
 status: true
 dependencies: {  }
 id: test_views_groupby_save
-label: ''
+label: test_views_groupby_save
 module: views
 description: ''
 tag: ''
 base_table: views_test_data
 base_field: nid
-core: '8'
 display:
   default:
     display_options:
@@ -31,6 +30,6 @@ display:
           id: id
           plugin_id: numeric
     display_plugin: default
-    display_title: Master
+    display_title: Default
     id: default
     position: 0

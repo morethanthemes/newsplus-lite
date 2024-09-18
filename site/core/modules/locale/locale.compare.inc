@@ -5,6 +5,7 @@
  * The API for comparing project translation status with available translation.
  */
 
+use Drupal\Core\Batch\BatchBuilder;
 use Drupal\Core\Utility\ProjectInfo;
 
 /**
@@ -68,8 +69,8 @@ function locale_translation_build_projects() {
     // For every project store information.
     $data += [
       'name' => $name,
-      'version' => isset($data['info']['version']) ? $data['info']['version'] : '',
-      'core' => isset($data['info']['core']) ? $data['info']['core'] : \Drupal::CORE_COMPATIBILITY,
+      'version' => $data['info']['version'] ?? '',
+      'core' => 'all',
       // A project can provide the path and filename pattern to download the
       // gettext file. Use the default if not.
       'server_pattern' => isset($data['info']['interface translation server pattern']) && $data['info']['interface translation server pattern'] ? $data['info']['interface translation server pattern'] : $default_server['pattern'],
@@ -103,8 +104,8 @@ function locale_translation_project_list() {
       'interface translation project',
       'interface translation server pattern',
     ];
-    $module_data = _locale_translation_prepare_project_list(system_rebuild_module_data(), 'module');
-    $theme_data = _locale_translation_prepare_project_list(\Drupal::service('theme_handler')->rebuildThemeData(), 'theme');
+    $module_data = _locale_translation_prepare_project_list(\Drupal::service('extension.list.module')->getList(), 'module');
+    $theme_data = _locale_translation_prepare_project_list(\Drupal::service('extension.list.theme')->reset()->getList(), 'theme');
     $project_info = new ProjectInfo();
     $project_info->processInfoList($projects, $module_data, 'module', TRUE, $additional_whitelist);
     $project_info->processInfoList($projects, $theme_data, 'theme', TRUE, $additional_whitelist);
@@ -125,8 +126,8 @@ function locale_translation_project_list() {
  *
  * Custom modules or themes can bring their own gettext translation file. To
  * enable import of this file the module or theme defines "interface translation
- * project = myproject" in its .info.yml file. This function will add a project
- * "myproject" to the info data.
+ * project = my_project" in its .info.yml file. This function will add a project
+ * "my_project" to the info data.
  *
  * @param \Drupal\Core\Extension\Extension[] $data
  *   Array of .info.yml file data.
@@ -161,7 +162,7 @@ function locale_translation_default_translation_server() {
   // An additional check is required here. During the upgrade process
   // \Drupal::config()->get() returns NULL. We use the defined value as
   // fallback.
-  $pattern  = $pattern ? $pattern : LOCALE_TRANSLATION_DEFAULT_SERVER_PATTERN;
+  $pattern = $pattern ? $pattern : LOCALE_TRANSLATION_DEFAULT_SERVER_PATTERN;
 
   return [
     'pattern' => $pattern,
@@ -173,11 +174,8 @@ function locale_translation_default_translation_server() {
  *
  * @param array $projects
  *   Array of project names to check. Defaults to all translatable projects.
- * @param string $langcodes
+ * @param array $langcodes
  *   Array of language codes. Defaults to all translatable languages.
- *
- * @return array
- *   Available sources indexed by project and language.
  *
  * @todo Return batch or NULL.
  */
@@ -190,7 +188,7 @@ function locale_translation_check_projects($projects = [], $langcodes = []) {
   else {
     // Retrieve and save the status of local translations only.
     locale_translation_check_projects_local($projects, $langcodes);
-    \Drupal::state()->set('locale.translation_last_checked', REQUEST_TIME);
+    \Drupal::state()->set('locale.translation_last_checked', \Drupal::time()->getRequestTime());
   }
 }
 
@@ -204,7 +202,7 @@ function locale_translation_check_projects($projects = [], $langcodes = []) {
  *
  * @param array $projects
  *   Array of project names to check. Defaults to all translatable projects.
- * @param string $langcodes
+ * @param array $langcodes
  *   Array of language codes. Defaults to all translatable languages.
  */
 function locale_translation_check_projects_batch($projects = [], $langcodes = []) {
@@ -238,20 +236,21 @@ function locale_translation_batch_status_build($projects = [], $langcodes = []) 
 
   $operations = _locale_translation_batch_status_operations($projects, $langcodes, $options);
 
-  $batch = [
-    'operations' => $operations,
-    'title' => t('Checking translations'),
-    'progress_message' => '',
-    'finished' => 'locale_translation_batch_status_finished',
-    'error_message' => t('Error checking translation updates.'),
-    'file' => drupal_get_path('module', 'locale') . '/locale.batch.inc',
-  ];
-  return $batch;
+  $batch_builder = (new BatchBuilder())
+    ->setFile(\Drupal::service('extension.list.module')->getPath('locale') . '/locale.batch.inc')
+    ->setTitle(t('Checking translations'))
+    ->setErrorMessage(t('Error checking translation updates.'))
+    ->setFinishCallback('locale_translation_batch_status_finished');
+
+  array_walk($operations, function ($operation) use ($batch_builder) {
+    call_user_func_array([$batch_builder, 'addOperation'], $operation);
+  });
+
+  return $batch_builder->toArray();
 }
 
 /**
- * Helper function to construct batch operations checking remote translation
- * status.
+ * Constructs batch operations for checking remote translation status.
  *
  * @param array $projects
  *   Array of project names to be processed.
@@ -268,7 +267,8 @@ function _locale_translation_batch_status_operations($projects, $langcodes, $opt
 
   foreach ($projects as $project) {
     foreach ($langcodes as $langcode) {
-      // Check status of local and remote translation sources.
+      // Check version and status translation sources.
+      $operations[] = ['locale_translation_batch_version_check', [$project, $langcode]];
       $operations[] = ['locale_translation_batch_status_check', [$project, $langcode, $options]];
     }
   }

@@ -3,11 +3,12 @@
 namespace Drupal\taxonomy;
 
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
+use Drupal\Core\Entity\RevisionableEntityBundleInterface;
 
 /**
  * Provides an interface defining a taxonomy vocabulary entity.
  */
-interface VocabularyInterface extends ConfigEntityInterface {
+interface VocabularyInterface extends ConfigEntityInterface, RevisionableEntityBundleInterface {
 
   /**
    * Denotes that no term in the vocabulary has a parent.
@@ -25,33 +26,19 @@ interface VocabularyInterface extends ConfigEntityInterface {
   const HIERARCHY_MULTIPLE = 2;
 
   /**
-   * Returns the vocabulary hierarchy.
-   *
-   * @return int
-   *   The vocabulary hierarchy.
-   */
-  public function getHierarchy();
-
-  /**
-   * Sets the vocabulary hierarchy.
-   *
-   * @param int $hierarchy
-   *   The hierarchy type of vocabulary.
-   *   Possible values:
-   *    - VocabularyInterface::HIERARCHY_DISABLED: No parents.
-   *    - VocabularyInterface::HIERARCHY_SINGLE: Single parent.
-   *    - VocabularyInterface::HIERARCHY_MULTIPLE: Multiple parents.
-   *
-   * @return $this
-   */
-  public function setHierarchy($hierarchy);
-
-  /**
    * Returns the vocabulary description.
    *
    * @return string
    *   The vocabulary description.
    */
   public function getDescription();
+
+  /**
+   * Sets whether a new revision should be created by default.
+   *
+   * @param bool $new_revision
+   *   TRUE if a new revision should be created by default.
+   */
+  public function setNewRevision($new_revision);
 
 }

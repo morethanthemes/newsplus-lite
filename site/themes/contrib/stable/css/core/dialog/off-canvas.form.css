@@ -1,0 +1,185 @@
+/**
+ * @file
+ * Visual styling for forms in the off-canvas dialog.
+ */
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) form,
+#drupal-off-canvas-wrapper form {
+  color: #ddd;
+  font-family: "Lucida Grande", "Lucida Sans Unicode", "liberation sans", sans-serif;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) input[type="checkbox"],
+#drupal-off-canvas-wrapper input[type="checkbox"] {
+  -webkit-appearance: checkbox;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) input[type="radio"],
+#drupal-off-canvas-wrapper input[type="radio"] {
+  -webkit-appearance: radio;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) select:not([multiple]),
+#drupal-off-canvas-wrapper select:not([multiple]) {
+  -webkit-appearance: menulist;
+  -moz-appearance: menulist;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) option,
+#drupal-off-canvas-wrapper option {
+  display: block;
+  font-family: "Lucida Grande", "Lucida Sans Unicode", "liberation sans", sans-serif;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) label,
+#drupal-off-canvas-wrapper label {
+  color: #ddd;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: normal;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .visually-hidden,
+#drupal-off-canvas-wrapper .visually-hidden {
+  width: 0;
+  height: 0;
+  letter-spacing: -2em;
+  opacity: 0;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .description,
+#drupal-off-canvas-wrapper .description,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-item .description,
+#drupal-off-canvas-wrapper .form-item .description,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .details-description,
+#drupal-off-canvas-wrapper .details-description {
+  margin-top: 5px;
+  color: #ddd;
+  font-family: inherit;
+  font-size: 12px;
+  font-style: normal;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-item,
+#drupal-off-canvas-wrapper .form-item {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+/* Set size and position for all inputs. */
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-select,
+#drupal-off-canvas-wrapper .form-select,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-text,
+#drupal-off-canvas-wrapper .form-text,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-tel,
+#drupal-off-canvas-wrapper .form-tel,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-email,
+#drupal-off-canvas-wrapper .form-email,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-url,
+#drupal-off-canvas-wrapper .form-url,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-search,
+#drupal-off-canvas-wrapper .form-search,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-number,
+#drupal-off-canvas-wrapper .form-number,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-color,
+#drupal-off-canvas-wrapper .form-color,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-file,
+#drupal-off-canvas-wrapper .form-file,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-textarea,
+#drupal-off-canvas-wrapper .form-textarea,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-date,
+#drupal-off-canvas-wrapper .form-date,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-time,
+#drupal-off-canvas-wrapper .form-time {
+  display: block;
+  box-sizing: border-box;
+  max-width: 100%;
+  margin: 5px 0 0 0;
+  padding: 6px;
+  color: #333;
+  border-width: 1px;
+  border-radius: 2px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 16px;
+}
+/* Reduce contrast for fields against dark background. */
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-text,
+#drupal-off-canvas-wrapper .form-text,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-tel,
+#drupal-off-canvas-wrapper .form-tel,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-email,
+#drupal-off-canvas-wrapper .form-email,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-url,
+#drupal-off-canvas-wrapper .form-url,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-search,
+#drupal-off-canvas-wrapper .form-search,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-number,
+#drupal-off-canvas-wrapper .form-number,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-color,
+#drupal-off-canvas-wrapper .form-color,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-file,
+#drupal-off-canvas-wrapper .form-file,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-textarea,
+#drupal-off-canvas-wrapper .form-textarea,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-date,
+#drupal-off-canvas-wrapper .form-date,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-time,
+#drupal-off-canvas-wrapper .form-time {
+  color: #595959;
+  border-color: #333;
+  background-color: #eee;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.125);
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-text:focus,
+#drupal-off-canvas-wrapper .form-text:focus,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-tel:focus,
+#drupal-off-canvas-wrapper .form-tel:focus,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-email:focus,
+#drupal-off-canvas-wrapper .form-email:focus,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-url:focus,
+#drupal-off-canvas-wrapper .form-url:focus,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-search:focus,
+#drupal-off-canvas-wrapper .form-search:focus,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-number:focus,
+#drupal-off-canvas-wrapper .form-number:focus,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-color:focus,
+#drupal-off-canvas-wrapper .form-color:focus,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-file:focus,
+#drupal-off-canvas-wrapper .form-file:focus,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-textarea:focus,
+#drupal-off-canvas-wrapper .form-textarea:focus,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-date:focus,
+#drupal-off-canvas-wrapper .form-date:focus,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-time:focus,
+#drupal-off-canvas-wrapper .form-time:focus {
+  border-color: #40b6ff;
+  background-color: #fff;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.125), 0 0 8px #40b6ff;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) td .form-item,
+#drupal-off-canvas-wrapper td .form-item,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) td .form-select,
+#drupal-off-canvas-wrapper td .form-select {
+  margin: 0;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-file,
+#drupal-off-canvas-wrapper .form-file {
+  width: 100%;
+  margin-bottom: 5px;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .form-actions,
+#drupal-off-canvas-wrapper .form-actions {
+  margin: 10px 0;
+  text-align: center;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .ui-autocomplete,
+#drupal-off-canvas-wrapper .ui-autocomplete {
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: default;
+  background-color: white;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .ui-autocomplete li,
+#drupal-off-canvas-wrapper .ui-autocomplete li {
+  display: block;
+}
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .ui-autocomplete li a,
+#drupal-off-canvas-wrapper .ui-autocomplete li a {
+  padding: 5px;
+  cursor: pointer;
+  color: #595959 !important;
+}

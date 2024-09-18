@@ -22,7 +22,22 @@ class SequenceDataDefinition extends ListDataDefinition {
    *   be sorted).
    */
   public function getOrderBy() {
-    return isset($this->definition['orderby']) ? $this->definition['orderby'] : NULL;
+    return $this->definition['orderby'] ?? NULL;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getDataType() {
+    // TRICKY: this class extends ListDataDefinition, which always returns a
+    // hardcoded "list". But this is a typed data type used in config schemas,
+    // and hence many subtypes of it exists. The actual concrete subtype must
+    // always be returned.
+    // This effectively means skipping the parent implementation and matching
+    // the grandparent implementation.
+    // @see \Drupal\Core\TypedData\ListDataDefinition::setDataType()
+    // @see \Drupal\Core\TypedData\ListDataDefinition::getDataType()
+    return $this->definition['type'];
   }
 
 }

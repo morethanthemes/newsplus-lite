@@ -5,6 +5,7 @@ namespace Drupal\Core\Field;
 use Drupal\Component\Plugin\Factory\DefaultFactory;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Field\Attribute\FieldFormatter;
 use Drupal\Core\Plugin\DefaultPluginManager;
 
 /**
@@ -42,7 +43,7 @@ class FormatterPluginManager extends DefaultPluginManager {
    *   The 'field type' plugin manager.
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler, FieldTypePluginManagerInterface $field_type_manager) {
-    parent::__construct('Plugin/Field/FieldFormatter', $namespaces, $module_handler, 'Drupal\Core\Field\FormatterInterface', 'Drupal\Core\Field\Annotation\FieldFormatter');
+    parent::__construct('Plugin/Field/FieldFormatter', $namespaces, $module_handler, 'Drupal\Core\Field\FormatterInterface', FieldFormatter::class, 'Drupal\Core\Field\Annotation\FieldFormatter');
 
     $this->setCacheBackend($cache_backend, 'field_formatter_types_plugins');
     $this->alterInfo('field_formatter_info');
@@ -90,8 +91,8 @@ class FormatterPluginManager extends DefaultPluginManager {
    *     - third_party_settings: (array) Settings provided by other extensions
    *       through hook_field_formatter_third_party_settings_form().
    *
-   * @return \Drupal\Core\Field\FormatterInterface|null
-   *   A formatter object or NULL when plugin is not found.
+   * @return \Drupal\Core\Field\FormatterInterface|false
+   *   A formatter object or FALSE when plugin is not found.
    */
   public function getInstance(array $options) {
     $configuration = $options['configuration'];
@@ -114,7 +115,7 @@ class FormatterPluginManager extends DefaultPluginManager {
       // Grab the default widget for the field type.
       $field_type_definition = $this->fieldTypeManager->getDefinition($field_type);
       if (empty($field_type_definition['default_formatter'])) {
-        return NULL;
+        return FALSE;
       }
       $plugin_id = $field_type_definition['default_formatter'];
     }
@@ -123,7 +124,7 @@ class FormatterPluginManager extends DefaultPluginManager {
       'field_definition' => $field_definition,
       'view_mode' => $options['view_mode'],
     ];
-    return $this->createInstance($plugin_id, $configuration);
+    return $this->createInstance($plugin_id, $configuration) ?? FALSE;
   }
 
   /**

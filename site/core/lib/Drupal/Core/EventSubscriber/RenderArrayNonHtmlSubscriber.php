@@ -3,7 +3,7 @@
 namespace Drupal\Core\EventSubscriber;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpKernel\Event\GetResponseForControllerResultEvent;
+use Symfony\Component\HttpKernel\Event\ViewEvent;
 use Symfony\Component\HttpKernel\Exception\NotAcceptableHttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
 
@@ -15,10 +15,10 @@ class RenderArrayNonHtmlSubscriber implements EventSubscriberInterface {
   /**
    * Throws an HTTP 406 error if client requested a non-HTML format.
    *
-   * @param \Symfony\Component\HttpKernel\Event\GetResponseForControllerResultEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\ViewEvent $event
    *   The event to process.
    */
-  public function onRespond(GetResponseForControllerResultEvent $event) {
+  public function onRespond(ViewEvent $event) {
     $request = $event->getRequest();
     $result = $event->getControllerResult();
 
@@ -34,7 +34,7 @@ class RenderArrayNonHtmlSubscriber implements EventSubscriberInterface {
   /**
    * {@inheritdoc}
    */
-  public static function getSubscribedEvents() {
+  public static function getSubscribedEvents(): array {
     $events[KernelEvents::VIEW][] = ['onRespond', -10];
     return $events;
   }

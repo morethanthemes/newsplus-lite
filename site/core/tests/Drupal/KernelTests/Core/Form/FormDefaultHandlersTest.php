@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Form;
 
 use Drupal\Core\Form\FormInterface;
@@ -13,21 +15,6 @@ use Drupal\KernelTests\KernelTestBase;
  * @group Form
  */
 class FormDefaultHandlersTest extends KernelTestBase implements FormInterface {
-
-  /**
-   * Modules to enable.
-   *
-   * @var array
-   */
-  public static $modules = ['system'];
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp() {
-    parent::setUp();
-    $this->installSchema('system', ['key_value_expire']);
-  }
 
   /**
    * {@inheritdoc}
@@ -85,20 +72,20 @@ class FormDefaultHandlersTest extends KernelTestBase implements FormInterface {
   /**
    * Tests that default handlers are added even if custom are specified.
    */
-  public function testDefaultAndCustomHandlers() {
+  public function testDefaultAndCustomHandlers(): void {
     $form_state = new FormState();
     $form_builder = $this->container->get('form_builder');
     $form_builder->submitForm($this, $form_state);
 
     $handlers = $form_state->get('test_handlers');
 
-    $this->assertIdentical(count($handlers['validate']), 2);
-    $this->assertIdentical($handlers['validate'][0], 'customValidateForm');
-    $this->assertIdentical($handlers['validate'][1], 'validateForm');
+    $this->assertCount(2, $handlers['validate']);
+    $this->assertSame('customValidateForm', $handlers['validate'][0]);
+    $this->assertSame('validateForm', $handlers['validate'][1]);
 
-    $this->assertIdentical(count($handlers['submit']), 2);
-    $this->assertIdentical($handlers['submit'][0], 'customSubmitForm');
-    $this->assertIdentical($handlers['submit'][1], 'submitForm');
+    $this->assertCount(2, $handlers['submit']);
+    $this->assertSame('customSubmitForm', $handlers['submit'][0]);
+    $this->assertSame('submitForm', $handlers['submit'][1]);
   }
 
 }

@@ -46,20 +46,25 @@ interface FormBuilderInterface {
    *   The value must be one of the following:
    *   - The name of a class that implements \Drupal\Core\Form\FormInterface.
    *   - An instance of a class that implements \Drupal\Core\Form\FormInterface.
-   * @param ...
+   * phpcs:disable Drupal.Commenting
+   * @todo Uncomment new method parameters before drupal:11.0.0.
+   * @see https://www.drupal.org/project/drupal/issues/3354672
+   *
+   * @param mixed ...$args
    *   Any additional arguments are passed on to the functions called by
    *   \Drupal::formBuilder()->getForm(), including the unique form constructor
    *   function. For example, the node_edit form requires that a node object is
    *   passed in here when it is called. These are available to implementations
    *   of hook_form_alter() and hook_form_FORM_ID_alter() as the array
    *   $form_state->getBuildInfo()['args'].
+   * phpcs:enable
    *
    * @return array
    *   The form array.
    *
    * @see \Drupal\Core\Form\FormBuilderInterface::buildForm()
    */
-  public function getForm($form_arg);
+  public function getForm($form_arg /* , mixed ...$args */);
 
   /**
    * Builds and processes a form for a given form ID.
@@ -68,7 +73,7 @@ interface FormBuilderInterface {
    * previous page load. The form is then passed on for processing, validation,
    * and submission if there is proper input.
    *
-   * @param \Drupal\Core\Form\FormInterface|string $form_id
+   * @param \Drupal\Core\Form\FormInterface|string $form_arg
    *   The value must be one of the following:
    *   - The name of a class that implements \Drupal\Core\Form\FormInterface.
    *   - An instance of a class that implements \Drupal\Core\Form\FormInterface.
@@ -89,7 +94,7 @@ interface FormBuilderInterface {
    *
    * @see self::redirectForm()
    */
-  public function buildForm($form_id, FormStateInterface &$form_state);
+  public function buildForm($form_arg, FormStateInterface &$form_state);
 
   /**
    * Constructs a new $form from the information in $form_state.
@@ -136,6 +141,15 @@ interface FormBuilderInterface {
    * There is no return value, but you can check to see if there are errors
    * by calling $form_state->getErrors().
    *
+   * For example:
+   * @code
+   * // Set the administrator role to 'content_editor'.
+   * $values['user_admin_role'] = 'content_editor';
+   * $form_state = new FormState();
+   * $form_state->setValues($values);
+   * \Drupal::formBuilder()->submitForm(RoleSettingsForm::class, $form_state);
+   * @endcode
+   *
    * @param \Drupal\Core\Form\FormInterface|string $form_arg
    *   The value must be one of the following:
    *   - The name of a class that implements \Drupal\Core\Form\FormInterface.
@@ -149,7 +163,11 @@ interface FormBuilderInterface {
    *   checkbox or other control that browsers submit by not having a
    *   \Drupal::request()->request entry, include the key, but set the value to
    *   NULL.
-   * @param ...
+   * phpcs:disable Drupal.Commenting
+   * @todo Uncomment new method parameters before drupal:11.0.0.
+   * @see https://www.drupal.org/project/drupal/issues/3354672
+   *
+   * @param mixed ...$args
    *   Any additional arguments are passed on to the functions called by
    *   self::submitForm(), including the unique form constructor function.
    *   For example, the node_edit form requires that a node object be passed
@@ -158,29 +176,18 @@ interface FormBuilderInterface {
    *   $form_state build info array so that the reference can be preserved. For
    *   example, a form builder function with the following signature:
    *   @code
-   *   function mymodule_form($form, FormStateInterface &$form_state, &$object) {
+   *   function my_module_form($form, FormStateInterface &$form_state, &$object) {
    *   }
    *   @endcode
    *   would be called via self::submitForm() as follows:
    *   @code
    *   $form_state->setValues($my_form_values);
    *   $form_state->addBuildInfo('args', [&$object]);
-   *   \Drupal::formBuilder()->submitForm('mymodule_form', $form_state);
+   *   \Drupal::formBuilder()->submitForm('my_module_form', $form_state);
    *   @endcode
-   * For example:
-   * @code
-   * // register a new user
-   * $form_state = new FormState();
-   * $values['name'] = 'robo-user';
-   * $values['mail'] = 'robouser@example.com';
-   * $values['pass']['pass1'] = 'password';
-   * $values['pass']['pass2'] = 'password';
-   * $values['op'] = t('Create new account');
-   * $form_state->setValues($values);
-   * \Drupal::formBuilder()->submitForm('user_register_form', $form_state);
-   * @endcode
+   * phpcs:enable
    */
-  public function submitForm($form_arg, FormStateInterface &$form_state);
+  public function submitForm($form_arg, FormStateInterface &$form_state /* , mixed ...$args */);
 
   /**
    * Retrieves the structured array that defines a given form.
@@ -244,13 +251,13 @@ interface FormBuilderInterface {
    * This is one of the three primary functions that recursively iterates a form
    * array. This one does it for completing the form building process. The other
    * two are self::doValidateForm() (invoked via self::validateForm() and used
-   * to invoke validation logic for each element) and drupal_render() (for
-   * rendering each element). Each of these three pipelines provides ample
-   * opportunity for modules to customize what happens. For example, during this
-   * function's life cycle, the following functions get called for each element:
+   * to invoke validation logic for each element) and
+   * RendererInterface::render() (for rendering each element).
+   * Each of these three pipelines provides ample opportunity for modules to
+   * customize what happens. For example, during this function's life cycle,
+   * the following functions get called for each element:
    * - $element['#value_callback']: A callable that implements how user input is
-   *   mapped to an element's #value property. This defaults to a function named
-   *   'form_type_TYPE_value' where TYPE is $element['#type'].
+   *   mapped to an element's #value property.
    * - $element['#process']: An array of functions called after user input has
    *   been mapped to the element's #value property. These functions can be used
    *   to dynamically add child elements: for example, for the 'date' element
@@ -268,8 +275,8 @@ interface FormBuilderInterface {
    *   called in postorder traversal, meaning they are called for the child
    *   elements first, then for the parent element.
    * There are similar properties containing callback functions invoked by
-   * self::doValidateForm() and drupal_render(), appropriate for those
-   * operations.
+   * self::doValidateForm() and RendererInterface::render(),
+   * appropriate for those operations.
    *
    * Developers are strongly encouraged to integrate the functionality needed by
    * their form or module within one of these three pipelines, using the
@@ -300,8 +307,8 @@ interface FormBuilderInterface {
    * run before user input for its child elements is processed, and because of
    * the Form API security of user input processing with respect to #access and
    * #disabled described above, this generally means that #process functions
-   * should not use an element's (unvalidated) #value to affect the #disabled or
-   * #access of child elements. Use-cases where a developer may be tempted to
+   * should not use an element's (non validated) #value to affect the #disabled
+   * or #access of child elements. Use-cases where a developer may be tempted to
    * implement such conditional logic usually fall into one of two categories:
    * - Where user input from the current submission must affect the structure of
    *   a form, including properties like #access and #disabled that affect how

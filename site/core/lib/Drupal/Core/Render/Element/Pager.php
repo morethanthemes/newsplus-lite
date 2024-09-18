@@ -2,17 +2,20 @@
 
 namespace Drupal\Core\Render\Element;
 
+use Drupal\Core\Render\Attribute\RenderElement;
+
 /**
  * Provides a render element for a pager.
  *
- * The pager must be initialized with a call to pager_default_initialize() in
- * order to render properly. When used with database queries, this is performed
- * for you when you extend a select query with
- * \Drupal\Core\Database\Query\PagerSelectExtender.
+ * The pager must be initialized with a call to
+ * \Drupal\Core\Pager\PagerManagerInterface::createPager() in order to render
+ * properly. When used with database queries, this is performed for you when you
+ * extend a select query with \Drupal\Core\Database\Query\PagerSelectExtender.
  *
  * Properties:
  * - #element: (optional, int) The pager ID, to distinguish between multiple
  *   pagers on the same page (defaults to 0).
+ * - #pagination_heading_level: (optional) A heading level for the pager.
  * - #parameters: (optional) An associative array of query string parameters to
  *   append to the pager.
  * - #quantity: The maximum number of numbered page links to create (defaults
@@ -27,10 +30,9 @@ namespace Drupal\Core\Render\Element;
  *   '#type' => 'pager',
  * ];
  * @endcode
- *
- * @RenderElement("pager")
  */
-class Pager extends RenderElement {
+#[RenderElement('pager')]
+class Pager extends RenderElementBase {
 
   /**
    * {@inheritdoc}
@@ -38,11 +40,13 @@ class Pager extends RenderElement {
   public function getInfo() {
     return [
       '#pre_render' => [
-        get_class($this) . '::preRenderPager',
+        static::class . '::preRenderPager',
       ],
       '#theme' => 'pager',
       // The pager ID, to distinguish between multiple pagers on the same page.
       '#element' => 0,
+      // The heading level to use for the pager.
+      '#pagination_heading_level' => 'h4',
       // An associative array of query string parameters to append to the pager
       // links.
       '#parameters' => [],
@@ -68,7 +72,8 @@ class Pager extends RenderElement {
    */
   public static function preRenderPager(array $pager) {
     // Note: the default pager theme process function
-    // template_preprocess_pager() also calls pager_query_add_page(), which
+    // template_preprocess_pager() also calls
+    // \Drupal\Core\Pager\PagerManagerInterface::getUpdatedParameters(), which
     // maintains the existing query string. Therefore
     // template_preprocess_pager() adds the 'url.query_args' cache context,
     // which causes the more specific cache context below to be optimized away.

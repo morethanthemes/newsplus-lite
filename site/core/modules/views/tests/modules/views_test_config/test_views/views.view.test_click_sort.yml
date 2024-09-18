@@ -2,12 +2,12 @@ langcode: en
 status: true
 dependencies: {  }
 id: test_click_sort
+label: test_click_sort
 module: views
 description: ''
 tag: ''
 base_table: views_test_data
 base_field: nid
-core: '8'
 display:
   default:
     display_options:
@@ -52,7 +52,7 @@ display:
             created:
               sortable: false
     display_plugin: default
-    display_title: Master
+    display_title: Default
     id: default
     position: 0
   page_1:

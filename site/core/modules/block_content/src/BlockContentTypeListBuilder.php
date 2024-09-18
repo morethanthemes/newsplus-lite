@@ -6,7 +6,7 @@ use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 
 /**
- * Defines a class to build a listing of custom block type entities.
+ * Defines a class to build a listing of block type entities.
  *
  * @see \Drupal\block_content\Entity\BlockContentType
  */
@@ -29,8 +29,8 @@ class BlockContentTypeListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function buildHeader() {
-    $header['type'] = t('Block type');
-    $header['description'] = t('Description');
+    $header['type'] = $this->t('Block type');
+    $header['description'] = $this->t('Description');
     return $header + parent::buildHeader();
   }
 
@@ -38,7 +38,7 @@ class BlockContentTypeListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-    $row['type'] = $entity->link();
+    $row['type'] = $entity->toLink(NULL, 'edit-form')->toString();
     $row['description']['data']['#markup'] = $entity->getDescription();
     return $row + parent::buildRow($entity);
   }
@@ -47,7 +47,7 @@ class BlockContentTypeListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   protected function getTitle() {
-    return $this->t('Custom block types');
+    return $this->t('Block types');
   }
 
 }

@@ -1,22 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\language\Functional;
 
 use Drupal\Tests\BrowserTestBase;
+use Drupal\Tests\language\Traits\LanguageTestTrait;
 
 /**
  * Tests the content translation settings language selector options.
  *
+ * @covers \Drupal\language\Form\ContentLanguageSettingsForm
  * @group language
  */
 class LanguageSelectorTranslatableTest extends BrowserTestBase {
 
+  use LanguageTestTrait;
+
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'language',
     'content_translation',
     'node',
@@ -27,16 +31,21 @@ class LanguageSelectorTranslatableTest extends BrowserTestBase {
   ];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * The user with administrator privileges.
    *
-   * @var \Drupal\user\Entity\User;
+   * @var \Drupal\user\Entity\User
    */
   public $administrator;
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     // Create user and set permissions.
@@ -62,10 +71,9 @@ class LanguageSelectorTranslatableTest extends BrowserTestBase {
   /**
    * Tests content translation language selectors are correctly translated.
    */
-  public function testLanguageStringSelector() {
+  public function testLanguageStringSelector(): void {
     // Add another language.
-    $edit = ['predefined_langcode' => 'es'];
-    $this->drupalPostForm('admin/config/regional/language/add', $edit, t('Add language'));
+    static::createLanguageFromLangcode('es');
 
     // Translate the string English in Spanish (Inglés). Override config entity.
     $name_translation = 'Inglés';
@@ -79,10 +87,24 @@ class LanguageSelectorTranslatableTest extends BrowserTestBase {
     $this->drupalGet($path);
 
     // Get en language from selector.
-    $elements = $this->xpath('//select[@id=:id]//option[@value=:option]', [':id' => 'edit-settings-user-user-settings-language-langcode', ':option' => 'en']);
+    $option = $this->assertSession()->optionExists('edit-settings-user-user-settings-language-langcode', 'en');
 
     // Check that the language text is translated.
-    $this->assertEqual($elements[0]->getText(), $name_translation, 'Checking the option string English is translated to Spanish.');
+    $this->assertSame($name_translation, $option->getText());
+  }
+
+  /**
+   * Tests that correct title is displayed for content translation page.
+   */
+  public function testContentTranslationPageTitle(): void {
+    $this->drupalGet('admin/config/regional/content-language');
+    $this->assertSession()->pageTextContains('Content language and translation');
+    $this->assertSession()->pageTextNotMatches('#Content language$#');
+
+    \Drupal::service('module_installer')->uninstall(['content_translation']);
+    $this->drupalGet('admin/config/regional/content-language');
+    $this->assertSession()->pageTextContains('Content language');
+    $this->assertSession()->pageTextNotContains('Content language and translation');
   }
 
 }

@@ -15,7 +15,7 @@ use Drupal\views\Views;
  *
  * Relationship handlers extend
  * \Drupal\views\Plugin\views\relationship\RelationshipPluginBase. They must
- * be annotated with \Drupal\views\Annotation\ViewsRelationship annotation,
+ * be attributed with \Drupal\views\Attribute\ViewsRelationship attribute,
  * and they must be in namespace directory Plugin\views\relationship.
  *
  * @ingroup views_plugins
@@ -23,6 +23,8 @@ use Drupal\views\Views;
  */
 
 /**
+ * Relationship plugin base.
+ *
  * Simple relationship handler that allows a new version of the primary table
  * to be linked in.
  *
@@ -61,7 +63,7 @@ abstract class RelationshipPluginBase extends HandlerBase {
    * Init handler to let relationships live on tables other than
    * the table they operate on.
    */
-  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+  public function init(ViewExecutable $view, DisplayPluginBase $display, ?array &$options = NULL) {
     parent::init($view, $display, $options);
 
     if (isset($this->definition['relationship table'])) {
@@ -125,6 +127,10 @@ abstract class RelationshipPluginBase extends HandlerBase {
    * {@inheritdoc}
    */
   public function query() {
+    if (!empty($this->definition['deprecated'])) {
+      @trigger_error($this->definition['deprecated'], E_USER_DEPRECATED);
+    }
+
     // Figure out what base table this relationship brings to the party.
     $table_data = Views::viewsData()->get($this->definition['base']);
     $base_field = empty($this->definition['base field']) ? $table_data['table']['base']['field'] : $this->definition['base field'];
@@ -153,7 +159,7 @@ abstract class RelationshipPluginBase extends HandlerBase {
     }
     $join = Views::pluginManager('join')->createInstance($id, $def);
 
-    // use a short alias for this:
+    // Use a short alias for this:
     $alias = $def['table'] . '_' . $this->table;
 
     $this->alias = $this->query->addRelationship($alias, $join, $this->definition['base'], $this->relationship);

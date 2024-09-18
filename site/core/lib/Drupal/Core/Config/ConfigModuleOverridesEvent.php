@@ -4,7 +4,7 @@ namespace Drupal\Core\Config;
 
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Language\LanguageInterface;
-use Symfony\Component\EventDispatcher\Event;
+use Drupal\Component\EventDispatcher\Event;
 
 /**
  * Event object to allow configuration to be overridden by modules.
@@ -40,7 +40,7 @@ class ConfigModuleOverridesEvent extends Event {
    * @param \Drupal\Core\Language\LanguageInterface $language
    *   (optional) The language for this configuration.
    */
-  public function __construct(array $names, LanguageInterface $language = NULL) {
+  public function __construct(array $names, ?LanguageInterface $language = NULL) {
     $this->names = $names;
     $this->language = $language;
     $this->overrides = [];

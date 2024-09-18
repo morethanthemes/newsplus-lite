@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\field\Unit\Plugin\migrate\process\d7;
 
 use Drupal\field\Plugin\migrate\process\d7\FieldInstanceSettings;
@@ -19,17 +21,17 @@ class FieldInstanceSettingsTest extends MigrateTestCase {
    *
    * @covers ::transform
    */
-  public function testTransformImageSettings() {
-    $migration = $this->getMock(MigrationInterface::class);
-    $plugin = new FieldInstanceSettings([], 'd7_field_instance_settings', [], $migration);
+  public function testTransformImageSettings(): void {
+    $migration = $this->createMock(MigrationInterface::class);
+    $plugin = new FieldInstanceSettings([], 'd7_field_instance_settings', []);
 
-    $executable = $this->getMock(MigrateExecutableInterface::class);
+    $executable = $this->createMock(MigrateExecutableInterface::class);
     $row = $this->getMockBuilder(Row::class)
       ->disableOriginalConstructor()
       ->getMock();
 
     $value = $plugin->transform([[], ['type' => 'image_image'], ['data' => '']], $executable, $row, 'foo');
-    $this->assertInternalType('array', $value['default_image']);
+    $this->assertIsArray($value['default_image']);
     $this->assertSame('', $value['default_image']['alt']);
     $this->assertSame('', $value['default_image']['title']);
     $this->assertNull($value['default_image']['width']);

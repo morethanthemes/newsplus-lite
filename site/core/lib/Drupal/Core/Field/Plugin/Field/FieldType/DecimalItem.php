@@ -2,23 +2,29 @@
 
 namespace Drupal\Core\Field\Plugin\Field\FieldType;
 
+use Drupal\Core\Field\Attribute\FieldType;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\TypedData\DataDefinition;
 
 /**
  * Defines the 'decimal' field type.
- *
- * @FieldType(
- *   id = "decimal",
- *   label = @Translation("Number (decimal)"),
- *   description = @Translation("This field stores a number in the database in a fixed decimal format."),
- *   category = @Translation("Number"),
- *   default_widget = "number",
- *   default_formatter = "number_decimal"
- * )
  */
+#[FieldType(
+  id: "decimal",
+  label: new TranslatableMarkup("Number (decimal)"),
+  description: [
+    new TranslatableMarkup("Ideal for exact counts and measures (prices, temperatures, distances, volumes, etc.)"),
+    new TranslatableMarkup("Stores a number in the database in a fixed decimal format"),
+    new TranslatableMarkup("For example, 12.34 km or € when used for further detailed calculations (such as summing many of these)"),
+  ],
+  category: "number",
+  weight: -30,
+  default_widget: "number",
+  default_formatter: "number_decimal"
+)]
 class DecimalItem extends NumericItemBase {
 
   /**
@@ -35,8 +41,8 @@ class DecimalItem extends NumericItemBase {
    * {@inheritdoc}
    */
   public static function propertyDefinitions(FieldStorageDefinitionInterface $field_definition) {
-    $properties['value'] = DataDefinition::create('string')
-      ->setLabel(t('Decimal value'))
+    $properties['value'] = DataDefinition::create('decimal')
+      ->setLabel(new TranslatableMarkup('Decimal value'))
       ->setRequired(TRUE);
 
     return $properties;
@@ -52,7 +58,7 @@ class DecimalItem extends NumericItemBase {
           'type' => 'numeric',
           'precision' => $field_definition->getSetting('precision'),
           'scale' => $field_definition->getSetting('scale'),
-        ]
+        ],
       ],
     ];
   }
@@ -66,45 +72,26 @@ class DecimalItem extends NumericItemBase {
 
     $element['precision'] = [
       '#type' => 'number',
-      '#title' => t('Precision'),
+      '#title' => $this->t('Precision'),
       '#min' => 10,
       '#max' => 32,
       '#default_value' => $settings['precision'],
-      '#description' => t('The total number of digits to store in the database, including those to the right of the decimal.'),
+      '#description' => $this->t('The total number of digits to store in the database, including those to the right of the decimal.'),
       '#disabled' => $has_data,
     ];
 
     $element['scale'] = [
       '#type' => 'number',
-      '#title' => t('Scale', [], ['context' => 'decimal places']),
+      '#title' => $this->t('Scale', [], ['context' => 'decimal places']),
       '#min' => 0,
       '#max' => 10,
       '#default_value' => $settings['scale'],
-      '#description' => t('The number of digits to the right of the decimal.'),
+      '#description' => $this->t('The number of digits to the right of the decimal.'),
       '#disabled' => $has_data,
     ];
 
     return $element;
   }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getConstraints() {
-    $constraint_manager = \Drupal::typedDataManager()->getValidationConstraintManager();
-    $constraints = parent::getConstraints();
-
-    $constraints[] = $constraint_manager->create('ComplexData', [
-      'value' => [
-        'Regex' => [
-          'pattern' => '/^[+-]?((\d+(\.\d*)?)|(\.\d+))$/i',
-        ]
-      ],
-    ]);
-
-    return $constraints;
-  }
-
 
   /**
    * {@inheritdoc}
@@ -137,8 +124,8 @@ class DecimalItem extends NumericItemBase {
     // point.
     // The maximum number you can get with 3 digits is 10^3 - 1 --> 999.
     // The minimum number you can get with 3 digits is -1 * (10^3 - 1).
-    $max = is_numeric($settings['max']) ?: pow(10, ($precision - $scale)) - 1;
-    $min = is_numeric($settings['min']) ?: -pow(10, ($precision - $scale)) + 1;
+    $max = is_numeric($settings['max']) ? $settings['max'] : pow(10, ($precision - $scale)) - 1;
+    $min = is_numeric($settings['min']) ? $settings['min'] : -pow(10, ($precision - $scale)) + 1;
 
     // Get the number of decimal digits for the $max
     $decimal_digits = self::getDecimalDigits($max);
@@ -153,7 +140,6 @@ class DecimalItem extends NumericItemBase {
     $values['value'] = self::truncateDecimal($random_decimal, $scale);
     return $values;
   }
-
 
   /**
    * Helper method to get the number of decimal digits out of a decimal number.

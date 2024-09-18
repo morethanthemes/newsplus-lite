@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Component\Serialization;
 
 use Drupal\Component\Serialization\Exception\InvalidDataTypeException;
@@ -22,14 +24,14 @@ class YamlPeclTest extends YamlTestBase {
    * @covers ::decode
    * @dataProvider providerEncodeDecodeTests
    */
-  public function testEncodeDecode($data) {
+  public function testEncodeDecode(array $data): void {
     $this->assertEquals($data, YamlPecl::decode(YamlPecl::encode($data)));
   }
 
   /**
    * Ensures that php object support is disabled.
    */
-  public function testObjectSupportDisabled() {
+  public function testObjectSupportDisabled(): void {
     $object = new \stdClass();
     $object->foo = 'bar';
     $this->assertEquals(['O:8:"stdClass":1:{s:3:"foo";s:3:"bar";}'], YamlPecl::decode(YamlPecl::encode([$object])));
@@ -42,7 +44,7 @@ class YamlPeclTest extends YamlTestBase {
    * @covers ::decode
    * @dataProvider providerDecodeTests
    */
-  public function testDecode($string, $data) {
+  public function testDecode($string, $data): void {
     $this->assertEquals($data, YamlPecl::decode($string));
   }
 
@@ -51,12 +53,14 @@ class YamlPeclTest extends YamlTestBase {
    *
    * @covers ::encode
    */
-  public function testEncode() {
+  public function testEncode(): void {
+    // cSpell:disable
     $this->assertEquals('---
 foo:
   bar: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus sapien ex, venenatis vitae nisi eu, posuere luctus dolor. Nullam convallis
 ...
 ', YamlPecl::encode(['foo' => ['bar' => 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus sapien ex, venenatis vitae nisi eu, posuere luctus dolor. Nullam convallis']]));
+    // cSpell:enable
   }
 
   /**
@@ -70,14 +74,14 @@ foo:
    * @covers ::applyBooleanCallbacks
    * @dataProvider providerBoolTest
    */
-  public function testApplyBooleanCallbacks($string, $expected) {
+  public function testApplyBooleanCallbacks($string, $expected): void {
     $this->assertEquals($expected, YamlPecl::applyBooleanCallbacks($string, 'bool', NULL));
   }
 
   /**
    * @covers ::getFileExtension
    */
-  public function testGetFileExtension() {
+  public function testGetFileExtension(): void {
     $this->assertEquals('yml', YamlPecl::getFileExtension());
   }
 
@@ -86,13 +90,8 @@ foo:
    *
    * @covers ::errorHandler
    */
-  public function testError() {
-    if (method_exists($this, 'expectException')) {
-      $this->expectException(InvalidDataTypeException::class);
-    }
-    else {
-      $this->setExpectedException(InvalidDataTypeException::class);
-    }
+  public function testError(): void {
+    $this->expectException(InvalidDataTypeException::class);
     YamlPecl::decode('foo: [ads');
   }
 

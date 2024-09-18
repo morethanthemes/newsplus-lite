@@ -1,13 +1,6 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal.
- */
-
 use Drupal\Core\DependencyInjection\ContainerNotInitializedException;
-use Drupal\Core\Messenger\LegacyMessenger;
-use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -82,10 +75,20 @@ class Drupal {
   /**
    * The current system version.
    */
-  const VERSION = '8.5.4';
+  const VERSION = '10.3.5';
 
   /**
    * Core API compatibility.
+   *
+   * This constant is set to '8.x' to provide legacy compatibility with
+   * extensions that use the '8.x-' prefix to denote Drupal core major version
+   * compatibility, for example '8.x-1.0'. These extensions can specify
+   * compatibility with multiple major versions of Drupal core by setting the
+   * version constraint in 'core_version_requirement'. Drupal does not support
+   * using this core major version number prefix with versions greater than 8.
+   * For example '9.x-' prefixed extensions are not supported.
+   *
+   * @todo Remove or rename this constant in https://www.drupal.org/i/3085662
    */
   const CORE_COMPATIBILITY = '8.x';
 
@@ -95,9 +98,45 @@ class Drupal {
   const CORE_MINIMUM_SCHEMA_VERSION = 8000;
 
   /**
+   * Minimum allowed version of PHP for Drupal to be bootstrapped.
+   *
+   * Below this version:
+   * - The installer cannot be run.
+   * - Updates cannot be run.
+   * - Modules and themes cannot be enabled.
+   * - If a site managed to bypass all of the above, then an error is shown in
+   *   the status report and various fatal errors occur on various pages.
+   *
+   * Note: To prevent the installer from having fatal errors on older versions
+   * of PHP, the value of this constant is hardcoded twice in core/install.php:
+   * - Once as a parameter of version_compare()
+   * - Once in the error message printed to the user immediately after.
+   * Remember to update both whenever this constant is updated.
+   */
+  const MINIMUM_PHP = '8.1.0';
+
+  /**
+   * Minimum recommended value of PHP memory_limit.
+   *
+   * 64M was chosen as a minimum requirement in order to allow for additional
+   * contributed modules to be installed prior to hitting the limit. However,
+   * 40M is the target for the Standard installation profile.
+   */
+  const MINIMUM_PHP_MEMORY_LIMIT = '64M';
+
+  /**
+   * Minimum recommended version of PHP.
+   *
+   * Sites installing Drupal on PHP versions lower than this will see a warning
+   * message, but Drupal can still be installed. Used for (e.g.) PHP versions
+   * that have reached their EOL or will in the near future.
+   */
+  const RECOMMENDED_PHP = '8.3.0';
+
+  /**
    * The currently active container object, or NULL if not initialized yet.
    *
-   * @var \Symfony\Component\DependencyInjection\ContainerInterface|null
+   * @var \Drupal\Component\DependencyInjection\ContainerInterface|null
    */
   protected static $container;
 
@@ -121,7 +160,7 @@ class Drupal {
   /**
    * Returns the currently active global container.
    *
-   * @return \Symfony\Component\DependencyInjection\ContainerInterface|null
+   * @return \Drupal\Component\DependencyInjection\ContainerInterface
    *
    * @throws \Drupal\Core\DependencyInjection\ContainerNotInitializedException
    */
@@ -140,7 +179,6 @@ class Drupal {
   public static function hasContainer() {
     return static::$container !== NULL;
   }
-
 
   /**
    * Retrieves a service from the container.
@@ -179,14 +217,16 @@ class Drupal {
    * @return string
    */
   public static function root() {
-    return static::getContainer()->get('app.root');
+    return static::getContainer()->getParameter('app.root');
   }
 
   /**
    * Gets the active install profile.
    *
-   * @return string|null
-   *   The name of the active install profile.
+   * @return string|false|null
+   *   The name of the active install profile. FALSE indicates that the site is
+   *   not using an install profile. NULL indicates that the site has not yet
+   *   been installed.
    */
   public static function installProfile() {
     return static::getContainer()->getParameter('install_profile');
@@ -230,7 +270,7 @@ class Drupal {
   }
 
   /**
-   * Retrives the request stack.
+   * Retrieves the request stack.
    *
    * @return \Symfony\Component\HttpFoundation\RequestStack
    *   The request stack
@@ -252,26 +292,17 @@ class Drupal {
   /**
    * Gets the current active user.
    *
+   * This method will return the \Drupal\Core\Session\AccountProxy object of the
+   * current user. You can use the \Drupal\user\Entity\User::load() method to
+   * load the full user entity object. For example:
+   * @code
+   *   $user = \Drupal\user\Entity\User::load(\Drupal::currentUser()->id());
+   * @endcode
+   *
    * @return \Drupal\Core\Session\AccountProxyInterface
    */
   public static function currentUser() {
     return static::getContainer()->get('current_user');
-  }
-
-  /**
-   * Retrieves the entity manager service.
-   *
-   * @return \Drupal\Core\Entity\EntityManagerInterface
-   *   The entity manager service.
-   *
-   * @deprecated in Drupal 8.0.0 and will be removed before Drupal 9.0.0.
-   *   Use \Drupal::entityTypeManager() instead in most cases. If the needed
-   *   method is not on \Drupal\Core\Entity\EntityTypeManagerInterface, see the
-   *   deprecated \Drupal\Core\Entity\EntityManager to find the
-   *   correct interface or service.
-   */
-  public static function entityManager() {
-    return static::getContainer()->get('entity.manager');
   }
 
   /**
@@ -317,13 +348,23 @@ class Drupal {
    * an object of a class that implements
    * \Drupal\Core\DependencyInjection\ContainerInjectionInterface.
    *
-   * One common usecase is to provide a class which contains the actual code
+   * One common use case is to provide a class which contains the actual code
    * of a hook implementation, without having to create a service.
    *
-   * @return \Drupal\Core\DependencyInjection\ClassResolverInterface
-   *   The class resolver.
+   * @param string $class
+   *   (optional) A class name to instantiate.
+   *
+   * @return \Drupal\Core\DependencyInjection\ClassResolverInterface|object
+   *   The class resolver or if $class is provided, a class instance with a
+   *   given class definition.
+   *
+   * @throws \InvalidArgumentException
+   *   If $class does not exist.
    */
-  public static function classResolver() {
+  public static function classResolver($class = NULL) {
+    if ($class) {
+      return static::getContainer()->get('class_resolver')->getInstanceFromDefinition($class);
+    }
     return static::getContainer()->get('class_resolver');
   }
 
@@ -355,13 +396,16 @@ class Drupal {
    * Retrieves a configuration object.
    *
    * This is the main entry point to the configuration API. Calling
-   * @code \Drupal::config('book.admin') @endcode will return a configuration
-   * object in which the book module can store its administrative settings.
+   * @code \Drupal::config('my_module.admin') @endcode will return a
+   * configuration object the my_module module can use to read its
+   * administrative settings.
    *
    * @param string $name
-   *   The name of the configuration object to retrieve. The name corresponds to
-   *   a configuration file. For @code \Drupal::config('book.admin') @endcode, the config
-   *   object returned will contain the contents of book.admin configuration file.
+   *   The name of the configuration object to retrieve, which typically
+   *   corresponds to a configuration file. For
+   *   @code \Drupal::config('my_module.admin') @endcode, the configuration
+   *   object returned will contain the content of the my_module.admin
+   *   configuration file.
    *
    * @return \Drupal\Core\Config\ImmutableConfig
    *   An immutable configuration object.
@@ -524,51 +568,13 @@ class Drupal {
   }
 
   /**
-   * Returns the url generator service.
+   * Returns the URL generator service.
    *
    * @return \Drupal\Core\Routing\UrlGeneratorInterface
-   *   The url generator service.
+   *   The URL generator service.
    */
   public static function urlGenerator() {
     return static::getContainer()->get('url_generator');
-  }
-
-  /**
-   * Generates a URL string for a specific route based on the given parameters.
-   *
-   * This method is a convenience wrapper for generating URL strings for URLs
-   * that have Drupal routes (that is, most pages generated by Drupal) using
-   * the \Drupal\Core\Url object. See \Drupal\Core\Url::fromRoute() for
-   * detailed documentation. For non-routed local URIs relative to
-   * the base path (like robots.txt) use Url::fromUri()->toString() with the
-   * base: scheme.
-   *
-   * @param string $route_name
-   *   The name of the route.
-   * @param array $route_parameters
-   *   (optional) An associative array of parameter names and values.
-   * @param array $options
-   *   (optional) An associative array of additional options.
-   * @param bool $collect_bubbleable_metadata
-   *   (optional) Defaults to FALSE. When TRUE, both the generated URL and its
-   *   associated bubbleable metadata are returned.
-   *
-   * @return string|\Drupal\Core\GeneratedUrl
-   *   A string containing a URL to the given path.
-   *   When $collect_bubbleable_metadata is TRUE, a GeneratedUrl object is
-   *   returned, containing the generated URL plus bubbleable metadata.
-   *
-   * @see \Drupal\Core\Routing\UrlGeneratorInterface::generateFromRoute()
-   * @see \Drupal\Core\Url
-   * @see \Drupal\Core\Url::fromRoute()
-   * @see \Drupal\Core\Url::fromUri()
-   *
-   * @deprecated as of Drupal 8.0.x, will be removed before Drupal 9.0.0.
-   *   Instead create a \Drupal\Core\Url object directly, for example using
-   *   Url::fromRoute().
-   */
-  public static function url($route_name, $route_parameters = [], $options = [], $collect_bubbleable_metadata = FALSE) {
-    return static::getContainer()->get('url_generator')->generateFromRoute($route_name, $route_parameters, $options, $collect_bubbleable_metadata);
   }
 
   /**
@@ -578,35 +584,6 @@ class Drupal {
    */
   public static function linkGenerator() {
     return static::getContainer()->get('link_generator');
-  }
-
-  /**
-   * Renders a link with a given link text and Url object.
-   *
-   * This method is a convenience wrapper for the link generator service's
-   * generate() method.
-   *
-   * @param string $text
-   *   The link text for the anchor tag.
-   * @param \Drupal\Core\Url $url
-   *   The URL object used for the link.
-   *
-   * @return \Drupal\Core\GeneratedLink
-   *   A GeneratedLink object containing a link to the given route and
-   *   parameters and bubbleable metadata.
-   *
-   * @see \Drupal\Core\Utility\LinkGeneratorInterface::generate()
-   * @see \Drupal\Core\Url
-   *
-   * @deprecated in Drupal 8.0.0 and will be removed before Drupal 9.0.0.
-   *   Use \Drupal\Core\Link instead.
-   *   Example:
-   *   @code
-   *     $link = Link::fromTextAndUrl($text, $url);
-   *   @endcode
-   */
-  public static function l($text, Url $url) {
-    return static::getContainer()->get('link_generator')->generate($text, $url);
   }
 
   /**
@@ -765,9 +742,7 @@ class Drupal {
    *   The messenger.
    */
   public static function messenger() {
-    // @todo Replace with service once LegacyMessenger is removed in 9.0.0.
-    // @see https://www.drupal.org/node/2928994
-    return new LegacyMessenger();
+    return static::getContainer()->get('messenger');
   }
 
 }

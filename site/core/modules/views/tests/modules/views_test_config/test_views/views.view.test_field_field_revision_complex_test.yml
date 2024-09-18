@@ -2,12 +2,12 @@ langcode: und
 status: true
 dependencies: {  }
 id: test_field_field_revision_complex_test
+label: test_field_field_revision_complex_test
 module: views
 description: ''
 tag: ''
 base_table: entity_test_rev_revision
 base_field: id
-core: '8'
 display:
   default:
     display_options:
@@ -82,6 +82,6 @@ display:
       style:
         type: html_list
     display_plugin: default
-    display_title: Master
+    display_title: Default
     id: default
     position: 0

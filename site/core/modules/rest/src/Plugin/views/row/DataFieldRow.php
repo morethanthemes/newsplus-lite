@@ -3,6 +3,8 @@
 namespace Drupal\rest\Plugin\views\row;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\views\Attribute\ViewsRow;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\row\RowPluginBase;
@@ -11,14 +13,13 @@ use Drupal\views\Plugin\views\row\RowPluginBase;
  * Plugin which displays fields as raw data.
  *
  * @ingroup views_row_plugins
- *
- * @ViewsRow(
- *   id = "data_field",
- *   title = @Translation("Fields"),
- *   help = @Translation("Use fields as row data."),
- *   display_types = {"data"}
- * )
  */
+#[ViewsRow(
+  id: "data_field",
+  title: new TranslatableMarkup("Fields"),
+  help: new TranslatableMarkup("Use fields as row data."),
+  display_types: ["data"]
+)]
 class DataFieldRow extends RowPluginBase {
 
   /**
@@ -43,7 +44,7 @@ class DataFieldRow extends RowPluginBase {
   /**
    * {@inheritdoc}
    */
-  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+  public function init(ViewExecutable $view, DisplayPluginBase $display, ?array &$options = NULL) {
     parent::init($view, $display, $options);
 
     if (!empty($this->options['field_options'])) {
@@ -94,14 +95,14 @@ class DataFieldRow extends RowPluginBase {
           '#title' => $this->t('Alias for @id', ['@id' => $id]),
           '#title_display' => 'invisible',
           '#type' => 'textfield',
-          '#default_value' => isset($options[$id]['alias']) ? $options[$id]['alias'] : '',
+          '#default_value' => $options[$id]['alias'] ?? '',
           '#element_validate' => [[$this, 'validateAliasName']],
         ];
         $form['field_options'][$id]['raw_output'] = [
           '#title' => $this->t('Raw output for @id', ['@id' => $id]),
           '#title_display' => 'invisible',
           '#type' => 'checkbox',
-          '#default_value' => isset($options[$id]['raw_output']) ? $options[$id]['raw_output'] : '',
+          '#default_value' => $options[$id]['raw_output'] ?? '',
         ];
       }
     }
@@ -141,9 +142,13 @@ class DataFieldRow extends RowPluginBase {
       if (!empty($this->rawOutputOptions[$id])) {
         $value = $field->getValue($row);
       }
-      // Otherwise, pass this through the field advancedRender() method.
+      // Otherwise, get rendered field.
       else {
-        $value = $field->advancedRender($row);
+        // Advanced render for token replacement.
+        $markup = $field->advancedRender($row);
+        // Post render to support uncacheable fields.
+        $field->postRender($row, $markup);
+        $value = $field->last_render;
       }
 
       // Omit excluded fields from the rendered output.
@@ -185,7 +190,7 @@ class DataFieldRow extends RowPluginBase {
    */
   protected static function extractFromOptionsArray($key, $options) {
     return array_map(function ($item) use ($key) {
-      return isset($item[$key]) ? $item[$key] : NULL;
+      return $item[$key] ?? NULL;
     }, $options);
   }
 

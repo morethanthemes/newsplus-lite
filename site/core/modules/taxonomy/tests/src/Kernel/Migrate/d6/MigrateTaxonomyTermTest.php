@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Kernel\Migrate\d6;
 
 use Drupal\taxonomy\Entity\Term;
@@ -15,12 +17,12 @@ class MigrateTaxonomyTermTest extends MigrateDrupal6TestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['taxonomy'];
+  protected static $modules = ['comment', 'taxonomy'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installEntitySchema('taxonomy_term');
     $this->executeMigrations(['d6_taxonomy_vocabulary', 'd6_taxonomy_term']);
@@ -29,7 +31,7 @@ class MigrateTaxonomyTermTest extends MigrateDrupal6TestBase {
   /**
    * Tests the Drupal 6 taxonomy term to Drupal 8 migration.
    */
-  public function testTaxonomyTerms() {
+  public function testTaxonomyTerms(): void {
     $expected_results = [
       '1' => [
         'source_vid' => 1,
@@ -92,11 +94,11 @@ class MigrateTaxonomyTermTest extends MigrateDrupal6TestBase {
       $this->assertSame($values['vid'], $term->vid->target_id);
       $this->assertSame((string) $values['weight'], $term->weight->value);
       if ($values['parent'] === [0]) {
-        $this->assertNull($term->parent->target_id);
+        $this->assertSame(0, (int) $term->parent->target_id);
       }
       else {
         $parents = [];
-        foreach (\Drupal::entityManager()->getStorage('taxonomy_term')->loadParents($tid) as $parent) {
+        foreach (\Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadParents($tid) as $parent) {
           $parents[] = (int) $parent->id();
         }
         $this->assertSame($parents, $values['parent']);
@@ -104,7 +106,14 @@ class MigrateTaxonomyTermTest extends MigrateDrupal6TestBase {
 
       $this->assertArrayHasKey($tid, $tree_terms, "Term $tid exists in vocabulary tree");
       $tree_term = $tree_terms[$tid];
-      $this->assertEquals($values['parent'], $tree_term->parents, "Term $tid has correct parents in vocabulary tree");
+
+      // PostgreSQL, MySQL and SQLite may not return the parent terms in the
+      // same order so sort before testing.
+      $expected_parents = $values['parent'];
+      sort($expected_parents);
+      $actual_parents = $tree_term->parents;
+      sort($actual_parents);
+      $this->assertEquals($expected_parents, $actual_parents, "Term $tid has correct parents in vocabulary tree");
     }
   }
 

@@ -13,6 +13,7 @@ namespace Symfony\Component\DependencyInjection\Compiler;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
+use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
 use Symfony\Component\DependencyInjection\Reference;
 
 /**
@@ -23,27 +24,36 @@ use Symfony\Component\DependencyInjection\Reference;
  */
 class ReplaceAliasByActualDefinitionPass extends AbstractRecursivePass
 {
-    private $replacements;
+    protected bool $skipScalars = true;
+
+    private array $replacements;
 
     /**
      * Process the Container to replace aliases with service definitions.
+     *
+     * @return void
      *
      * @throws InvalidArgumentException if the service definition does not exist
      */
     public function process(ContainerBuilder $container)
     {
         // First collect all alias targets that need to be replaced
-        $seenAliasTargets = array();
-        $replacements = array();
+        $seenAliasTargets = [];
+        $replacements = [];
+
         foreach ($container->getAliases() as $definitionId => $target) {
-            $targetId = $container->normalizeId($target);
+            $targetId = (string) $target;
             // Special case: leave this target alone
             if ('service_container' === $targetId) {
                 continue;
             }
-            // Check if target needs to be replaces
+            // Check if target needs to be replaced
             if (isset($replacements[$targetId])) {
-                $container->setAlias($definitionId, $replacements[$targetId])->setPublic($target->isPublic())->setPrivate($target->isPrivate());
+                $container->setAlias($definitionId, $replacements[$targetId])->setPublic($target->isPublic());
+
+                if ($target->isDeprecated()) {
+                    $container->getAlias($definitionId)->setDeprecated(...array_values($target->getDeprecation('%alias_id%')));
+                }
             }
             // No need to process the same target twice
             if (isset($seenAliasTargets[$targetId])) {
@@ -53,31 +63,35 @@ class ReplaceAliasByActualDefinitionPass extends AbstractRecursivePass
             $seenAliasTargets[$targetId] = true;
             try {
                 $definition = $container->getDefinition($targetId);
-            } catch (InvalidArgumentException $e) {
-                throw new InvalidArgumentException(sprintf('Unable to replace alias "%s" with actual definition "%s".', $definitionId, $targetId), null, $e);
+            } catch (ServiceNotFoundException $e) {
+                if ('' !== $e->getId() && '@' === $e->getId()[0]) {
+                    throw new ServiceNotFoundException($e->getId(), $e->getSourceId(), null, [substr($e->getId(), 1)]);
+                }
+
+                throw $e;
             }
-            if ($definition->isPublic() || $definition->isPrivate()) {
+            if ($definition->isPublic()) {
                 continue;
             }
             // Remove private definition and schedule for replacement
-            $definition->setPublic(!$target->isPrivate());
-            $definition->setPrivate($target->isPrivate());
+            $definition->setPublic($target->isPublic());
             $container->setDefinition($definitionId, $definition);
             $container->removeDefinition($targetId);
             $replacements[$targetId] = $definitionId;
+
+            if ($target->isPublic() && $target->isDeprecated()) {
+                $definition->addTag('container.private', $target->getDeprecation('%service_id%'));
+            }
         }
         $this->replacements = $replacements;
 
         parent::process($container);
-        $this->replacements = array();
+        $this->replacements = [];
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function processValue($value, $isRoot = false)
+    protected function processValue(mixed $value, bool $isRoot = false): mixed
     {
-        if ($value instanceof Reference && isset($this->replacements[$referenceId = $this->container->normalizeId($value)])) {
+        if ($value instanceof Reference && isset($this->replacements[$referenceId = (string) $value])) {
             // Perform the replacement
             $newId = $this->replacements[$referenceId];
             $value = new Reference($newId, $value->getInvalidBehavior());

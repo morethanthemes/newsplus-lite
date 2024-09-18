@@ -11,6 +11,9 @@
 
 namespace Symfony\Component\HttpFoundation;
 
+// Help opcache.preload discover always-needed symbols
+class_exists(AcceptHeaderItem::class);
+
 /**
  * Represents an Accept-* header.
  *
@@ -24,12 +27,9 @@ class AcceptHeader
     /**
      * @var AcceptHeaderItem[]
      */
-    private $items = array();
+    private array $items = [];
 
-    /**
-     * @var bool
-     */
-    private $sorted = true;
+    private bool $sorted = true;
 
     /**
      * @param AcceptHeaderItem[] $items
@@ -43,55 +43,45 @@ class AcceptHeader
 
     /**
      * Builds an AcceptHeader instance from a string.
-     *
-     * @param string $headerValue
-     *
-     * @return self
      */
-    public static function fromString($headerValue)
+    public static function fromString(?string $headerValue): self
     {
-        $index = 0;
+        $parts = HeaderUtils::split($headerValue ?? '', ',;=');
 
-        return new self(array_map(function ($itemValue) use (&$index) {
-            $item = AcceptHeaderItem::fromString($itemValue);
+        return new self(array_map(function ($subParts) {
+            static $index = 0;
+            $part = array_shift($subParts);
+            $attributes = HeaderUtils::combine($subParts);
+
+            $item = new AcceptHeaderItem($part[0], $attributes);
             $item->setIndex($index++);
 
             return $item;
-        }, preg_split('/\s*(?:,*("[^"]+"),*|,*(\'[^\']+\'),*|,+)\s*/', $headerValue, 0, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE)));
+        }, $parts));
     }
 
     /**
      * Returns header value's string representation.
-     *
-     * @return string
      */
-    public function __toString()
+    public function __toString(): string
     {
         return implode(',', $this->items);
     }
 
     /**
      * Tests if header has given value.
-     *
-     * @param string $value
-     *
-     * @return bool
      */
-    public function has($value)
+    public function has(string $value): bool
     {
         return isset($this->items[$value]);
     }
 
     /**
      * Returns given value's item, if exists.
-     *
-     * @param string $value
-     *
-     * @return AcceptHeaderItem|null
      */
-    public function get($value)
+    public function get(string $value): ?AcceptHeaderItem
     {
-        return isset($this->items[$value]) ? $this->items[$value] : null;
+        return $this->items[$value] ?? $this->items[explode('/', $value)[0].'/*'] ?? $this->items['*/*'] ?? $this->items['*'] ?? null;
     }
 
     /**
@@ -99,7 +89,7 @@ class AcceptHeader
      *
      * @return $this
      */
-    public function add(AcceptHeaderItem $item)
+    public function add(AcceptHeaderItem $item): static
     {
         $this->items[$item->getValue()] = $item;
         $this->sorted = false;
@@ -112,7 +102,7 @@ class AcceptHeader
      *
      * @return AcceptHeaderItem[]
      */
-    public function all()
+    public function all(): array
     {
         $this->sort();
 
@@ -121,34 +111,26 @@ class AcceptHeader
 
     /**
      * Filters items on their value using given regex.
-     *
-     * @param string $pattern
-     *
-     * @return self
      */
-    public function filter($pattern)
+    public function filter(string $pattern): self
     {
-        return new self(array_filter($this->items, function (AcceptHeaderItem $item) use ($pattern) {
-            return preg_match($pattern, $item->getValue());
-        }));
+        return new self(array_filter($this->items, fn (AcceptHeaderItem $item) => preg_match($pattern, $item->getValue())));
     }
 
     /**
      * Returns first item.
-     *
-     * @return AcceptHeaderItem|null
      */
-    public function first()
+    public function first(): ?AcceptHeaderItem
     {
         $this->sort();
 
-        return !empty($this->items) ? reset($this->items) : null;
+        return $this->items ? reset($this->items) : null;
     }
 
     /**
      * Sorts items by descending quality.
      */
-    private function sort()
+    private function sort(): void
     {
         if (!$this->sorted) {
             uasort($this->items, function (AcceptHeaderItem $a, AcceptHeaderItem $b) {

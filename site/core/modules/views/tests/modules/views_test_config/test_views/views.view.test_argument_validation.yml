@@ -5,13 +5,12 @@ dependencies:
     - node
     - user
 id: test_argument_validation
-label: ''
+label: test_argument_validation
 module: views
 description: 'This view is used to test the argument validator schema.'
 tag: ''
 base_table: views_test_data
 base_field: ''
-core: '8'
 display:
   default:
     display_options:
@@ -65,7 +64,6 @@ display:
           default_argument_type: fixed
           default_argument_options:
             argument: ''
-          default_argument_skip_url: false
           summary_options:
             base_path: ''
             count: true
@@ -102,7 +100,6 @@ display:
           default_argument_type: fixed
           default_argument_options:
             argument: ''
-          default_argument_skip_url: false
           summary_options:
             base_path: ''
             count: true
@@ -143,7 +140,6 @@ display:
           default_argument_type: fixed
           default_argument_options:
             argument: ''
-          default_argument_skip_url: false
           summary_options:
             base_path: ''
             count: true
@@ -190,7 +186,6 @@ display:
           title: ''
           default_argument_type: node
           default_argument_options: {  }
-          default_argument_skip_url: false
           summary_options:
             base_path: ''
             count: true
@@ -218,7 +213,7 @@ display:
           plugin_id: node_nid
       display_extenders: {  }
     display_plugin: default
-    display_title: Master
+    display_title: Default
     id: default
     position: 0
     cache_metadata:

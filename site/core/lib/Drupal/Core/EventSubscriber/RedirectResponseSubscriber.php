@@ -7,12 +7,12 @@ use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Routing\LocalRedirectResponse;
 use Drupal\Core\Routing\RequestContext;
 use Drupal\Core\Utility\UnroutedUrlAssemblerInterface;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
-use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
-use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\DependencyInjection\Attribute\AutowireServiceClosure;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
  * Allows manipulation of the response object when performing a redirect.
@@ -20,32 +20,37 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 class RedirectResponseSubscriber implements EventSubscriberInterface {
 
   /**
-   * The unrouted URL assembler service.
+   * Whether to ignore the destination query parameter when redirecting.
    *
-   * @var \Drupal\Core\Utility\UnroutedUrlAssemblerInterface
+   * @var bool
    */
-  protected $unroutedUrlAssembler;
+  protected bool $ignoreDestination = FALSE;
 
   /**
    * Constructs a RedirectResponseSubscriber object.
    *
-   * @param \Drupal\Core\Utility\UnroutedUrlAssemblerInterface $url_assembler
+   * @param \Drupal\Core\Utility\UnroutedUrlAssemblerInterface $unroutedUrlAssembler
    *   The unrouted URL assembler service.
-   * @param \Drupal\Core\Routing\RequestContext $request_context
+   * @param \Drupal\Core\Routing\RequestContext $requestContext
    *   The request context.
+   * @param \Closure $loggerClosure
+   *   A closure that wraps the 'logger.channel.php' service.
    */
-  public function __construct(UnroutedUrlAssemblerInterface $url_assembler, RequestContext $request_context) {
-    $this->unroutedUrlAssembler = $url_assembler;
-    $this->requestContext = $request_context;
+  public function __construct(
+    protected UnroutedUrlAssemblerInterface $unroutedUrlAssembler,
+    protected RequestContext $requestContext,
+    #[AutowireServiceClosure('logger.channel.php')]
+    protected \Closure $loggerClosure,
+  ) {
   }
 
   /**
    * Allows manipulation of the response object when performing a redirect.
    *
-   * @param \Symfony\Component\HttpKernel\Event\FilterResponseEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\ResponseEvent $event
    *   The Event to process.
    */
-  public function checkRedirectUrl(FilterResponseEvent $event) {
+  public function checkRedirectUrl(ResponseEvent $event) {
     $response = $event->getResponse();
     if ($response instanceof RedirectResponse) {
       $request = $event->getRequest();
@@ -54,7 +59,7 @@ class RedirectResponseSubscriber implements EventSubscriberInterface {
       // If $response is already a SecuredRedirectResponse, it might reject the
       // new target as invalid, in which case proceed with the old target.
       $destination = $request->query->get('destination');
-      if ($destination) {
+      if ($destination && !$this->ignoreDestination) {
         // The 'Location' HTTP header must always be absolute.
         $destination = $this->getDestinationAsAbsoluteUrl($destination, $request->getSchemeAndHttpHost());
         try {
@@ -76,13 +81,14 @@ class RedirectResponseSubscriber implements EventSubscriberInterface {
         }
         catch (\InvalidArgumentException $e) {
           // If the above failed, it's because the redirect target wasn't
-          // local. Do not follow that redirect. Display an error message
-          // instead. We're already catching one exception, so trigger_error()
-          // rather than throw another one.
-          // We don't throw an exception, because this is a client error rather than a
-          // server error.
+          // local. Do not follow that redirect. Log an error message instead,
+          // then return a 400 response to the client with the error message.
+          // We don't throw an exception, because this is a client error rather
+          // than a server error.
           $message = 'Redirects to external URLs are not allowed by default, use \Drupal\Core\Routing\TrustedRedirectResponse for it.';
-          trigger_error($message, E_USER_ERROR);
+          /** @var \Psr\Log\LoggerInterface $logger */
+          $logger = ($this->loggerClosure)();
+          $logger->error($message);
           $safe_response = new Response($message, 400);
         }
         $event->setResponse($safe_response);
@@ -108,7 +114,7 @@ class RedirectResponseSubscriber implements EventSubscriberInterface {
       // not including the scheme and host, but its path is expected to be
       // absolute (start with a '/'). For such a case, prepend the scheme and
       // host, because the 'Location' header must be absolute.
-      if (strpos($destination, '/') === 0) {
+      if (str_starts_with($destination, '/')) {
         $destination = $scheme_and_host . $destination;
       }
       else {
@@ -130,33 +136,14 @@ class RedirectResponseSubscriber implements EventSubscriberInterface {
   }
 
   /**
-   * Sanitize the destination parameter to prevent open redirect attacks.
+   * Set whether the redirect response will ignore the destination query param.
    *
-   * @param \Symfony\Component\HttpKernel\Event\GetResponseEvent $event
-   *   The Event to process.
+   * @param bool $status
+   *   (optional) TRUE if the destination query parameter should be ignored.
+   *   FALSE if not. Defaults to TRUE.
    */
-  public function sanitizeDestination(GetResponseEvent $event) {
-    $request = $event->getRequest();
-    // Sanitize the destination parameter (which is often used for redirects) to
-    // prevent open redirect attacks leading to other domains. Sanitize both
-    // $_GET['destination'] and $_REQUEST['destination'] to protect code that
-    // relies on either, but do not sanitize $_POST to avoid interfering with
-    // unrelated form submissions. The sanitization happens here because
-    // url_is_external() requires the variable system to be available.
-    $query_info = $request->query;
-    $request_info = $request->request;
-    if ($query_info->has('destination') || $request_info->has('destination')) {
-      // If the destination is an external URL, remove it.
-      if ($query_info->has('destination') && UrlHelper::isExternal($query_info->get('destination'))) {
-        $query_info->remove('destination');
-        $request_info->remove('destination');
-      }
-      // If there's still something in $_REQUEST['destination'] that didn't come
-      // from $_GET, check it too.
-      if ($request_info->has('destination') && (!$query_info->has('destination') || $request_info->get('destination') != $query_info->get('destination')) && UrlHelper::isExternal($request_info->get('destination'))) {
-        $request_info->remove('destination');
-      }
-    }
+  public function setIgnoreDestination($status = TRUE) {
+    $this->ignoreDestination = $status;
   }
 
   /**
@@ -165,9 +152,8 @@ class RedirectResponseSubscriber implements EventSubscriberInterface {
    * @return array
    *   An array of event listener definitions.
    */
-  public static function getSubscribedEvents() {
+  public static function getSubscribedEvents(): array {
     $events[KernelEvents::RESPONSE][] = ['checkRedirectUrl'];
-    $events[KernelEvents::REQUEST][] = ['sanitizeDestination', 100];
     return $events;
   }
 

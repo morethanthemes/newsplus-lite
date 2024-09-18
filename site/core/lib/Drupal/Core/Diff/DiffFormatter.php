@@ -7,6 +7,8 @@ use Drupal\Component\Diff\WordLevelDiff;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Config\ConfigFactoryInterface;
 
+// cspell:ignore xbeg, xlen, ybeg, ylen
+
 /**
  * Diff formatter which uses returns output that can be rendered to a table.
  */
@@ -57,7 +59,7 @@ class DiffFormatter extends DiffFormatterBase {
       [
         'data' => $ybeg + $this->line_stats['offset']['y'],
         'colspan' => 2,
-      ]
+      ],
     ];
   }
 
@@ -94,7 +96,7 @@ class DiffFormatter extends DiffFormatterBase {
       [
         'data' => ['#markup' => $line],
         'class' => 'diff-context diff-addedline',
-      ]
+      ],
     ];
   }
 
@@ -116,7 +118,7 @@ class DiffFormatter extends DiffFormatterBase {
       [
         'data' => ['#markup' => $line],
         'class' => 'diff-context diff-deletedline',
-      ]
+      ],
     ];
   }
 
@@ -135,7 +137,7 @@ class DiffFormatter extends DiffFormatterBase {
       [
         'data' => ['#markup' => $line],
         'class' => 'diff-context',
-      ]
+      ],
     ];
   }
 

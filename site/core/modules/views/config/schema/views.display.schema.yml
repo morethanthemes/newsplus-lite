@@ -32,7 +32,7 @@ views.display.page:
           type: text
           label: 'Description'
         weight:
-          type: integer
+          type: weight
           label: 'Weight'
         enabled:
           type: boolean
@@ -63,11 +63,15 @@ views.display.page:
           type: text
           label: 'Description'
         weight:
-          type: integer
+          type: weight
           label: 'Weight'
         menu_name:
           type: string
           label: 'Menu name'
+    use_admin_theme:
+      type: boolean
+      nullable: true
+      label: 'Use the administration theme when rendering the view page'
 
 views.display.block:
   type: views_display
@@ -87,8 +91,8 @@ views.display.block:
       label: 'Allow'
       mapping:
         items_per_page:
-         type: boolean
-         label: 'Items per page'
+          type: boolean
+          label: 'Items per page'
 
 views.display.feed:
   type: views_display_path

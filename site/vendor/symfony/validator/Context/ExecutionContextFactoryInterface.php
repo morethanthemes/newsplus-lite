@@ -26,11 +26,8 @@ interface ExecutionContextFactoryInterface
     /**
      * Creates a new execution context.
      *
-     * @param ValidatorInterface $validator The validator
-     * @param mixed              $root      The root value of the validated
-     *                                      object graph
-     *
-     * @return ExecutionContextInterface The new execution context
+     * @param mixed $root The root value of the validated
+     *                    object graph
      */
-    public function createContext(ValidatorInterface $validator, $root);
+    public function createContext(ValidatorInterface $validator, mixed $root): ExecutionContextInterface;
 }

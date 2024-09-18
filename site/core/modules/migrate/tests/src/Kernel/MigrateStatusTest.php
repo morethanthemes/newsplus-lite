@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\migrate\Kernel;
 
 use Drupal\migrate\Plugin\MigrationInterface;
@@ -14,10 +16,10 @@ class MigrateStatusTest extends MigrateTestBase {
   /**
    * Tests different connection types.
    */
-  public function testStatus() {
+  public function testStatus(): void {
     // Create a minimally valid migration.
     $definition = [
-      'id' => 'migration_status_test',
+      'id' => 'migrate_status_test',
       'migration_tags' => ['Testing'],
       'source' => ['plugin' => 'empty'],
       'destination' => [
@@ -30,7 +32,7 @@ class MigrateStatusTest extends MigrateTestBase {
 
     // Default status is idle.
     $status = $migration->getStatus();
-    $this->assertIdentical($status, MigrationInterface::STATUS_IDLE);
+    $this->assertSame(MigrationInterface::STATUS_IDLE, $status);
 
     // Test setting and retrieving all known status values.
     $status_list = [
@@ -42,7 +44,7 @@ class MigrateStatusTest extends MigrateTestBase {
     ];
     foreach ($status_list as $status) {
       $migration->setStatus($status);
-      $this->assertIdentical($migration->getStatus(), $status);
+      $this->assertSame($status, $migration->getStatus());
     }
   }
 

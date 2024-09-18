@@ -11,10 +11,10 @@
 
 namespace Symfony\Component\Routing\DependencyInjection;
 
-use Symfony\Component\DependencyInjection\Reference;
-use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\PriorityTaggedServiceTrait;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Reference;
 
 /**
  * Adds tagged routing.loader services to routing.resolver service.
@@ -25,25 +25,19 @@ class RoutingResolverPass implements CompilerPassInterface
 {
     use PriorityTaggedServiceTrait;
 
-    private $resolverServiceId;
-    private $loaderTag;
-
-    public function __construct($resolverServiceId = 'routing.resolver', $loaderTag = 'routing.loader')
-    {
-        $this->resolverServiceId = $resolverServiceId;
-        $this->loaderTag = $loaderTag;
-    }
-
+    /**
+     * @return void
+     */
     public function process(ContainerBuilder $container)
     {
-        if (false === $container->hasDefinition($this->resolverServiceId)) {
+        if (false === $container->hasDefinition('routing.resolver')) {
             return;
         }
 
-        $definition = $container->getDefinition($this->resolverServiceId);
+        $definition = $container->getDefinition('routing.resolver');
 
-        foreach ($this->findAndSortTaggedServices($this->loaderTag, $container) as $id) {
-            $definition->addMethodCall('addLoader', array(new Reference($id)));
+        foreach ($this->findAndSortTaggedServices('routing.loader', $container) as $id) {
+            $definition->addMethodCall('addLoader', [new Reference($id)]);
         }
     }
 }

@@ -1,5 +1,5 @@
 <?php
-// @codingStandardsIgnoreFile
+// phpcs:ignoreFile
 
 /**
  * This file was generated via php core/scripts/generate-proxy-class.php 'Drupal\Core\Batch\BatchStorage' "core/lib/Drupal/Core".
@@ -105,6 +105,14 @@ namespace Drupal\Core\ProxyClass\Batch {
         public function create(array $batch)
         {
             return $this->lazyLoadItself()->create($batch);
+        }
+
+        /**
+         * {@inheritdoc}
+         */
+        public function getId(): int
+        {
+            return $this->lazyLoadItself()->getId();
         }
 
         /**

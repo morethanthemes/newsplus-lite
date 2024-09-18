@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\language\Unit\process;
 
 use Drupal\language\Plugin\migrate\process\LanguageNegotiation;
@@ -15,7 +17,7 @@ class LanguageNegotiationTest extends MigrateProcessTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     $this->plugin = new LanguageNegotiation([], 'map', []);
     parent::setUp();
   }
@@ -23,7 +25,7 @@ class LanguageNegotiationTest extends MigrateProcessTestCase {
   /**
    * Tests successful transformation without weights.
    */
-  public function testTransformWithWeights() {
+  public function testTransformWithWeights(): void {
     $source = [
       [
         'locale-url' => [],
@@ -50,14 +52,14 @@ class LanguageNegotiationTest extends MigrateProcessTestCase {
         'language-selected' => -6,
       ],
     ];
-    $value = $this->plugin->transform($source, $this->migrateExecutable, $this->row, 'destinationproperty');
+    $value = $this->plugin->transform($source, $this->migrateExecutable, $this->row, 'destination_property');
     $this->assertSame($value, $expected);
   }
 
   /**
    * Tests successful transformation without weights.
    */
-  public function testTransformWithoutWeights() {
+  public function testTransformWithoutWeights(): void {
     $source = [
       [
         'locale-url' => [],
@@ -70,17 +72,18 @@ class LanguageNegotiationTest extends MigrateProcessTestCase {
         'language-url-fallback' => 1,
       ],
     ];
-    $value = $this->plugin->transform($source, $this->migrateExecutable, $this->row, 'destinationproperty');
+    $value = $this->plugin->transform($source, $this->migrateExecutable, $this->row, 'destination_property');
     $this->assertSame($value, $expected);
   }
 
   /**
    * Tests string input.
    */
-  public function testStringInput() {
+  public function testStringInput(): void {
     $this->plugin = new LanguageNegotiation([], 'map', []);
-    $this->setExpectedException(MigrateException::class, 'The input should be an array');
-    $this->plugin->transform('foo', $this->migrateExecutable, $this->row, 'destinationproperty');
+    $this->expectException(MigrateException::class);
+    $this->expectExceptionMessage('The input should be an array');
+    $this->plugin->transform('foo', $this->migrateExecutable, $this->row, 'destination_property');
   }
 
 }

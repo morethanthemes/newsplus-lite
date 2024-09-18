@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\content_translation\Functional\Views;
 
 use Drupal\Tests\content_translation\Functional\ContentTranslationTestBase;
@@ -23,17 +25,24 @@ class TranslationLinkTest extends ContentTranslationTestBase {
   public static $testViews = ['test_entity_translations_link'];
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['content_translation_test_views'];
+  protected static $modules = ['content_translation_test_views'];
 
-  protected function setUp() {
-    // @todo Use entity_type once it is has multilingual Views integration.
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
+    // @todo Use entity_type once it has multilingual Views integration.
     $this->entityTypeId = 'user';
 
     parent::setUp();
+    $this->doSetup();
 
     // Assign user 1  a language code so that the entity can be translated.
     $user = User::load(1);
@@ -45,7 +54,7 @@ class TranslationLinkTest extends ContentTranslationTestBase {
     $user->langcode = Language::LANGCODE_NOT_SPECIFIED;
     $user->save();
 
-    ViewTestData::createTestViews(get_class($this), ['content_translation_test_views']);
+    ViewTestData::createTestViews(static::class, ['content_translation_test_views']);
   }
 
   /**
@@ -60,10 +69,10 @@ class TranslationLinkTest extends ContentTranslationTestBase {
   /**
    * Tests the content translation overview link field handler.
    */
-  public function testTranslationLink() {
+  public function testTranslationLink(): void {
     $this->drupalGet('test-entity-translations-link');
-    $this->assertLinkByHref('user/1/translations');
-    $this->assertNoLinkByHref('user/2/translations', 'The translations link is not present when content_translation_translate_access() is FALSE.');
+    $this->assertSession()->linkByHrefExists('user/1/translations');
+    $this->assertSession()->linkByHrefNotExists('user/2/translations', 'The translations link is not present when content_translation_translate_access() is FALSE.');
   }
 
 }

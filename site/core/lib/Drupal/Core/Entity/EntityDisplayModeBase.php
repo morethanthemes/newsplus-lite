@@ -25,6 +25,13 @@ abstract class EntityDisplayModeBase extends ConfigEntityBase implements EntityD
   protected $label;
 
   /**
+   * Description of the form or view mode.
+   *
+   * @var string|null
+   */
+  protected ?string $description;
+
+  /**
    * The entity type this form or view mode is used for.
    *
    * This is not to be confused with EntityDisplayModeBase::$entityType which is
@@ -86,7 +93,7 @@ abstract class EntityDisplayModeBase extends ConfigEntityBase implements EntityD
    */
   public function calculateDependencies() {
     parent::calculateDependencies();
-    $target_entity_type = \Drupal::entityManager()->getDefinition($this->targetEntityType);
+    $target_entity_type = \Drupal::entityTypeManager()->getDefinition($this->targetEntityType);
     $this->addDependency('module', $target_entity_type->getProvider());
     return $this;
   }
@@ -96,7 +103,7 @@ abstract class EntityDisplayModeBase extends ConfigEntityBase implements EntityD
    */
   public function preSave(EntityStorageInterface $storage) {
     parent::preSave($storage);
-    \Drupal::entityManager()->clearCachedFieldDefinitions();
+    \Drupal::service('entity_field.manager')->clearCachedFieldDefinitions();
   }
 
   /**
@@ -104,7 +111,7 @@ abstract class EntityDisplayModeBase extends ConfigEntityBase implements EntityD
    */
   public static function preDelete(EntityStorageInterface $storage, array $entities) {
     parent::preDelete($storage, $entities);
-    \Drupal::entityManager()->clearCachedFieldDefinitions();
+    \Drupal::service('entity_field.manager')->clearCachedFieldDefinitions();
   }
 
   /**
@@ -117,6 +124,13 @@ abstract class EntityDisplayModeBase extends ConfigEntityBase implements EntityD
     }
 
     return $uri_route_parameters;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getDescription(): string {
+    return $this->description ?? '';
   }
 
 }

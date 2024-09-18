@@ -4,7 +4,6 @@ namespace Drupal\system;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\CronInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -30,14 +29,6 @@ class CronController extends ControllerBase {
   }
 
   /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static($container->get('cron'));
-  }
-
-
-  /**
    * Run Cron once.
    *
    * @return \Symfony\Component\HttpFoundation\Response
@@ -58,10 +49,10 @@ class CronController extends ControllerBase {
    */
   public function runManually() {
     if ($this->cron->run()) {
-      drupal_set_message($this->t('Cron ran successfully.'));
+      $this->messenger()->addStatus($this->t('Cron ran successfully.'));
     }
     else {
-      drupal_set_message($this->t('Cron run failed.'), 'error');
+      $this->messenger()->addError($this->t('Cron run failed.'));
     }
 
     return $this->redirect('system.status');

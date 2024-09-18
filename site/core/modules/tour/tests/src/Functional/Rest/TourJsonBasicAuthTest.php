@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\tour\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\BasicAuthResourceTestTrait;
 
 /**
  * @group rest
+ * @group legacy
  */
 class TourJsonBasicAuthTest extends TourResourceTestBase {
 
@@ -14,7 +17,12 @@ class TourJsonBasicAuthTest extends TourResourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['basic_auth'];
+  protected static $modules = ['basic_auth'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

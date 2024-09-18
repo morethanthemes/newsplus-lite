@@ -12,6 +12,7 @@ use Drupal\Core\Plugin\ContextAwarePluginAssignmentTrait;
  * Provides a basis for fulfilling contexts for condition plugins.
  *
  * @see \Drupal\Core\Condition\Annotation\Condition
+ * @see \Drupal\Core\Condition\Attribute\Condition
  * @see \Drupal\Core\Condition\ConditionInterface
  * @see \Drupal\Core\Condition\ConditionManager
  *
@@ -24,7 +25,7 @@ abstract class ConditionPluginBase extends ExecutablePluginBase implements Condi
   /**
    * The condition manager to proxy execute calls through.
    *
-   * @var \Drupal\Core\Executable\ExecutableInterface
+   * @var \Drupal\Core\Executable\ExecutableManagerInterface
    */
   protected $executableManager;
 

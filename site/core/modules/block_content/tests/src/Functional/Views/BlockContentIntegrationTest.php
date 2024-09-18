@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\block_content\Functional\Views;
 
 /**
@@ -8,6 +10,11 @@ namespace Drupal\Tests\block_content\Functional\Views;
  * @group block_content
  */
 class BlockContentIntegrationTest extends BlockContentTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Views used by this test.
@@ -19,7 +26,7 @@ class BlockContentIntegrationTest extends BlockContentTestBase {
   /**
    * Tests basic block_content view with a block_content_type argument.
    */
-  public function testBlockContentViewTypeArgument() {
+  public function testBlockContentViewTypeArgument(): void {
     // Create two content types with three block_contents each.
     $types = [];
     $all_ids = [];
@@ -37,12 +44,12 @@ class BlockContentIntegrationTest extends BlockContentTestBase {
     }
 
     $this->drupalGet('test-block_content-view');
-    $this->assertResponse(404);
+    $this->assertSession()->statusCodeEquals(404);
 
     $this->drupalGet('test-block_content-view/all');
-    $this->assertResponse(200);
+    $this->assertSession()->statusCodeEquals(200);
     $this->assertIds($all_ids);
-    /* @var \Drupal\block_content\Entity\BlockContentType[] $types*/
+    /** @var \Drupal\block_content\Entity\BlockContentType[] $types*/
     foreach ($types as $type) {
       $this->drupalGet("test-block_content-view/{$type->id()}");
       $this->assertIds(array_keys($block_contents[$type->id()]));
@@ -54,14 +61,16 @@ class BlockContentIntegrationTest extends BlockContentTestBase {
    *
    * @param array $expected_ids
    *   An array of block_content IDs.
+   *
+   * @internal
    */
-  protected function assertIds(array $expected_ids = []) {
+  protected function assertIds(array $expected_ids = []): void {
     $result = $this->xpath('//span[@class="field-content"]');
     $ids = [];
     foreach ($result as $element) {
       $ids[] = $element->getText();
     }
-    $this->assertEqual($ids, $expected_ids);
+    $this->assertEquals($expected_ids, $ids);
   }
 
 }

@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\rest\Unit;
 
 use Drupal\Core\Entity\EntityConstraintViolationList;
 use Drupal\node\Entity\Node;
+use Drupal\rest\Plugin\rest\resource\EntityResourceValidationTrait;
 use Drupal\Tests\UnitTestCase;
 use Drupal\user\Entity\User;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
@@ -18,11 +21,10 @@ class EntityResourceValidationTraitTest extends UnitTestCase {
   /**
    * @covers ::validate
    */
-  public function testValidate() {
-    $trait = $this->getMockForTrait('Drupal\rest\Plugin\rest\resource\EntityResourceValidationTrait');
+  public function testValidate(): void {
+    $trait = new EntityResourceValidationTraitTestClass();
 
     $method = new \ReflectionMethod($trait, 'validate');
-    $method->setAccessible(TRUE);
 
     $violations = $this->prophesize(EntityConstraintViolationList::class);
     $violations->filterByFieldAccess()->shouldBeCalled()->willReturn([]);
@@ -37,7 +39,7 @@ class EntityResourceValidationTraitTest extends UnitTestCase {
   /**
    * @covers ::validate
    */
-  public function testFailedValidate() {
+  public function testFailedValidate(): void {
     $violation1 = $this->prophesize(ConstraintViolationInterface::class);
     $violation1->getPropertyPath()->willReturn('property_path');
     $violation1->getMessage()->willReturn('message');
@@ -50,23 +52,33 @@ class EntityResourceValidationTraitTest extends UnitTestCase {
 
     $violations = $this->getMockBuilder(EntityConstraintViolationList::class)
       ->setConstructorArgs([$entity->reveal(), [$violation1->reveal(), $violation2->reveal()]])
-      ->setMethods(['filterByFieldAccess'])
+      ->onlyMethods(['filterByFieldAccess'])
       ->getMock();
 
     $violations->expects($this->once())
       ->method('filterByFieldAccess')
-      ->will($this->returnValue([]));
+      ->willReturn([]);
 
     $entity->validate()->willReturn($violations);
 
-    $trait = $this->getMockForTrait('Drupal\rest\Plugin\rest\resource\EntityResourceValidationTrait');
+    $trait = new EntityResourceValidationTraitTestClass();
 
     $method = new \ReflectionMethod($trait, 'validate');
-    $method->setAccessible(TRUE);
 
-    $this->setExpectedException(UnprocessableEntityHttpException::class);
+    $this->expectException(UnprocessableEntityHttpException::class);
 
     $method->invoke($trait, $entity->reveal());
   }
+
+}
+
+/**
+ * A test class to use to test EntityResourceValidationTrait.
+ *
+ * Because the mock doesn't use the \Drupal namespace, the Symfony 4+ class
+ * loader will throw a deprecation error.
+ */
+class EntityResourceValidationTraitTestClass {
+  use EntityResourceValidationTrait;
 
 }

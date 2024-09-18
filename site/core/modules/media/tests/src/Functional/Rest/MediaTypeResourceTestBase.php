@@ -1,16 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\media\Functional\Rest;
 
 use Drupal\media\Entity\MediaType;
-use Drupal\Tests\rest\Functional\EntityResource\EntityResourceTestBase;
+use Drupal\Tests\rest\Functional\EntityResource\ConfigEntityResourceTestBase;
 
-abstract class MediaTypeResourceTestBase extends EntityResourceTestBase {
+abstract class MediaTypeResourceTestBase extends ConfigEntityResourceTestBase {
 
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['media'];
+  protected static $modules = ['media'];
 
   /**
    * {@inheritdoc}
@@ -35,7 +37,7 @@ abstract class MediaTypeResourceTestBase extends EntityResourceTestBase {
   protected function createEntity() {
     // Create a "Camelids" media type.
     $camelids = MediaType::create([
-      'name' => 'Camelids',
+      'label' => 'Camelids',
       'id' => 'camelids',
       'description' => 'Camelids are large, strictly herbivorous animals with slender necks and long legs.',
       'source' => 'file',
@@ -55,11 +57,11 @@ abstract class MediaTypeResourceTestBase extends EntityResourceTestBase {
       'description' => 'Camelids are large, strictly herbivorous animals with slender necks and long legs.',
       'field_map' => [],
       'id' => 'camelids',
-      'label' => NULL,
+      'label' => 'Camelids',
       'langcode' => 'en',
-      'new_revision' => FALSE,
-      'queue_thumbnail_downloads' => FALSE,
       'source' => 'file',
+      'queue_thumbnail_downloads' => FALSE,
+      'new_revision' => FALSE,
       'source_configuration' => [
         'source_field' => '',
       ],
@@ -73,6 +75,7 @@ abstract class MediaTypeResourceTestBase extends EntityResourceTestBase {
    */
   protected function getNormalizedPostEntity() {
     // @todo Update in https://www.drupal.org/node/2300677.
+    return [];
   }
 
 }

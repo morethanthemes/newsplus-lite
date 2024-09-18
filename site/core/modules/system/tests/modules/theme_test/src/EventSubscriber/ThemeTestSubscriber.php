@@ -6,7 +6,7 @@ use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Url;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 /**
@@ -17,7 +17,7 @@ class ThemeTestSubscriber implements EventSubscriberInterface {
   /**
    * The used container.
    *
-   * @todo This variable is never initialzed, so we don't know what it is.
+   * @todo This variable is never initialized, so we don't know what it is.
    *   See https://www.drupal.org/node/2721315
    */
   protected $container;
@@ -40,6 +40,7 @@ class ThemeTestSubscriber implements EventSubscriberInterface {
    * Constructs a new ThemeTestSubscriber.
    *
    * @param \Drupal\Core\Routing\RouteMatchInterface $current_route_match
+   *   The route match handler.
    * @param \Drupal\Core\Render\RendererInterface $renderer
    *   The renderer.
    */
@@ -53,12 +54,12 @@ class ThemeTestSubscriber implements EventSubscriberInterface {
    *
    * @see \Drupal\system\Tests\Theme\ThemeEarlyInitializationTest::testRequestListener()
    */
-  public function onRequest(GetResponseEvent $event) {
+  public function onRequest(RequestEvent $event) {
     if ($this->currentRouteMatch->getRouteName() === 'theme_test.request_listener') {
       // First, force the theme registry to be rebuilt on this page request.
       // This allows us to test a full initialization of the theme system in
       // the code below.
-      drupal_theme_rebuild();
+      \Drupal::service('theme.registry')->reset();
       // Next, initialize the theme system by storing themed text in a global
       // variable. We will use this later in
       // theme_test_request_listener_page_callback() to test that even when the
@@ -69,20 +70,20 @@ class ThemeTestSubscriber implements EventSubscriberInterface {
         '#url' => Url::fromRoute('user.page'),
         '#attributes' => ['title' => 'Themed output generated in a KernelEvents::REQUEST listener'],
       ];
-      $GLOBALS['theme_test_output'] = $this->renderer->renderPlain($more_link);
+      $GLOBALS['theme_test_output'] = $this->renderer->renderInIsolation($more_link);
     }
   }
 
   /**
    * Ensures that the theme registry was not initialized.
    */
-  public function onView(GetResponseEvent $event) {
+  public function onView(RequestEvent $event) {
     $current_route = $this->currentRouteMatch->getRouteName();
-    $entity_autcomplete_route = [
+    $entity_autocomplete_route = [
       'system.entity_autocomplete',
     ];
 
-    if (in_array($current_route, $entity_autcomplete_route)) {
+    if (in_array($current_route, $entity_autocomplete_route)) {
       if ($this->container->initialized('theme.registry')) {
         throw new \Exception('registry initialized');
       }
@@ -92,7 +93,7 @@ class ThemeTestSubscriber implements EventSubscriberInterface {
   /**
    * {@inheritdoc}
    */
-  public static function getSubscribedEvents() {
+  public static function getSubscribedEvents(): array {
     $events[KernelEvents::REQUEST][] = ['onRequest'];
     $events[KernelEvents::VIEW][] = ['onView', -1000];
     return $events;

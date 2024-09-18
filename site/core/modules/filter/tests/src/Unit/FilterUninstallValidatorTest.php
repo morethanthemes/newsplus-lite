@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\filter\Unit;
 
-use Drupal\simpletest\AssertHelperTrait;
+use Drupal\filter\FilterProcessResult;
+use Drupal\filter\Plugin\FilterBase;
 use Drupal\Tests\UnitTestCase;
 
 /**
@@ -11,21 +14,19 @@ use Drupal\Tests\UnitTestCase;
  */
 class FilterUninstallValidatorTest extends UnitTestCase {
 
-  use AssertHelperTrait;
-
   /**
-   * @var \Drupal\filter\FilterUninstallValidator|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\filter\FilterUninstallValidator|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $filterUninstallValidator;
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->filterUninstallValidator = $this->getMockBuilder('Drupal\filter\FilterUninstallValidator')
       ->disableOriginalConstructor()
-      ->setMethods(['getFilterDefinitionsByProvider', 'getEnabledFilterFormats'])
+      ->onlyMethods(['getFilterDefinitionsByProvider', 'getEnabledFilterFormats'])
       ->getMock();
     $this->filterUninstallValidator->setStringTranslation($this->getStringTranslationStub());
   }
@@ -33,7 +34,7 @@ class FilterUninstallValidatorTest extends UnitTestCase {
   /**
    * @covers ::validate
    */
-  public function testValidateNoPlugins() {
+  public function testValidateNoPlugins(): void {
     $this->filterUninstallValidator->expects($this->once())
       ->method('getFilterDefinitionsByProvider')
       ->willReturn([]);
@@ -43,13 +44,13 @@ class FilterUninstallValidatorTest extends UnitTestCase {
     $module = $this->randomMachineName();
     $expected = [];
     $reasons = $this->filterUninstallValidator->validate($module);
-    $this->assertSame($expected, $this->castSafeStrings($reasons));
+    $this->assertEquals($expected, $reasons);
   }
 
   /**
    * @covers ::validate
    */
-  public function testValidateNoFormats() {
+  public function testValidateNoFormats(): void {
     $this->filterUninstallValidator->expects($this->once())
       ->method('getFilterDefinitionsByProvider')
       ->willReturn([
@@ -65,13 +66,13 @@ class FilterUninstallValidatorTest extends UnitTestCase {
     $module = $this->randomMachineName();
     $expected = [];
     $reasons = $this->filterUninstallValidator->validate($module);
-    $this->assertSame($expected, $this->castSafeStrings($reasons));
+    $this->assertEquals($expected, $reasons);
   }
 
   /**
    * @covers ::validate
    */
-  public function testValidateNoMatchingFormats() {
+  public function testValidateNoMatchingFormats(): void {
     $this->filterUninstallValidator->expects($this->once())
       ->method('getFilterDefinitionsByProvider')
       ->willReturn([
@@ -93,8 +94,8 @@ class FilterUninstallValidatorTest extends UnitTestCase {
         ],
       ]);
 
-    $filter_plugin_enabled = $this->getMockForAbstractClass('Drupal\filter\Plugin\FilterBase', [['status' => TRUE], '', ['provider' => 'filter_test']]);
-    $filter_plugin_disabled = $this->getMockForAbstractClass('Drupal\filter\Plugin\FilterBase', [['status' => FALSE], '', ['provider' => 'filter_test']]);
+    $filter_plugin_enabled = new FilterBaseTestableClass(['status' => TRUE], '', ['provider' => 'filter_test']);
+    $filter_plugin_disabled = new FilterBaseTestableClass(['status' => FALSE], '', ['provider' => 'filter_test']);
 
     // The first format has 2 matching and enabled filters, but the loop breaks
     // after finding the first one.
@@ -117,7 +118,7 @@ class FilterUninstallValidatorTest extends UnitTestCase {
         ['test_filter_plugin4', $filter_plugin_enabled],
       ]);
 
-    $filter_format1 = $this->getMock('Drupal\filter\FilterFormatInterface');
+    $filter_format1 = $this->createMock('Drupal\filter\FilterFormatInterface');
     $filter_format1->expects($this->once())
       ->method('filters')
       ->willReturn($filter_plugin_collection1);
@@ -142,7 +143,7 @@ class FilterUninstallValidatorTest extends UnitTestCase {
       ->with('test_filter_plugin4')
       ->willReturn($filter_plugin_enabled);
 
-    $filter_format2 = $this->getMock('Drupal\filter\FilterFormatInterface');
+    $filter_format2 = $this->createMock('Drupal\filter\FilterFormatInterface');
     $filter_format2->expects($this->once())
       ->method('filters')
       ->willReturn($filter_plugin_collection2);
@@ -157,10 +158,21 @@ class FilterUninstallValidatorTest extends UnitTestCase {
       ]);
 
     $expected = [
-      'Provides a filter plugin that is in use in the following filter formats: <em class="placeholder">Filter Format 1 Label, Filter Format 2 Label</em>'
+      'Provides a filter plugin that is in use in the following filter formats: <em class="placeholder">Filter Format 1 Label, Filter Format 2 Label</em>',
     ];
     $reasons = $this->filterUninstallValidator->validate($this->randomMachineName());
-    $this->assertSame($expected, $this->castSafeStrings($reasons));
+    $this->assertEquals($expected, $reasons);
+  }
+
+}
+
+/**
+ * A class extending FilterBase for testing purposes.
+ */
+class FilterBaseTestableClass extends FilterBase {
+
+  public function process($text, $langcode) {
+    return new FilterProcessResult();
   }
 
 }

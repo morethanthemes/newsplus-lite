@@ -3,24 +3,25 @@
 namespace Drupal\Core\Field\Plugin\Field\FieldWidget;
 
 use Drupal\Component\Utility\Html;
+use Drupal\Core\Field\Attribute\FieldWidget;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Plugin implementation of the 'options_select' widget.
- *
- * @FieldWidget(
- *   id = "options_select",
- *   label = @Translation("Select list"),
- *   field_types = {
- *     "entity_reference",
- *     "list_integer",
- *     "list_float",
- *     "list_string"
- *   },
- *   multiple_values = TRUE
- * )
  */
+#[FieldWidget(
+  id: 'options_select',
+  label: new TranslatableMarkup('Select list'),
+  field_types: [
+    'entity_reference',
+    'list_integer',
+    'list_float',
+    'list_string',
+  ],
+  multiple_values: TRUE,
+)]
 class OptionsSelectWidget extends OptionsWidgetBase {
 
   /**
@@ -62,7 +63,7 @@ class OptionsSelectWidget extends OptionsWidgetBase {
     if ($this->multiple) {
       // Multiple select: add a 'none' option for non-required fields.
       if (!$this->required) {
-        return t('- None -');
+        return $this->t('- None -');
       }
     }
     else {
@@ -70,10 +71,10 @@ class OptionsSelectWidget extends OptionsWidgetBase {
       // and a 'select a value' option for required fields that do not come
       // with a value selected.
       if (!$this->required) {
-        return t('- None -');
+        return $this->t('- None -');
       }
       if (!$this->has_value) {
-        return t('- Select a value -');
+        return $this->t('- Select a value -');
       }
     }
   }

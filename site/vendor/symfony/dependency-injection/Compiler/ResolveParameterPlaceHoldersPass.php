@@ -14,6 +14,7 @@ namespace Symfony\Component\DependencyInjection\Compiler;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Exception\ParameterNotFoundException;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 /**
  * Resolves all parameter placeholders "%somevalue%" to their real values.
@@ -22,16 +23,18 @@ use Symfony\Component\DependencyInjection\Exception\ParameterNotFoundException;
  */
 class ResolveParameterPlaceHoldersPass extends AbstractRecursivePass
 {
-    private $bag;
-    private $resolveArrays;
+    protected bool $skipScalars = false;
 
-    public function __construct($resolveArrays = true)
-    {
-        $this->resolveArrays = $resolveArrays;
+    private ParameterBagInterface $bag;
+
+    public function __construct(
+        private bool $resolveArrays = true,
+        private bool $throwOnResolveException = true,
+    ) {
     }
 
     /**
-     * {@inheritdoc}
+     * @return void
      *
      * @throws ParameterNotFoundException
      */
@@ -42,7 +45,7 @@ class ResolveParameterPlaceHoldersPass extends AbstractRecursivePass
         try {
             parent::process($container);
 
-            $aliases = array();
+            $aliases = [];
             foreach ($container->getAliases() as $name => $target) {
                 $this->currentId = $name;
                 $aliases[$this->bag->resolveValue($name)] = $target;
@@ -55,15 +58,24 @@ class ResolveParameterPlaceHoldersPass extends AbstractRecursivePass
         }
 
         $this->bag->resolve();
-        $this->bag = null;
+        unset($this->bag);
     }
 
-    protected function processValue($value, $isRoot = false)
+    protected function processValue(mixed $value, bool $isRoot = false): mixed
     {
-        if (is_string($value)) {
-            $v = $this->bag->resolveValue($value);
+        if (\is_string($value)) {
+            try {
+                $v = $this->bag->resolveValue($value);
+            } catch (ParameterNotFoundException $e) {
+                if ($this->throwOnResolveException) {
+                    throw $e;
+                }
 
-            return $this->resolveArrays || !$v || !is_array($v) ? $v : $value;
+                $v = null;
+                $this->container->getDefinition($this->currentId)->addError($e->getMessage());
+            }
+
+            return $this->resolveArrays || !$v || !\is_array($v) ? $v : $value;
         }
         if ($value instanceof Definition) {
             $value->setBindings($this->processValue($value->getBindings()));
@@ -74,11 +86,16 @@ class ResolveParameterPlaceHoldersPass extends AbstractRecursivePass
             if (isset($changes['file'])) {
                 $value->setFile($this->bag->resolveValue($value->getFile()));
             }
+            $tags = $value->getTags();
+            if (isset($tags['proxy'])) {
+                $tags['proxy'] = $this->bag->resolveValue($tags['proxy']);
+                $value->setTags($tags);
+            }
         }
 
         $value = parent::processValue($value, $isRoot);
 
-        if ($value && is_array($value)) {
+        if ($value && \is_array($value)) {
             $value = array_combine($this->bag->resolveValue(array_keys($value)), $value);
         }
 

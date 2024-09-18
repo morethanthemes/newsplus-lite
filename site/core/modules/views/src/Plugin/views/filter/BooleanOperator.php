@@ -2,13 +2,13 @@
 
 namespace Drupal\views\Plugin\views\filter;
 
-use Drupal\Core\Database\Query\Condition;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\views\Attribute\ViewsFilter;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\ViewExecutable;
 
 /**
- * Simple filter to handle matching of boolean values
+ * Simple filter to handle matching of boolean values.
  *
  * Definition items:
  * - label: (REQUIRED) The label for the checkbox.
@@ -22,10 +22,9 @@ use Drupal\views\ViewExecutable;
  *   This might be helpful for performance reasons.
  *
  * @ingroup views_filter_handlers
- *
- * @ViewsFilter("boolean")
  */
-class BooleanOperator extends FilterPluginBase {
+#[ViewsFilter("boolean")]
+class BooleanOperator extends FilterPluginBase implements FilterOperatorsInterface {
 
   /**
    * The equal query operator.
@@ -41,13 +40,31 @@ class BooleanOperator extends FilterPluginBase {
    */
   const NOT_EQUAL = '<>';
 
-  // exposed filter options
+  /**
+   * Exposed filter options.
+   *
+   * @var bool
+   */
   protected $alwaysMultiple = TRUE;
-  // Don't display empty space where the operator would be.
-  public $no_operator = TRUE;
-  // Whether to accept NULL as a false value or not
+
+  /**
+   * Whether to accept NULL as a false value or not.
+   *
+   * @var bool
+   */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
   public $accept_null = FALSE;
 
+  /**
+   * The value title.
+   */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
+  public string $value_value;
+
+  /**
+   * The value options.
+   */
+  public ?array $valueOptions;
 
   /**
    * {@inheritdoc}
@@ -62,11 +79,9 @@ class BooleanOperator extends FilterPluginBase {
   }
 
   /**
-   * Returns an array of operator information.
-   *
-   * @return array
+   * {@inheritdoc}
    */
-  protected function operators() {
+  public function operators() {
     return [
       '=' => [
         'title' => $this->t('Is equal to'),
@@ -88,7 +103,7 @@ class BooleanOperator extends FilterPluginBase {
   /**
    * {@inheritdoc}
    */
-  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+  public function init(ViewExecutable $view, DisplayPluginBase $display, ?array &$options = NULL) {
     parent::init($view, $display, $options);
 
     $this->value_value = $this->t('True');
@@ -138,6 +153,8 @@ class BooleanOperator extends FilterPluginBase {
     if (!isset($this->valueOptions)) {
       $this->valueOptions = [1 => $this->t('True'), 0 => $this->t('False')];
     }
+
+    return $this->valueOptions;
   }
 
   protected function defineOptions() {
@@ -237,12 +254,12 @@ class BooleanOperator extends FilterPluginBase {
     if (empty($this->value)) {
       if ($this->accept_null) {
         if ($query_operator === self::EQUAL) {
-          $condition = (new Condition('OR'))
+          $condition = ($this->query->getConnection()->condition('OR'))
             ->condition($field, 0, $query_operator)
             ->isNull($field);
         }
         else {
-          $condition = (new Condition('AND'))
+          $condition = ($this->query->getConnection()->condition('AND'))
             ->condition($field, 0, $query_operator)
             ->isNotNull($field);
         }

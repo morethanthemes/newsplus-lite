@@ -37,6 +37,11 @@ class CacheContextsManager {
   protected $contexts;
 
   /**
+   * The set of valid context tokens.
+   */
+  protected array $validContextTokens;
+
+  /**
    * Constructs a CacheContextsManager object.
    *
    * @param \Symfony\Component\DependencyInjection\ContainerInterface $container
@@ -106,7 +111,7 @@ class CacheContextsManager {
     // Iterate over cache contexts that have been optimized away and get their
     // cacheability metadata.
     foreach (static::parseTokens(array_diff($context_tokens, $optimized_tokens)) as $context_token) {
-      list($context_id, $parameter) = $context_token;
+      [$context_id, $parameter] = $context_token;
       $context = $this->getService($context_id);
       $cacheable_metadata = $cacheable_metadata->merge($context->getCacheableMetadata($parameter));
     }
@@ -114,7 +119,7 @@ class CacheContextsManager {
     sort($optimized_tokens);
     $keys = [];
     foreach (array_combine($optimized_tokens, static::parseTokens($optimized_tokens)) as $context_token => $context) {
-      list($context_id, $parameter) = $context;
+      [$context_id, $parameter] = $context;
       $keys[] = '[' . $context_token . ']=' . $this->getService($context_id)->getContext($parameter);
     }
 
@@ -163,15 +168,15 @@ class CacheContextsManager {
       // Extract the parameter if available.
       $parameter = NULL;
       $context_id = $context_token;
-      if (strpos($context_token, ':') !== FALSE) {
-        list($context_id, $parameter) = explode(':', $context_token);
+      if (str_contains($context_token, ':')) {
+        [$context_id, $parameter] = explode(':', $context_token);
       }
 
       // Context tokens without:
       // - a period means they don't have a parent
       // - a colon means they're not a specific value of a cache context
       // hence no optimizations are possible.
-      if (strpos($context_token, '.') === FALSE && strpos($context_token, ':') === FALSE) {
+      if (!str_contains($context_token, '.') && !str_contains($context_token, ':')) {
         $optimized_content_tokens[] = $context_token;
       }
       // Check cacheability. If the context defines a max-age of 0, then it
@@ -194,7 +199,7 @@ class CacheContextsManager {
             $ancestor_found = TRUE;
           }
 
-        } while (!$ancestor_found && strpos($ancestor, '.') !== FALSE);
+        } while (!$ancestor_found && str_contains($ancestor, '.'));
         if (!$ancestor_found) {
           $optimized_content_tokens[] = $context_token;
         }
@@ -235,8 +240,8 @@ class CacheContextsManager {
     foreach ($context_tokens as $context) {
       $context_id = $context;
       $parameter = NULL;
-      if (strpos($context, ':') !== FALSE) {
-        list($context_id, $parameter) = explode(':', $context, 2);
+      if (str_contains($context, ':')) {
+        [$context_id, $parameter] = explode(':', $context, 2);
       }
       $contexts_with_parameters[] = [$context_id, $parameter];
     }
@@ -294,7 +299,7 @@ class CacheContextsManager {
   }
 
   /**
-   * Asserts the context tokens are valid
+   * Asserts the context tokens are valid.
    *
    * Similar to ::validateTokens, this method returns boolean TRUE when the
    * context tokens are valid, and FALSE when they are not instead of returning

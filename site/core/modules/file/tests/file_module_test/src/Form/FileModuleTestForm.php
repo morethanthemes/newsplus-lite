@@ -41,8 +41,9 @@ class FileModuleTestForm extends FormBase {
     $form['nested']['file'] = [
       '#type' => 'managed_file',
       '#title' => $this->t('Managed <em>@type</em>', ['@type' => 'file & butter']),
+      '#description' => $this->t('Upload a <em>@type</em> file', ['@type' => 'file & butter']),
       '#upload_location' => 'public://test',
-      '#progress_message' => $this->t('Please wait...'),
+      '#progress_message' => $this->t('Processing...'),
       '#extended' => (bool) $extended,
       '#size' => 13,
       '#multiple' => (bool) $multiple,
@@ -85,7 +86,7 @@ class FileModuleTestForm extends FormBase {
       $fids[] = $fid;
     }
 
-    drupal_set_message($this->t('The file ids are %fids.', ['%fids' => implode(',', $fids)]));
+    \Drupal::messenger()->addStatus($this->t('The file ids are %fids.', ['%fids' => implode(',', $fids)]));
   }
 
 }

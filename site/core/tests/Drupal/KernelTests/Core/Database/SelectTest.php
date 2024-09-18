@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Database;
 
 use Drupal\Core\Database\InvalidQueryException;
 use Drupal\Core\Database\Database;
+use Drupal\Core\Database\DatabaseExceptionWrapper;
+use Drupal\Core\Database\Query\SelectExtender;
 
 /**
  * Tests the Select query builder.
@@ -15,20 +19,20 @@ class SelectTest extends DatabaseTestBase {
   /**
    * Tests rudimentary SELECT statements.
    */
-  public function testSimpleSelect() {
-    $query = db_select('test');
+  public function testSimpleSelect(): void {
+    $query = $this->connection->select('test');
     $query->addField('test', 'name');
     $query->addField('test', 'age', 'age');
     $num_records = $query->countQuery()->execute()->fetchField();
 
-    $this->assertEqual($num_records, 4, 'Returned the correct number of rows.');
+    $this->assertEquals(4, $num_records, 'Returned the correct number of rows.');
   }
 
   /**
    * Tests rudimentary SELECT statement with a COMMENT.
    */
-  public function testSimpleComment() {
-    $query = db_select('test')->comment('Testing query comments');
+  public function testSimpleComment(): void {
+    $query = $this->connection->select('test')->comment('Testing query comments');
     $query->addField('test', 'name');
     $query->addField('test', 'age', 'age');
     $result = $query->execute();
@@ -38,15 +42,15 @@ class SelectTest extends DatabaseTestBase {
     $query = (string) $query;
     $expected = "/* Testing query comments */";
 
-    $this->assertEqual(count($records), 4, 'Returned the correct number of rows.');
-    $this->assertNotIdentical(FALSE, strpos($query, $expected), 'The flattened query contains the comment string.');
+    $this->assertCount(4, $records, 'Returned the correct number of rows.');
+    $this->assertStringContainsString($expected, $query, 'The flattened query contains the comment string.');
   }
 
   /**
    * Tests query COMMENT system against vulnerabilities.
    */
-  public function testVulnerableComment() {
-    $query = db_select('test')->comment('Testing query comments */ SELECT nid FROM {node}; --');
+  public function testVulnerableComment(): void {
+    $query = $this->connection->select('test')->comment('Testing query comments */ SELECT nid FROM {node}; --');
     $query->addField('test', 'name');
     $query->addField('test', 'age', 'age');
     $result = $query->execute();
@@ -54,15 +58,17 @@ class SelectTest extends DatabaseTestBase {
     $records = $result->fetchAll();
 
     $query = (string) $query;
-    $expected = "/* Testing query comments  * / SELECT nid FROM {node}. -- */ SELECT test.name AS name, test.age AS age\nFROM \n{test} test";
+    $expected = "/* Testing query comments  * / SELECT nid FROM {node}. -- */";
 
-    $this->assertEqual(count($records), 4, 'Returned the correct number of rows.');
-    $this->assertNotIdentical(FALSE, strpos($query, $expected), 'The flattened query contains the sanitised comment string.');
+    // Check the returned number of rows.
+    $this->assertCount(4, $records);
+    // Check that the flattened query contains the sanitized comment string.
+    $this->assertStringContainsString($expected, $query);
 
     $connection = Database::getConnection();
     foreach ($this->makeCommentsProvider() as $test_set) {
-      list($expected, $comments) = $test_set;
-      $this->assertEqual($expected, $connection->makeComment($comments));
+      [$expected, $comments] = $test_set;
+      $this->assertEquals($expected, $connection->makeComment($comments));
     }
   }
 
@@ -100,70 +106,70 @@ class SelectTest extends DatabaseTestBase {
   /**
    * Tests basic conditionals on SELECT statements.
    */
-  public function testSimpleSelectConditional() {
-    $query = db_select('test');
+  public function testSimpleSelectConditional(): void {
+    $query = $this->connection->select('test');
     $name_field = $query->addField('test', 'name');
     $age_field = $query->addField('test', 'age', 'age');
     $query->condition('age', 27);
     $result = $query->execute();
 
     // Check that the aliases are being created the way we want.
-    $this->assertEqual($name_field, 'name', 'Name field alias is correct.');
-    $this->assertEqual($age_field, 'age', 'Age field alias is correct.');
+    $this->assertEquals('name', $name_field, 'Name field alias is correct.');
+    $this->assertEquals('age', $age_field, 'Age field alias is correct.');
 
     // Ensure that we got the right record.
     $record = $result->fetch();
-    $this->assertEqual($record->$name_field, 'George', 'Fetched name is correct.');
-    $this->assertEqual($record->$age_field, 27, 'Fetched age is correct.');
+    $this->assertEquals('George', $record->{$name_field}, 'Fetched name is correct.');
+    $this->assertEquals(27, $record->{$age_field}, 'Fetched age is correct.');
   }
 
   /**
    * Tests SELECT statements with expressions.
    */
-  public function testSimpleSelectExpression() {
-    $query = db_select('test');
+  public function testSimpleSelectExpression(): void {
+    $query = $this->connection->select('test');
     $name_field = $query->addField('test', 'name');
-    $age_field = $query->addExpression("age*2", 'double_age');
+    $age_field = $query->addExpression("[age]*2", 'double_age');
     $query->condition('age', 27);
     $result = $query->execute();
 
     // Check that the aliases are being created the way we want.
-    $this->assertEqual($name_field, 'name', 'Name field alias is correct.');
-    $this->assertEqual($age_field, 'double_age', 'Age field alias is correct.');
+    $this->assertEquals('name', $name_field, 'Name field alias is correct.');
+    $this->assertEquals('double_age', $age_field, 'Age field alias is correct.');
 
     // Ensure that we got the right record.
     $record = $result->fetch();
-    $this->assertEqual($record->$name_field, 'George', 'Fetched name is correct.');
-    $this->assertEqual($record->$age_field, 27 * 2, 'Fetched age expression is correct.');
+    $this->assertEquals('George', $record->{$name_field}, 'Fetched name is correct.');
+    $this->assertEquals(27 * 2, $record->{$age_field}, 'Fetched age expression is correct.');
   }
 
   /**
    * Tests SELECT statements with multiple expressions.
    */
-  public function testSimpleSelectExpressionMultiple() {
-    $query = db_select('test');
+  public function testSimpleSelectExpressionMultiple(): void {
+    $query = $this->connection->select('test');
     $name_field = $query->addField('test', 'name');
-    $age_double_field = $query->addExpression("age*2");
-    $age_triple_field = $query->addExpression("age*3");
+    $age_double_field = $query->addExpression("[age]*2");
+    $age_triple_field = $query->addExpression("[age]*3");
     $query->condition('age', 27);
     $result = $query->execute();
 
     // Check that the aliases are being created the way we want.
-    $this->assertEqual($age_double_field, 'expression', 'Double age field alias is correct.');
-    $this->assertEqual($age_triple_field, 'expression_2', 'Triple age field alias is correct.');
+    $this->assertEquals('expression', $age_double_field, 'Double age field alias is correct.');
+    $this->assertEquals('expression_2', $age_triple_field, 'Triple age field alias is correct.');
 
     // Ensure that we got the right record.
     $record = $result->fetch();
-    $this->assertEqual($record->$name_field, 'George', 'Fetched name is correct.');
-    $this->assertEqual($record->$age_double_field, 27 * 2, 'Fetched double age expression is correct.');
-    $this->assertEqual($record->$age_triple_field, 27 * 3, 'Fetched triple age expression is correct.');
+    $this->assertEquals('George', $record->{$name_field}, 'Fetched name is correct.');
+    $this->assertEquals(27 * 2, $record->{$age_double_field}, 'Fetched double age expression is correct.');
+    $this->assertEquals(27 * 3, $record->{$age_triple_field}, 'Fetched triple age expression is correct.');
   }
 
   /**
    * Tests adding multiple fields to a SELECT statement at the same time.
    */
-  public function testSimpleSelectMultipleFields() {
-    $record = db_select('test')
+  public function testSimpleSelectMultipleFields(): void {
+    $record = $this->connection->select('test')
       ->fields('test', ['id', 'name', 'age', 'job'])
       ->condition('age', 27)
       ->execute()->fetchObject();
@@ -176,17 +182,17 @@ class SelectTest extends DatabaseTestBase {
 
     // Ensure that we got the right record.
     // Check that all fields we asked for are present.
-    $this->assertEqual($record->id, 2, 'ID field has the correct value.');
-    $this->assertEqual($record->name, 'George', 'Name field has the correct value.');
-    $this->assertEqual($record->age, 27, 'Age field has the correct value.');
-    $this->assertEqual($record->job, 'Singer', 'Job field has the correct value.');
+    $this->assertEquals(2, $record->id, 'ID field has the correct value.');
+    $this->assertEquals('George', $record->name, 'Name field has the correct value.');
+    $this->assertEquals(27, $record->age, 'Age field has the correct value.');
+    $this->assertEquals('Singer', $record->job, 'Job field has the correct value.');
   }
 
   /**
    * Tests adding all fields from a given table to a SELECT statement.
    */
-  public function testSimpleSelectAllFields() {
-    $record = db_select('test')
+  public function testSimpleSelectAllFields(): void {
+    $record = $this->connection->select('test')
       ->fields('test')
       ->condition('age', 27)
       ->execute()->fetchObject();
@@ -199,56 +205,100 @@ class SelectTest extends DatabaseTestBase {
 
     // Ensure that we got the right record.
     // Check that all fields we asked for are present.
-    $this->assertEqual($record->id, 2, 'ID field has the correct value.');
-    $this->assertEqual($record->name, 'George', 'Name field has the correct value.');
-    $this->assertEqual($record->age, 27, 'Age field has the correct value.');
-    $this->assertEqual($record->job, 'Singer', 'Job field has the correct value.');
+    $this->assertEquals(2, $record->id, 'ID field has the correct value.');
+    $this->assertEquals('George', $record->name, 'Name field has the correct value.');
+    $this->assertEquals(27, $record->age, 'Age field has the correct value.');
+    $this->assertEquals('Singer', $record->job, 'Job field has the correct value.');
   }
 
   /**
    * Tests that a comparison with NULL is always FALSE.
    */
-  public function testNullCondition() {
+  public function testNullCondition(): void {
     $this->ensureSampleDataNull();
 
-    $names = db_select('test_null', 'tn')
+    $names = $this->connection->select('test_null', 'tn')
       ->fields('tn', ['name'])
       ->condition('age', NULL)
       ->execute()->fetchCol();
 
-    $this->assertEqual(count($names), 0, 'No records found when comparing to NULL.');
+    $this->assertCount(0, $names, 'No records found when comparing to NULL.');
   }
 
   /**
    * Tests that we can find a record with a NULL value.
    */
-  public function testIsNullCondition() {
+  public function testIsNullCondition(): void {
     $this->ensureSampleDataNull();
 
-    $names = db_select('test_null', 'tn')
+    $names = $this->connection->select('test_null', 'tn')
       ->fields('tn', ['name'])
       ->isNull('age')
       ->execute()->fetchCol();
 
-    $this->assertEqual(count($names), 1, 'Correct number of records found with NULL age.');
-    $this->assertEqual($names[0], 'Fozzie', 'Correct record returned for NULL age.');
+    $this->assertCount(1, $names, 'Correct number of records found with NULL age.');
+    $this->assertEquals('Ernie', $names[0], 'Correct record returned for NULL age.');
   }
 
   /**
    * Tests that we can find a record without a NULL value.
    */
-  public function testIsNotNullCondition() {
+  public function testIsNotNullCondition(): void {
     $this->ensureSampleDataNull();
 
-    $names = db_select('test_null', 'tn')
+    $names = $this->connection->select('test_null', 'tn')
       ->fields('tn', ['name'])
       ->isNotNull('tn.age')
       ->orderBy('name')
       ->execute()->fetchCol();
 
-    $this->assertEqual(count($names), 2, 'Correct number of records found withNOT NULL age.');
-    $this->assertEqual($names[0], 'Gonzo', 'Correct record returned for NOT NULL age.');
-    $this->assertEqual($names[1], 'Kermit', 'Correct record returned for NOT NULL age.');
+    $this->assertCount(2, $names, 'Correct number of records found withNOT NULL age.');
+    $this->assertEquals('Gonzo', $names[0], 'Correct record returned for NOT NULL age.');
+    $this->assertEquals('Kermit', $names[1], 'Correct record returned for NOT NULL age.');
+  }
+
+  /**
+   * Tests that we can force a query to return an empty result.
+   */
+  public function testAlwaysFalseCondition(): void {
+    $names = $this->connection->select('test', 'test')
+      ->fields('test', ['name'])
+      ->condition('age', 27)
+      ->execute()->fetchCol();
+
+    $this->assertCount(1, $names);
+    $this->assertSame($names[0], 'George');
+
+    $names = $this->connection->select('test', 'test')
+      ->fields('test', ['name'])
+      ->condition('age', 27)
+      ->alwaysFalse()
+      ->execute()->fetchCol();
+
+    $this->assertCount(0, $names);
+  }
+
+  /**
+   * Tests that we can force an extended query to return an empty result.
+   */
+  public function testExtenderAlwaysFalseCondition(): void {
+    $names = $this->connection->select('test', 'test')
+      ->extend(SelectExtender::class)
+      ->fields('test', ['name'])
+      ->condition('age', 27)
+      ->execute()->fetchCol();
+
+    $this->assertCount(1, $names);
+    $this->assertSame($names[0], 'George');
+
+    $names = $this->connection->select('test', 'test')
+      ->extend(SelectExtender::class)
+      ->fields('test', ['name'])
+      ->condition('age', 27)
+      ->alwaysFalse()
+      ->execute()->fetchCol();
+
+    $this->assertCount(0, $names);
   }
 
   /**
@@ -257,12 +307,12 @@ class SelectTest extends DatabaseTestBase {
    * This is semantically equal to UNION DISTINCT, so we don't explicitly test
    * that.
    */
-  public function testUnion() {
-    $query_1 = db_select('test', 't')
+  public function testUnion(): void {
+    $query_1 = $this->connection->select('test', 't')
       ->fields('t', ['name'])
       ->condition('age', [27, 28], 'IN');
 
-    $query_2 = db_select('test', 't')
+    $query_2 = $this->connection->select('test', 't')
       ->fields('t', ['name'])
       ->condition('age', 28);
 
@@ -271,21 +321,20 @@ class SelectTest extends DatabaseTestBase {
     $names = $query_1->execute()->fetchCol();
 
     // Ensure we only get 2 records.
-    $this->assertEqual(count($names), 2, 'UNION correctly discarded duplicates.');
+    $this->assertCount(2, $names, 'UNION correctly discarded duplicates.');
 
-    $this->assertEqual($names[0], 'George', 'First query returned correct name.');
-    $this->assertEqual($names[1], 'Ringo', 'Second query returned correct name.');
+    $this->assertEqualsCanonicalizing(['George', 'Ringo'], $names);
   }
 
   /**
    * Tests that we can UNION ALL multiple SELECT queries together.
    */
-  public function testUnionAll() {
-    $query_1 = db_select('test', 't')
+  public function testUnionAll(): void {
+    $query_1 = $this->connection->select('test', 't')
       ->fields('t', ['name'])
       ->condition('age', [27, 28], 'IN');
 
-    $query_2 = db_select('test', 't')
+    $query_2 = $this->connection->select('test', 't')
       ->fields('t', ['name'])
       ->condition('age', 28);
 
@@ -294,46 +343,44 @@ class SelectTest extends DatabaseTestBase {
     $names = $query_1->execute()->fetchCol();
 
     // Ensure we get all 3 records.
-    $this->assertEqual(count($names), 3, 'UNION ALL correctly preserved duplicates.');
+    $this->assertCount(3, $names, 'UNION ALL correctly preserved duplicates.');
 
-    $this->assertEqual($names[0], 'George', 'First query returned correct first name.');
-    $this->assertEqual($names[1], 'Ringo', 'Second query returned correct second name.');
-    $this->assertEqual($names[2], 'Ringo', 'Third query returned correct name.');
+    $this->assertEquals('George', $names[0], 'First query returned correct first name.');
+    $this->assertEquals('Ringo', $names[1], 'Second query returned correct second name.');
+    $this->assertEquals('Ringo', $names[2], 'Third query returned correct name.');
   }
 
   /**
    * Tests that we can get a count query for a UNION Select query.
    */
-  public function testUnionCount() {
-    $query_1 = db_select('test', 't')
+  public function testUnionCount(): void {
+    $query_1 = $this->connection->select('test', 't')
       ->fields('t', ['name', 'age'])
       ->condition('age', [27, 28], 'IN');
 
-    $query_2 = db_select('test', 't')
+    $query_2 = $this->connection->select('test', 't')
       ->fields('t', ['name', 'age'])
       ->condition('age', 28);
 
     $query_1->union($query_2, 'ALL');
     $names = $query_1->execute()->fetchCol();
-
-    $query_3 = $query_1->countQuery();
-    $count = $query_3->execute()->fetchField();
+    $count = (int) $query_1->countQuery()->execute()->fetchField();
 
     // Ensure the counts match.
-    $this->assertEqual(count($names), $count, "The count query's result matched the number of rows in the UNION query.");
+    $this->assertSame(count($names), $count, "The count query's result matched the number of rows in the UNION query.");
   }
 
   /**
    * Tests that we can UNION multiple Select queries together and set the ORDER.
    */
-  public function testUnionOrder() {
+  public function testUnionOrder(): void {
     // This gives George and Ringo.
-    $query_1 = db_select('test', 't')
+    $query_1 = $this->connection->select('test', 't')
       ->fields('t', ['name'])
       ->condition('age', [27, 28], 'IN');
 
     // This gives Paul.
-    $query_2 = db_select('test', 't')
+    $query_2 = $this->connection->select('test', 't')
       ->fields('t', ['name'])
       ->condition('age', 26);
 
@@ -343,26 +390,26 @@ class SelectTest extends DatabaseTestBase {
     $names = $query_1->execute()->fetchCol();
 
     // Ensure we get all 3 records.
-    $this->assertEqual(count($names), 3, 'UNION returned rows from both queries.');
+    $this->assertCount(3, $names, 'UNION returned rows from both queries.');
 
     // Ensure that the names are in the correct reverse alphabetical order,
     // regardless of which query they came from.
-    $this->assertEqual($names[0], 'Ringo', 'First query returned correct name.');
-    $this->assertEqual($names[1], 'Paul', 'Second query returned correct name.');
-    $this->assertEqual($names[2], 'George', 'Third query returned correct name.');
+    $this->assertEquals('Ringo', $names[0], 'First query returned correct name.');
+    $this->assertEquals('Paul', $names[1], 'Second query returned correct name.');
+    $this->assertEquals('George', $names[2], 'Third query returned correct name.');
   }
 
   /**
    * Tests that we can UNION multiple Select queries together with and a LIMIT.
    */
-  public function testUnionOrderLimit() {
+  public function testUnionOrderLimit(): void {
     // This gives George and Ringo.
-    $query_1 = db_select('test', 't')
+    $query_1 = $this->connection->select('test', 't')
       ->fields('t', ['name'])
       ->condition('age', [27, 28], 'IN');
 
     // This gives Paul.
-    $query_2 = db_select('test', 't')
+    $query_2 = $this->connection->select('test', 't')
       ->fields('t', ['name'])
       ->condition('age', 26);
 
@@ -373,12 +420,12 @@ class SelectTest extends DatabaseTestBase {
     $names = $query_1->execute()->fetchCol();
 
     // Ensure we get all only 2 of the 3 records.
-    $this->assertEqual(count($names), 2, 'UNION with a limit returned rows from both queries.');
+    $this->assertCount(2, $names, 'UNION with a limit returned rows from both queries.');
 
     // Ensure that the names are in the correct reverse alphabetical order,
     // regardless of which query they came from.
-    $this->assertEqual($names[0], 'Ringo', 'First query returned correct name.');
-    $this->assertEqual($names[1], 'Paul', 'Second query returned correct name.');
+    $this->assertEquals('Ringo', $names[0], 'First query returned correct name.');
+    $this->assertEquals('Paul', $names[1], 'Second query returned correct name.');
   }
 
   /**
@@ -396,89 +443,88 @@ class SelectTest extends DatabaseTestBase {
    * order each time, the only way this could happen is if we have successfully
    * triggered the database's random ordering functionality.
    */
-  public function testRandomOrder() {
+  public function testRandomOrder(): void {
     // Use 52 items, so the chance that this test fails by accident will be the
     // same as the chance that a deck of cards will come out in the same order
     // after shuffling it (in other words, nearly impossible).
     $number_of_items = 52;
-    while (db_query("SELECT MAX(id) FROM {test}")->fetchField() < $number_of_items) {
-      db_insert('test')->fields(['name' => $this->randomMachineName()])->execute();
+    while ($this->connection->query("SELECT MAX([id]) FROM {test}")->fetchField() < $number_of_items) {
+      $this->connection->insert('test')->fields(['name' => $this->randomMachineName()])->execute();
     }
 
     // First select the items in order and make sure we get an ordered list.
     $expected_ids = range(1, $number_of_items);
-    $ordered_ids = db_select('test', 't')
+    $ordered_ids = $this->connection->select('test', 't')
       ->fields('t', ['id'])
       ->range(0, $number_of_items)
       ->orderBy('id')
       ->execute()
       ->fetchCol();
-    $this->assertEqual($ordered_ids, $expected_ids, 'A query without random ordering returns IDs in the correct order.');
+    $this->assertEquals($expected_ids, $ordered_ids, 'A query without random ordering returns IDs in the correct order.');
 
     // Now perform the same query, but instead choose a random ordering. We
     // expect this to contain a differently ordered version of the original
     // result.
-    $randomized_ids = db_select('test', 't')
+    $randomized_ids = $this->connection->select('test', 't')
       ->fields('t', ['id'])
       ->range(0, $number_of_items)
       ->orderRandom()
       ->execute()
       ->fetchCol();
-    $this->assertNotEqual($randomized_ids, $ordered_ids, 'A query with random ordering returns an unordered set of IDs.');
+    $this->assertNotEquals($ordered_ids, $randomized_ids, 'A query with random ordering returns an unordered set of IDs.');
     $sorted_ids = $randomized_ids;
     sort($sorted_ids);
-    $this->assertEqual($sorted_ids, $ordered_ids, 'After sorting the random list, the result matches the original query.');
+    $this->assertEquals($ordered_ids, $sorted_ids, 'After sorting the random list, the result matches the original query.');
 
     // Now perform the exact same query again, and make sure the order is
     // different.
-    $randomized_ids_second_set = db_select('test', 't')
+    $randomized_ids_second_set = $this->connection->select('test', 't')
       ->fields('t', ['id'])
       ->range(0, $number_of_items)
       ->orderRandom()
       ->execute()
       ->fetchCol();
-    $this->assertNotEqual($randomized_ids_second_set, $randomized_ids, 'Performing the query with random ordering a second time returns IDs in a different order.');
+    $this->assertNotEquals($randomized_ids, $randomized_ids_second_set, 'Performing the query with random ordering a second time returns IDs in a different order.');
     $sorted_ids_second_set = $randomized_ids_second_set;
     sort($sorted_ids_second_set);
-    $this->assertEqual($sorted_ids_second_set, $sorted_ids, 'After sorting the second random list, the result matches the sorted version of the first random list.');
+    $this->assertEquals($sorted_ids, $sorted_ids_second_set, 'After sorting the second random list, the result matches the sorted version of the first random list.');
   }
 
   /**
-   * Tests that filter by a regular expression works as expected.
+   * Data provider for testRegularExpressionCondition().
+   *
+   * @return array[]
+   *   Returns data-set elements with:
+   *     - the expected result of the query
+   *     - the table column to do the search on.
+   *     - the regular expression pattern to search for.
+   *     - the regular expression operator 'REGEXP' or 'NOT REGEXP'.
    */
-  public function testRegexCondition() {
+  public static function providerRegularExpressionCondition() {
+    return [
+      [['John'], 'name', 'hn$', 'REGEXP'],
+      [['Paul'], 'name', '^Pau', 'REGEXP'],
+      [['George', 'Ringo'], 'name', 'Ringo|George', 'REGEXP'],
+      [['Pete'], 'job', '#Drummer', 'REGEXP'],
+      [[], 'job', '#Singer', 'REGEXP'],
+      [['Paul', 'Pete'], 'age', '2[6]', 'REGEXP'],
 
-    $test_groups[] = [
-      'regex' => 'hn$',
-      'expected' => [
-        'John',
-      ],
+      [['George', 'Paul', 'Pete', 'Ringo'], 'name', 'hn$', 'NOT REGEXP'],
+      [['George', 'John', 'Pete', 'Ringo'], 'name', '^Pau', 'NOT REGEXP'],
+      [['John', 'Paul', 'Pete'], 'name', 'Ringo|George', 'NOT REGEXP'],
+      [['George', 'John', 'Paul', 'Ringo'], 'job', '#Drummer', 'NOT REGEXP'],
+      [['George', 'John', 'Paul', 'Pete', 'Ringo'], 'job', '#Singer', 'NOT REGEXP'],
+      [['George', 'John', 'Ringo'], 'age', '2[6]', 'NOT REGEXP'],
     ];
-    $test_groups[] = [
-      'regex' => '^Pau',
-      'expected' => [
-        'Paul',
-      ],
-    ];
-    $test_groups[] = [
-      'regex' => 'Ringo|George',
-      'expected' => [
-        'Ringo', 'George',
-      ],
-    ];
+  }
 
+  /**
+   * Tests that filter by 'REGEXP' and 'NOT REGEXP' works as expected.
+   *
+   * @dataProvider providerRegularExpressionCondition
+   */
+  public function testRegularExpressionCondition($expected, $column, $pattern, $operator): void {
     $database = $this->container->get('database');
-    foreach ($test_groups as $test_group) {
-      $query = $database->select('test', 't');
-      $query->addField('t', 'name');
-      $query->condition('t.name', $test_group['regex'], 'REGEXP');
-      $result = $query->execute()->fetchCol();
-
-      $this->assertEqual(count($result), count($test_group['expected']), 'Returns the expected number of rows.');
-      $this->assertEqual(sort($result), sort($test_group['expected']), 'Returns the expected rows.');
-    }
-
-    // Ensure that filter by "#" still works due to the quoting.
     $database->insert('test')
       ->fields([
         'name' => 'Pete',
@@ -487,87 +533,43 @@ class SelectTest extends DatabaseTestBase {
       ])
       ->execute();
 
-    $test_groups = [];
-    $test_groups[] = [
-      'regex' => '#Drummer',
-      'expected' => [
-        'Pete',
-      ],
-    ];
-    $test_groups[] = [
-      'regex' => '#Singer',
-      'expected' => [],
-    ];
-
-    foreach ($test_groups as $test_group) {
-      $query = $database->select('test', 't');
-      $query->addField('t', 'name');
-      $query->condition('t.job', $test_group['regex'], 'REGEXP');
-      $result = $query->execute()->fetchCol();
-
-      $this->assertEqual(count($result), count($test_group['expected']), 'Returns the expected number of rows.');
-      $this->assertEqual(sort($result), sort($test_group['expected']), 'Returns the expected rows.');
-    }
-
-    // Ensure that REGEXP filter still works with no-string type field.
     $query = $database->select('test', 't');
-    $query->addField('t', 'age');
-    $query->condition('t.age', '2[6]', 'REGEXP');
-    $result = $query->execute()->fetchField();
-    $this->assertEquals($result, '26', 'Regexp with number type.');
+    $query->addField('t', 'name');
+    $query->condition("t.$column", $pattern, $operator);
+    $result = $query->execute()->fetchCol();
+    sort($result);
+
+    $this->assertEquals($expected, $result);
   }
 
   /**
    * Tests that aliases are renamed when they are duplicates.
    */
-  public function testSelectDuplicateAlias() {
-    $query = db_select('test', 't');
+  public function testSelectDuplicateAlias(): void {
+    $query = $this->connection->select('test', 't');
     $alias1 = $query->addField('t', 'name', 'the_alias');
     $alias2 = $query->addField('t', 'age', 'the_alias');
-    $this->assertNotIdentical($alias1, $alias2, 'Duplicate aliases are renamed.');
+    $this->assertNotSame($alias1, $alias2, 'Duplicate aliases are renamed.');
   }
 
   /**
-   * Tests that an invalid merge query throws an exception.
+   * Tests that an invalid count query throws an exception.
    */
-  public function testInvalidSelectCount() {
-    try {
-      // This query will fail because the table does not exist.
-      // Normally it would throw an exception but we are suppressing
-      // it with the throw_exception option.
-      $options['throw_exception'] = FALSE;
-      db_select('some_table_that_doesnt_exist', 't', $options)
-        ->fields('t')
-        ->countQuery()
-        ->execute();
-
-      $this->pass('$options[\'throw_exception\'] is FALSE, no Exception thrown.');
-    }
-    catch (\Exception $e) {
-      $this->fail('$options[\'throw_exception\'] is FALSE, but Exception thrown for invalid query.');
-      return;
-    }
-
-    try {
-      // This query will fail because the table does not exist.
-      db_select('some_table_that_doesnt_exist', 't')
-        ->fields('t')
-        ->countQuery()
-        ->execute();
-    }
-    catch (\Exception $e) {
-      $this->pass('Exception thrown for invalid query.');
-      return;
-    }
-    $this->fail('No Exception thrown.');
+  public function testInvalidSelectCount(): void {
+    $this->expectException(DatabaseExceptionWrapper::class);
+    // This query will fail because the table does not exist.
+    $this->connection->select('some_table_that_does_not_exist', 't')
+      ->fields('t')
+      ->countQuery()
+      ->execute();
   }
 
   /**
    * Tests thrown exception for IN query conditions with an empty array.
    */
-  public function testEmptyInCondition() {
+  public function testEmptyInCondition(): void {
     try {
-      db_select('test', 't')
+      $this->connection->select('test', 't')
         ->fields('t')
         ->condition('age', [], 'IN')
         ->execute();
@@ -575,11 +577,11 @@ class SelectTest extends DatabaseTestBase {
       $this->fail('Expected exception not thrown');
     }
     catch (InvalidQueryException $e) {
-      $this->assertEqual("Query condition 'age IN ()' cannot be empty.", $e->getMessage());
+      $this->assertEquals("Query condition 'age IN ()' cannot be empty.", $e->getMessage());
     }
 
     try {
-      db_select('test', 't')
+      $this->connection->select('test', 't')
         ->fields('t')
         ->condition('age', [], 'NOT IN')
         ->execute();
@@ -587,8 +589,58 @@ class SelectTest extends DatabaseTestBase {
       $this->fail('Expected exception not thrown');
     }
     catch (InvalidQueryException $e) {
-      $this->assertEqual("Query condition 'age NOT IN ()' cannot be empty.", $e->getMessage());
+      $this->assertEquals("Query condition 'age NOT IN ()' cannot be empty.", $e->getMessage());
     }
+  }
+
+  /**
+   * Data provider for testNonArrayOperatorWithArrayValueCondition().
+   *
+   * @return array[]
+   *   Array of non array compatible operators and its value in the expected
+   *   exception message.
+   */
+  public static function providerNonArrayOperatorWithArrayValueCondition() {
+    return [
+      '=' => ['=', '='],
+      '>' => ['>', '>'],
+      '<' => ['<', '<'],
+      '>=' => ['>=', '>='],
+      '<=' => ['<=', '<='],
+      'IS NULL' => ['IS NULL', 'IS NULL'],
+      'IS NOT NULL' => ['IS NOT NULL', 'IS NOT NULL'],
+      'Empty string' => ['', '='],
+      'Not set' => [NULL, '='],
+    ];
+  }
+
+  /**
+   * Tests thrown exception for non array operator conditions with array value.
+   *
+   * @dataProvider providerNonArrayOperatorWithArrayValueCondition
+   */
+  public function testNonArrayOperatorWithArrayValueCondition($operator, $operator_in_exception_message): void {
+    $this->expectException(InvalidQueryException::class);
+    $this->expectExceptionMessage("Query condition 'age " . $operator_in_exception_message . " 26, 27' must have an array compatible operator.");
+
+    $this->connection->select('test', 't')
+      ->fields('t')
+      ->condition('age', [26, 27], $operator)
+      ->execute();
+  }
+
+  /**
+   * Tests thrown exception for non array operator conditions with array value.
+   *
+   * @dataProvider providerNonArrayOperatorWithArrayValueCondition
+   * @group legacy
+   */
+  public function testNonArrayOperatorWithArrayValueConditionDeprecated($operator, $operator_in_exception_message): void {
+    $this->expectDeprecation('Calling Drupal\Core\Database\Query\Condition::condition() without an array compatible operator is deprecated in drupal:10.1.0 and will be required in drupal:11.0.0. See https://www.drupal.org/node/3350985');
+    $this->connection->select('test', 't')
+      ->fields('t')
+      ->condition('age', [26], $operator)
+      ->execute();
   }
 
 }

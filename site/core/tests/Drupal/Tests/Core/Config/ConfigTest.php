@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Config;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
@@ -29,37 +31,42 @@ class ConfigTest extends UnitTestCase {
   /**
    * Storage.
    *
-   * @var \Drupal\Core\Config\StorageInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Config\StorageInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $storage;
 
   /**
    * Event Dispatcher.
    *
-   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Symfony\Contracts\EventDispatcher\EventDispatcherInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $eventDispatcher;
 
   /**
    * Typed Config.
    *
-   * @var \Drupal\Core\Config\TypedConfigManagerInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Config\TypedConfigManagerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $typedConfig;
 
   /**
    * The mocked cache tags invalidator.
    *
-   * @var \Drupal\Core\Cache\CacheTagsInvalidatorInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Cache\CacheTagsInvalidatorInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $cacheTagsInvalidator;
 
-  protected function setUp() {
-    $this->storage = $this->getMock('Drupal\Core\Config\StorageInterface');
-    $this->eventDispatcher = $this->getMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
-    $this->typedConfig = $this->getMock('\Drupal\Core\Config\TypedConfigManagerInterface');
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
+    parent::setUp();
+
+    $this->storage = $this->createMock('Drupal\Core\Config\StorageInterface');
+    $this->eventDispatcher = $this->createMock('Symfony\Contracts\EventDispatcher\EventDispatcherInterface');
+    $this->typedConfig = $this->createMock('\Drupal\Core\Config\TypedConfigManagerInterface');
     $this->config = new Config('config.test', $this->storage, $this->eventDispatcher, $this->typedConfig);
-    $this->cacheTagsInvalidator = $this->getMock('Drupal\Core\Cache\CacheTagsInvalidatorInterface');
+    $this->cacheTagsInvalidator = $this->createMock('Drupal\Core\Cache\CacheTagsInvalidatorInterface');
 
     $container = new ContainerBuilder();
     $container->set('cache_tags.invalidator', $this->cacheTagsInvalidator);
@@ -70,7 +77,7 @@ class ConfigTest extends UnitTestCase {
    * @covers ::setName
    * @dataProvider setNameProvider
    */
-  public function testSetName($name) {
+  public function testSetName($name): void {
     // Set the name.
     $this->config->setName($name);
 
@@ -87,7 +94,7 @@ class ConfigTest extends UnitTestCase {
    *
    * @see \Drupal\Tests\Core\Config\ConfigTest::testSetName()
    */
-  public function setNameProvider() {
+  public static function setNameProvider() {
     return [
       // Valid name with dot.
       [
@@ -103,7 +110,7 @@ class ConfigTest extends UnitTestCase {
   /**
    * @covers ::isNew
    */
-  public function testIsNew() {
+  public function testIsNew(): void {
     // Config should be new by default.
     $this->assertTrue($this->config->isNew());
 
@@ -116,7 +123,7 @@ class ConfigTest extends UnitTestCase {
    * @covers ::setData
    * @dataProvider nestedDataProvider
    */
-  public function testSetData($data) {
+  public function testSetData($data): void {
     $this->config->setData($data);
     $this->assertEquals($data, $this->config->getRawData());
     $this->assertConfigDataEquals($data);
@@ -126,7 +133,7 @@ class ConfigTest extends UnitTestCase {
    * @covers ::save
    * @dataProvider nestedDataProvider
    */
-  public function testSaveNew($data) {
+  public function testSaveNew($data): void {
     $this->cacheTagsInvalidator->expects($this->never())
       ->method('invalidateTags');
 
@@ -152,7 +159,7 @@ class ConfigTest extends UnitTestCase {
    * @covers ::save
    * @dataProvider nestedDataProvider
    */
-  public function testSaveExisting($data) {
+  public function testSaveExisting($data): void {
     $this->cacheTagsInvalidator->expects($this->once())
       ->method('invalidateTags')
       ->with(['config:config.test']);
@@ -176,7 +183,7 @@ class ConfigTest extends UnitTestCase {
    * @covers ::hasOverrides
    * @dataProvider overrideDataProvider
    */
-  public function testOverrideData($data, $module_data, $setting_data) {
+  public function testOverrideData($data, $module_data, $setting_data): void {
     // Set initial data.
     $this->config->setData($data);
 
@@ -246,7 +253,7 @@ class ConfigTest extends UnitTestCase {
    * @covers ::set
    * @dataProvider nestedDataProvider
    */
-  public function testSetValue($data) {
+  public function testSetValue($data): void {
     foreach ($data as $key => $value) {
       $this->config->set($key, $value);
     }
@@ -256,20 +263,21 @@ class ConfigTest extends UnitTestCase {
   /**
    * @covers ::set
    */
-  public function testSetValidation() {
-    $this->setExpectedException(ConfigValueException::class);
+  public function testSetValidation(): void {
+    $this->expectException(ConfigValueException::class);
     $this->config->set('testData', ['dot.key' => 1]);
   }
 
   /**
    * @covers ::set
    */
-  public function testSetIllegalOffsetValue() {
+  public function testSetIllegalOffsetValue(): void {
     // Set a single value.
     $this->config->set('testData', 1);
 
     // Attempt to treat the single value as a nested item.
-    $this->setExpectedException(\PHPUnit_Framework_Error_Warning::class);
+    $this->expectException(\LogicException::class);
+    $this->expectExceptionMessage('Cannot create key "illegalOffset" on non-array value.');
     $this->config->set('testData.illegalOffset', 1);
   }
 
@@ -277,7 +285,7 @@ class ConfigTest extends UnitTestCase {
    * @covers ::initWithData
    * @dataProvider nestedDataProvider
    */
-  public function testInitWithData($data) {
+  public function testInitWithData($data): void {
     $config = $this->config->initWithData($data);
 
     // Should return the Config object.
@@ -300,7 +308,7 @@ class ConfigTest extends UnitTestCase {
    * @covers ::clear
    * @dataProvider simpleDataProvider
    */
-  public function testClear($data) {
+  public function testClear($data): void {
     foreach ($data as $key => $value) {
       // Check that values are cleared.
       $this->config->set($key, $value);
@@ -314,7 +322,7 @@ class ConfigTest extends UnitTestCase {
    * @covers ::clear
    * @dataProvider nestedDataProvider
    */
-  public function testNestedClear($data) {
+  public function testNestedClear($data): void {
     foreach ($data as $key => $value) {
       // Check that values are cleared.
       $this->config->set($key, $value);
@@ -332,7 +340,7 @@ class ConfigTest extends UnitTestCase {
    * @covers ::delete
    * @dataProvider overrideDataProvider
    */
-  public function testDelete($data, $module_data) {
+  public function testDelete($data, $module_data): void {
     $this->cacheTagsInvalidator->expects($this->once())
       ->method('invalidateTags')
       ->with(['config:config.test']);
@@ -377,7 +385,7 @@ class ConfigTest extends UnitTestCase {
    * @covers ::merge
    * @dataProvider mergeDataProvider
    */
-  public function testMerge($data, $data_to_merge, $merged_data) {
+  public function testMerge($data, $data_to_merge, $merged_data): void {
     // Set initial data.
     $this->config->setData($data);
 
@@ -393,7 +401,7 @@ class ConfigTest extends UnitTestCase {
    *
    * @see \Drupal\Tests\Core\Config\ConfigTest::testMerge()
    */
-  public function mergeDataProvider() {
+  public static function mergeDataProvider() {
     return [
       [
         // Data.
@@ -410,15 +418,16 @@ class ConfigTest extends UnitTestCase {
    * @covers ::validateName
    * @dataProvider validateNameProvider
    */
-  public function testValidateNameException($name, $exception_message) {
-    $this->setExpectedException('\Drupal\Core\Config\ConfigNameException', $exception_message);
+  public function testValidateNameException($name, $exception_message): void {
+    $this->expectException('\Drupal\Core\Config\ConfigNameException');
+    $this->expectExceptionMessage($exception_message);
     $this->config->validateName($name);
   }
 
   /**
    * @covers ::getCacheTags
    */
-  public function testGetCacheTags() {
+  public function testGetCacheTags(): void {
     $this->assertSame(['config:' . $this->config->getName()], $this->config->getCacheTags());
   }
 
@@ -427,7 +436,7 @@ class ConfigTest extends UnitTestCase {
    *
    * @see \Drupal\Tests\Core\Config\ConfigTest::testValidateNameException()
    */
-  public function validateNameProvider() {
+  public static function validateNameProvider() {
     $return = [
       // Name missing namespace (dot).
       [
@@ -457,7 +466,7 @@ class ConfigTest extends UnitTestCase {
    * @see \Drupal\Tests\Core\Config\ConfigTest::testOverrideData()
    * @see \Drupal\Tests\Core\Config\ConfigTest::testDelete()
    */
-  public function overrideDataProvider() {
+  public static function overrideDataProvider() {
     $test_cases = [
       [
         // Original data.
@@ -531,7 +540,7 @@ class ConfigTest extends UnitTestCase {
    *
    * @see \Drupal\Tests\Core\Config\ConfigTest::testClear()
    */
-  public function simpleDataProvider() {
+  public static function simpleDataProvider() {
     return [
       [
         [
@@ -552,7 +561,7 @@ class ConfigTest extends UnitTestCase {
    * @see \Drupal\Tests\Core\Config\ConfigTest::testInitWithData()
    * @see \Drupal\Tests\Core\Config\ConfigTest::testNestedClear()
    */
-  public function nestedDataProvider() {
+  public static function nestedDataProvider() {
     return [
       [
         [
@@ -575,8 +584,10 @@ class ConfigTest extends UnitTestCase {
    *
    * @param array $data
    *   Config data to be checked.
+   *
+   * @internal
    */
-  public function assertConfigDataEquals($data) {
+  public function assertConfigDataEquals(array $data): void {
     foreach ($data as $key => $value) {
       $this->assertEquals($value, $this->config->get($key));
     }
@@ -589,8 +600,10 @@ class ConfigTest extends UnitTestCase {
    *   Config data to be checked.
    * @param bool $apply_overrides
    *   Apply any overrides to the original data.
+   *
+   * @internal
    */
-  public function assertOriginalConfigDataEquals($data, $apply_overrides) {
+  public function assertOriginalConfigDataEquals(array $data, bool $apply_overrides): void {
     foreach ($data as $key => $value) {
       $config_value = $this->config->getOriginal($key, $apply_overrides);
       $this->assertEquals($value, $config_value);
@@ -602,7 +615,7 @@ class ConfigTest extends UnitTestCase {
    * @covers ::set
    * @covers ::initWithData
    */
-  public function testSafeStringHandling() {
+  public function testSafeStringHandling(): void {
     // Safe strings are cast when using ::set().
     $safe_string = Markup::create('bar');
     $this->config->set('foo', $safe_string);
@@ -626,8 +639,10 @@ class ConfigTest extends UnitTestCase {
    *   The original data.
    * @param array $overridden_data
    *   The overridden data.
+   *
+   * @internal
    */
-  protected function assertOverriddenKeys(array $data, array $overridden_data) {
+  protected function assertOverriddenKeys(array $data, array $overridden_data): void {
     if (empty($overridden_data)) {
       $this->assertFalse($this->config->hasOverrides());
     }

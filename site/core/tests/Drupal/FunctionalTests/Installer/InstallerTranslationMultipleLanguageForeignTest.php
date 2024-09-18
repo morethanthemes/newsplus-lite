@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Installer;
 
 /**
@@ -8,6 +10,11 @@ namespace Drupal\FunctionalTests\Installer;
  * @group Installer
  */
 class InstallerTranslationMultipleLanguageForeignTest extends InstallerTranslationMultipleLanguageTest {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Overrides the language code in which to install Drupal.

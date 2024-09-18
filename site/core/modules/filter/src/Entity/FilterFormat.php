@@ -3,12 +3,15 @@
 namespace Drupal\filter\Entity;
 
 use Drupal\Component\Plugin\PluginInspectionInterface;
+use Drupal\Core\Config\Action\Attribute\ActionMethod;
 use Drupal\Core\Config\Entity\ConfigEntityBase;
 use Drupal\Core\Entity\EntityWithPluginCollectionInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\filter\FilterFormatInterface;
 use Drupal\filter\FilterPluginCollection;
 use Drupal\filter\Plugin\FilterInterface;
+use Drupal\user\Entity\Role;
 
 /**
  * Represents a text format.
@@ -16,6 +19,13 @@ use Drupal\filter\Plugin\FilterInterface;
  * @ConfigEntityType(
  *   id = "filter_format",
  *   label = @Translation("Text format"),
+ *   label_collection = @Translation("Text formats"),
+ *   label_singular = @Translation("text format"),
+ *   label_plural = @Translation("text formats"),
+ *   label_count = @PluralTranslation(
+ *     singular = "@count text format",
+ *     plural = "@count text formats",
+ *   ),
  *   handlers = {
  *     "form" = {
  *       "add" = "Drupal\filter\FilterFormatAddForm",
@@ -152,6 +162,7 @@ class FilterFormat extends ConfigEntityBase implements FilterFormatInterface, En
   /**
    * {@inheritdoc}
    */
+  #[ActionMethod(adminLabel: new TranslatableMarkup('Sets configuration for a filter plugin'))]
   public function setFilterConfig($instance_id, array $configuration) {
     $this->filters[$instance_id] = $configuration;
     if (isset($this->filterCollection)) {
@@ -194,11 +205,20 @@ class FilterFormat extends ConfigEntityBase implements FilterFormatInterface, En
    * {@inheritdoc}
    */
   public function preSave(EntityStorageInterface $storage) {
-    // Ensure the filters have been sorted before saving.
-    $this->filters()->sort();
-
     parent::preSave($storage);
+    if (!$this->isSyncing() && $this->hasTrustedData()) {
+      // Filters are sorted by keys to ensure config export diffs are easy to
+      // read and there is a minimal changeset. If the save is not trusted then
+      // the configuration will be sorted by StorableConfigBase.
+      ksort($this->filters);
+      // Ensure the filter configuration is well-formed.
+      array_walk($this->filters, function (array &$config, string $filter): void {
+        $config['id'] ??= $filter;
+        $config['provider'] ??= $this->filters($filter)->getPluginDefinition()['provider'];
+      });
+    }
 
+    assert(is_string($this->label()), 'Filter format label is expected to be a string.');
     $this->name = trim($this->label());
   }
 
@@ -220,7 +240,7 @@ class FilterFormat extends ConfigEntityBase implements FilterFormatInterface, En
       // \Drupal\filter\FilterPermissions::permissions() and lastly
       // filter_formats(), so its cache must be reset upfront.
       if (($roles = $this->get('roles')) && $permission = $this->getPermissionName()) {
-        foreach (user_roles() as $rid => $name) {
+        foreach (Role::loadMultiple() as $rid => $role) {
           $enabled = in_array($rid, $roles, TRUE);
           user_role_change_permissions($rid, [$permission => $enabled]);
         }
@@ -297,25 +317,15 @@ class FilterFormat extends ConfigEntityBase implements FilterFormatInterface, En
         // with the existing set, to ensure we only end up with the tags that are
         // allowed by *all* filters with an "allowed html" setting.
         else {
-          // Track the union of forbidden (blacklisted) tags.
-          if (isset($new_restrictions['forbidden_tags'])) {
-            if (!isset($restrictions['forbidden_tags'])) {
-              $restrictions['forbidden_tags'] = $new_restrictions['forbidden_tags'];
-            }
-            else {
-              $restrictions['forbidden_tags'] = array_unique(array_merge($restrictions['forbidden_tags'], $new_restrictions['forbidden_tags']));
-            }
-          }
-
-          // Track the intersection of allowed (whitelisted) tags.
+          // Track the intersection of allowed tags.
           if (isset($restrictions['allowed'])) {
             $intersection = $restrictions['allowed'];
             foreach ($intersection as $tag => $attributes) {
-              // If the current tag is not whitelisted by the new filter, then
-              // it's outside of the intersection.
+              // If the current tag is not allowed by the new filter, then it's
+              // outside of the intersection.
               if (!array_key_exists($tag, $new_restrictions['allowed'])) {
                 // The exception is the asterisk (which applies to all tags): it
-                // does not need to be whitelisted by every filter in order to be
+                // does not need to be allowed by every filter in order to be
                 // used; not every filter needs attribute restrictions on all tags.
                 if ($tag === '*') {
                   continue;
@@ -350,8 +360,8 @@ class FilterFormat extends ConfigEntityBase implements FilterFormatInterface, En
                 }
                 // Both list an array of attribute values; do an intersection,
                 // where we take into account that a value of:
-                //  - TRUE means the attribute value is allowed;
-                //  - FALSE means the attribute value is forbidden;
+                // - TRUE means the attribute value is allowed;
+                // - FALSE means the attribute value is forbidden;
                 // hence we keep the ANDed result.
                 else {
                   $intersection[$tag] = array_intersect_key($intersection[$tag], $new_attributes);
@@ -364,31 +374,16 @@ class FilterFormat extends ConfigEntityBase implements FilterFormatInterface, En
             $restrictions['allowed'] = $intersection;
           }
 
+          // Simplification: if the only remaining allowed tag is the asterisk
+          // (which contains attribute restrictions that apply to all tags),
+          // then effectively nothing is allowed.
+          if (count($restrictions['allowed']) === 1 && array_key_exists('*', $restrictions['allowed'])) {
+            $restrictions['allowed'] = [];
+          }
+
           return $restrictions;
         }
       }, NULL);
-
-      // Simplification: if we have both a (intersected) whitelist and a (unioned)
-      // blacklist, then remove any tags from the whitelist that also exist in the
-      // blacklist. Now the whitelist alone expresses all tag-level restrictions,
-      // and we can delete the blacklist.
-      if (isset($restrictions['allowed']) && isset($restrictions['forbidden_tags'])) {
-        foreach ($restrictions['forbidden_tags'] as $tag) {
-          if (isset($restrictions['allowed'][$tag])) {
-            unset($restrictions['allowed'][$tag]);
-          }
-        }
-        unset($restrictions['forbidden_tags']);
-      }
-
-      // Simplification: if the only remaining allowed tag is the asterisk (which
-      // contains attribute restrictions that apply to all tags), and only
-      // whitelisting filters were used, then effectively nothing is allowed.
-      if (isset($restrictions['allowed'])) {
-        if (count($restrictions['allowed']) === 1 && array_key_exists('*', $restrictions['allowed']) && !isset($restrictions['forbidden_tags'])) {
-          $restrictions['allowed'] = [];
-        }
-      }
 
       return $restrictions;
     }

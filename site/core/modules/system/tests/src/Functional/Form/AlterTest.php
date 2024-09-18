@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\system\Functional\Form;
 
 use Drupal\Component\Utility\Xss;
@@ -13,16 +15,19 @@ use Drupal\Tests\BrowserTestBase;
 class AlterTest extends BrowserTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['block', 'form_test'];
+  protected static $modules = ['block', 'form_test'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Tests execution order of hook_form_alter() and hook_form_FORM_ID_alter().
    */
-  public function testExecutionOrder() {
+  public function testExecutionOrder(): void {
     $this->drupalGet('form-test/alter');
     // Ensure that the order is first by module, then for a given module, the
     // id-specific one after the generic one.
@@ -33,7 +38,7 @@ class AlterTest extends BrowserTestBase {
       'system_form_form_test_alter_form_alter() executed.',
     ];
     $content = preg_replace('/\s+/', ' ', Xss::filter($this->getSession()->getPage()->getContent(), []));
-    $this->assert(strpos($content, implode(' ', $expected)) !== FALSE, 'Form alter hooks executed in the expected order.');
+    $this->assertStringContainsString(implode(' ', $expected), $content, 'Form alter hooks executed in the expected order.');
   }
 
 }

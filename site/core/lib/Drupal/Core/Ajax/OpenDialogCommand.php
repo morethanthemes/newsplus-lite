@@ -37,16 +37,18 @@ class OpenDialogCommand implements CommandInterface, CommandWithAttachedAssetsIn
   protected $content;
 
   /**
-   * Stores dialog-specific options passed directly to jQuery UI dialogs. Any
-   * jQuery UI option can be used. See http://api.jqueryui.com/dialog.
+   * Stores dialog-specific options passed directly to jQuery UI dialogs.
+   *
+   * Any jQuery UI option can be used.
+   *
+   * @see http://api.jqueryui.com/dialog.
    *
    * @var array
    */
   protected $dialogOptions;
 
   /**
-   * Custom settings that will be passed to the Drupal behaviors on the content
-   * of the dialog.
+   * Custom settings passed to Drupal behaviors on the content of the dialog.
    *
    * @var array
    */
@@ -57,7 +59,7 @@ class OpenDialogCommand implements CommandInterface, CommandWithAttachedAssetsIn
    *
    * @param string $selector
    *   The selector of the dialog.
-   * @param string $title
+   * @param string|\Stringable|null $title
    *   The title of the dialog.
    * @param string|array $content
    *   The content that will be placed in the dialog, either a render array
@@ -70,9 +72,20 @@ class OpenDialogCommand implements CommandInterface, CommandWithAttachedAssetsIn
    *   on the content of the dialog. If left empty, the settings will be
    *   populated automatically from the current request.
    */
-  public function __construct($selector, $title, $content, array $dialog_options = [], $settings = NULL) {
+  public function __construct($selector, string|\Stringable|null $title, $content, array $dialog_options = [], $settings = NULL) {
     $title = PlainTextOutput::renderFromHtml($title);
+
     $dialog_options += ['title' => $title];
+    if (isset($dialog_options['dialogClass'])) {
+      @trigger_error('Passing $dialog_options[\'dialogClass\'] to OpenDialogCommand::__construct() is deprecated in drupal:10.3.0 and will be removed in drupal:12.0.0. Use $dialog_options[\'classes\'] instead. See https://www.drupal.org/node/3440844', E_USER_DEPRECATED);
+      if (isset($dialog_options['classes']['ui-dialog'])) {
+        $dialog_options['classes']['ui-dialog'] = $dialog_options['classes']['ui-dialog'] . ' ' . $dialog_options['dialogClass'];
+      }
+      else {
+        $dialog_options['classes']['ui-dialog'] = $dialog_options['dialogClass'];
+      }
+    }
+
     $this->selector = $selector;
     $this->content = $content;
     $this->dialogOptions = $dialog_options;

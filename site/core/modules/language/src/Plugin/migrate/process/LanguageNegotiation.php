@@ -2,6 +2,7 @@
 
 namespace Drupal\language\Plugin\migrate\process;
 
+use Drupal\migrate\Attribute\MigrateProcess;
 use Drupal\migrate\MigrateException;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\ProcessPluginBase;
@@ -9,12 +10,11 @@ use Drupal\migrate\Row;
 
 /**
  * Processes the arrays for the language types' negotiation methods and weights.
- *
- * @MigrateProcessPlugin(
- *   id = "language_negotiation",
- *   handle_multiples = TRUE
- * )
  */
+#[MigrateProcess(
+  id: "language_negotiation",
+  handle_multiples: TRUE,
+)]
 class LanguageNegotiation extends ProcessPluginBase {
 
   /**
@@ -61,18 +61,25 @@ class LanguageNegotiation extends ProcessPluginBase {
     switch ($value) {
       case 'language-default':
         return 'language-selected';
+
       case 'locale-browser':
         return 'language-browser';
+
       case 'locale-interface':
         return 'language-interface';
+
       case 'locale-session':
         return 'language-session';
+
       case 'locale-url':
         return 'language-url';
+
       case 'locale-url-fallback':
         return 'language-url-fallback';
+
       case 'locale-user':
         return 'language-user';
+
       default:
         return $value;
     }

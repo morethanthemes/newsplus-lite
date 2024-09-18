@@ -1,30 +1,45 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Entity;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\KernelTests\KernelTestBase;
-use Drupal\user\Entity\Role;
-use Drupal\user\Entity\User;
+use Drupal\Tests\user\Traits\UserCreationTrait;
 
 /**
  * Defines an abstract test base for entity kernel tests.
  */
 abstract class EntityKernelTestBase extends KernelTestBase {
+  use UserCreationTrait {
+    checkPermissions as drupalCheckPermissions;
+    createAdminRole as drupalCreateAdminRole;
+    createRole as drupalCreateRole;
+    createUser as drupalCreateUser;
+    grantPermissions as drupalGrantPermissions;
+    setCurrentUser as drupalSetCurrentUser;
+    setUpCurrentUser as drupalSetUpCurrentUser;
+  }
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['user', 'system', 'field', 'text', 'filter', 'entity_test'];
+  protected static $modules = [
+    'user',
+    'system',
+    'field',
+    'text',
+    'filter',
+    'entity_test',
+  ];
 
   /**
-   * The entity manager service.
+   * The entity type manager service.
    *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
-  protected $entityManager;
+  protected $entityTypeManager;
 
   /**
    * A list of generated identifiers.
@@ -40,13 +55,14 @@ abstract class EntityKernelTestBase extends KernelTestBase {
    */
   protected $state;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
-    $this->entityManager = $this->container->get('entity.manager');
+    $this->entityTypeManager = $this->container->get('entity_type.manager');
     $this->state = $this->container->get('state');
-
-    $this->installSchema('system', 'sequences');
 
     $this->installEntitySchema('user');
     $this->installEntitySchema('entity_test');
@@ -56,7 +72,7 @@ abstract class EntityKernelTestBase extends KernelTestBase {
     // field configurations are installed. This is because the entity tables
     // need to be created before the body field storage tables. This prevents
     // trying to create the body field tables twice.
-    $class = get_class($this);
+    $class = static::class;
     while ($class) {
       if (property_exists($class, 'modules')) {
         // Only check the modules, if the $modules property was not inherited.
@@ -64,15 +80,6 @@ abstract class EntityKernelTestBase extends KernelTestBase {
         if ($rp->class == $class) {
           foreach (array_intersect(['node', 'comment'], $class::$modules) as $module) {
             $this->installEntitySchema($module);
-          }
-          if (in_array('forum', $class::$modules, TRUE)) {
-            // Forum module is particular about the order that dependencies are
-            // enabled in. The comment, node and taxonomy config and the
-            // taxonomy_term schema need to be installed before the forum config
-            // which in turn needs to be installed before field config.
-            $this->installConfig(['comment', 'node', 'taxonomy']);
-            $this->installEntitySchema('taxonomy_term');
-            $this->installConfig(['forum']);
           }
         }
       }
@@ -85,33 +92,43 @@ abstract class EntityKernelTestBase extends KernelTestBase {
   /**
    * Creates a user.
    *
-   * @param array $values
-   *   (optional) The values used to create the entity.
    * @param array $permissions
-   *   (optional) Array of permission names to assign to user.
+   *   Array of permission names to assign to user. Note that the user always
+   *   has the default permissions derived from the "authenticated users" role.
+   * @param string $name
+   *   The user name.
+   * @param bool $admin
+   *   (optional) Whether the user should be an administrator
+   *   with all the available permissions.
+   * @param array $values
+   *   (optional) An array of initial user field values.
    *
    * @return \Drupal\user\Entity\User
    *   The created user entity.
    */
-  protected function createUser($values = [], $permissions = []) {
-    if ($permissions) {
-      // Create a new role and apply permissions to it.
-      $role = Role::create([
-        'id' => strtolower($this->randomMachineName(8)),
-        'label' => $this->randomMachineName(8),
-      ]);
-      $role->save();
-      user_role_grant_permissions($role->id(), $permissions);
-      $values['roles'][] = $role->id();
+  protected function createUser(array $permissions = [], $name = NULL, bool $admin = FALSE, array $values = []) {
+    // Allow for the old signature of this method:
+    // createUser($values = [], $permissions = [])
+    if (!array_is_list($permissions)) {
+      // An array with keys is assumed to be entity values rather than
+      // permissions, since there is no point in an array of permissions having
+      // keys.
+      @trigger_error('Calling createUser() with $values as the first parameter is deprecated in drupal:10.1.0 and will be removed from drupal:11.0.0. Use createUser(array $permissions = [], $name = NULL, $admin = FALSE, array $values = []) instead. See https://www.drupal.org/node/3330762', E_USER_DEPRECATED);
+
+      $values = $permissions;
+      $permissions = [];
     }
 
-    $account = User::create($values + [
-      'name' => $this->randomMachineName(),
-      'status' => 1,
-    ]);
-    $account->enforceIsNew();
-    $account->save();
-    return $account;
+    if (is_array($name)) {
+      // If $name is an array rather than a string, then the caller is intending
+      // to pass in $permissions.
+      @trigger_error('Calling createUser() with $permissions as the second parameter is deprecated in drupal:10.1.0 and will be removed from drupal:11.0.0. Use createUser(array $permissions = [], $name = NULL, $admin = FALSE, array $values = []) instead. See https://www.drupal.org/node/3330762', E_USER_DEPRECATED);
+
+      $permissions = $name;
+      $name = NULL;
+    }
+
+    return $this->drupalCreateUser($permissions, $name, $admin, $values);
   }
 
   /**
@@ -124,7 +141,7 @@ abstract class EntityKernelTestBase extends KernelTestBase {
    *   The reloaded entity.
    */
   protected function reloadEntity(EntityInterface $entity) {
-    $controller = $this->entityManager->getStorage($entity->getEntityTypeId());
+    $controller = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
     $controller->resetCache([$entity->id()]);
     return $controller->load($entity->id());
   }
@@ -169,7 +186,8 @@ abstract class EntityKernelTestBase extends KernelTestBase {
    */
   protected function refreshServices() {
     $this->container = \Drupal::getContainer();
-    $this->entityManager = $this->container->get('entity.manager');
+
+    $this->entityTypeManager = $this->container->get('entity_type.manager');
     $this->state = $this->container->get('state');
   }
 

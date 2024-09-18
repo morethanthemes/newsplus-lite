@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\link\Unit\Plugin\migrate\process;
 
 use Drupal\link\Plugin\migrate\process\FieldLink;
@@ -14,24 +16,24 @@ use Drupal\Tests\UnitTestCase;
 class FieldLinkTest extends UnitTestCase {
 
   /**
-   * Test the url transformations in the FieldLink process plugin.
+   * Tests the URL transformations in the FieldLink process plugin.
    *
    * @dataProvider canonicalizeUriDataProvider
    */
-  public function testCanonicalizeUri($url, $expected, $configuration = []) {
-    $link_plugin = new FieldLink($configuration, '', [], $this->getMock(MigrationInterface::class));
+  public function testCanonicalizeUri($url, $expected, $configuration = []): void {
+    $link_plugin = new FieldLink($configuration, '', [], $this->createMock(MigrationInterface::class));
     $transformed = $link_plugin->transform([
       'url' => $url,
       'title' => '',
       'attributes' => serialize([]),
-    ], $this->getMock(MigrateExecutableInterface::class), $this->getMockBuilder(Row::class)->disableOriginalConstructor()->getMock(), NULL);
+    ], $this->createMock(MigrateExecutableInterface::class), $this->getMockBuilder(Row::class)->disableOriginalConstructor()->getMock(), NULL);
     $this->assertEquals($expected, $transformed['uri']);
   }
 
   /**
    * Data provider for testCanonicalizeUri.
    */
-  public function canonicalizeUriDataProvider() {
+  public static function canonicalizeUriDataProvider() {
     return [
       'Simple front-page' => [
         '<front>',
@@ -66,6 +68,10 @@ class FieldLinkTest extends UnitTestCase {
         'https://yahoo.com',
         ['uri_scheme' => 'https://'],
       ],
+      'Absolute URL without explicit protocol (protocol-relative)' => [
+        '//example.com',
+        'http://example.com',
+      ],
       'Absolute URL with non-standard characters' => [
         'http://www.ßÀÑÐ¥ƒå¢ë.com',
         'http://www.ßÀÑÐ¥ƒå¢ë.com',
@@ -86,7 +92,42 @@ class FieldLinkTest extends UnitTestCase {
         'http://www.example.com/page#links',
         'http://www.example.com/page#links',
       ],
+      'empty' => [
+        '',
+        'route:<nolink>',
+      ],
+      'No link' => [
+        '<nolink>',
+        'route:<nolink>',
+      ],
+      'none' => [
+        '<none>',
+        'route:<nolink>',
+      ],
     ];
+  }
+
+  /**
+   * Tests the attributes that are deeply serialized are discarded.
+   */
+  public function testCanonicalizeUriSerialized(): void {
+    $link_plugin = new FieldLink([], '', [], $this->createMock(MigrationInterface::class));
+    $migrate_executable = $this->createMock(MigrateExecutableInterface::class);
+    $row = new Row();
+
+    $transformed = $link_plugin->transform([
+      'url' => '',
+      'title' => '',
+      'attributes' => serialize(serialize(['not too deep'])),
+    ], $migrate_executable, $row, NULL);
+    $this->assertEquals(['not too deep'], $transformed['options']['attributes']);
+
+    $transformed = $link_plugin->transform([
+      'url' => '',
+      'title' => '',
+      'attributes' => serialize(serialize(serialize(['too deep']))),
+    ], $migrate_executable, $row, NULL);
+    $this->assertEmpty($transformed['options']['attributes']);
   }
 
 }

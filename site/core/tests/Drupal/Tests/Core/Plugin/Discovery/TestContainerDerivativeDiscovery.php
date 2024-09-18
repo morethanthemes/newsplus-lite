@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Plugin\Discovery;
 
 use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Defines container test derivative discovery.
@@ -14,7 +16,7 @@ class TestContainerDerivativeDiscovery extends TestDerivativeDiscovery implement
   /**
    * Constructs a TestContainerDerivativeDiscovery object.
    *
-   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface $example_service
+   * @var \Symfony\Contracts\EventDispatcher\EventDispatcherInterface $example_service
    *   Some service.
    */
   public function __construct(EventDispatcherInterface $example_service) {

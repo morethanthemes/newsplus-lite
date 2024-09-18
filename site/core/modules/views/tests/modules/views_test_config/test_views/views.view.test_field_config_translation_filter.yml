@@ -2,12 +2,12 @@ langcode: en
 status: true
 dependencies: {  }
 id: test_field_config_translation_filter
+label: test_field_config_translation_filter
 module: views
 description: ''
 tag: ''
 base_table: node_field_data
 base_field: id
-core: '8'
 display:
   default:
     display_options:
@@ -79,7 +79,7 @@ display:
       row:
         type: fields
     display_plugin: default
-    display_title: Master
+    display_title: Default
     id: default
     position: 0
   embed_1:

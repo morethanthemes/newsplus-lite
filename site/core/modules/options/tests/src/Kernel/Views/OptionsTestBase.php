@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\options\Kernel\Views;
 
 use Drupal\field\Entity\FieldConfig;
@@ -15,11 +17,15 @@ use Drupal\views\Tests\ViewTestData;
 abstract class OptionsTestBase extends ViewsKernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['options', 'options_test_views', 'node', 'user', 'field'];
+  protected static $modules = [
+    'options',
+    'options_test_views',
+    'node',
+    'user',
+    'field',
+  ];
 
   /**
    * Stores the nodes used for the different tests.
@@ -42,11 +48,14 @@ abstract class OptionsTestBase extends ViewsKernelTestBase {
    */
   protected $fieldNames;
 
-  protected function setUp($import_test_views = TRUE) {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp($import_test_views = TRUE): void {
     parent::setUp();
     $this->mockStandardInstall();
 
-    ViewTestData::createTestViews(get_class($this), ['options_test_views']);
+    ViewTestData::createTestViews(static::class, ['options_test_views']);
 
     $settings = [];
     $settings['type'] = 'article';
@@ -72,9 +81,7 @@ abstract class OptionsTestBase extends ViewsKernelTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('node');
 
-    NodeType::create(
-      ['type' => 'article']
-    )->save();
+    NodeType::create(['type' => 'article', 'name' => 'Article'])->save();
     $this->fieldValues = [
       $this->randomMachineName(),
       $this->randomMachineName(),

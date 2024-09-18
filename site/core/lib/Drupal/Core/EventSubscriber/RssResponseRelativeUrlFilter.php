@@ -5,7 +5,7 @@ namespace Drupal\Core\EventSubscriber;
 use Drupal\Component\Utility\Html;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
@@ -16,12 +16,12 @@ class RssResponseRelativeUrlFilter implements EventSubscriberInterface {
   /**
    * Converts relative URLs to absolute URLs.
    *
-   * @param \Symfony\Component\HttpKernel\Event\FilterResponseEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\ResponseEvent $event
    *   The response event.
    */
-  public function onResponse(FilterResponseEvent $event) {
+  public function onResponse(ResponseEvent $event) {
     // Only care about RSS responses.
-    if (stripos($event->getResponse()->headers->get('Content-Type'), 'application/rss+xml') === FALSE) {
+    if (stripos($event->getResponse()->headers->get('Content-Type', ''), 'application/rss+xml') === FALSE) {
       return;
     }
 
@@ -57,10 +57,12 @@ class RssResponseRelativeUrlFilter implements EventSubscriberInterface {
 
     // Invoke Html::transformRootRelativeUrlsToAbsolute() on all HTML content
     // embedded in this RSS feed.
-    foreach ($rss_dom->getElementsByTagName('description') as $node) {
-      $html_markup = $node->nodeValue;
-      if (!empty($html_markup)) {
-        $node->nodeValue = Html::transformRootRelativeUrlsToAbsolute($html_markup, $request->getSchemeAndHttpHost());
+    foreach ($rss_dom->getElementsByTagName('item') as $item) {
+      foreach ($item->getElementsByTagName('description') as $node) {
+        $html_markup = $node->nodeValue;
+        if (!empty($html_markup)) {
+          $node->replaceChild($rss_dom->createTextNode(Html::transformRootRelativeUrlsToAbsolute($html_markup, $request->getSchemeAndHttpHost())), $node->firstChild);
+        }
       }
     }
 
@@ -70,7 +72,7 @@ class RssResponseRelativeUrlFilter implements EventSubscriberInterface {
   /**
    * {@inheritdoc}
    */
-  public static function getSubscribedEvents() {
+  public static function getSubscribedEvents(): array {
     // Should run after any other response subscriber that modifies the markup.
     // @see \Drupal\Core\EventSubscriber\ActiveLinkResponseFilter
     $events[KernelEvents::RESPONSE][] = ['onResponse', -512];

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\menu_ui\Functional;
 
 use Drupal\Tests\BrowserTestBase;
@@ -13,21 +15,24 @@ use Drupal\system\Entity\Menu;
 class MenuUninstallTest extends BrowserTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['menu_ui'];
+  protected static $modules = ['menu_ui'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Tests Menu uninstall.
    */
-  public function testMenuUninstall() {
+  public function testMenuUninstall(): void {
     \Drupal::service('module_installer')->uninstall(['menu_ui']);
 
-    \Drupal::entityManager()->getStorage('menu')->resetCache(['admin']);
+    \Drupal::entityTypeManager()->getStorage('menu')->resetCache(['admin']);
 
-    $this->assertTrue(Menu::load('admin'), 'The \'admin\' menu still exists after uninstalling Menu UI module.');
+    $this->assertNotEmpty(Menu::load('admin'), 'The \'admin\' menu still exists after uninstalling Menu UI module.');
   }
 
 }

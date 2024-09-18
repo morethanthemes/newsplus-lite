@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\system\Functional\Form;
 
 use Drupal\Component\Serialization\Json;
@@ -13,37 +15,43 @@ use Drupal\Tests\BrowserTestBase;
 class EmailTest extends BrowserTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['form_test'];
+  protected static $modules = ['form_test'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Tests that #type 'email' fields are properly validated.
    */
-  public function testFormEmail() {
+  public function testFormEmail(): void {
     $edit = [];
     $edit['email'] = 'invalid';
     $edit['email_required'] = ' ';
-    $this->drupalPostForm('form-test/email', $edit, 'Submit');
-    $this->assertRaw(t('The email address %mail is not valid.', ['%mail' => 'invalid']));
-    $this->assertRaw(t('@name field is required.', ['@name' => 'Address']));
+    $this->drupalGet('form-test/email');
+    $this->submitForm($edit, 'Submit');
+    $this->assertSession()->pageTextContains("The email address invalid is not valid.");
+    $this->assertSession()->pageTextContains("Address field is required.");
 
     $edit = [];
     $edit['email_required'] = '  foo.bar@example.com ';
-    $this->drupalPostForm('form-test/email', $edit, 'Submit');
+    $this->drupalGet('form-test/email');
+    $this->submitForm($edit, 'Submit');
     $values = Json::decode($this->getSession()->getPage()->getContent());
-    $this->assertIdentical($values['email'], '');
-    $this->assertEqual($values['email_required'], 'foo.bar@example.com');
+    $this->assertSame('', $values['email']);
+    $this->assertEquals('foo.bar@example.com', $values['email_required']);
 
     $edit = [];
     $edit['email'] = 'foo@example.com';
     $edit['email_required'] = 'example@drupal.org';
-    $this->drupalPostForm('form-test/email', $edit, 'Submit');
+    $this->drupalGet('form-test/email');
+    $this->submitForm($edit, 'Submit');
     $values = Json::decode($this->getSession()->getPage()->getContent());
-    $this->assertEqual($values['email'], 'foo@example.com');
-    $this->assertEqual($values['email_required'], 'example@drupal.org');
+    $this->assertEquals('foo@example.com', $values['email']);
+    $this->assertEquals('example@drupal.org', $values['email_required']);
   }
 
 }

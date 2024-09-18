@@ -185,8 +185,7 @@ class MTimeProtectedFastFileStorage extends FileStorage {
   }
 
   /**
-   * Gets the full path of the containing directory where the file is or should
-   * be stored.
+   * Gets the full path of the file storage directory's parent.
    *
    * @param string $name
    *   The virtual file name. Can be a relative path.
@@ -201,7 +200,7 @@ class MTimeProtectedFastFileStorage extends FileStorage {
     // file. Thus, when switching between MTimeProtectedFastFileStorage and
     // FileStorage, the subdirectory or the file cannot be created in case the
     // other file type exists already.
-    if (substr($name, -4) === '.php') {
+    if (str_ends_with($name, '.php')) {
       $name = substr($name, 0, -4);
     }
     return $this->directory . '/' . str_replace('/', '#', $name);
@@ -222,6 +221,7 @@ class MTimeProtectedFastFileStorage extends FileStorage {
    *   The directory where the temporary filename will be created.
    * @param $prefix
    *   The prefix of the generated temporary filename.
+   *
    * @return string
    *   Returns the new temporary filename (with path), or FALSE on failure.
    */

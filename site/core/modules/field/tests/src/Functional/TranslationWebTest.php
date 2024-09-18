@@ -1,25 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\field\Functional;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\language\Entity\ConfigurableLanguage;
 
 /**
- * Tests multilanguage fields logic that require a full environment.
+ * Tests multilingual fields logic that require a full environment.
  *
  * @group field
  */
 class TranslationWebTest extends FieldTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['language', 'field_test', 'entity_test'];
+  protected static $modules = ['language', 'field_test', 'entity_test'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * The name of the field to use in this test.
@@ -49,10 +53,13 @@ class TranslationWebTest extends FieldTestBase {
    */
   protected $field;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
-    $this->fieldName = Unicode::strtolower($this->randomMachineName() . '_field_name');
+    $this->fieldName = $this->randomMachineName() . '_field_name';
 
     $field_storage = [
       'field_name' => $this->fieldName,
@@ -70,7 +77,8 @@ class TranslationWebTest extends FieldTestBase {
     FieldConfig::create($field)->save();
     $this->field = FieldConfig::load($this->entityTypeId . '.' . $field['bundle'] . '.' . $this->fieldName);
 
-    entity_get_form_display($this->entityTypeId, $this->entityTypeId, 'default')
+    \Drupal::service('entity_display.repository')
+      ->getFormDisplay($this->entityTypeId, $this->entityTypeId)
       ->setComponent($this->fieldName)
       ->save();
 
@@ -85,8 +93,11 @@ class TranslationWebTest extends FieldTestBase {
   /**
    * Tests field translations when creating a new revision.
    */
-  public function testFieldFormTranslationRevisions() {
-    $web_user = $this->drupalCreateUser(['view test entity', 'administer entity_test content']);
+  public function testFieldFormTranslationRevisions(): void {
+    $web_user = $this->drupalCreateUser([
+      'view test entity',
+      'administer entity_test content',
+    ]);
     $this->drupalLogin($web_user);
 
     // Prepare the field translations.
@@ -111,7 +122,8 @@ class TranslationWebTest extends FieldTestBase {
       "{$field_name}[0][value]" => $entity->{$field_name}->value,
       'revision' => TRUE,
     ];
-    $this->drupalPostForm($this->entityTypeId . '/manage/' . $entity->id() . '/edit', $edit, t('Save'));
+    $this->drupalGet($this->entityTypeId . '/manage/' . $entity->id() . '/edit');
+    $this->submitForm($edit, 'Save');
 
     // Check translation revisions.
     $this->checkTranslationRevisions($entity->id(), $entity->getRevisionId(), $available_langcodes);
@@ -119,17 +131,20 @@ class TranslationWebTest extends FieldTestBase {
   }
 
   /**
+   * Tests translation revisions.
+   *
    * Check if the field translation attached to the entity revision identified
    * by the passed arguments were correctly stored.
    */
   private function checkTranslationRevisions($id, $revision_id, $available_langcodes) {
     $field_name = $this->fieldStorage->getName();
-    $entity = $this->container->get('entity_type.manager')
-      ->getStorage($this->entityTypeId)
-      ->loadRevision($revision_id);
+    /** @var \Drupal\Core\Entity\RevisionableStorageInterface $storage */
+    $storage = $this->container->get('entity_type.manager')
+      ->getStorage($this->entityTypeId);
+    $entity = $storage->loadRevision($revision_id);
     foreach ($available_langcodes as $langcode => $value) {
       $passed = $entity->getTranslation($langcode)->{$field_name}->value == $value + 1;
-      $this->assertTrue($passed, format_string('The @language translation for revision @revision was correctly stored', ['@language' => $langcode, '@revision' => $entity->getRevisionId()]));
+      $this->assertTrue($passed, "The $langcode translation for revision {$entity->getRevisionId()} was correctly stored");
     }
   }
 

@@ -1,18 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Component\Gettext;
 
+use Drupal\Component\Gettext\PoHeader;
 use Drupal\Component\Gettext\PoItem;
 use Drupal\Component\Gettext\PoStreamWriter;
 use org\bovigo\vfs\vfsStream;
 use org\bovigo\vfs\vfsStreamFile;
 use PHPUnit\Framework\TestCase;
+use Prophecy\PhpUnit\ProphecyTrait;
 
 /**
  * @coversDefaultClass \Drupal\Component\Gettext\PoStreamWriter
  * @group Gettext
  */
 class PoStreamWriterTest extends TestCase {
+
+  use ProphecyTrait;
 
   /**
    * The PO writer object under test.
@@ -31,26 +37,25 @@ class PoStreamWriterTest extends TestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
+    $poHeader = $this->prophesize(PoHeader::class);
+    $poHeader->__toString()->willReturn('');
     $this->poWriter = new PoStreamWriter();
+    $this->poWriter->setHeader($poHeader->reveal());
 
     $root = vfsStream::setup();
-    $this->poFile = new vfsStreamFile('powriter.po');
+    $this->poFile = new vfsStreamFile('poWriter.po');
     $root->addChild($this->poFile);
   }
 
   /**
    * @covers ::getURI
    */
-  public function testGetUriException() {
-    if (method_exists($this, 'expectException')) {
-      $this->expectException(\Exception::class, 'No URI set.');
-    }
-    else {
-      $this->setExpectedException(\Exception::class, 'No URI set.');
-    }
+  public function testGetUriException(): void {
+    $this->expectException(\Exception::class);
+    $this->expectExceptionMessage('No URI set.');
 
     $this->poWriter->getURI();
   }
@@ -59,14 +64,10 @@ class PoStreamWriterTest extends TestCase {
    * @covers ::writeItem
    * @dataProvider providerWriteData
    */
-  public function testWriteItem($poContent, $expected, $long) {
+  public function testWriteItem($poContent, $expected, $long): void {
     if ($long) {
-      if (method_exists($this, 'expectException')) {
-        $this->expectException(\Exception::class, 'Unable to write data:');
-      }
-      else {
-        $this->setExpectedException(\Exception::class, 'Unable to write data:');
-      }
+      $this->expectException(\Exception::class);
+      $this->expectExceptionMessage('Unable to write data:');
     }
 
     // Limit the file system quota to make the write fail on long strings.
@@ -89,7 +90,8 @@ class PoStreamWriterTest extends TestCase {
    *   - Written content.
    *   - Content longer than 10 bytes.
    */
-  public function providerWriteData() {
+  public static function providerWriteData() {
+    // cSpell:disable
     return [
       ['', '', FALSE],
       ["\r\n", "\r\n", FALSE],
@@ -99,18 +101,15 @@ class PoStreamWriterTest extends TestCase {
       ['中文 890', '中文 890', FALSE],
       ['中文 89012', '中文 890', TRUE],
     ];
+    // cSpell:enable
   }
 
   /**
    * @covers ::close
    */
-  public function testCloseException() {
-    if (method_exists($this, 'expectException')) {
-      $this->expectException(\Exception::class, 'Cannot close stream that is not open.');
-    }
-    else {
-      $this->setExpectedException(\Exception::class, 'Cannot close stream that is not open.');
-    }
+  public function testCloseException(): void {
+    $this->expectException(\Exception::class);
+    $this->expectExceptionMessage('Cannot close stream that is not open.');
 
     $this->poWriter->close();
   }

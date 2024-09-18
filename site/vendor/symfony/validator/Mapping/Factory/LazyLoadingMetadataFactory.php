@@ -11,10 +11,11 @@
 
 namespace Symfony\Component\Validator\Mapping\Factory;
 
+use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Component\Validator\Exception\NoSuchMetadataException;
-use Symfony\Component\Validator\Mapping\Cache\CacheInterface;
 use Symfony\Component\Validator\Mapping\ClassMetadata;
 use Symfony\Component\Validator\Mapping\Loader\LoaderInterface;
+use Symfony\Component\Validator\Mapping\MetadataInterface;
 
 /**
  * Creates new {@link ClassMetadataInterface} instances.
@@ -46,24 +47,15 @@ class LazyLoadingMetadataFactory implements MetadataFactoryInterface
      *
      * @var ClassMetadata[]
      */
-    protected $loadedClasses = array();
+    protected $loadedClasses = [];
 
-    /**
-     * Creates a new metadata factory.
-     *
-     * @param LoaderInterface|null $loader The loader for configuring new metadata
-     * @param CacheInterface|null  $cache  The cache for persisting metadata
-     *                                     between multiple PHP requests
-     */
-    public function __construct(LoaderInterface $loader = null, CacheInterface $cache = null)
+    public function __construct(?LoaderInterface $loader = null, ?CacheItemPoolInterface $cache = null)
     {
         $this->loader = $loader;
         $this->cache = $cache;
     }
 
     /**
-     * {@inheritdoc}
-     *
      * If the method was called with the same class name (or an object of that
      * class) before, the same metadata instance is returned.
      *
@@ -76,13 +68,13 @@ class LazyLoadingMetadataFactory implements MetadataFactoryInterface
      * {@link LoaderInterface::loadClassMetadata()} method for further
      * configuration. At last, the new object is returned.
      */
-    public function getMetadataFor($value)
+    public function getMetadataFor(mixed $value): MetadataInterface
     {
-        if (!is_object($value) && !is_string($value)) {
-            throw new NoSuchMetadataException(sprintf('Cannot create metadata for non-objects. Got: %s', gettype($value)));
+        if (!\is_object($value) && !\is_string($value)) {
+            throw new NoSuchMetadataException(sprintf('Cannot create metadata for non-objects. Got: "%s".', get_debug_type($value)));
         }
 
-        $class = ltrim(is_object($value) ? get_class($value) : $value, '\\');
+        $class = ltrim(\is_object($value) ? $value::class : $value, '\\');
 
         if (isset($this->loadedClasses[$class])) {
             return $this->loadedClasses[$class];
@@ -92,7 +84,10 @@ class LazyLoadingMetadataFactory implements MetadataFactoryInterface
             throw new NoSuchMetadataException(sprintf('The class or interface "%s" does not exist.', $class));
         }
 
-        if (null !== $this->cache && false !== ($metadata = $this->cache->read($class))) {
+        $cacheItem = $this->cache?->getItem($this->escapeClassName($class));
+        if ($cacheItem?->isHit()) {
+            $metadata = $cacheItem->get();
+
             // Include constraints from the parent class
             $this->mergeConstraints($metadata);
 
@@ -101,12 +96,10 @@ class LazyLoadingMetadataFactory implements MetadataFactoryInterface
 
         $metadata = new ClassMetadata($class);
 
-        if (null !== $this->loader) {
-            $this->loader->loadClassMetadata($metadata);
-        }
+        $this->loader?->loadClassMetadata($metadata);
 
-        if (null !== $this->cache) {
-            $this->cache->write($metadata);
+        if (null !== $cacheItem) {
+            $this->cache->save($cacheItem->set($metadata));
         }
 
         // Include constraints from the parent class
@@ -115,51 +108,52 @@ class LazyLoadingMetadataFactory implements MetadataFactoryInterface
         return $this->loadedClasses[$class] = $metadata;
     }
 
-    private function mergeConstraints(ClassMetadata $metadata)
+    private function mergeConstraints(ClassMetadata $metadata): void
     {
+        if ($metadata->getReflectionClass()->isInterface()) {
+            return;
+        }
+
         // Include constraints from the parent class
         if ($parent = $metadata->getReflectionClass()->getParentClass()) {
             $metadata->mergeConstraints($this->getMetadataFor($parent->name));
         }
 
-        $interfaces = $metadata->getReflectionClass()->getInterfaces();
-
-        $interfaces = array_filter($interfaces, function ($interface) use ($parent, $interfaces) {
-            $interfaceName = $interface->getName();
-
-            if ($parent && $parent->implementsInterface($interfaceName)) {
-                return false;
-            }
-
-            foreach ($interfaces as $i) {
-                if ($i !== $interface && $i->implementsInterface($interfaceName)) {
-                    return false;
-                }
-            }
-
-            return true;
-        });
-
         // Include constraints from all directly implemented interfaces
-        foreach ($interfaces as $interface) {
+        foreach ($metadata->getReflectionClass()->getInterfaces() as $interface) {
             if ('Symfony\Component\Validator\GroupSequenceProviderInterface' === $interface->name) {
                 continue;
             }
+
+            if ($parent && \in_array($interface->getName(), $parent->getInterfaceNames(), true)) {
+                continue;
+            }
+
             $metadata->mergeConstraints($this->getMetadataFor($interface->name));
         }
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function hasMetadataFor($value)
+    public function hasMetadataFor(mixed $value): bool
     {
-        if (!is_object($value) && !is_string($value)) {
+        if (!\is_object($value) && !\is_string($value)) {
             return false;
         }
 
-        $class = ltrim(is_object($value) ? get_class($value) : $value, '\\');
+        $class = ltrim(\is_object($value) ? $value::class : $value, '\\');
 
         return class_exists($class) || interface_exists($class, false);
+    }
+
+    /**
+     * Replaces backslashes by dots in a class name.
+     */
+    private function escapeClassName(string $class): string
+    {
+        if (str_contains($class, '@')) {
+            // anonymous class: replace all PSR6-reserved characters
+            return str_replace(["\0", '\\', '/', '@', ':', '{', '}', '(', ')'], '.', $class);
+        }
+
+        return str_replace('\\', '.', $class);
     }
 }

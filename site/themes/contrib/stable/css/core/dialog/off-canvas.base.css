@@ -1,0 +1,559 @@
+/**
+ * @file
+ * Set base styles for the off-canvas dialog.
+ */
+
+/* Set some global attributes. */
+#drupal-off-canvas:not(.drupal-off-canvas-reset),
+#drupal-off-canvas-wrapper {
+  color: #ddd;
+  background: #444;
+}
+
+/**
+ * All HTML elements that could be used in off-canvas except div, bdo, bdi,
+ * data, svg, map and math.
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Element
+ */
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) span,
+#drupal-off-canvas-wrapper span,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) applet,
+#drupal-off-canvas-wrapper applet,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) object,
+#drupal-off-canvas-wrapper object,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) iframe,
+#drupal-off-canvas-wrapper iframe,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) h1,
+#drupal-off-canvas-wrapper h1,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) h2,
+#drupal-off-canvas-wrapper h2,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) h3,
+#drupal-off-canvas-wrapper h3,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) h4,
+#drupal-off-canvas-wrapper h4,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) h5,
+#drupal-off-canvas-wrapper h5,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) h6,
+#drupal-off-canvas-wrapper h6,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) p,
+#drupal-off-canvas-wrapper p,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) blockquote,
+#drupal-off-canvas-wrapper blockquote,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) pre,
+#drupal-off-canvas-wrapper pre,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) a,
+#drupal-off-canvas-wrapper a,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) abbr,
+#drupal-off-canvas-wrapper abbr,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) acronym,
+#drupal-off-canvas-wrapper acronym,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) address,
+#drupal-off-canvas-wrapper address,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) big,
+#drupal-off-canvas-wrapper big,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) button,
+#drupal-off-canvas-wrapper button,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) cite,
+#drupal-off-canvas-wrapper cite,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) code,
+#drupal-off-canvas-wrapper code,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) del,
+#drupal-off-canvas-wrapper del,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) dfn,
+#drupal-off-canvas-wrapper dfn,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) em,
+#drupal-off-canvas-wrapper em,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) img,
+#drupal-off-canvas-wrapper img,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) ins,
+#drupal-off-canvas-wrapper ins,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) kbd,
+#drupal-off-canvas-wrapper kbd,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) q,
+#drupal-off-canvas-wrapper q,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) s,
+#drupal-off-canvas-wrapper s,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) samp,
+#drupal-off-canvas-wrapper samp,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) small,
+#drupal-off-canvas-wrapper small,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) strike,
+#drupal-off-canvas-wrapper strike,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) strong,
+#drupal-off-canvas-wrapper strong,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) sub,
+#drupal-off-canvas-wrapper sub,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) sup,
+#drupal-off-canvas-wrapper sup,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) tt,
+#drupal-off-canvas-wrapper tt,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) var,
+#drupal-off-canvas-wrapper var,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) b,
+#drupal-off-canvas-wrapper b,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) u,
+#drupal-off-canvas-wrapper u,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) i,
+#drupal-off-canvas-wrapper i,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) center,
+#drupal-off-canvas-wrapper center,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) dl,
+#drupal-off-canvas-wrapper dl,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) dt,
+#drupal-off-canvas-wrapper dt,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) dd,
+#drupal-off-canvas-wrapper dd,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) ol,
+#drupal-off-canvas-wrapper ol,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) ul,
+#drupal-off-canvas-wrapper ul,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) li,
+#drupal-off-canvas-wrapper li,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) fieldset,
+#drupal-off-canvas-wrapper fieldset,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) form,
+#drupal-off-canvas-wrapper form,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) label,
+#drupal-off-canvas-wrapper label,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) legend,
+#drupal-off-canvas-wrapper legend,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) table,
+#drupal-off-canvas-wrapper table,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) caption,
+#drupal-off-canvas-wrapper caption,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) tbody,
+#drupal-off-canvas-wrapper tbody,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) tfoot,
+#drupal-off-canvas-wrapper tfoot,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) thead,
+#drupal-off-canvas-wrapper thead,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) tr,
+#drupal-off-canvas-wrapper tr,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) th,
+#drupal-off-canvas-wrapper th,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) td,
+#drupal-off-canvas-wrapper td,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) article,
+#drupal-off-canvas-wrapper article,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) aside,
+#drupal-off-canvas-wrapper aside,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) canvas,
+#drupal-off-canvas-wrapper canvas,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) details,
+#drupal-off-canvas-wrapper details,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) embed,
+#drupal-off-canvas-wrapper embed,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) figure,
+#drupal-off-canvas-wrapper figure,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) figcaption,
+#drupal-off-canvas-wrapper figcaption,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) footer,
+#drupal-off-canvas-wrapper footer,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) header,
+#drupal-off-canvas-wrapper header,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) hgroup,
+#drupal-off-canvas-wrapper hgroup,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) main,
+#drupal-off-canvas-wrapper main,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) menu,
+#drupal-off-canvas-wrapper menu,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) meter,
+#drupal-off-canvas-wrapper meter,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) nav,
+#drupal-off-canvas-wrapper nav,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) output,
+#drupal-off-canvas-wrapper output,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) progress,
+#drupal-off-canvas-wrapper progress,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) ruby,
+#drupal-off-canvas-wrapper ruby,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) section,
+#drupal-off-canvas-wrapper section,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) summary,
+#drupal-off-canvas-wrapper summary,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) time,
+#drupal-off-canvas-wrapper time,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) mark,
+#drupal-off-canvas-wrapper mark,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) audio,
+#drupal-off-canvas-wrapper audio,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) video,
+#drupal-off-canvas-wrapper video,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) input,
+#drupal-off-canvas-wrapper input,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) select,
+#drupal-off-canvas-wrapper select,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) textarea,
+#drupal-off-canvas-wrapper textarea {
+  color: inherit;
+  background: inherit;
+  font-family: "Lucida Grande", "Lucida Sans Unicode", "liberation sans", sans-serif;
+}
+
+/* Generic elements. */
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) a,
+#drupal-off-canvas-wrapper a,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .link,
+#drupal-off-canvas-wrapper .link {
+  cursor: pointer;
+  transition: color 0.5s ease;
+  text-decoration: none;
+  color: #85bef4;
+  border-bottom: none;
+  font-family: "Lucida Grande", "Lucida Sans Unicode", "liberation sans", sans-serif;
+  font-size: inherit;
+  font-weight: normal;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) a:focus,
+#drupal-off-canvas-wrapper a:focus,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .link:focus,
+#drupal-off-canvas-wrapper .link:focus,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) a:hover,
+#drupal-off-canvas-wrapper a:hover,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .link:hover,
+#drupal-off-canvas-wrapper .link:hover {
+  text-decoration: underline;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) hr,
+#drupal-off-canvas-wrapper hr {
+  height: 1px;
+  background: #ccc;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) summary,
+#drupal-off-canvas-wrapper summary,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .fieldgroup:not(.form-composite) > legend,
+#drupal-off-canvas-wrapper .fieldgroup:not(.form-composite) > legend {
+  font-weight: bold;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) h1,
+#drupal-off-canvas-wrapper h1,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .heading-a,
+#drupal-off-canvas-wrapper .heading-a {
+  display: block;
+  font-size: 1.625em;
+  font-weight: bold;
+  line-height: 1.875em;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) h2,
+#drupal-off-canvas-wrapper h2,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .heading-b,
+#drupal-off-canvas-wrapper .heading-b {
+  display: block;
+  margin: 0.625rem 0;
+  font-size: 1.385em;
+  font-weight: bold;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) h3,
+#drupal-off-canvas-wrapper h3,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .heading-c,
+#drupal-off-canvas-wrapper .heading-c {
+  display: block;
+  margin: 0.625rem 0;
+  font-size: 1.231em;
+  font-weight: bold;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) h4,
+#drupal-off-canvas-wrapper h4,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .heading-d,
+#drupal-off-canvas-wrapper .heading-d {
+  display: block;
+  margin: 0.625rem 0;
+  font-size: 1.154em;
+  font-weight: bold;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) h5,
+#drupal-off-canvas-wrapper h5,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .heading-e,
+#drupal-off-canvas-wrapper .heading-e {
+  display: block;
+  margin: 0.625rem 0;
+  font-size: 1.077em;
+  font-weight: bold;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) h6,
+#drupal-off-canvas-wrapper h6,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .heading-f,
+#drupal-off-canvas-wrapper .heading-f {
+  display: block;
+  margin: 0.625rem 0;
+  font-size: 1.077em;
+  font-weight: bold;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) p,
+#drupal-off-canvas-wrapper p {
+  margin: 1em 0;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) dl,
+#drupal-off-canvas-wrapper dl {
+  margin: 0 0 1.25rem;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) dl dd,
+#drupal-off-canvas-wrapper dl dd,
+#drupal-off-canvas:not(.drupal-off-canvas-reset)dl dl,
+#drupal-off-canvas-wrapper dl dl {
+  margin-bottom: 0.625rem;
+  margin-left: 1.25rem; /* LTR */
+}
+
+[dir="rtl"] #drupal-off-canvas:not(.drupal-off-canvas-reset) dl dd,
+#drupal-off-canvas-wrapper dl dd,
+[dir="rtl"] #drupal-off-canvas:not(.drupal-off-canvas-reset) dl dl,
+#drupal-off-canvas-wrapper dl dl {
+  margin-right: 1.25rem;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) blockquote,
+#drupal-off-canvas-wrapper blockquote {
+  margin: 1em 2.5rem;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) address,
+#drupal-off-canvas-wrapper address {
+  font-style: italic;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) u,
+#drupal-off-canvas-wrapper u,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) ins,
+#drupal-off-canvas-wrapper ins {
+  text-decoration: underline;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) s,
+#drupal-off-canvas-wrapper s,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) strike,
+#drupal-off-canvas-wrapper strike,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) del,
+#drupal-off-canvas-wrapper del {
+  text-decoration: line-through;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) big,
+#drupal-off-canvas-wrapper big {
+  font-size: larger;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) small,
+#drupal-off-canvas-wrapper small {
+  font-size: smaller;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) sub,
+#drupal-off-canvas-wrapper sub {
+  vertical-align: sub;
+  font-size: smaller;
+  line-height: normal;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) sup,
+#drupal-off-canvas-wrapper sup {
+  vertical-align: super;
+  font-size: smaller;
+  line-height: normal;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) abbr,
+#drupal-off-canvas-wrapper abbr,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) acronym,
+#drupal-off-canvas-wrapper acronym {
+  border-bottom: dotted 1px;
+  background: transparent;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) ul,
+#drupal-off-canvas-wrapper ul {
+  list-style-type: disc;
+  list-style-image: none;
+}
+
+[dir="rtl"] #drupal-off-canvas:not(.drupal-off-canvas-reset) .messages__list,
+[dir="rtl"] #drupal-off-canvas-wrapper .messages__list {
+  margin-right: 0;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) ol,
+#drupal-off-canvas-wrapper ol {
+  list-style-type: decimal;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) ul li,
+#drupal-off-canvas-wrapper ul li,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) ol li,
+#drupal-off-canvas-wrapper ol li {
+  display: block;
+  padding: 0.3125rem 0;
+  border-bottom: 1px solid #333;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) ul li:last-child,
+#drupal-off-canvas-wrapper ul li:last-child,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) ol li:last-child,
+#drupal-off-canvas-wrapper ol li:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) blockquote,
+#drupal-off-canvas-wrapper blockquote,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) code,
+#drupal-off-canvas-wrapper code {
+  margin: 1.25rem 0;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) pre,
+#drupal-off-canvas-wrapper pre {
+  margin: 1.25rem 0;
+  white-space: pre-wrap;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) details,
+#drupal-off-canvas-wrapper details {
+  display: block;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) summary,
+#drupal-off-canvas-wrapper summary {
+  display: list-item;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) select::-ms-expand,
+#drupal-off-canvas-wrapper select::-ms-expand {
+  display: block;
+}
+
+/* Classes for hidden and visually hidden elements. See hidden.module.css. */
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .hidden,
+#drupal-off-canvas-wrapper .hidden {
+  display: none;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .visually-hidden,
+#drupal-off-canvas-wrapper .visually-hidden {
+  position: absolute !important;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .visually-hidden,
+#drupal-off-canvas-wrapper .visually-hidden {
+  overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px);
+  width: 1px;
+  height: 1px;
+  word-wrap: normal;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .visually-hidden.focusable:active,
+#drupal-off-canvas-wrapper .visually-hidden.focusable:active,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .visually-hidden.focusable:focus,
+#drupal-off-canvas-wrapper .visually-hidden.focusable:focus {
+  position: static !important;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .visually-hidden.focusable:active,
+#drupal-off-canvas-wrapper .visually-hidden.focusable:active,
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .visually-hidden.focusable:focus,
+#drupal-off-canvas-wrapper .visually-hidden.focusable:focus {
+  overflow: visible;
+  clip: auto;
+  width: auto;
+  height: auto;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .invisible,
+#drupal-off-canvas-wrapper .invisible {
+  visibility: hidden;
+}
+
+/* Some system classes. See system.admin.css. */
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .panel,
+#drupal-off-canvas-wrapper .panel {
+  padding: 0.3125rem 0.3125rem 0.9375rem;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .panel__description,
+#drupal-off-canvas-wrapper .panel__description {
+  margin: 0 0 0.1875rem;
+  padding: 2px 0 0.1875rem 0;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .compact-link,
+#drupal-off-canvas-wrapper .compact-link {
+  margin: 0 0 0.625rem 0;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) small .admin-link:before,
+#drupal-off-canvas-wrapper small .admin-link:before {
+  content: " [";
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) small .admin-link:after,
+#drupal-off-canvas-wrapper small .admin-link:after {
+  content: "]";
+}
+
+/* Override jQuery UI */
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .ui-widget-content a,
+#drupal-off-canvas-wrapper .ui-widget-content a {
+  color: #85bef4 !important;
+}
+
+/* Message styles */
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .messages,
+#drupal-off-canvas-wrapper .messages {
+  background: no-repeat 0.625rem 1.0625rem;
+}
+
+[dir="rtl"] #drupal-off-canvas:not(.drupal-off-canvas-reset) .messages,
+#drupal-off-canvas-wrapper .messages {
+  background-position: right 10px top 17px;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .messages abbr,
+#drupal-off-canvas-wrapper .messages abbr {
+  color: #444;
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .messages--status,
+#drupal-off-canvas-wrapper .messages--status {
+  color: #325e1c;
+  background-color: #f3faef;
+  background-image: url(../../../images/core/icons/73b355/check.svg);
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .messages--warning,
+#drupal-off-canvas-wrapper .messages--warning {
+  color: #734c00;
+  background-color: #fdf8ed;
+  background-image: url(../../../images/core/icons/e29700/warning.svg);
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset) .messages--error,
+#drupal-off-canvas-wrapper .messages--error {
+  color: #a51b00;
+  background-color: #fcf4f2;
+  background-image: url(../../../images/core/icons/e32700/error.svg);
+}
+
+#drupal-off-canvas:not(.drupal-off-canvas-reset)  .messages--error div[role="alert"],
+#drupal-off-canvas-wrapper .messages--error div[role="alert"] {
+  color: inherit;
+  background: transparent;
+}

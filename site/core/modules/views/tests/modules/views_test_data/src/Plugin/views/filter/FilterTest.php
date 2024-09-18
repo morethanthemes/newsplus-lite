@@ -3,11 +3,10 @@
 namespace Drupal\views_test_data\Plugin\views\filter;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\views\Attribute\ViewsFilter;
 use Drupal\views\Plugin\views\filter\FilterPluginBase;
 
-/**
- * @ViewsFilter("test_filter")
- */
+#[ViewsFilter("test_filter")]
 class FilterTest extends FilterPluginBase {
 
   /**
@@ -23,9 +22,7 @@ class FilterTest extends FilterPluginBase {
   }
 
   /**
-   * Overrides Drupal\views\Plugin\views\row\RowPluginBase::buildOptionsForm().
-   *
-   * @return array
+   * {@inheritdoc}
    */
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {
     parent::buildOptionsForm($form, $form_state);

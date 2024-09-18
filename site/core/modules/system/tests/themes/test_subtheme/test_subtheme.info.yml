@@ -2,20 +2,23 @@ name: 'Theme test subtheme'
 type: theme
 description: 'Test theme which uses test_basetheme as the base theme.'
 # version: VERSION
-# core: 8.x
 base theme: test_basetheme
 libraries:
   - test_subtheme/global-styling
-stylesheets-remove:
-  - '@theme_test/css/sub-remove.css'
-  - '@test_basetheme/base-add.sub-remove.css'
-
+libraries-override:
+  theme_test/theme_stylesheets_override_and_remove_test:
+    css:
+      base:
+        css/sub-remove.css: false
+  test_basetheme/global-styling:
+    css:
+      base:
+        base-add.sub-remove.css: false
 libraries-extend:
-  classy/base:
+  starterkit_theme/base:
     - test_subtheme/global-styling
 
-# Information added by Drupal.org packaging script on 2018-06-06
-version: '8.5.4'
-core: '8.x'
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
 project: 'drupal'
-datestamp: 1528319624
+datestamp: 1726135113

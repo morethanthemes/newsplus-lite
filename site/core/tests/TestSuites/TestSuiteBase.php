@@ -1,12 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\TestSuites;
 
-use Drupal\simpletest\TestDiscovery;
+use Drupal\Core\Test\TestDiscovery;
 use PHPUnit\Framework\TestSuite;
 
 /**
  * Base class for Drupal test suites.
+ *
+ * @deprecated in drupal:10.3.0 and is removed from drupal:11.0.0. There is no
+ *   replacement and test discovery will be handled differently in PHPUnit 10.
+ *
+ * @see https://www.drupal.org/node/3405829
  */
 abstract class TestSuiteBase extends TestSuite {
 
@@ -37,8 +44,8 @@ abstract class TestSuiteBase extends TestSuite {
    *   SubNamespace used to separate test suite. Examples: Unit, Functional.
    */
   protected function addTestsBySuiteNamespace($root, $suite_namespace) {
-    // Core's tests are in the namespace Drupal\${suite_namespace}Tests\ and are
-    // always inside of core/tests/Drupal/${suite_namespace}Tests. The exception
+    // Core's tests are in the namespace Drupal\{$suite_namespace}Tests\ and are
+    // always inside of core/tests/Drupal/{$suite_namespace}Tests. The exception
     // to this is Unit tests for historical reasons.
     if ($suite_namespace == 'Unit') {
       $tests = TestDiscovery::scanDirectory("Drupal\\Tests\\", "$root/core/tests/Drupal/Tests");
@@ -50,7 +57,7 @@ abstract class TestSuiteBase extends TestSuite {
       $this->addTestFiles($tests);
     }
     else {
-      $this->addTestFiles(TestDiscovery::scanDirectory("Drupal\\${suite_namespace}Tests\\", "$root/core/tests/Drupal/${suite_namespace}Tests"));
+      $this->addTestFiles(TestDiscovery::scanDirectory("Drupal\\{$suite_namespace}Tests\\", "$root/core/tests/Drupal/{$suite_namespace}Tests"));
     }
 
     // Extensions' tests will always be in the namespace

@@ -3,6 +3,7 @@
 namespace Drupal\Core\Render\Element;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Attribute\FormElement;
 use Drupal\Core\Render\Element;
 use Drupal\Component\Utility\Html as HtmlUtility;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
@@ -26,37 +27,38 @@ use Drupal\Core\StringTranslation\TranslatableMarkup;
  * Usage example:
  * @code
  * $header = [
- *   'first_name' => $this->t('First Name'),
- *   'last_name' => $this->t('Last Name'),
+ *   'color' => $this->t('Color'),
+ *   'shape' => $this->t('Shape'),
  * ];
  *
  * $options = [
- *   1 => ['first_name' => 'Indy', 'last_name' => 'Jones'],
- *   2 => ['first_name' => 'Darth', 'last_name' => 'Vader'],
- *   3 => ['first_name' => 'Super', 'last_name' => 'Man'],
+ *   1 => ['color' => 'Red', 'shape' => 'Triangle'],
+ *   2 => ['color' => 'Green', 'shape' => 'Square'],
+ *   // Prevent users from selecting a row by adding a '#disabled' property set
+ *   // to TRUE.
+ *   3 => ['color' => 'Blue', 'shape' => 'Hexagon', '#disabled' => TRUE],
  * ];
  *
- * $form['table'] = array(
+ * $form['table'] = [
  *   '#type' => 'tableselect',
  *   '#header' => $header,
  *   '#options' => $options,
- *   '#empty' => $this->t('No users found'),
- * );
+ *   '#empty' => $this->t('No shapes found'),
+ * ];
  * @endcode
  *
  * See https://www.drupal.org/node/945102 for a full explanation.
  *
  * @see \Drupal\Core\Render\Element\Table
- *
- * @FormElement("tableselect")
  */
+#[FormElement('tableselect')]
 class Tableselect extends Table {
 
   /**
    * {@inheritdoc}
    */
   public function getInfo() {
-    $class = get_class($this);
+    $class = static::class;
     return [
       '#input' => TRUE,
       '#js_select' => TRUE,
@@ -116,31 +118,31 @@ class Tableselect extends Table {
    *   table row's HTML attributes; see table.html.twig. An example of per-row
    *   options:
    *   @code
-   *     $options = array(
-   *       array(
+   *     $options = [
+   *       [
    *         'title' => $this->t('How to Learn Drupal'),
    *         'content_type' => $this->t('Article'),
    *         'status' => 'published',
-   *         '#attributes' => array('class' => array('article-row')),
-   *       ),
-   *       array(
+   *         '#attributes' => ['class' => ['article-row']],
+   *       ],
+   *       [
    *         'title' => $this->t('Privacy Policy'),
    *         'content_type' => $this->t('Page'),
    *         'status' => 'published',
-   *         '#attributes' => array('class' => array('page-row')),
-   *       ),
-   *     );
-   *     $header = array(
+   *         '#attributes' => ['class' => ['page-row']],
+   *       ],
+   *     ];
+   *     $header = [
    *       'title' => $this->t('Title'),
    *       'content_type' => $this->t('Content type'),
    *       'status' => $this->t('Status'),
-   *     );
-   *     $form['table'] = array(
+   *     ];
+   *     $form['table'] = [
    *       '#type' => 'tableselect',
    *       '#header' => $header,
    *       '#options' => $options,
    *       '#empty' => $this->t('No content available.'),
-   *     );
+   *     ];
    *   @endcode
    *
    * @return array
@@ -179,6 +181,9 @@ class Tableselect extends Table {
               $row['data'][] = $element['#options'][$key][$fieldname];
             }
           }
+        }
+        if (!empty($element['#options'][$key]['#disabled'])) {
+          $row['class'][] = 'disabled';
         }
         $rows[] = $row;
       }
@@ -238,6 +243,7 @@ class Tableselect extends Table {
       foreach ($element['#options'] as $key => $choice) {
         // Do not overwrite manually created children.
         if (!isset($element[$key])) {
+          $disabled = !empty($element['#options'][$key]['#disabled']);
           if ($element['#multiple']) {
             $title = '';
             if (isset($element['#options'][$key]['title']) && is_array($element['#options'][$key]['title'])) {
@@ -254,7 +260,8 @@ class Tableselect extends Table {
               '#return_value' => $key,
               '#default_value' => isset($value[$key]) ? $key : NULL,
               '#attributes' => $element['#attributes'],
-              '#ajax' => isset($element['#ajax']) ? $element['#ajax'] : NULL,
+              '#disabled' => $disabled,
+              '#ajax' => $element['#ajax'] ?? NULL,
             ];
           }
           else {
@@ -269,7 +276,8 @@ class Tableselect extends Table {
               '#attributes' => $element['#attributes'],
               '#parents' => $element['#parents'],
               '#id' => HtmlUtility::getUniqueId('edit-' . implode('-', $parents_for_id)),
-              '#ajax' => isset($element['#ajax']) ? $element['#ajax'] : NULL,
+              '#disabled' => $disabled,
+              '#ajax' => $element['#ajax'] ?? NULL,
             ];
           }
           if (isset($element['#options'][$key]['#weight'])) {

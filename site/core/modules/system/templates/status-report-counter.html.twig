@@ -8,9 +8,9 @@
  * - text: The text shown on counter.
  * - severity: The severity of the counter.
  *
- * @ingroup themable
+ * @ingroup themeable
  */
 #}
 <span class="system-status-counter__status-icon system-status-counter__status-icon--{{ severity }}"></span>
 <span>{{ amount }} {{ text }}</span>
-<a href="#{{ severity }}"><span class="visually-hidden">{{ text }} </span>Details</a>
+<a href="#{{ severity }}"><span class="visually-hidden">{{ text }} </span>{{ 'Details'|t }}</a>

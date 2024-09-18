@@ -47,14 +47,14 @@ class UnapprovedComments extends LocalTaskDefault implements ContainerFactoryPlu
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('entity.manager')->getStorage('comment')
+      $container->get('entity_type.manager')->getStorage('comment')
     );
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getTitle(Request $request = NULL) {
+  public function getTitle(?Request $request = NULL) {
     return $this->t('Unapproved comments (@count)', ['@count' => $this->commentStorage->getUnapprovedCount()]);
   }
 

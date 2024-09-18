@@ -27,6 +27,28 @@ final class Settings {
   private static $instance = NULL;
 
   /**
+   * Information about all deprecated settings, keyed by legacy settings name.
+   *
+   * Each entry should be an array that defines the following keys:
+   *   - 'replacement': The new name for the setting.
+   *   - 'message': The deprecation message to use for trigger_error().
+   *
+   * @var array
+   *
+   * @see self::handleDeprecations()
+   */
+  private static $deprecatedSettings = [
+    'block_interest_cohort' => [
+      'replacement' => '',
+      'message' => 'The "block_interest_cohort" setting is deprecated in drupal:9.5.0. This setting should be removed from the settings file, since its usage has been removed. See https://www.drupal.org/node/3320787.',
+    ],
+    'yaml_parser_class' => [
+      'replacement' => '',
+      'message' => 'The "yaml_parser_class" setting is deprecated in drupal:10.3.0. This setting should be removed from the settings file, since its usage has been removed. See https://www.drupal.org/node/3415489.',
+    ],
+  ];
+
+  /**
    * Constructor.
    *
    * @param array $settings
@@ -84,7 +106,13 @@ final class Settings {
    *   The value of the setting, the provided default if not set.
    */
   public static function get($name, $default = NULL) {
-    return isset(self::$instance->storage[$name]) ? self::$instance->storage[$name] : $default;
+    // If the caller is asking for the value of a deprecated setting, trigger a
+    // deprecation message about it.
+    if (isset(self::$deprecatedSettings[$name])) {
+      // phpcs:ignore Drupal.Semantics.FunctionTriggerError
+      @trigger_error(self::$deprecatedSettings[$name]['message'], E_USER_DEPRECATED);
+    }
+    return self::$instance->storage[$name] ?? $default;
   }
 
   /**
@@ -107,13 +135,13 @@ final class Settings {
    * @param \Composer\Autoload\ClassLoader $class_loader
    *   The class loader that is used for this request. Passed by reference and
    *   exposed to the local scope of settings.php, so as to allow it to be
-   *   decorated with Symfony's ApcClassLoader, for example.
+   *   decorated.
    *
    * @see default.settings.php
    */
   public static function initialize($app_root, $site_path, &$class_loader) {
     // Export these settings.php variables to the global namespace.
-    global $config_directories, $config;
+    global $config;
     $settings = [];
     $config = [];
     $databases = [];
@@ -122,8 +150,10 @@ final class Settings {
       require $app_root . '/' . $site_path . '/settings.php';
     }
 
-    // Initialize Database.
-    Database::setMultipleConnectionInfo($databases);
+    self::handleDeprecations($settings);
+
+    // Initialize databases.
+    Database::setMultipleConnectionInfo($databases, $class_loader, $app_root);
 
     // Initialize Settings.
     new Settings($settings);
@@ -162,9 +192,13 @@ final class Settings {
    * module directories setting apcu_ensure_unique_prefix would allow the sites
    * to share APCu cache items.
    *
-   * @param $identifier
+   * @param string $identifier
    *   An identifier for the prefix. For example, 'class_loader' or
    *   'cache_backend'.
+   * @param string $root
+   *   The app root.
+   * @param string $site_path
+   *   (optional) The site path. Defaults to an empty string.
    *
    * @return string
    *   The prefix for APCu user cache keys.
@@ -176,6 +210,30 @@ final class Settings {
       return 'drupal.' . $identifier . '.' . \Drupal::VERSION . '.' . static::get('deployment_identifier') . '.' . hash_hmac('sha256', $identifier, static::get('hash_salt') . '.' . $root . '/' . $site_path);
     }
     return 'drupal.' . $identifier . '.' . \Drupal::VERSION . '.' . static::get('deployment_identifier') . '.' . Crypt::hashBase64($root . '/' . $site_path);
+  }
+
+  /**
+   * Handle deprecated values in the site settings.
+   *
+   * @param array $settings
+   *   The site settings.
+   *
+   * @see self::getDeprecatedSettings()
+   */
+  private static function handleDeprecations(array &$settings): void {
+    foreach (self::$deprecatedSettings as $legacy => $deprecation) {
+      if (!empty($settings[$legacy])) {
+        @trigger_error($deprecation['message'], E_USER_DEPRECATED);
+        // Set the new key if needed.
+        if (!isset($settings[$deprecation['replacement']])) {
+          $settings[$deprecation['replacement']] = $settings[$legacy];
+        }
+      }
+      // Ensure that both keys have the same value.
+      if (isset($settings[$deprecation['replacement']])) {
+        $settings[$legacy] = $settings[$deprecation['replacement']];
+      }
+    }
   }
 
 }

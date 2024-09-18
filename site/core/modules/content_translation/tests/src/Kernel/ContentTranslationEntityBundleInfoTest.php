@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\content_translation\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\entity_test\Entity\EntityTestMul;
 use Drupal\language\Entity\ConfigurableLanguage;
+use Drupal\node\Entity\Node;
+use Drupal\node\Entity\NodeType;
 
 /**
  * Tests the Content Translation bundle info logic.
@@ -16,7 +20,15 @@ class ContentTranslationEntityBundleInfoTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['user', 'language', 'content_translation_test', 'content_translation', 'entity_test'];
+  protected static $modules = [
+    'system',
+    'node',
+    'user',
+    'language',
+    'content_translation_test',
+    'content_translation',
+    'entity_test',
+  ];
 
   /**
    * The content translation manager.
@@ -35,7 +47,7 @@ class ContentTranslationEntityBundleInfoTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->contentTranslationManager = $this->container->get('content_translation.manager');
@@ -49,7 +61,7 @@ class ContentTranslationEntityBundleInfoTest extends KernelTestBase {
   /**
    * Tests that modules can know whether bundles are translatable.
    */
-  public function testHookInvocationOrder() {
+  public function testHookInvocationOrder(): void {
     $this->contentTranslationManager->setEnabled('entity_test_mul', 'entity_test_mul', TRUE);
     $this->bundleInfo->clearCachedBundles();
     $this->bundleInfo->getAllBundleInfo();
@@ -76,7 +88,7 @@ class ContentTranslationEntityBundleInfoTest extends KernelTestBase {
   /**
    * Tests that field synchronization is skipped for disabled bundles.
    */
-  public function testFieldSynchronizationWithDisabledBundle() {
+  public function testFieldSynchronizationWithDisabledBundle(): void {
     $entity = EntityTestMul::create();
     $entity->save();
 
@@ -85,6 +97,57 @@ class ContentTranslationEntityBundleInfoTest extends KernelTestBase {
     $translation->save();
 
     $this->assertTrue($entity->isTranslatable());
+  }
+
+  /**
+   * Tests that bundle translation settings are propagated on creation.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   */
+  public function testBundleClearOnLanguageContentSettingInsert(): void {
+    $node = $this->getBundledNode();
+    $this->assertFalse($node->isTranslatable());
+    $this->contentTranslationManager->setEnabled('node', 'bundle_test', TRUE);
+    $this->assertTrue($node->isTranslatable(), "Bundle info was not cleared on language_content_settings creation.");
+  }
+
+  /**
+   * Tests that bundle translation setting changes are propagated.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   * @throws \Exception
+   */
+  public function testBundleClearOnLanguageContentSettingUpdate(): void {
+    $node = $this->getBundledNode();
+    $this->assertFalse($node->isTranslatable());
+    $this->container->get('entity_type.manager')->getStorage('language_content_settings')->create([
+      'target_entity_type_id' => 'node',
+      'target_bundle' => 'bundle_test',
+    ])->save();
+    $this->assertFalse($node->isTranslatable());
+    $this->contentTranslationManager->setEnabled('node', 'bundle_test', TRUE);
+    $this->assertTrue($node->isTranslatable(), "Bundle info was not cleared on language_content_settings update.");
+  }
+
+  /**
+   * Gets a new bundled node for testing.
+   *
+   * @return \Drupal\node\Entity\Node
+   *   The new node.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   */
+  protected function getBundledNode() {
+    $this->installEntitySchema('node');
+    $bundle = NodeType::create([
+      'type' => 'bundle_test',
+      'name' => 'Bundle Test',
+    ]);
+    $bundle->save();
+    $node = Node::create([
+      'type' => 'bundle_test',
+    ]);
+    return $node;
   }
 
 }

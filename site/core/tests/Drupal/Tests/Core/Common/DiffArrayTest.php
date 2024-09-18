@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Common;
 
 use Drupal\Component\Utility\DiffArray;
@@ -26,7 +28,10 @@ class DiffArrayTest extends UnitTestCase {
    */
   protected $array2;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->array1 = [
@@ -55,7 +60,7 @@ class DiffArrayTest extends UnitTestCase {
   /**
    * Tests DiffArray::diffAssocRecursive().
    */
-  public function testDiffAssocRecursive() {
+  public function testDiffAssocRecursive(): void {
     $expected = [
       'different' => 'no',
       'int_diff' => 1,

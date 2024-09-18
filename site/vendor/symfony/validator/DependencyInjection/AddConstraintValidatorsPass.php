@@ -11,9 +11,9 @@
 
 namespace Symfony\Component\Validator\DependencyInjection;
 
-use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\Compiler\ServiceLocatorTagPass;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 
 /**
@@ -22,23 +22,17 @@ use Symfony\Component\DependencyInjection\Reference;
  */
 class AddConstraintValidatorsPass implements CompilerPassInterface
 {
-    private $validatorFactoryServiceId;
-    private $constraintValidatorTag;
-
-    public function __construct($validatorFactoryServiceId = 'validator.validator_factory', $constraintValidatorTag = 'validator.constraint_validator')
-    {
-        $this->validatorFactoryServiceId = $validatorFactoryServiceId;
-        $this->constraintValidatorTag = $constraintValidatorTag;
-    }
-
+    /**
+     * @return void
+     */
     public function process(ContainerBuilder $container)
     {
-        if (!$container->hasDefinition($this->validatorFactoryServiceId)) {
+        if (!$container->hasDefinition('validator.validator_factory')) {
             return;
         }
 
-        $validators = array();
-        foreach ($container->findTaggedServiceIds($this->constraintValidatorTag, true) as $id => $attributes) {
+        $validators = [];
+        foreach ($container->findTaggedServiceIds('validator.constraint_validator', true) as $id => $attributes) {
             $definition = $container->getDefinition($id);
 
             if (isset($attributes[0]['alias'])) {
@@ -49,7 +43,7 @@ class AddConstraintValidatorsPass implements CompilerPassInterface
         }
 
         $container
-            ->getDefinition($this->validatorFactoryServiceId)
+            ->getDefinition('validator.validator_factory')
             ->replaceArgument(0, ServiceLocatorTagPass::register($container, $validators))
         ;
     }

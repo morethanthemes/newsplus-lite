@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Routing;
 
 use Drupal\Component\Utility\UrlHelper;
@@ -24,7 +26,7 @@ class RedirectDestinationTest extends UnitTestCase {
   /**
    * The mocked URL generator.
    *
-   * @var \Drupal\Core\Routing\UrlGeneratorInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Routing\UrlGeneratorInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $urlGenerator;
 
@@ -38,11 +40,11 @@ class RedirectDestinationTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->requestStack = new RequestStack();
-    $this->urlGenerator = $this->getMock('Drupal\Core\Routing\UrlGeneratorInterface');
+    $this->urlGenerator = $this->createMock('Drupal\Core\Routing\UrlGeneratorInterface');
     $this->redirectDestination = new RedirectDestination($this->requestStack, $this->urlGenerator);
   }
 
@@ -71,7 +73,7 @@ class RedirectDestinationTest extends UnitTestCase {
    *
    * @covers ::get
    */
-  public function testGet(Request $request, $expected_destination) {
+  public function testGet(Request $request, $expected_destination): void {
     $this->requestStack->push($request);
     $this->setupUrlGenerator();
 
@@ -85,7 +87,7 @@ class RedirectDestinationTest extends UnitTestCase {
    *
    * @covers ::getAsArray
    */
-  public function testGetAsArray(Request $request, $expected_destination) {
+  public function testGetAsArray(Request $request, $expected_destination): void {
     $this->requestStack->push($request);
     $this->setupUrlGenerator();
 
@@ -94,7 +96,7 @@ class RedirectDestinationTest extends UnitTestCase {
     $this->assertEquals(['destination' => $expected_destination], $this->redirectDestination->getAsArray());
   }
 
-  public function providerGet() {
+  public static function providerGet() {
     $data = [];
 
     $request = Request::create('/');
@@ -123,7 +125,7 @@ class RedirectDestinationTest extends UnitTestCase {
    * @covers ::set
    * @covers ::get
    */
-  public function testSetBeforeGetCall() {
+  public function testSetBeforeGetCall(): void {
     $this->redirectDestination->set('/example');
     $this->assertEquals('/example', $this->redirectDestination->get());
   }
@@ -132,7 +134,7 @@ class RedirectDestinationTest extends UnitTestCase {
    * @covers ::set
    * @covers ::get
    */
-  public function testSetAfterGetCall() {
+  public function testSetAfterGetCall(): void {
     $request = Request::create('/');
     $request->query->set('destination', '/other-example');
     $this->requestStack->push($request);

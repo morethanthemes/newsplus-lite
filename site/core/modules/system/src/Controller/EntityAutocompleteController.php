@@ -4,9 +4,8 @@ namespace Drupal\system\Controller;
 
 use Drupal\Component\Utility\Crypt;
 use Drupal\Component\Utility\Tags;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\Core\Entity\EntityAutocompleteMatcher;
+use Drupal\Core\Entity\EntityAutocompleteMatcherInterface;
 use Drupal\Core\KeyValueStore\KeyValueStoreInterface;
 use Drupal\Core\Site\Settings;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -22,7 +21,7 @@ class EntityAutocompleteController extends ControllerBase {
   /**
    * The autocomplete matcher for entity references.
    *
-   * @var \Drupal\Core\Entity\EntityAutocompleteMatcher
+   * @var \Drupal\Core\Entity\EntityAutocompleteMatcherInterface
    */
   protected $matcher;
 
@@ -34,14 +33,14 @@ class EntityAutocompleteController extends ControllerBase {
   protected $keyValue;
 
   /**
-   * Constructs a EntityAutocompleteController object.
+   * Constructs an EntityAutocompleteController object.
    *
-   * @param \Drupal\Core\Entity\EntityAutocompleteMatcher $matcher
+   * @param \Drupal\Core\Entity\EntityAutocompleteMatcherInterface $matcher
    *   The autocomplete matcher for entity references.
    * @param \Drupal\Core\KeyValueStore\KeyValueStoreInterface $key_value
    *   The key value factory.
    */
-  public function __construct(EntityAutocompleteMatcher $matcher, KeyValueStoreInterface $key_value) {
+  public function __construct(EntityAutocompleteMatcherInterface $matcher, KeyValueStoreInterface $key_value) {
     $this->matcher = $matcher;
     $this->keyValue = $key_value;
   }
@@ -78,17 +77,21 @@ class EntityAutocompleteController extends ControllerBase {
    */
   public function handleAutocomplete(Request $request, $target_type, $selection_handler, $selection_settings_key) {
     $matches = [];
+
     // Get the typed string from the URL, if it exists.
-    if ($input = $request->query->get('q')) {
-      $typed_string = Tags::explode($input);
-      $typed_string = Unicode::strtolower(array_pop($typed_string));
+    $input = $request->query->get('q');
+
+    // Check this string for emptiness, but allow any non-empty string.
+    if (is_string($input) && strlen($input)) {
+      $tag_list = Tags::explode($input);
+      $typed_string = !empty($tag_list) ? mb_strtolower(array_pop($tag_list)) : '';
 
       // Selection settings are passed in as a hashed key of a serialized array
       // stored in the key/value store.
       $selection_settings = $this->keyValue->get($selection_settings_key, FALSE);
       if ($selection_settings !== FALSE) {
         $selection_settings_hash = Crypt::hmacBase64(serialize($selection_settings) . $target_type . $selection_handler, Settings::getHashSalt());
-        if ($selection_settings_hash !== $selection_settings_key) {
+        if (!hash_equals($selection_settings_hash, $selection_settings_key)) {
           // Disallow access when the selection settings hash does not match the
           // passed-in key.
           throw new AccessDeniedHttpException('Invalid selection settings key.');
@@ -98,6 +101,17 @@ class EntityAutocompleteController extends ControllerBase {
         // Disallow access when the selection settings key is not found in the
         // key/value store.
         throw new AccessDeniedHttpException();
+      }
+
+      $entity_type_id = $request->query->get('entity_type');
+      if ($entity_type_id && $this->entityTypeManager()->hasDefinition($entity_type_id)) {
+        $entity_id = $request->query->get('entity_id');
+        if ($entity_id) {
+          $entity = $this->entityTypeManager()->getStorage($entity_type_id)->load($entity_id);
+          if ($entity->access('update')) {
+            $selection_settings['entity'] = $entity;
+          }
+        }
       }
 
       $matches = $this->matcher->getMatches($target_type, $selection_handler, $selection_settings, $typed_string);

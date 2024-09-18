@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Display;
 
 use Drupal\Core\Form\FormState;
@@ -19,13 +21,13 @@ class DisplayVariantTest extends UnitTestCase {
    * @param array $definition
    *   The plugin definition array.
    *
-   * @return \Drupal\Core\Display\VariantBase|\PHPUnit_Framework_MockObject_MockObject
+   * @return \Drupal\Core\Display\VariantBase|\PHPUnit\Framework\MockObject\MockObject
    *   A mocked display variant plugin.
    */
   public function setUpDisplayVariant($configuration = [], $definition = []) {
     return $this->getMockBuilder('Drupal\Core\Display\VariantBase')
       ->setConstructorArgs([$configuration, 'test', $definition])
-      ->setMethods(['build'])
+      ->onlyMethods(['build'])
       ->getMock();
   }
 
@@ -34,7 +36,7 @@ class DisplayVariantTest extends UnitTestCase {
    *
    * @covers ::label
    */
-  public function testLabel() {
+  public function testLabel(): void {
     $display_variant = $this->setUpDisplayVariant(['label' => 'foo']);
     $this->assertSame('foo', $display_variant->label());
   }
@@ -44,7 +46,7 @@ class DisplayVariantTest extends UnitTestCase {
    *
    * @covers ::label
    */
-  public function testLabelDefault() {
+  public function testLabelDefault(): void {
     $display_variant = $this->setUpDisplayVariant();
     $this->assertSame('', $display_variant->label());
   }
@@ -54,7 +56,7 @@ class DisplayVariantTest extends UnitTestCase {
    *
    * @covers ::getWeight
    */
-  public function testGetWeight() {
+  public function testGetWeight(): void {
     $display_variant = $this->setUpDisplayVariant(['weight' => 5]);
     $this->assertSame(5, $display_variant->getWeight());
   }
@@ -64,7 +66,7 @@ class DisplayVariantTest extends UnitTestCase {
    *
    * @covers ::getWeight
    */
-  public function testGetWeightDefault() {
+  public function testGetWeightDefault(): void {
     $display_variant = $this->setUpDisplayVariant();
     $this->assertSame(0, $display_variant->getWeight());
   }
@@ -76,7 +78,7 @@ class DisplayVariantTest extends UnitTestCase {
    *
    * @dataProvider providerTestGetConfiguration
    */
-  public function testGetConfiguration($configuration, $expected) {
+  public function testGetConfiguration($configuration, $expected): void {
     $display_variant = $this->setUpDisplayVariant($configuration);
 
     $this->assertSame($expected, $display_variant->getConfiguration());
@@ -85,7 +87,7 @@ class DisplayVariantTest extends UnitTestCase {
   /**
    * Provides test data for testGetConfiguration().
    */
-  public function providerTestGetConfiguration() {
+  public static function providerTestGetConfiguration() {
     $data = [];
     $data[] = [
       [],
@@ -122,7 +124,7 @@ class DisplayVariantTest extends UnitTestCase {
    *
    * @covers ::access
    */
-  public function testAccess() {
+  public function testAccess(): void {
     $display_variant = $this->setUpDisplayVariant();
     $this->assertTrue($display_variant->access());
   }
@@ -132,7 +134,7 @@ class DisplayVariantTest extends UnitTestCase {
    *
    * @covers ::submitConfigurationForm
    */
-  public function testSubmitConfigurationForm() {
+  public function testSubmitConfigurationForm(): void {
     $display_variant = $this->setUpDisplayVariant();
     $this->assertSame('', $display_variant->label());
 

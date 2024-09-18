@@ -2,16 +2,17 @@
 
 namespace Drupal\views_test_data\Plugin\views\argument_validator;
 
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\views\Plugin\views\argument_validator\ArgumentValidatorPluginBase;
+use Drupal\views\Attribute\ViewsArgumentValidator;
 
 /**
- * Defines a argument validator test plugin.
- *
- * @ViewsArgumentValidator(
- *   id = "argument_validator_test",
- *   title = @Translation("Argument validator test")
- * )
+ * Defines an argument validator test plugin.
  */
+#[ViewsArgumentValidator(
+  id: 'argument_validator_test',
+  title: new TranslatableMarkup('Argument validator test')
+)]
 class ArgumentValidatorTest extends ArgumentValidatorPluginBase {
 
   /**
@@ -38,7 +39,7 @@ class ArgumentValidatorTest extends ArgumentValidatorPluginBase {
    */
   public function validateArgument($arg) {
     if ($arg === 'this value should be replaced') {
-      // Set the argument to a numeric value so this is valid on PostgeSQL for
+      // Set the argument to a numeric value so this is valid on PostgreSQL for
       // numeric fields.
       $this->argument->argument = '1';
       return TRUE;

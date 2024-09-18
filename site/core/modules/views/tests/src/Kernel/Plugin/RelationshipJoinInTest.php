@@ -1,9 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Kernel\Plugin;
 
-use Drupal\simpletest\UserCreationTrait;
+use Drupal\Core\Database\Database;
+use Drupal\Tests\user\Traits\UserCreationTrait;
 use Drupal\views\Views;
+
+// cspell:ignore Kristiaan Silvie
 
 /**
  * Tests the base relationship handler.
@@ -35,18 +40,34 @@ class RelationshipJoinInTest extends RelationshipJoinTestBase {
   /**
    * Tests the query result of a view with a relationship with an IN condition.
    */
-  public function testRelationshipInQuery() {
+  public function testRelationshipInQuery(): void {
     // Update the first two Beatles to be authored by Kristiaan.
     $account_k = $this->createUser([], 'Kristiaan');
-    db_query("UPDATE {views_test_data} SET uid = :uid WHERE id IN (1,2)", [':uid' => $account_k->id()]);
+    $connection = Database::getConnection();
+    $connection->update('views_test_data')
+      ->fields([
+        'uid' => $account_k->id(),
+      ])
+      ->condition('id', [1, 2], 'IN')
+      ->execute();
 
     // Update the other two Beatles to be authored by Django.
     $account_d = $this->createUser([], 'Django');
-    db_query("UPDATE {views_test_data} SET uid = :uid WHERE id IN (3,4)", [':uid' => $account_d->id()]);
+    $connection->update('views_test_data')
+      ->fields([
+        'uid' => $account_d->id(),
+      ])
+      ->condition('id', [3, 4], 'IN')
+      ->execute();
 
     // Update Meredith to be authored by Silvie.
     $account_s = $this->createUser([], 'Silvie');
-    db_query("UPDATE {views_test_data} SET uid = :uid WHERE id = 5", [':uid' => $account_s->id()]);
+    $connection->update('views_test_data')
+      ->fields([
+        'uid' => $account_s->id(),
+      ])
+      ->condition('id', 5)
+      ->execute();
 
     $view = Views::getView('test_view');
     $view->setDisplay();

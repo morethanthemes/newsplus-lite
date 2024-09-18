@@ -3,6 +3,7 @@
 namespace Drupal\taxonomy\Plugin\views\field;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\views\Attribute\ViewsField;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\field\PrerenderList;
@@ -13,15 +14,14 @@ use Drupal\taxonomy\VocabularyStorageInterface;
  * Field handler to display all taxonomy terms of a node.
  *
  * @ingroup views_field_handlers
- *
- * @ViewsField("taxonomy_index_tid")
  */
+#[ViewsField("taxonomy_index_tid")]
 class TaxonomyIndexTid extends PrerenderList {
 
   /**
    * The vocabulary storage.
    *
-   * @var \Drupal\taxonomy\VocabularyStorageInterface.
+   * @var \Drupal\taxonomy\VocabularyStorageInterface
    */
   protected $vocabularyStorage;
 
@@ -50,17 +50,17 @@ class TaxonomyIndexTid extends PrerenderList {
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('entity.manager')->getStorage('taxonomy_vocabulary')
+      $container->get('entity_type.manager')->getStorage('taxonomy_vocabulary')
     );
   }
 
   /**
    * {@inheritdoc}
    */
-  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+  public function init(ViewExecutable $view, DisplayPluginBase $display, ?array &$options = NULL) {
     parent::init($view, $display, $options);
 
-    // @todo: Wouldn't it be possible to use $this->base_table and no if here?
+    // @todo Wouldn't it be possible to use $this->base_table and no if here?
     if ($view->storage->get('base_table') == 'node_field_revision') {
       $this->additional_fields['nid'] = ['table' => 'node_field_revision', 'field' => 'nid'];
     }
@@ -118,7 +118,7 @@ class TaxonomyIndexTid extends PrerenderList {
   }
 
   /**
-   * Add this term to the query
+   * Add this term to the query.
    */
   public function query() {
     $this->addAdditionalFields();
@@ -135,15 +135,15 @@ class TaxonomyIndexTid extends PrerenderList {
     }
 
     if ($nids) {
-      $vocabs = array_filter($this->options['vids']);
+      $vids = array_filter($this->options['vids']);
       if (empty($this->options['limit'])) {
-        $vocabs = [];
+        $vids = [];
       }
-      $result = \Drupal::entityManager()->getStorage('taxonomy_term')->getNodeTerms($nids, $vocabs);
+      $result = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->getNodeTerms($nids, $vids);
 
       foreach ($result as $node_nid => $data) {
         foreach ($data as $tid => $term) {
-          $this->items[$node_nid][$tid]['name'] = \Drupal::entityManager()->getTranslationFromContext($term)->label();
+          $this->items[$node_nid][$tid]['name'] = \Drupal::service('entity.repository')->getTranslationFromContext($term)->label();
           $this->items[$node_nid][$tid]['tid'] = $tid;
           $this->items[$node_nid][$tid]['vocabulary_vid'] = $term->bundle();
           $this->items[$node_nid][$tid]['vocabulary'] = $vocabularies[$term->bundle()]->label();
@@ -170,7 +170,7 @@ class TaxonomyIndexTid extends PrerenderList {
 
   protected function addSelfTokens(&$tokens, $item) {
     foreach (['tid', 'name', 'vocabulary_vid', 'vocabulary'] as $token) {
-      $tokens['{{ ' . $this->options['id'] . '__' . $token . ' }}'] = isset($item[$token]) ? $item[$token] : '';
+      $tokens['{{ ' . $this->options['id'] . '__' . $token . ' }}'] = $item[$token] ?? '';
     }
   }
 

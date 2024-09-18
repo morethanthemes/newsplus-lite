@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\file\Functional\Formatter;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -27,7 +28,7 @@ abstract class FileMediaFormatterTestBase extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->drupalLogin($this->drupalCreateUser(['view test entity']));
   }
@@ -47,7 +48,7 @@ abstract class FileMediaFormatterTestBase extends BrowserTestBase {
    */
   protected function createMediaField($formatter, $file_extensions, array $formatter_settings = []) {
     $entity_type = $bundle = 'entity_test';
-    $field_name = Unicode::strtolower($this->randomMachineName());
+    $field_name = $this->randomMachineName();
 
     FieldStorageConfig::create([
       'entity_type' => $entity_type,
@@ -65,11 +66,13 @@ abstract class FileMediaFormatterTestBase extends BrowserTestBase {
     ]);
     $field_config->save();
 
-    $display = entity_get_display('entity_test', 'entity_test', 'full');
-    $display->setComponent($field_name, [
-      'type' => $formatter,
-      'settings' => $formatter_settings,
-    ])->save();
+    $this->container->get('entity_display.repository')
+      ->getViewDisplay('entity_test', 'entity_test', 'full')
+      ->setComponent($field_name, [
+        'type' => $formatter,
+        'settings' => $formatter_settings,
+      ])
+      ->save();
 
     return $field_config;
   }
@@ -83,7 +86,7 @@ abstract class FileMediaFormatterTestBase extends BrowserTestBase {
    *     - The number of expected HTML tags.
    *     - An array of settings for the field formatter.
    */
-  public function dataProvider() {
+  public static function dataProvider(): array {
     return [
       [2, []],
       [1, ['multiple_file_display_type' => 'sources']],

@@ -12,13 +12,16 @@ class EntityTypeConstraintValidator extends ConstraintValidator {
 
   /**
    * {@inheritdoc}
+   *
+   * phpcs:ignore Drupal.Commenting.FunctionComment.VoidReturn
+   * @return void
    */
   public function validate($entity, Constraint $constraint) {
     if (!isset($entity)) {
       return;
     }
 
-    /** @var $entity \Drupal\Core\Entity\EntityInterface */
+    /** @var \Drupal\Core\Entity\EntityInterface $entity */
     if ($entity->getEntityTypeId() != $constraint->type) {
       $this->context->addViolation($constraint->message, ['%type' => $constraint->type]);
     }

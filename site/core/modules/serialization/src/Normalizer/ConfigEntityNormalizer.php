@@ -2,29 +2,24 @@
 
 namespace Drupal\serialization\Normalizer;
 
+use Drupal\Core\Config\Entity\ConfigEntityInterface;
+
 /**
  * Normalizes/denormalizes Drupal config entity objects into an array structure.
  */
 class ConfigEntityNormalizer extends EntityNormalizer {
 
   /**
-   * The interface or class that this Normalizer supports.
-   *
-   * @var array
-   */
-  protected $supportedInterfaceOrClass = ['Drupal\Core\Config\Entity\ConfigEntityInterface'];
-
-  /**
    * {@inheritdoc}
    */
-  public function normalize($object, $format = NULL, array $context = []) {
+  public function normalize($object, $format = NULL, array $context = []): array|string|int|float|bool|\ArrayObject|NULL {
     return static::getDataWithoutInternals($object->toArray());
   }
 
   /**
    * {@inheritdoc}
    */
-  public function denormalize($data, $class, $format = NULL, array $context = []) {
+  public function denormalize($data, $class, $format = NULL, array $context = []): mixed {
     return parent::denormalize(static::getDataWithoutInternals($data), $class, $format, $context);
   }
 
@@ -45,6 +40,15 @@ class ConfigEntityNormalizer extends EntityNormalizer {
    */
   protected static function getDataWithoutInternals(array $data) {
     return array_diff_key($data, ['_core' => TRUE]);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getSupportedTypes(?string $format): array {
+    return [
+      ConfigEntityInterface::class => TRUE,
+    ];
   }
 
 }

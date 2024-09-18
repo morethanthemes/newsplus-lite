@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\config\Traits;
 
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
@@ -31,7 +33,7 @@ trait AssertConfigEntityImportTrait {
     $entity->delete();
     $this->configImporter()->reset()->import();
     $imported_entity = \Drupal::service('entity.repository')->loadEntityByUuid($entity_type_id, $entity_uuid);
-    $this->assertIdentical($original_data, $imported_entity->toArray());
+    $this->assertSame($original_data, $imported_entity->toArray());
   }
 
 }

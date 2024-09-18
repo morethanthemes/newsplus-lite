@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\language\Kernel;
 
 use Drupal\Core\Language\LanguageInterface;
@@ -7,8 +9,10 @@ use Drupal\entity_test\Entity\EntityTest;
 use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\language\Plugin\LanguageNegotiation\LanguageNegotiationContentEntity;
 use Drupal\language\Plugin\LanguageNegotiation\LanguageNegotiationUrl;
-use Symfony\Cmf\Component\Routing\RouteObjectInterface;
+use Drupal\Core\Routing\RouteObjectInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 use Symfony\Component\Routing\Route;
 
 /**
@@ -18,11 +22,9 @@ use Symfony\Component\Routing\Route;
 class EntityUrlLanguageTest extends LanguageTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['entity_test', 'user'];
+  protected static $modules = ['entity_test', 'user'];
 
   /**
    * The entity being used for testing.
@@ -31,17 +33,19 @@ class EntityUrlLanguageTest extends LanguageTestBase {
    */
   protected $entity;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installEntitySchema('entity_test');
     $this->installEntitySchema('configurable_language');
-    \Drupal::service('router.builder')->rebuild();
 
     // In order to reflect the changes for a multilingual site in the container
     // we have to rebuild it.
-    ConfigurableLanguage::create(['id' => 'es'])->save();
-    ConfigurableLanguage::create(['id' => 'fr'])->save();
+    ConfigurableLanguage::createFromLangcode('es')->save();
+    ConfigurableLanguage::createFromLangcode('fr')->save();
 
     $config = $this->config('language.negotiation');
     $config->set('url.prefixes', ['en' => 'en', 'es' => 'es', 'fr' => 'fr'])
@@ -55,10 +59,10 @@ class EntityUrlLanguageTest extends LanguageTestBase {
   /**
    * Ensures that entity URLs in a language have the right language prefix.
    */
-  public function testEntityUrlLanguage() {
-    $this->assertTrue(strpos($this->entity->urlInfo()->toString(), '/en/entity_test/' . $this->entity->id()) !== FALSE);
-    $this->assertTrue(strpos($this->entity->getTranslation('es')->urlInfo()->toString(), '/es/entity_test/' . $this->entity->id()) !== FALSE);
-    $this->assertTrue(strpos($this->entity->getTranslation('fr')->urlInfo()->toString(), '/fr/entity_test/' . $this->entity->id()) !== FALSE);
+  public function testEntityUrlLanguage(): void {
+    $this->assertStringContainsString('/en/entity_test/' . $this->entity->id(), $this->entity->toUrl()->toString());
+    $this->assertStringContainsString('/es/entity_test/' . $this->entity->id(), $this->entity->getTranslation('es')->toUrl()->toString());
+    $this->assertStringContainsString('/fr/entity_test/' . $this->entity->id(), $this->entity->getTranslation('fr')->toUrl()->toString());
   }
 
   /**
@@ -67,18 +71,18 @@ class EntityUrlLanguageTest extends LanguageTestBase {
    * Test case with the method language-content-entity enabled and configured
    * with higher and also with lower priority than the method language-url.
    */
-  public function testEntityUrlLanguageWithLanguageContentEnabled() {
+  public function testEntityUrlLanguageWithLanguageContentEnabled(): void {
     // Define the method language-content-entity with a higher priority than
     // language-url.
     $config = $this->config('language.types');
     $config->set('configurable', [LanguageInterface::TYPE_INTERFACE, LanguageInterface::TYPE_CONTENT]);
     $config->set('negotiation.language_content.enabled', [
       LanguageNegotiationContentEntity::METHOD_ID => 0,
-      LanguageNegotiationUrl::METHOD_ID => 1
+      LanguageNegotiationUrl::METHOD_ID => 1,
     ]);
     $config->save();
 
-    // Without being on an content entity route the default entity URL tests
+    // Without being on a content entity route the default entity URL tests
     // should still pass.
     $this->testEntityUrlLanguage();
 
@@ -88,17 +92,17 @@ class EntityUrlLanguageTest extends LanguageTestBase {
 
     // The method language-content-entity should run before language-url and
     // append query parameter for the content language and prevent language-url
-    // from overwriting the url.
-    $this->assertTrue(strpos($this->entity->urlInfo('canonical')->toString(), '/en/entity_test/' . $this->entity->id() . '?' . LanguageNegotiationContentEntity::QUERY_PARAMETER . '=en') !== FALSE);
-    $this->assertTrue(strpos($this->entity->getTranslation('es')->urlInfo('canonical')->toString(), '/en/entity_test/' . $this->entity->id() . '?' . LanguageNegotiationContentEntity::QUERY_PARAMETER . '=es') !== FALSE);
-    $this->assertTrue(strpos($this->entity->getTranslation('fr')->urlInfo('canonical')->toString(), '/en/entity_test/' . $this->entity->id() . '?' . LanguageNegotiationContentEntity::QUERY_PARAMETER . '=fr') !== FALSE);
+    // from overwriting the URL.
+    $this->assertStringContainsString('/en/entity_test/' . $this->entity->id() . '?' . LanguageNegotiationContentEntity::QUERY_PARAMETER . '=en', $this->entity->toUrl('canonical')->toString());
+    $this->assertStringContainsString('/en/entity_test/' . $this->entity->id() . '?' . LanguageNegotiationContentEntity::QUERY_PARAMETER . '=es', $this->entity->getTranslation('es')->toUrl('canonical')->toString());
+    $this->assertStringContainsString('/en/entity_test/' . $this->entity->id() . '?' . LanguageNegotiationContentEntity::QUERY_PARAMETER . '=fr', $this->entity->getTranslation('fr')->toUrl('canonical')->toString());
 
     // Define the method language-url with a higher priority than
     // language-content-entity. This configuration should match the default one,
     // where the language-content-entity is turned off.
     $config->set('negotiation.language_content.enabled', [
       LanguageNegotiationUrl::METHOD_ID => 0,
-      LanguageNegotiationContentEntity::METHOD_ID => 1
+      LanguageNegotiationContentEntity::METHOD_ID => 1,
     ]);
     $config->save();
 
@@ -130,6 +134,7 @@ class EntityUrlLanguageTest extends LanguageTestBase {
     $request = Request::create($path);
     $request->attributes->set(RouteObjectInterface::ROUTE_NAME, $route_name);
     $request->attributes->set(RouteObjectInterface::ROUTE_OBJECT, new Route($path));
+    $request->setSession(new Session(new MockArraySessionStorage()));
     $this->container->get('request_stack')->push($request);
   }
 

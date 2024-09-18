@@ -4,9 +4,11 @@ namespace Drupal\taxonomy\Plugin\views\filter;
 
 use Drupal\Core\Entity\Element\EntityAutocomplete;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\taxonomy\Entity\Term;
 use Drupal\taxonomy\TermStorageInterface;
 use Drupal\taxonomy\VocabularyStorageInterface;
+use Drupal\views\Attribute\ViewsFilter;
 use Drupal\views\ViewExecutable;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\filter\ManyToOne;
@@ -16,12 +18,16 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Filter by term id.
  *
  * @ingroup views_filter_handlers
- *
- * @ViewsFilter("taxonomy_index_tid")
  */
+#[ViewsFilter("taxonomy_index_tid")]
 class TaxonomyIndexTid extends ManyToOne {
 
-  // Stores the exposed input for this filter.
+  /**
+   * Stores the exposed input for this filter.
+   *
+   * @var array|null
+   */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
   public $validated_exposed_input = NULL;
 
   /**
@@ -39,6 +45,13 @@ class TaxonomyIndexTid extends ManyToOne {
   protected $termStorage;
 
   /**
+   * The current user.
+   *
+   * @var \Drupal\Core\Session\AccountInterface
+   */
+  protected $currentUser;
+
+  /**
    * Constructs a TaxonomyIndexTid object.
    *
    * @param array $configuration
@@ -51,11 +64,14 @@ class TaxonomyIndexTid extends ManyToOne {
    *   The vocabulary storage.
    * @param \Drupal\taxonomy\TermStorageInterface $term_storage
    *   The term storage.
+   * @param \Drupal\Core\Session\AccountInterface $current_user
+   *   The current user.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, VocabularyStorageInterface $vocabulary_storage, TermStorageInterface $term_storage) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, VocabularyStorageInterface $vocabulary_storage, TermStorageInterface $term_storage, AccountInterface $current_user) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->vocabularyStorage = $vocabulary_storage;
     $this->termStorage = $term_storage;
+    $this->currentUser = $current_user;
   }
 
   /**
@@ -66,15 +82,16 @@ class TaxonomyIndexTid extends ManyToOne {
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('entity.manager')->getStorage('taxonomy_vocabulary'),
-      $container->get('entity.manager')->getStorage('taxonomy_term')
+      $container->get('entity_type.manager')->getStorage('taxonomy_vocabulary'),
+      $container->get('entity_type.manager')->getStorage('taxonomy_term'),
+      $container->get('current_user')
     );
   }
 
   /**
    * {@inheritdoc}
    */
-  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+  public function init(ViewExecutable $view, DisplayPluginBase $display, ?array &$options = NULL) {
     parent::init($view, $display, $options);
 
     if (!empty($this->definition['vocabulary'])) {
@@ -153,7 +170,7 @@ class TaxonomyIndexTid extends ManyToOne {
     $vocabulary = $this->vocabularyStorage->load($this->options['vid']);
     if (empty($vocabulary) && $this->options['limit']) {
       $form['markup'] = [
-        '#markup' => '<div class="js-form-item form-item">' . $this->t('An invalid vocabulary is selected. Please change it in the options.') . '</div>',
+        '#markup' => '<div class="js-form-item form-item">' . $this->t('An invalid vocabulary is selected. Change it in the options.') . '</div>',
       ];
       return;
     }
@@ -181,8 +198,11 @@ class TaxonomyIndexTid extends ManyToOne {
 
         if ($tree) {
           foreach ($tree as $term) {
+            if (!$term->isPublished() && !$this->currentUser->hasPermission('administer taxonomy')) {
+              continue;
+            }
             $choice = new \stdClass();
-            $choice->option = [$term->id() => str_repeat('-', $term->depth) . \Drupal::entityManager()->getTranslationFromContext($term)->label()];
+            $choice->option = [$term->id() => str_repeat('-', $term->depth) . \Drupal::service('entity.repository')->getTranslationFromContext($term)->label()];
             $options[] = $choice;
           }
         }
@@ -190,17 +210,21 @@ class TaxonomyIndexTid extends ManyToOne {
       else {
         $options = [];
         $query = \Drupal::entityQuery('taxonomy_term')
+          ->accessCheck(TRUE)
           // @todo Sorting on vocabulary properties -
           //   https://www.drupal.org/node/1821274.
           ->sort('weight')
           ->sort('name')
           ->addTag('taxonomy_term_access');
+        if (!$this->currentUser->hasPermission('administer taxonomy')) {
+          $query->condition('status', 1);
+        }
         if ($this->options['limit']) {
           $query->condition('vid', $vocabulary->id());
         }
         $terms = Term::loadMultiple($query->execute());
         foreach ($terms as $term) {
-          $options[$term->id()] = \Drupal::entityManager()->getTranslationFromContext($term)->label();
+          $options[$term->id()] = \Drupal::service('entity.repository')->getTranslationFromContext($term)->label();
         }
       }
 
@@ -257,7 +281,7 @@ class TaxonomyIndexTid extends ManyToOne {
       $this->helper->buildOptionsForm($form, $form_state);
 
       // Show help text if not exposed to end users.
-      $form['value']['#description'] = t('Leave blank for all. Otherwise, the first selected term will be the default instead of "Any".');
+      $form['value']['#description'] = $this->t('Leave blank for all. Otherwise, the first selected term will be the default instead of "Any".');
     }
   }
 
@@ -321,6 +345,12 @@ class TaxonomyIndexTid extends ManyToOne {
     }
 
     $identifier = $this->options['expose']['identifier'];
+    $input = $form_state->getValue($identifier);
+
+    if ($this->options['is_grouped'] && isset($this->options['group_info']['group_items'][$input])) {
+      $this->validated_exposed_input = $this->options['group_info']['group_items'][$input]['value'];
+      return;
+    }
 
     // We only validate if they've chosen the text field style.
     if ($this->options['type'] != 'textfield') {
@@ -342,7 +372,7 @@ class TaxonomyIndexTid extends ManyToOne {
   }
 
   protected function valueSubmit($form, FormStateInterface $form_state) {
-    // prevent array_filter from messing up our arrays in parent submit.
+    // Prevent array_filter from messing up our arrays in parent submit.
   }
 
   public function buildExposeForm(&$form, FormStateInterface $form_state) {
@@ -358,30 +388,17 @@ class TaxonomyIndexTid extends ManyToOne {
   }
 
   public function adminSummary() {
-    // set up $this->valueOptions for the parent summary
+    // Set up $this->valueOptions for the parent summary
     $this->valueOptions = [];
 
     if ($this->value) {
       $this->value = array_filter($this->value);
       $terms = Term::loadMultiple($this->value);
       foreach ($terms as $term) {
-        $this->valueOptions[$term->id()] = \Drupal::entityManager()->getTranslationFromContext($term)->label();
+        $this->valueOptions[$term->id()] = \Drupal::service('entity.repository')->getTranslationFromContext($term)->label();
       }
     }
     return parent::adminSummary();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getCacheContexts() {
-    $contexts = parent::getCacheContexts();
-    // The result potentially depends on term access and so is just cacheable
-    // per user.
-    // @todo See https://www.drupal.org/node/2352175.
-    $contexts[] = 'user';
-
-    return $contexts;
   }
 
   /**

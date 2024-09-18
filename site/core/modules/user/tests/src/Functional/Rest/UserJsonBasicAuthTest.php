@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\user\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\BasicAuthResourceTestTrait;
 
 /**
  * @group rest
+ * @group #slow
  */
 class UserJsonBasicAuthTest extends UserResourceTestBase {
 
@@ -14,7 +17,12 @@ class UserJsonBasicAuthTest extends UserResourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['basic_auth'];
+  protected static $modules = ['basic_auth'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

@@ -2,21 +2,22 @@
 
 namespace Drupal\field_test\Plugin\Field\FieldType;
 
-use Drupal\Core\Field\FieldStorageDefinitionInterface;
-use Drupal\Core\TypedData\DataDefinition;
+use Drupal\Core\Field\Attribute\FieldType;
 use Drupal\Core\Field\FieldItemBase;
+use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\Core\TypedData\DataDefinition;
 
 /**
  * Defines the 'test_object_field' entity field item.
- *
- * @FieldType(
- *   id = "test_object_field",
- *   label = @Translation("Test object field"),
- *   description = @Translation("Test field type that has an object to test serialization"),
- *   default_widget = "test_object_field_widget",
- *   default_formatter = "object_field_test_default"
- * )
  */
+#[FieldType(
+  id: "test_object_field",
+  label: new TranslatableMarkup("Test object field"),
+  description: new TranslatableMarkup("Test field type that has an object to test serialization"),
+  default_widget: "test_object_field_widget",
+  default_formatter: "object_field_test_default"
+)]
 class TestObjectItem extends FieldItemBase {
 
   /**
@@ -44,19 +45,6 @@ class TestObjectItem extends FieldItemBase {
         ],
       ],
     ];
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setValue($values, $notify = TRUE) {
-    if (isset($values['value'])) {
-      // @todo Remove this in https://www.drupal.org/node/2788637.
-      if (is_string($values['value'])) {
-        $values['value'] = unserialize($values['value']);
-      }
-    }
-    parent::setValue($values, $notify);
   }
 
 }

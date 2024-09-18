@@ -1,25 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\file\Kernel;
 
+use Drupal\Core\File\FileSystemInterface;
+
 /**
- * Tests the file url.
+ * Tests the file URL.
  *
  * @group file
  */
 class FileUrlTest extends FileManagedUnitTestBase {
 
   /**
-   * Test public files with a different host name from settings.
+   * Tests public files with a different host name from settings.
    */
-  public function testFilesUrlWithDifferentHostName() {
+  public function testFilesUrlWithDifferentHostName(): void {
     $test_base_url = 'http://www.example.com/cdn';
     $this->setSetting('file_public_base_url', $test_base_url);
-    $filepath = file_create_filename('test.txt', '');
+    $filepath = \Drupal::service('file_system')->createFilename('test.txt', '');
     $directory_uri = 'public://' . dirname($filepath);
-    file_prepare_directory($directory_uri, FILE_CREATE_DIRECTORY);
+    \Drupal::service('file_system')->prepareDirectory($directory_uri, FileSystemInterface::CREATE_DIRECTORY);
     $file = $this->createFile($filepath, NULL, 'public');
-    $url = file_create_url($file->getFileUri());
+    $url = $file->createFileUrl(FALSE);
     $expected_url = $test_base_url . '/' . basename($filepath);
     $this->assertSame($url, $expected_url);
   }

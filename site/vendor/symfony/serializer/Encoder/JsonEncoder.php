@@ -18,45 +18,42 @@ namespace Symfony\Component\Serializer\Encoder;
  */
 class JsonEncoder implements EncoderInterface, DecoderInterface
 {
-    const FORMAT = 'json';
+    public const FORMAT = 'json';
 
     protected $encodingImpl;
     protected $decodingImpl;
 
-    public function __construct(JsonEncode $encodingImpl = null, JsonDecode $decodingImpl = null)
+    private array $defaultContext = [
+        JsonDecode::ASSOCIATIVE => true,
+    ];
+
+    public function __construct(?JsonEncode $encodingImpl = null, ?JsonDecode $decodingImpl = null, array $defaultContext = [])
     {
-        $this->encodingImpl = $encodingImpl ?: new JsonEncode();
-        $this->decodingImpl = $decodingImpl ?: new JsonDecode(true);
+        $this->defaultContext = array_merge($this->defaultContext, $defaultContext);
+        $this->encodingImpl = $encodingImpl ?? new JsonEncode($this->defaultContext);
+        $this->decodingImpl = $decodingImpl ?? new JsonDecode($this->defaultContext);
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function encode($data, $format, array $context = array())
+    public function encode(mixed $data, string $format, array $context = []): string
     {
+        $context = array_merge($this->defaultContext, $context);
+
         return $this->encodingImpl->encode($data, self::FORMAT, $context);
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function decode($data, $format, array $context = array())
+    public function decode(string $data, string $format, array $context = []): mixed
     {
+        $context = array_merge($this->defaultContext, $context);
+
         return $this->decodingImpl->decode($data, self::FORMAT, $context);
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function supportsEncoding($format)
+    public function supportsEncoding(string $format): bool
     {
         return self::FORMAT === $format;
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function supportsDecoding($format)
+    public function supportsDecoding(string $format): bool
     {
         return self::FORMAT === $format;
     }

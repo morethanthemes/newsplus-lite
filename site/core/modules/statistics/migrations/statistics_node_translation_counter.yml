@@ -1,9 +1,11 @@
+# cspell:ignore daycount totalcount
 id: statistics_node_translation_counter
 label: Node translation counter
 migration_tags:
   - Drupal 6
   - Drupal 7
   - Content
+  - Multilingual
 source:
   plugin: node_counter
 process:
@@ -28,6 +30,7 @@ destination:
   plugin: node_counter
 migration_dependencies:
   required:
+    - language
     - statistics_node_counter
   optional:
     - d6_node_translation

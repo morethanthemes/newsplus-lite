@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Action;
 
 use Drupal\Core\Action\Plugin\Action\Derivative\EntityChangedActionDeriver;
@@ -15,12 +17,12 @@ class SaveActionTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['system', 'entity_test', 'user'];
+  protected static $modules = ['system', 'entity_test', 'user'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installEntitySchema('entity_test_mul_changed');
   }
@@ -28,23 +30,22 @@ class SaveActionTest extends KernelTestBase {
   /**
    * @covers \Drupal\Core\Action\Plugin\Action\Derivative\EntityChangedActionDeriver::getDerivativeDefinitions
    */
-  public function testGetDerivativeDefinitions() {
-    $deriver = new EntityChangedActionDeriver(\Drupal::entityTypeManager());
-    $this->assertArraySubset([
-      'entity_test_mul_changed' => [
-        'type' => 'entity_test_mul_changed',
-        'label' => 'Save test entity - data table',
-        'action_label' => 'Save',
-      ],
-    ], $deriver->getDerivativeDefinitions([
+  public function testGetDerivativeDefinitions(): void {
+    $deriver = new EntityChangedActionDeriver(\Drupal::entityTypeManager(), \Drupal::translation());
+    $definitions = $deriver->getDerivativeDefinitions([
       'action_label' => 'Save',
-    ]));
+    ]);
+    $this->assertEquals([
+      'type' => 'entity_test_mul_changed',
+      'label' => 'Save test entity - multiple changed and data table',
+      'action_label' => 'Save',
+    ], $definitions['entity_test_mul_changed']);
   }
 
   /**
    * @covers \Drupal\Core\Action\Plugin\Action\SaveAction::execute
    */
-  public function testSaveAction() {
+  public function testSaveAction(): void {
     $entity = EntityTestMulChanged::create(['name' => 'test']);
     $entity->save();
     $saved_time = $entity->getChangedTime();
@@ -56,7 +57,7 @@ class SaveActionTest extends KernelTestBase {
     $action->save();
     $action->execute([$entity]);
     $this->assertNotSame($saved_time, $entity->getChangedTime());
-    $this->assertArraySubset(['module' => ['entity_test']], $action->getDependencies());
+    $this->assertSame(['module' => ['entity_test']], $action->getDependencies());
   }
 
 }

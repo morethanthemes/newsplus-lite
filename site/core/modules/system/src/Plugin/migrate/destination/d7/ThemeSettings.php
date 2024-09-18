@@ -4,6 +4,7 @@ namespace Drupal\system\Plugin\migrate\destination\d7;
 
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\migrate\Attribute\MigrateDestination;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\Row;
 use Drupal\migrate\Plugin\migrate\destination\DestinationBase;
@@ -11,11 +12,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Persist theme settings to the config system.
- *
- * @MigrateDestination(
- *   id = "d7_theme_settings"
- * )
  */
+#[MigrateDestination('d7_theme_settings')]
 class ThemeSettings extends DestinationBase implements ContainerFactoryPluginInterface {
 
   /**
@@ -47,7 +45,7 @@ class ThemeSettings extends DestinationBase implements ContainerFactoryPluginInt
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, ?MigrationInterface $migration = NULL) {
     return new static(
       $configuration,
       $plugin_id,
@@ -67,6 +65,7 @@ class ThemeSettings extends DestinationBase implements ContainerFactoryPluginInt
     // Remove keys not in theme settings.
     unset($theme_settings['configuration_name']);
     unset($theme_settings['theme_name']);
+    unset($theme_settings['legacy_theme_name']);
     if (isset($theme_settings)) {
       theme_settings_convert_to_config($theme_settings, $config);
       $config->save();
@@ -86,7 +85,7 @@ class ThemeSettings extends DestinationBase implements ContainerFactoryPluginInt
   /**
    * {@inheritdoc}
    */
-  public function fields(MigrationInterface $migration = NULL) {
+  public function fields() {
     // Theme settings vary by theme, so no specific fields are defined.
     return [];
   }

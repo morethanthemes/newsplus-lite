@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\user\Kernel;
 
-use Drupal\field\Tests\EntityReference\EntityReferenceTestTrait;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\KernelTests\Core\Entity\EntityKernelTestBase;
+use Drupal\Tests\field\Traits\EntityReferenceFieldCreationTrait;
 use Drupal\user\Entity\Role;
 
 /**
@@ -14,7 +16,7 @@ use Drupal\user\Entity\Role;
  */
 class UserEntityReferenceTest extends EntityKernelTestBase {
 
-  use EntityReferenceTestTrait;
+  use EntityReferenceFieldCreationTrait;
 
   /**
    * A randomly-generated role for testing purposes.
@@ -33,17 +35,17 @@ class UserEntityReferenceTest extends EntityKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->role1 = Role::create([
-      'id' => strtolower($this->randomMachineName(8)),
+      'id' => $this->randomMachineName(8),
       'label' => $this->randomMachineName(8),
     ]);
     $this->role1->save();
 
     $this->role2 = Role::create([
-      'id' => strtolower($this->randomMachineName(8)),
+      'id' => $this->randomMachineName(8),
       'label' => $this->randomMachineName(8),
     ]);
     $this->role2->save();
@@ -54,7 +56,7 @@ class UserEntityReferenceTest extends EntityKernelTestBase {
   /**
    * Tests user selection by roles.
    */
-  public function testUserSelectionByRole() {
+  public function testUserSelectionByRole(): void {
     $field_definition = FieldConfig::loadByName('user', 'user', 'user_reference');
     $handler_settings = $field_definition->getSetting('handler_settings');
     $handler_settings['filter']['role'] = [
@@ -65,33 +67,31 @@ class UserEntityReferenceTest extends EntityKernelTestBase {
     $field_definition->setSetting('handler_settings', $handler_settings);
     $field_definition->save();
 
-    $user1 = $this->createUser(['name' => 'aabb']);
-    $user1->addRole($this->role1->id());
-    $user1->save();
+    // cspell:ignore aabb aabbb aabbbb aabbbb
+    $user1 = $this->createUser([], 'aabb');
+    $user1->addRole($this->role1->id())->save();
 
-    $user2 = $this->createUser(['name' => 'aabbb']);
-    $user2->addRole($this->role1->id());
-    $user2->save();
+    $user2 = $this->createUser([], 'aabbb');
+    $user2->addRole($this->role1->id())->save();
 
-    $user3 = $this->createUser(['name' => 'aabbbb']);
-    $user3->addRole($this->role2->id());
-    $user3->save();
+    $user3 = $this->createUser([], 'aabbbb');
+    $user3->addRole($this->role2->id())->save();
 
-    /** @var \Drupal\Core\Entity\EntityAutocompleteMatcher $autocomplete */
+    /** @var \Drupal\Core\Entity\EntityAutocompleteMatcherInterface $autocomplete */
     $autocomplete = \Drupal::service('entity.autocomplete_matcher');
 
     $matches = $autocomplete->getMatches('user', 'default', $field_definition->getSetting('handler_settings'), 'aabb');
-    $this->assertEqual(count($matches), 2);
+    $this->assertCount(2, $matches);
     $users = [];
     foreach ($matches as $match) {
       $users[] = $match['label'];
     }
-    $this->assertTrue(in_array($user1->label(), $users));
-    $this->assertTrue(in_array($user2->label(), $users));
-    $this->assertFalse(in_array($user3->label(), $users));
+    $this->assertContains($user1->label(), $users);
+    $this->assertContains($user2->label(), $users);
+    $this->assertNotContains($user3->label(), $users);
 
     $matches = $autocomplete->getMatches('user', 'default', $field_definition->getSetting('handler_settings'), 'aabbbb');
-    $this->assertEqual(count($matches), 0, '');
+    $this->assertCount(0, $matches);
   }
 
 }

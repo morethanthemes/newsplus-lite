@@ -2,6 +2,7 @@
 
 namespace Drupal\config_translation\Controller;
 
+use Drupal\Component\Serialization\Json;
 use Drupal\config_translation\ConfigMapperManagerInterface;
 use Drupal\config_translation\Exception\ConfigMapperLanguageException;
 use Drupal\Core\Access\AccessManagerInterface;
@@ -139,7 +140,7 @@ class ConfigTranslationController extends ControllerBase {
 
     $languages = $this->languageManager->getLanguages();
     if (count($languages) == 1) {
-      drupal_set_message($this->t('In order to translate configuration, the website must have at least two <a href=":url">languages</a>.', [':url' => $this->url('entity.configurable_language.collection')]), 'warning');
+      $this->messenger()->addWarning($this->t('In order to translate configuration, the website must have at least two <a href=":url">languages</a>.', [':url' => Url::fromRoute('entity.configurable_language.collection')->toString()]));
     }
 
     try {
@@ -162,7 +163,7 @@ class ConfigTranslationController extends ControllerBase {
           '#items' => $items,
         ],
       ];
-      drupal_set_message($this->renderer->renderPlain($message), 'warning');
+      $this->messenger()->addWarning($this->renderer->renderInIsolation($message));
 
       $original_langcode = LanguageInterface::LANGCODE_NOT_SPECIFIED;
       $operations_access = FALSE;
@@ -222,6 +223,13 @@ class ConfigTranslationController extends ControllerBase {
           $operations['add'] = [
             'title' => $this->t('Add'),
             'url' => Url::fromRoute($mapper->getAddRouteName(), $mapper->getAddRouteParameters()),
+            'attributes' => [
+              'class' => ['use-ajax'],
+              'data-dialog-type' => 'modal',
+              'data-dialog-options' => Json::encode([
+                'width' => 880,
+              ]),
+            ],
           ];
         }
         else {
@@ -229,11 +237,25 @@ class ConfigTranslationController extends ControllerBase {
           $operations['edit'] = [
             'title' => $this->t('Edit'),
             'url' => Url::fromRoute($mapper->getEditRouteName(), $mapper->getEditRouteParameters()),
+            'attributes' => [
+              'class' => ['use-ajax'],
+              'data-dialog-type' => 'modal',
+              'data-dialog-options' => Json::encode([
+                'width' => 880,
+              ]),
+            ],
           ];
 
           $operations['delete'] = [
             'title' => $this->t('Delete'),
             'url' => Url::fromRoute($mapper->getDeleteRouteName(), $mapper->getDeleteRouteParameters()),
+            'attributes' => [
+              'class' => ['use-ajax'],
+              'data-dialog-type' => 'modal',
+              'data-dialog-options' => Json::encode([
+                'width' => 880,
+              ]),
+            ],
           ];
         }
       }
@@ -248,6 +270,7 @@ class ConfigTranslationController extends ControllerBase {
         // Even if the mapper contains multiple language codes, the source
         // configuration can still be edited.
         '#access' => ($langcode == $original_langcode) || $operations_access,
+        '#attached' => ['library' => ['core/drupal.dialog.ajax']],
       ];
     }
     return $page;

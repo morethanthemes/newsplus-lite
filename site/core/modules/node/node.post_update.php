@@ -5,25 +5,29 @@
  * Post update functions for Node.
  */
 
-use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\Core\Config\Entity\ConfigEntityUpdater;
+use Drupal\node\NodeTypeInterface;
 
 /**
-* Load all form displays for nodes, add status with these settings, save.
-*/
-function node_post_update_configure_status_field_widget() {
-  $query = \Drupal::entityQuery('entity_form_display')->condition('targetEntityType', 'node');
-  $ids = $query->execute();
-  $form_displays = EntityFormDisplay::loadMultiple($ids);
+ * Converts empty `description` and `help` in content types to NULL.
+ */
+function node_post_update_set_node_type_description_and_help_to_null(array &$sandbox): void {
+  \Drupal::classResolver(ConfigEntityUpdater::class)
+    ->update($sandbox, 'node_type', function (NodeTypeInterface $node_type): bool {
+      // @see node_node_type_presave()
+      return trim($node_type->getDescription()) === '' || trim($node_type->getHelp()) === '';
+    });
+}
 
-  // Assign status settings for each 'node' target entity types with 'default'
-  // form mode.
-  foreach ($form_displays as $id => $form_display) {
-    /** @var \Drupal\Core\Entity\Display\EntityDisplayInterface $form_display */
-    $form_display->setComponent('status', [
-      'type' => 'boolean_checkbox',
-      'settings' => [
-        'display_label' => TRUE,
-      ],
-    ])->save();
-  }
+/**
+ * Implements hook_removed_post_updates().
+ */
+function node_removed_post_updates() {
+  return [
+    'node_post_update_configure_status_field_widget' => '9.0.0',
+    'node_post_update_node_revision_views_data' => '9.0.0',
+    'node_post_update_glossary_view_published' => '10.0.0',
+    'node_post_update_rebuild_node_revision_routes' => '10.0.0',
+    'node_post_update_modify_base_field_author_override' => '10.0.0',
+  ];
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\field\Kernel\Timestamp;
 
 use Drupal\Core\Field\FieldItemInterface;
@@ -33,7 +35,7 @@ class TimestampItemTest extends FieldKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     // Create a field with settings to validate.
@@ -53,7 +55,7 @@ class TimestampItemTest extends FieldKernelTestBase {
   /**
    * Tests using entity fields of the datetime field type.
    */
-  public function testDateTime() {
+  public function testDateTime(): void {
     // Verify entity creation.
     $entity = EntityTest::create();
     $value = 1488914208;
@@ -64,8 +66,8 @@ class TimestampItemTest extends FieldKernelTestBase {
     // Verify entity has been created properly.
     $id = $entity->id();
     $entity = EntityTest::load($id);
-    $this->assertTrue($entity->field_timestamp instanceof FieldItemListInterface, 'Field implements interface.');
-    $this->assertTrue($entity->field_timestamp[0] instanceof FieldItemInterface, 'Field item implements interface.');
+    $this->assertInstanceOf(FieldItemListInterface::class, $entity->field_timestamp);
+    $this->assertInstanceOf(FieldItemInterface::class, $entity->field_timestamp[0]);
     $this->assertEquals($entity->field_timestamp->value, $value);
     $this->assertEquals($entity->field_timestamp[0]->value, $value);
 

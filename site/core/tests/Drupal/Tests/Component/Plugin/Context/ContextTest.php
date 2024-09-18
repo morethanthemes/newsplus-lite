@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Component\Plugin\Context;
 
 use Drupal\Component\Plugin\Context\Context;
@@ -14,7 +16,7 @@ class ContextTest extends TestCase {
   /**
    * Data provider for testGetContextValue.
    */
-  public function providerGetContextValue() {
+  public static function providerGetContextValue() {
     return [
       ['context_value', 'context_value', FALSE, 'data_type'],
       [NULL, NULL, FALSE, 'data_type'],
@@ -26,11 +28,11 @@ class ContextTest extends TestCase {
    * @covers ::getContextValue
    * @dataProvider providerGetContextValue
    */
-  public function testGetContextValue($expected, $context_value, $is_required, $data_type) {
+  public function testGetContextValue($expected, $context_value, $is_required, $data_type): void {
     // Mock a Context object.
     $mock_context = $this->getMockBuilder('Drupal\Component\Plugin\Context\Context')
       ->disableOriginalConstructor()
-      ->setMethods(['getContextDefinition'])
+      ->onlyMethods(['getContextDefinition'])
       ->getMock();
 
     // If the context value exists, getContextValue() behaves like a normal
@@ -38,7 +40,6 @@ class ContextTest extends TestCase {
     if ($context_value) {
       // Set visibility of contextValue.
       $ref_context_value = new \ReflectionProperty($mock_context, 'contextValue');
-      $ref_context_value->setAccessible(TRUE);
       // Set contextValue to a testable state.
       $ref_context_value->setValue($mock_context, $context_value);
       // Exercise getContextValue().
@@ -48,9 +49,7 @@ class ContextTest extends TestCase {
     // throwing an exception if the definition requires it.
     else {
       // Create a mock definition.
-      $mock_definition = $this->getMockBuilder('Drupal\Component\Plugin\Context\ContextDefinitionInterface')
-        ->setMethods(['isRequired', 'getDataType'])
-        ->getMockForAbstractClass();
+      $mock_definition = $this->createMock('Drupal\Component\Plugin\Context\ContextDefinitionInterface');
 
       // Set expectation for isRequired().
       $mock_definition->expects($this->once())
@@ -71,16 +70,8 @@ class ContextTest extends TestCase {
 
       // Set expectation for exception.
       if ($is_required) {
-        if (method_exists($this, 'expectException')) {
-          $this->expectException('Drupal\Component\Plugin\Exception\ContextException');
-          $this->expectExceptionMessage(sprintf("The %s context is required and not present.", $data_type));
-        }
-        else {
-          $this->setExpectedException(
-            'Drupal\Component\Plugin\Exception\ContextException',
-            sprintf("The %s context is required and not present.", $data_type)
-          );
-        }
+        $this->expectException('Drupal\Component\Plugin\Exception\ContextException');
+        $this->expectExceptionMessage(sprintf("The %s context is required and not present.", $data_type));
       }
 
       // Exercise getContextValue().
@@ -89,12 +80,44 @@ class ContextTest extends TestCase {
   }
 
   /**
+   * Data provider for testHasContextValue.
+   */
+  public static function providerHasContextValue() {
+    return [
+      [TRUE, FALSE],
+      [TRUE, 0],
+      [TRUE, -0],
+      [TRUE, 0.0],
+      [TRUE, -0.0],
+      [TRUE, ''],
+      [TRUE, '0'],
+      [TRUE, []],
+      [FALSE, NULL],
+    ];
+  }
+
+  /**
+   * @covers ::hasContextValue
+   * @dataProvider providerHasContextValue
+   */
+  public function testHasContextValue($has_context_value, $default_value): void {
+    $mock_definition = $this->createMock('Drupal\Component\Plugin\Context\ContextDefinitionInterface');
+
+    $mock_definition->expects($this->atLeastOnce())
+      ->method('getDefaultValue')
+      ->willReturn($default_value);
+
+    $context = new Context($mock_definition);
+
+    $this->assertSame($has_context_value, $context->hasContextValue());
+    $this->assertSame($default_value, $context->getContextValue());
+  }
+
+  /**
    * @covers ::getContextValue
    */
-  public function testDefaultValue() {
-    $mock_definition = $this->getMockBuilder('Drupal\Component\Plugin\Context\ContextDefinitionInterface')
-      ->setMethods(['getDefaultValue'])
-      ->getMockForAbstractClass();
+  public function testDefaultValue(): void {
+    $mock_definition = $this->createMock('Drupal\Component\Plugin\Context\ContextDefinitionInterface');
 
     $mock_definition->expects($this->once())
       ->method('getDefaultValue')

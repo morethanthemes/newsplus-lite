@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\node\Kernel\Plugin\migrate\source\d6;
 
 use Drupal\Tests\migrate\Kernel\MigrateSqlSourceTestBase;
+
+// cspell:ignore tnid
 
 /**
  * Tests D6 node source plugin with 'node_type' configuration.
@@ -16,12 +20,12 @@ class NodeByNodeTypeTest extends MigrateSqlSourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['node', 'user', 'migrate_drupal'];
+  protected static $modules = ['node', 'user', 'migrate_drupal'];
 
   /**
    * {@inheritdoc}
    */
-  public function providerSource() {
+  public static function providerSource() {
     $tests = [];
 
     // The source data.
@@ -111,7 +115,7 @@ class NodeByNodeTypeTest extends MigrateSqlSourceTestBase {
         'uid' => 2,
         'timestamp' => 1279290908,
         'body' => 'body for node 5',
-        'teaser' => 'body for node 5',
+        'teaser' => 'teaser for node 5',
         'format' => 1,
         'log' => 'log message 3',
       ],
@@ -179,6 +183,41 @@ class NodeByNodeTypeTest extends MigrateSqlSourceTestBase {
       'node_type' => 'page',
     ];
 
+    // Tests retrieval of article and page content types.
+    $tests[1] = $tests[0];
+    $tests[1]['configuration'] = [
+      'node_type' => ['article', 'page'],
+    ];
+    // The expected results should include previous results and article.
+    $tests[1]['expected_data'][] = [
+      'nid' => 5,
+      'vid' => 5,
+      'type' => 'article',
+      'language' => 'en',
+      'title' => 'node title 5',
+      'status' => 1,
+      'created' => 1279290908,
+      'changed' => 1279308993,
+      'comment' => 0,
+      'promote' => 1,
+      'moderate' => 0,
+      'sticky' => 0,
+      'tnid' => 5,
+      'translate' => 0,
+      // Node revision fields.
+      'body' => 'body for node 5',
+      'teaser' => 'teaser for node 5',
+      'format' => 1,
+      'log' => 'log message 3',
+    ];
+
+    // Test retrieval of article and page content types when configuration
+    // key 'node_type' is not set.
+    $tests[2] = $tests[0];
+    unset($tests[2]['configuration']);
+
+    // The expected results should be the same as the previous ones.
+    $tests[2]['expected_data'] = $tests[1]['expected_data'];
     return $tests;
   }
 

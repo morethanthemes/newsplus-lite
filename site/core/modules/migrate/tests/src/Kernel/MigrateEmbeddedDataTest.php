@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\migrate\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
@@ -12,16 +14,14 @@ use Drupal\KernelTests\KernelTestBase;
 class MigrateEmbeddedDataTest extends KernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['migrate'];
+  protected static $modules = ['migrate'];
 
   /**
    * Tests the embedded_data source plugin.
    */
-  public function testEmbeddedData() {
+  public function testEmbeddedData(): void {
     $data_rows = [
       ['key' => '1', 'field1' => 'f1value1', 'field2' => 'f2value1'],
       ['key' => '2', 'field1' => 'f1value2', 'field2' => 'f2value2'],
@@ -45,6 +45,8 @@ class MigrateEmbeddedDataTest extends KernelTestBase {
     $results = [];
     /** @var \Drupal\migrate\Row $row */
     foreach ($source as $row) {
+      $this->assertFalse($row->isStub());
+
       $data_row = $row->getSource();
       // The "data" row returned by getSource() also includes all source
       // configuration - we remove it so we see only the data itself.
@@ -53,17 +55,17 @@ class MigrateEmbeddedDataTest extends KernelTestBase {
       unset($data_row['ids']);
       $results[] = $data_row;
     }
-    $this->assertIdentical($results, $data_rows);
+    $this->assertSame($data_rows, $results);
 
     // Validate the public APIs.
-    $this->assertIdentical($source->count(), count($data_rows));
-    $this->assertIdentical($source->getIds(), $ids);
+    $this->assertSameSize($data_rows, $source);
+    $this->assertSame($ids, $source->getIds());
     $expected_fields = [
       'key' => 'key',
       'field1' => 'field1',
       'field2' => 'field2',
     ];
-    $this->assertIdentical($source->fields(), $expected_fields);
+    $this->assertSame($expected_fields, $source->fields());
   }
 
 }

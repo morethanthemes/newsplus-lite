@@ -2,21 +2,29 @@
 
 namespace Drupal\options\Plugin\Field\FieldType;
 
+use Drupal\Core\Field\Attribute\FieldType;
+use Drupal\Core\Field\FieldFilteredMarkup;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Element;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\TypedData\DataDefinition;
 
 /**
  * Plugin implementation of the 'list_integer' field type.
- *
- * @FieldType(
- *   id = "list_integer",
- *   label = @Translation("List (integer)"),
- *   description = @Translation("This field stores integer values from a list of allowed 'value => label' pairs, i.e. 'Lifetime in days': 1 => 1 day, 7 => 1 week, 31 => 1 month."),
- *   category = @Translation("Number"),
- *   default_widget = "options_select",
- *   default_formatter = "list_default",
- * )
  */
+#[FieldType(
+  id: "list_integer",
+  label: new TranslatableMarkup("List (integer)"),
+  description: [
+    new TranslatableMarkup("Values stored are numbers without decimals"),
+    new TranslatableMarkup("For example, 'Lifetime in days': 1 => 1 day, 7 => 1 week, 31 => 1 month"),
+  ],
+  category: "selection_list",
+  weight: -30,
+  default_widget: "options_select",
+  default_formatter: "list_default",
+)]
 class ListIntegerItem extends ListItemBase {
 
   /**
@@ -24,7 +32,7 @@ class ListIntegerItem extends ListItemBase {
    */
   public static function propertyDefinitions(FieldStorageDefinitionInterface $field_definition) {
     $properties['value'] = DataDefinition::create('integer')
-      ->setLabel(t('Integer value'))
+      ->setLabel(new TranslatableMarkup('Integer value'))
       ->setRequired(TRUE);
 
     return $properties;
@@ -50,12 +58,8 @@ class ListIntegerItem extends ListItemBase {
    * {@inheritdoc}
    */
   protected function allowedValuesDescription() {
-    $description = '<p>' . t('The possible values this field can contain. Enter one value per line, in the format key|label.');
-    $description .= '<br/>' . t('The key is the stored value, and must be numeric. The label will be used in displayed values and edit forms.');
-    $description .= '<br/>' . t('The label is optional: if a line contains a single number, it will be used as key and label.');
-    $description .= '<br/>' . t('Lists of labels are also accepted (one label per line), only if the field does not hold any values yet. Numeric keys will be automatically generated from the positions in the list.');
-    $description .= '</p>';
-    $description .= '<p>' . t('Allowed HTML tags in labels: @tags', ['@tags' => $this->displayAllowedTags()]) . '</p>';
+    $description = '<p>' . $this->t('The name will be used in displayed options and edit forms. The value is the stored value, and must be numeric.') . '</p>';
+    $description .= '<p>' . $this->t('Allowed HTML tags in labels: @tags', ['@tags' => FieldFilteredMarkup::displayAllowedTags()]) . '</p>';
     return $description;
   }
 
@@ -64,7 +68,7 @@ class ListIntegerItem extends ListItemBase {
    */
   protected static function validateAllowedValue($option) {
     if (!preg_match('/^-?\d+$/', $option)) {
-      return t('Allowed values list: keys must be integers.');
+      return new TranslatableMarkup('Allowed values list: keys must be integers.');
     }
   }
 
@@ -73,6 +77,21 @@ class ListIntegerItem extends ListItemBase {
    */
   protected static function castAllowedValue($value) {
     return (int) $value;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function storageSettingsForm(array &$form, FormStateInterface $form_state, $has_data) {
+    $element = parent::storageSettingsForm($form, $form_state, $has_data);
+
+    foreach (Element::children($element['allowed_values']['table']) as $delta => $row) {
+      // @see https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/number
+      // @see \Drupal\Core\Field\Plugin\Field\FieldWidget\NumberWidget::formElement()
+      $element['allowed_values']['table'][$delta]['item']['key']['#type'] = 'number';
+    }
+
+    return $element;
   }
 
 }

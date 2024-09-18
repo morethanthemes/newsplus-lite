@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Routing;
 
 use Drupal\accept_header_routing_test\Routing\AcceptHeaderMatcher;
@@ -31,7 +33,7 @@ class AcceptHeaderMatcherTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->fixtures = new RoutingFixtures();
@@ -43,7 +45,7 @@ class AcceptHeaderMatcherTest extends UnitTestCase {
    *
    * @see Drupal\Tests\Core\Routing\AcceptHeaderMatcherTest::testAcceptFiltering()
    */
-  public function acceptFilterProvider() {
+  public static function acceptFilterProvider() {
     return [
       // Check that JSON routes get filtered and prioritized correctly.
       ['application/json, text/xml;q=0.9', 'json', 'route_c', 'route_e'],
@@ -68,14 +70,14 @@ class AcceptHeaderMatcherTest extends UnitTestCase {
    *
    * @dataProvider acceptFilterProvider
    */
-  public function testAcceptFiltering($accept_header, $format, $included_route, $excluded_route) {
+  public function testAcceptFiltering($accept_header, $format, $included_route, $excluded_route): void {
     $collection = $this->fixtures->sampleRouteCollection();
 
     $request = Request::create('path/two', 'GET');
     $request->headers->set('Accept', $accept_header);
     $request->setRequestFormat($format);
     $routes = $this->matcher->filter($collection, $request);
-    $this->assertEquals(count($routes), 4, 'The correct number of routes was found.');
+    $this->assertCount(4, $routes, 'The correct number of routes was found.');
     $this->assertNotNull($routes->get($included_route), "Route $included_route was found when matching $accept_header.");
     $this->assertNull($routes->get($excluded_route), "Route $excluded_route was not found when matching $accept_header.");
     foreach ($routes as $name => $route) {
@@ -87,7 +89,7 @@ class AcceptHeaderMatcherTest extends UnitTestCase {
   /**
    * Confirms that the AcceptHeaderMatcher throws an exception for no-route.
    */
-  public function testNoRouteFound() {
+  public function testNoRouteFound(): void {
     // Remove the sample routes that would match any method.
     $routes = $this->fixtures->sampleRouteCollection();
     $routes->remove('route_a');
@@ -98,7 +100,8 @@ class AcceptHeaderMatcherTest extends UnitTestCase {
     $request = Request::create('path/two', 'GET');
     $request->headers->set('Accept', 'application/json, text/xml;q=0.9');
     $request->setRequestFormat('json');
-    $this->setExpectedException(NotAcceptableHttpException::class, 'No route found for the specified formats application/json text/xml');
+    $this->expectException(NotAcceptableHttpException::class);
+    $this->expectExceptionMessage('No route found for the specified formats application/json text/xml');
     $this->matcher->filter($routes, $request);
   }
 

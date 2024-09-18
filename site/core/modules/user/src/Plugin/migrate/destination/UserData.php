@@ -2,6 +2,7 @@
 
 namespace Drupal\user\Plugin\migrate\destination;
 
+use Drupal\migrate\Attribute\MigrateDestination;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\user\UserData as UserDataStorage;
 use Drupal\migrate\Row;
@@ -10,10 +11,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 
 /**
- * @MigrateDestination(
- *   id = "user_data"
- * )
+ * Migration destination for user data.
  */
+#[MigrateDestination('user_data')]
 class UserData extends DestinationBase implements ContainerFactoryPluginInterface {
 
   /**
@@ -22,7 +22,7 @@ class UserData extends DestinationBase implements ContainerFactoryPluginInterfac
   protected $userData;
 
   /**
-   * Builds an user data entity destination.
+   * Builds a user data entity destination.
    *
    * @param array $configuration
    *   A configuration array containing information about the plugin instance.
@@ -43,7 +43,7 @@ class UserData extends DestinationBase implements ContainerFactoryPluginInterfac
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, ?MigrationInterface $migration = NULL) {
     return new static(
       $configuration,
       $plugin_id,
@@ -78,7 +78,7 @@ class UserData extends DestinationBase implements ContainerFactoryPluginInterfac
   /**
    * {@inheritdoc}
    */
-  public function fields(MigrationInterface $migration = NULL) {
+  public function fields() {
     return [
       'uid' => 'The user id.',
       'module' => 'The module name responsible for the settings.',

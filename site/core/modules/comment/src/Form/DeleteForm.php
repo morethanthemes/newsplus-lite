@@ -16,7 +16,7 @@ class DeleteForm extends ContentEntityDeleteForm {
    */
   public function getCancelUrl() {
     // Point to the entity of which this comment is a reply.
-    return $this->entity->get('entity_id')->entity->urlInfo();
+    return $this->entity->get('entity_id')->entity->toUrl();
   }
 
   /**
@@ -44,7 +44,7 @@ class DeleteForm extends ContentEntityDeleteForm {
    * {@inheritdoc}
    */
   public function logDeletionMessage() {
-    $this->logger('comment')->notice('Deleted comment @cid and its replies.', ['@cid' => $this->entity->id()]);
+    $this->logger('comment')->info('Deleted comment @cid and its replies.', ['@cid' => $this->entity->id()]);
   }
 
 }

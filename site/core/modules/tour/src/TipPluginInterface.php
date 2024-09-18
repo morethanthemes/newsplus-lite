@@ -37,14 +37,6 @@ interface TipPluginInterface {
   public function getWeight();
 
   /**
-   * Returns an array of attributes for the tip wrapper.
-   *
-   * @return array
-   *   An array of classes and values.
-   */
-  public function getAttributes();
-
-  /**
    * Used for returning values by key.
    *
    * @var string
@@ -56,6 +48,46 @@ interface TipPluginInterface {
   public function get($key);
 
   /**
+   * Returns the selector the tour tip will attach to.
+   *
+   * This typically maps to the Shepherd Step options `attachTo.element`
+   * property.
+   *
+   * @return null|string
+   *   A selector string, or null for an unattached tip.
+   *
+   * @see https://shepherdjs.dev/docs/Step.html
+   */
+  public function getSelector(): ?string;
+
+  /**
+   * Returns the body content of the tooltip.
+   *
+   * This typically maps to the Shepherd Step options `text` property.
+   *
+   * @return array
+   *   A render array.
+   *
+   * @see https://shepherdjs.dev/docs/Step.html
+   */
+  public function getBody(): array;
+
+  /**
+   * Returns the configured placement of the tip relative to the element.
+   *
+   * If null, the tip will automatically determine the best position based on
+   * the element's position in the viewport.
+   *
+   * This typically maps to the Shepherd Step options `attachTo.on` property.
+   *
+   * @return string|null
+   *   The tip placement relative to the element.
+   *
+   * @see https://shepherdjs.dev/docs/Step.html
+   */
+  public function getLocation(): ?string;
+
+  /**
    * Used for returning values by key.
    *
    * @var string
@@ -65,13 +97,5 @@ interface TipPluginInterface {
    *   Value of the key.
    */
   public function set($key, $value);
-
-  /**
-   * Returns a renderable array.
-   *
-   * @return array
-   *   A renderable array.
-   */
-  public function getOutput();
 
 }

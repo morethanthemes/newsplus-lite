@@ -9,6 +9,7 @@ use Drupal\layout_builder\SectionStorageInterface;
  * Provides a form to confirm the removal of a block.
  *
  * @internal
+ *   Form classes are internal.
  */
 class RemoveBlockForm extends LayoutRebuildConfirmFormBase {
 
@@ -30,7 +31,13 @@ class RemoveBlockForm extends LayoutRebuildConfirmFormBase {
    * {@inheritdoc}
    */
   public function getQuestion() {
-    return $this->t('Are you sure you want to remove this block?');
+    $label = $this->sectionStorage
+      ->getSection($this->delta)
+      ->getComponent($this->uuid)
+      ->getPlugin()
+      ->label();
+
+    return $this->t('Are you sure you want to remove the %label block?', ['%label' => $label]);
   }
 
   /**
@@ -50,7 +57,7 @@ class RemoveBlockForm extends LayoutRebuildConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, SectionStorageInterface $section_storage = NULL, $delta = NULL, $region = NULL, $uuid = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, ?SectionStorageInterface $section_storage = NULL, $delta = NULL, $region = NULL, $uuid = NULL) {
     $this->region = $region;
     $this->uuid = $uuid;
     return parent::buildForm($form, $form_state, $section_storage, $delta);

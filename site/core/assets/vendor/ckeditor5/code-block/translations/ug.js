@@ -1,0 +1,1 @@
+!function(n){const o=n.ug=n.ug||{};o.dictionary=Object.assign(o.dictionary||{},{"Code block":"","Insert code block":"كود بۆلىكى قىستۇر","Plain text":"ساپ تېكىست"})}(window.CKEDITOR_TRANSLATIONS||(window.CKEDITOR_TRANSLATIONS={}));

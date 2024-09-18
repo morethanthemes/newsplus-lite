@@ -5,6 +5,7 @@ namespace Drupal\menu_link_content\Plugin\migrate\process;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Url;
+use Drupal\migrate\Attribute\MigrateProcess;
 use Drupal\migrate\MigrateException;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\ProcessPluginBase;
@@ -12,14 +13,34 @@ use Drupal\migrate\Row;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Processes a link path into an 'internal:' or 'entity:' URI.
+ * Generates an internal URI from the source value.
  *
- * @todo: Add documentation in https://www.drupal.org/node/2954908
+ * Converts the source path value to an 'entity:', 'internal:' or 'base:' URI.
  *
- * @MigrateProcessPlugin(
- *   id = "link_uri"
- * )
+ * Available configuration keys:
+ * - source: A source path to be converted into an URI.
+ * - validate_route: (optional) Whether the plugin should validate that the URI
+ *   derived from the source link path has a valid Drupal route.
+ *   - TRUE: Throw a MigrateException if the resulting URI is not routed. This
+ *     value is the default.
+ *   - FALSE: Return the URI for the unrouted path.
+ *
+ * Examples:
+ *
+ * @code
+ * process:
+ *   link/uri:
+ *     plugin: link_uri
+ *     validate_route: false
+ *     source: link_path
+ * @endcode
+ *
+ * This will set the uri property of link to the internal notation of link_path
+ * without validating if the resulting URI is valid. For example, if the
+ * 'link_path' property is 'node/12', the uri property value of link will be
+ * 'entity:node/12'.
  */
+#[MigrateProcess('link_uri')]
 class LinkUri extends ProcessPluginBase implements ContainerFactoryPluginInterface {
 
   /**
@@ -65,12 +86,15 @@ class LinkUri extends ProcessPluginBase implements ContainerFactoryPluginInterfa
    * {@inheritdoc}
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
-    list($path) = $value;
-    $path = ltrim($path, '/');
+
+    $path = ltrim($value, '/');
 
     if (parse_url($path, PHP_URL_SCHEME) === NULL) {
       if ($path == '<front>') {
         $path = '';
+      }
+      elseif ($path == '<nolink>') {
+        return 'route:<nolink>';
       }
       $path = 'internal:/' . $path;
 

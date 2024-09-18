@@ -18,6 +18,9 @@ use Drupal\node\NodeInterface;
  * Implements hook_ENTITY_TYPE_view() for node entities.
  */
 function node_test_node_view(array &$build, NodeInterface $node, EntityViewDisplayInterface $display, $view_mode) {
+  if ($node->isNew()) {
+    return;
+  }
   if ($view_mode == 'rss') {
     // Add RSS elements and namespaces when building the RSS feed.
     $node->rss_elements[] = [
@@ -45,14 +48,14 @@ function node_test_node_view(array &$build, NodeInterface $node, EntityViewDispl
  */
 function node_test_node_build_defaults_alter(array &$build, NodeInterface &$node, $view_mode = 'full') {
   if ($view_mode == 'rss') {
-    $node->rss_namespaces['xmlns:drupaltest'] = 'http://example.com/test-namespace';
+    $node->rss_namespaces['xmlns:test'] = 'http://example.com/test-namespace';
   }
 }
 
 /**
  * Implements hook_node_grants().
  */
-function node_test_node_grants(AccountInterface $account, $op) {
+function node_test_node_grants(AccountInterface $account, $operation) {
   // Give everyone full grants so we don't break other node tests.
   // Our node access tests asserts three realms of access.
   // See testGrantAlter().
@@ -115,7 +118,7 @@ function node_test_node_access_records_alter(&$grants, NodeInterface $node) {
 /**
  * Implements hook_node_grants_alter().
  */
-function node_test_node_grants_alter(&$grants, AccountInterface $account, $op) {
+function node_test_node_grants_alter(&$grants, AccountInterface $account, $operation) {
   // Return an empty array of grants to prove that we can alter by reference.
   $grants = [];
 }
@@ -153,9 +156,9 @@ function node_test_node_update(NodeInterface $node) {
 /**
  * Implements hook_entity_view_mode_alter().
  */
-function node_test_entity_view_mode_alter(&$view_mode, EntityInterface $entity, $context) {
+function node_test_entity_view_mode_alter(&$view_mode, EntityInterface $entity) {
   // Only alter the view mode if we are on the test callback.
-  $change_view_mode = \Drupal::state()->get('node_test_change_view_mode') ?: '';
+  $change_view_mode = \Drupal::state()->get('node_test_change_view_mode', '');
   if ($change_view_mode) {
     $view_mode = $change_view_mode;
   }
@@ -182,10 +185,10 @@ function node_test_node_insert(NodeInterface $node) {
  */
 function node_test_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   if (!$form_state->get('node_test_form_alter')) {
-    drupal_set_message('Storage is not set');
+    \Drupal::messenger()->addStatus('Storage is not set');
     $form_state->set('node_test_form_alter', TRUE);
   }
   else {
-    drupal_set_message('Storage is set');
+    \Drupal::messenger()->addStatus('Storage is set');
   }
 }

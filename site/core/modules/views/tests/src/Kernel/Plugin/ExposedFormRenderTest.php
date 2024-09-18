@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Kernel\Plugin;
 
 use Drupal\Component\Utility\Html;
@@ -23,12 +25,12 @@ class ExposedFormRenderTest extends ViewsKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['node'];
+  protected static $modules = ['node'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
+  protected function setUp($import_test_views = TRUE): void {
     parent::setUp();
     $this->installEntitySchema('node');
   }
@@ -36,7 +38,7 @@ class ExposedFormRenderTest extends ViewsKernelTestBase {
   /**
    * Tests the exposed form markup.
    */
-  public function testExposedFormRender() {
+  public function testExposedFormRender(): void {
     $view = Views::getView('test_exposed_form_buttons');
     $this->executeView($view);
     $exposed_form = $view->display_handler->getPlugin('exposed_form');
@@ -49,16 +51,18 @@ class ExposedFormRenderTest extends ViewsKernelTestBase {
     $expected_action = $view->display_handler->getUrlInfo()->toString();
     $this->assertFieldByXPath('//form/@action', $expected_action, 'The expected value for the action attribute was found.');
     // Make sure the description is shown.
-    $result = $this->xpath('//form//div[contains(@id, :id) and normalize-space(text())=:description]', [':id' => 'edit-type--description', ':description' => t('Exposed description')]);
-    $this->assertEqual(count($result), 1, 'Filter description was found.');
+    $result = $this->xpath('//form//div[contains(@id, "edit-type--2--description") and normalize-space(text())="Exposed description"]');
+    $this->assertCount(1, $result, 'Filter description was found.');
   }
 
   /**
    * Tests the exposed form raw input.
    */
-  public function testExposedFormRawInput() {
-    $node_type = NodeType::create(['type' => 'article']);
-    $node_type->save();
+  public function testExposedFormRawInput(): void {
+    NodeType::create([
+      'type' => 'article',
+      'name' => 'Article',
+    ])->save();
 
     $view = Views::getView('test_exposed_form_buttons');
     $view->setDisplay();
@@ -136,7 +140,7 @@ class ExposedFormRenderTest extends ViewsKernelTestBase {
     $expected = [
       'type' => 'All',
       'type_with_default_value' => 'article',
-      'multiple_types_with_default_value' => ['article'],
+      'multiple_types_with_default_value' => ['article' => 'article'],
     ];
     $this->assertSame($view->exposed_raw_input, $expected);
   }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\file\Kernel\Migrate\d6;
 
 use Drupal\field\Entity\FieldStorageConfig;
@@ -15,12 +17,12 @@ class MigrateUploadFieldTest extends MigrateDrupal6TestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['menu_ui'];
+  protected static $modules = ['menu_ui'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->migrateFields();
   }
@@ -28,10 +30,10 @@ class MigrateUploadFieldTest extends MigrateDrupal6TestBase {
   /**
    * Tests the Drupal 6 upload settings to Drupal 8 field migration.
    */
-  public function testUpload() {
+  public function testUpload(): void {
     $field_storage = FieldStorageConfig::load('node.upload');
-    $this->assertIdentical('node.upload', $field_storage->id());
-    $this->assertIdentical(['node', 'upload'], $this->getMigration('d6_upload_field')->getIdMap()->lookupDestinationId(['']));
+    $this->assertSame('node.upload', $field_storage->id());
+    $this->assertSame([['node', 'upload']], $this->getMigration('d6_upload_field')->getIdMap()->lookupDestinationIds(['']));
   }
 
 }

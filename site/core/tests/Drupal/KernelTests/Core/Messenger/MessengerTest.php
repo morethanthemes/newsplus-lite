@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Messenger;
 
 use Drupal\Core\Messenger\MessengerInterface;
@@ -23,7 +25,7 @@ class MessengerTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->messenger = \Drupal::service('messenger');
   }
@@ -33,11 +35,11 @@ class MessengerTest extends KernelTestBase {
    * @covers ::deleteByType
    * @covers ::messagesByType
    */
-  public function testRemoveSingleMessage() {
+  public function testRemoveSingleMessage(): void {
 
     // Set two messages.
     $this->messenger->addStatus('First message (removed).');
-    $this->messenger->addStatus(t('Second message with <em>markup!</em> (not removed).'));
+    $this->messenger->addStatus('Second message with <em>markup!</em> (not removed).');
     $messages = $this->messenger->deleteByType(MessengerInterface::TYPE_STATUS);
     // Remove the first.
     unset($messages[0]);
@@ -49,7 +51,7 @@ class MessengerTest extends KernelTestBase {
 
     // Check we only have the second one.
     $this->assertCount(1, $this->messenger->messagesByType(MessengerInterface::TYPE_STATUS));
-    $this->assertContains('Second message with <em>markup!</em> (not removed).', $this->messenger->deleteByType(MessengerInterface::TYPE_STATUS));
+    $this->assertContainsEquals('Second message with <em>markup!</em> (not removed).', $this->messenger->deleteByType(MessengerInterface::TYPE_STATUS));
 
   }
 
@@ -63,7 +65,7 @@ class MessengerTest extends KernelTestBase {
    * @covers ::deleteByType
    * @covers ::deleteAll
    */
-  public function testAddNoDuplicates() {
+  public function testAddNoDuplicates(): void {
 
     $this->messenger->addStatus('Non Duplicated status message');
     $this->messenger->addStatus('Non Duplicated status message');
@@ -104,7 +106,7 @@ class MessengerTest extends KernelTestBase {
    * @covers ::addError
    * @covers ::deleteByType
    */
-  public function testAddWithDuplicates() {
+  public function testAddWithDuplicates(): void {
 
     $this->messenger->addStatus('Duplicated status message', TRUE);
     $this->messenger->addStatus('Duplicated status message', TRUE);
@@ -124,13 +126,13 @@ class MessengerTest extends KernelTestBase {
   }
 
   /**
-   * Test adding markup.
+   * Tests adding markup.
    *
    * @covers ::addStatus
    * @covers ::deleteByType
    * @covers ::messagesByType
    */
-  public function testAddMarkup() {
+  public function testAddMarkup(): void {
 
     // Add a Markup message.
     $this->messenger->addStatus(Markup::create('Markup with <em>markup!</em>'));

@@ -3,19 +3,20 @@
 namespace Drupal\views\Plugin\views\row;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Url;
+use Drupal\views\Attribute\ViewsRow;
 
 /**
  * Renders an RSS item based on fields.
- *
- * @ViewsRow(
- *   id = "rss_fields",
- *   title = @Translation("Fields"),
- *   help = @Translation("Display fields as RSS items."),
- *   theme = "views_view_row_rss",
- *   display_types = {"feed"}
- * )
  */
+#[ViewsRow(
+  id: "rss_fields",
+  title: new TranslatableMarkup("Fields"),
+  help: new TranslatableMarkup("Display fields as RSS items."),
+  theme: "views_view_row_rss",
+  display_types: ["feed"]
+)]
 class RssFields extends RowPluginBase {
 
   /**
@@ -55,7 +56,7 @@ class RssFields extends RowPluginBase {
     $form['link_field'] = [
       '#type' => 'select',
       '#title' => $this->t('Link field'),
-      '#description' => $this->t('The field that is going to be used as the RSS item link for each row. This must be a drupal relative path.'),
+      '#description' => $this->t('The field that is going to be used as the RSS item link for each row. This must either be an internal unprocessed path like "node/123" or a processed, root-relative URL as produced by fields like "Link to content".'),
       '#options' => $view_fields_labels,
       '#default_value' => $this->options['link_field'],
       '#required' => TRUE,
@@ -126,28 +127,19 @@ class RssFields extends RowPluginBase {
     if (!isset($row_index)) {
       $row_index = 0;
     }
-    if (function_exists('rdf_get_namespaces')) {
-      // Merge RDF namespaces in the XML namespaces in case they are used
-      // further in the RSS content.
-      $xml_rdf_namespaces = [];
-      foreach (rdf_get_namespaces() as $prefix => $uri) {
-        $xml_rdf_namespaces['xmlns:' . $prefix] = $uri;
-      }
-      $this->view->style_plugin->namespaces += $xml_rdf_namespaces;
-    }
 
     // Create the RSS item object.
     $item = new \stdClass();
     $item->title = $this->getField($row_index, $this->options['title_field']);
-    // @todo Views should expect and store a leading /. See:
-    //   https://www.drupal.org/node/2423913
-    $item->link = Url::fromUserInput('/' . $this->getField($row_index, $this->options['link_field']))->setAbsolute()->toString();
+    $item->link = $this->getAbsoluteUrl($this->getField($row_index, $this->options['link_field']));
 
     $field = $this->getField($row_index, $this->options['description_field']);
     $item->description = is_array($field) ? $field : ['#markup' => $field];
 
     $item->elements = [
-      ['key' => 'pubDate', 'value' => $this->getField($row_index, $this->options['date_field'])],
+      // Default rendering of date fields adds a <time> tag and whitespace, we
+      // want to remove these because this breaks RSS feeds.
+      ['key' => 'pubDate', 'value' => trim(strip_tags($this->getField($row_index, $this->options['date_field'])))],
       [
         'key' => 'dc:creator',
         'value' => $this->getField($row_index, $this->options['creator_field']),
@@ -158,9 +150,7 @@ class RssFields extends RowPluginBase {
     $item_guid = $this->getField($row_index, $this->options['guid_field_options']['guid_field']);
     if ($this->options['guid_field_options']['guid_field_is_permalink']) {
       $guid_is_permalink_string = 'true';
-      // @todo Enforce GUIDs as system-generated rather than user input? See
-      //   https://www.drupal.org/node/2430589.
-      $item_guid = Url::fromUserInput('/' . $item_guid)->setAbsolute()->toString();
+      $item_guid = $this->getAbsoluteUrl($item_guid);
     }
     $item->elements[] = [
       'key' => 'guid',
@@ -181,7 +171,7 @@ class RssFields extends RowPluginBase {
       '#view' => $this->view,
       '#options' => $this->options,
       '#row' => $item,
-      '#field_alias' => isset($this->field_alias) ? $this->field_alias : '',
+      '#field_alias' => $this->field_alias ?? '',
     ];
 
     return $build;
@@ -205,6 +195,32 @@ class RssFields extends RowPluginBase {
       return '';
     }
     return $this->view->style_plugin->getField($index, $field_id);
+  }
+
+  /**
+   * Convert a rendered URL string to an absolute URL.
+   *
+   * @param string $url_string
+   *   The rendered field value ready for display in a normal view.
+   *
+   * @return string
+   *   A string with an absolute URL.
+   */
+  protected function getAbsoluteUrl($url_string) {
+    // If the given URL already starts with a leading slash, it's been processed
+    // and we need to simply make it an absolute path by prepending the host.
+    if (str_starts_with($url_string, '/')) {
+      $host = \Drupal::request()->getSchemeAndHttpHost();
+      // @todo Views should expect and store a leading /.
+      // @see https://www.drupal.org/node/2423913
+      return $host . $url_string;
+    }
+    // Otherwise, this is an unprocessed path (e.g. node/123) and we need to run
+    // it through a Url object to allow outbound path processors to run (path
+    // aliases, language prefixes, etc).
+    else {
+      return Url::fromUserInput('/' . $url_string)->setAbsolute()->toString();
+    }
   }
 
 }

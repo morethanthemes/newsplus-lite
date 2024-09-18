@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Test;
 
 use Drupal\KernelTests\KernelTestBase;
@@ -13,20 +15,16 @@ use Drupal\deprecation_test\Deprecation\FixtureDeprecatedClass;
  */
 class PhpUnitBridgeTest extends KernelTestBase {
 
-  public static $modules = ['deprecation_test'];
+  protected static $modules = ['deprecation_test'];
 
-  /**
-   * @expectedDeprecation Drupal\deprecation_test\Deprecation\FixtureDeprecatedClass is deprecated.
-   */
-  public function testDeprecatedClass() {
+  public function testDeprecatedClass(): void {
+    $this->expectDeprecation('Drupal\deprecation_test\Deprecation\FixtureDeprecatedClass is deprecated.');
     $deprecated = new FixtureDeprecatedClass();
     $this->assertEquals('test', $deprecated->testFunction());
   }
 
-  /**
-   * @expectedDeprecation This is the deprecation message for deprecation_test_function().
-   */
-  public function testDeprecatedFunction() {
+  public function testDeprecatedFunction(): void {
+    $this->expectDeprecation('This is the deprecation message for deprecation_test_function().');
     $this->assertEquals('known_return_value', \deprecation_test_function());
   }
 

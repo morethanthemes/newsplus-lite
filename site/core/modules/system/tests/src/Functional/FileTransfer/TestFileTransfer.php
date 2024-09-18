@@ -1,18 +1,35 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\system\Functional\FileTransfer;
 
 use Drupal\Core\FileTransfer\FileTransfer;
-use Drupal\Core\FileTransfer\FileTransferException;
 
 /**
  * Mock FileTransfer object for test case.
  */
 class TestFileTransfer extends FileTransfer {
-  protected $host = NULL;
-  protected $username = NULL;
-  protected $password = NULL;
-  protected $port = NULL;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $host = '';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $username = '';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $password = '';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $port = 0;
 
   /**
    * This is for testing the CopyRecursive logic.
@@ -21,16 +38,15 @@ class TestFileTransfer extends FileTransfer {
    */
   public $shouldIsDirectoryReturnTrue = FALSE;
 
-  public function __construct($jail, $username, $password, $hostname = 'localhost', $port = 9999) {
-    parent::__construct($jail, $username, $password, $hostname, $port);
-  }
-
   public static function factory($jail, $settings) {
-    return new TestFileTransfer($jail, $settings['username'], $settings['password'], $settings['hostname'], $settings['port']);
+    assert(is_array($settings));
+    return new TestFileTransfer($jail);
   }
 
   public function connect() {
     $this->connection = new MockTestConnection();
+    // Access the connection via the property. The property used to be set via a
+    // magic method and this can cause problems if coded incorrectly.
     $this->connection->connectionString = 'test://' . urlencode($this->username) . ':' . urlencode($this->password) . "@$this->host:$this->port/";
   }
 
@@ -47,9 +63,7 @@ class TestFileTransfer extends FileTransfer {
   }
 
   public function removeFileJailed($destination) {
-    if (!ftp_delete($this->connection, $item)) {
-      throw new FileTransferException('Unable to remove the file @file.', NULL, ['@file' => $item]);
-    }
+    $this->connection->run("rm $destination");
   }
 
   public function isDirectory($path) {
@@ -60,8 +74,6 @@ class TestFileTransfer extends FileTransfer {
     return FALSE;
   }
 
-  public function chmodJailed($path, $mode, $recursive) {
-    return;
-  }
+  public function chmodJailed($path, $mode, $recursive) {}
 
 }

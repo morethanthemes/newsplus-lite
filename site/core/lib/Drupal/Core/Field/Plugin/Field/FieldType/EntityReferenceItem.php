@@ -2,15 +2,18 @@
 
 namespace Drupal\Core\Field\Plugin\Field\FieldType;
 
+use Drupal\Component\Plugin\Exception\PluginNotFoundException;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Component\Utility\Html;
-use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Entity\ContentEntityStorageInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Entity\TypedData\EntityDataDefinition;
+use Drupal\Core\Field\Attribute\FieldType;
+use Drupal\Core\Field\EntityReferenceFieldItemList;
 use Drupal\Core\Field\FieldDefinitionInterface;
-use Drupal\Core\Field\FieldItemBase;
+use Drupal\Core\Field\FieldException;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Field\PreconfiguredFieldUiOptionsInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -28,18 +31,17 @@ use Drupal\Core\Validation\Plugin\Validation\Constraint\AllowedValuesConstraint;
  *
  * Supported settings (below the definition's 'settings' key) are:
  * - target_type: The entity type to reference. Required.
- *
- * @FieldType(
- *   id = "entity_reference",
- *   label = @Translation("Entity reference"),
- *   description = @Translation("An entity field containing an entity reference."),
- *   category = @Translation("Reference"),
- *   default_widget = "entity_reference_autocomplete",
- *   default_formatter = "entity_reference_label",
- *   list_class = "\Drupal\Core\Field\EntityReferenceFieldItemList",
- * )
  */
-class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterface, PreconfiguredFieldUiOptionsInterface {
+#[FieldType(
+  id: "entity_reference",
+  label: new TranslatableMarkup("Entity reference"),
+  description: new TranslatableMarkup("An entity field containing an entity reference."),
+  category: "reference",
+  default_widget: "entity_reference_autocomplete",
+  default_formatter: "entity_reference_label",
+  list_class: EntityReferenceFieldItemList::class,
+)]
+class EntityReferenceItem extends EntityReferenceItemBase implements OptionsProviderInterface, PreconfiguredFieldUiOptionsInterface {
 
   /**
    * {@inheritdoc}
@@ -65,11 +67,17 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
    */
   public static function propertyDefinitions(FieldStorageDefinitionInterface $field_definition) {
     $settings = $field_definition->getSettings();
-    $target_type_info = \Drupal::entityManager()->getDefinition($settings['target_type']);
+    $target_type_info = \Drupal::entityTypeManager()->getDefinition($settings['target_type']);
+
+    // If the target entity type doesn't have an ID key, we cannot determine
+    // the target_id data type.
+    if (!$target_type_info->hasKey('id')) {
+      throw new FieldException('Entity type "' . $target_type_info->id() . '" has no ID key and cannot be targeted by entity reference field "' . $field_definition->getName() . '"');
+    }
 
     $target_id_data_type = 'string';
     if ($target_type_info->entityClassImplements(FieldableEntityInterface::class)) {
-      $id_definition = \Drupal::entityManager()->getBaseFieldDefinitions($settings['target_type'])[$target_type_info->getKey('id')];
+      $id_definition = \Drupal::service('entity_field.manager')->getBaseFieldDefinitions($settings['target_type'])[$target_type_info->getKey('id')];
       if ($id_definition->getType() === 'integer') {
         $target_id_data_type = 'integer';
       }
@@ -105,6 +113,49 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
   /**
    * {@inheritdoc}
    */
+  public static function storageSettingsSummary(FieldStorageDefinitionInterface $storage_definition): array {
+    $summary = parent::storageSettingsSummary($storage_definition);
+    $target_type = $storage_definition->getSetting('target_type');
+    $target_type_info = \Drupal::entityTypeManager()->getDefinition($target_type);
+    if (!empty($target_type_info)) {
+      $summary[] = new TranslatableMarkup('Reference type: @entity_type', [
+        '@entity_type' => $target_type_info->getLabel(),
+      ]);
+    }
+    return $summary;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function fieldSettingsSummary(FieldDefinitionInterface $field_definition): array {
+    $summary = parent::fieldSettingsSummary($field_definition);
+    $target_type = $field_definition->getFieldStorageDefinition()->getSetting('target_type');
+    $handler_settings = $field_definition->getSetting('handler_settings');
+
+    if (!isset($handler_settings['target_bundles'])) {
+      return $summary;
+    }
+
+    /** @var \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entity_bundle_information */
+    $entity_bundle_information = \Drupal::service('entity_type.bundle.info');
+    $bundle_info = $entity_bundle_information->getBundleInfo($target_type);
+    $bundles = array_map(fn($bundle) => $bundle_info[$bundle]['label'], $handler_settings['target_bundles']);
+    $bundle_label = \Drupal::entityTypeManager()->getDefinition($target_type)->getBundleLabel();
+
+    if (!empty($bundles)) {
+      $summary[] = new FormattableMarkup('@bundle: @entity_type', [
+        '@bundle' => $bundle_label ?: new TranslatableMarkup('Bundle'),
+        '@entity_type' => implode(', ', $bundles),
+      ]);
+    }
+
+    return $summary;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public static function mainPropertyName() {
     return 'target_id';
   }
@@ -114,7 +165,16 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
    */
   public static function schema(FieldStorageDefinitionInterface $field_definition) {
     $target_type = $field_definition->getSetting('target_type');
-    $target_type_info = \Drupal::entityManager()->getDefinition($target_type);
+    try {
+      $target_type_info = \Drupal::entityTypeManager()->getDefinition($target_type);
+    }
+    catch (PluginNotFoundException $e) {
+      throw new FieldException(sprintf("Field '%s' on entity type '%s' references a target entity type '%s' which does not exist.",
+        $field_definition->getName(),
+        $field_definition->getTargetEntityTypeId(),
+        $target_type
+      ));
+    }
     $properties = static::propertyDefinitions($field_definition)['target_id'];
     if ($target_type_info->entityClassImplements(FieldableEntityInterface::class) && $properties->getDataType() === 'integer') {
       $columns = [
@@ -283,12 +343,11 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
     $options = [
       'target_type' => $field_definition->getFieldStorageDefinition()->getSetting('target_type'),
       'handler' => $field_definition->getSetting('handler'),
-      'handler_settings' => $field_definition->getSetting('handler_settings') ?: [],
       'entity' => NULL,
-    ];
+    ] + $field_definition->getSetting('handler_settings') ?: [];
 
-    $entity_type = \Drupal::entityManager()->getDefinition($options['target_type']);
-    $options['handler_settings']['sort'] = [
+    $entity_type = \Drupal::entityTypeManager()->getDefinition($options['target_type']);
+    $options['sort'] = [
       'field' => $entity_type->getKey('id'),
       'direction' => 'DESC',
     ];
@@ -305,7 +364,7 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
     // Attempt to create a sample entity, avoiding recursion.
     $entity_storage = \Drupal::entityTypeManager()->getStorage($options['target_type']);
     if ($entity_storage instanceof ContentEntityStorageInterface) {
-      $bundle = static::getRandomBundle($entity_type, $options['handler_settings']);
+      $bundle = static::getRandomBundle($entity_type, $options);
 
       // Track the generated entity by reference type, target type, and bundle.
       $key = $field_definition->getTargetEntityTypeId() . ':' . $options['target_type'] . ':' . $bundle;
@@ -339,7 +398,7 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
    *   Either the bundle string, or NULL if there is no bundle.
    */
   protected static function getRandomBundle(EntityTypeInterface $entity_type, array $selection_settings) {
-    if ($bundle_key = $entity_type->getKey('bundle')) {
+    if ($entity_type->getKey('bundle')) {
       if (!empty($selection_settings['target_bundles'])) {
         $bundle_ids = $selection_settings['target_bundles'];
       }
@@ -356,14 +415,24 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
   public function storageSettingsForm(array &$form, FormStateInterface $form_state, $has_data) {
     $element['target_type'] = [
       '#type' => 'select',
-      '#title' => t('Type of item to reference'),
-      '#options' => \Drupal::entityManager()->getEntityTypeLabels(TRUE),
+      '#title' => $this->t('Type of item to reference'),
       '#default_value' => $this->getSetting('target_type'),
       '#required' => TRUE,
       '#disabled' => $has_data,
       '#size' => 1,
     ];
 
+    // Only allow the field to target entity types that have an ID key. This
+    // is enforced in ::propertyDefinitions().
+    $entity_type_manager = \Drupal::entityTypeManager();
+    $filter = function (string $entity_type_id) use ($entity_type_manager): bool {
+      return $entity_type_manager->getDefinition($entity_type_id)
+        ->hasKey('id');
+    };
+    $options = \Drupal::service('entity_type.repository')->getEntityTypeLabels(TRUE);
+    foreach ($options as $group_name => $group) {
+      $element['target_type']['#options'][$group_name] = array_filter($group, $filter, ARRAY_FILTER_USE_KEY);
+    }
     return $element;
   }
 
@@ -391,35 +460,39 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
 
     $form = [
       '#type' => 'container',
-      '#process' => [[get_class($this), 'fieldSettingsAjaxProcess']],
-      '#element_validate' => [[get_class($this), 'fieldSettingsFormValidate']],
+      '#process' => [[static::class, 'fieldSettingsAjaxProcess']],
+      '#element_validate' => [[static::class, 'fieldSettingsFormValidate']],
 
     ];
     $form['handler'] = [
       '#type' => 'details',
-      '#title' => t('Reference type'),
+      '#title' => $this->t('Reference type'),
       '#open' => TRUE,
       '#tree' => TRUE,
-      '#process' => [[get_class($this), 'formProcessMergeParent']],
+      '#process' => [[static::class, 'formProcessMergeParent']],
     ];
 
     $form['handler']['handler'] = [
       '#type' => 'select',
-      '#title' => t('Reference method'),
+      '#title' => $this->t('Reference method'),
       '#options' => $handlers_options,
       '#default_value' => $field->getSetting('handler'),
       '#required' => TRUE,
+      // Use a form process callback to build #ajax property properly and also
+      // to avoid code duplication.
+      // @see \Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem::fieldSettingsAjaxProcess()
       '#ajax' => TRUE,
       '#limit_validation_errors' => [],
     ];
     $form['handler']['handler_submit'] = [
       '#type' => 'submit',
-      '#value' => t('Change handler'),
+      '#name' => 'handler_settings_submit',
+      '#value' => $this->t('Change handler'),
       '#limit_validation_errors' => [],
       '#attributes' => [
         'class' => ['js-hide'],
       ],
-      '#submit' => [[get_class($this), 'settingsAjaxSubmit']],
+      '#submit' => [[static::class, 'settingsAjaxSubmit']],
     ];
 
     $form['handler']['handler_settings'] = [
@@ -466,14 +539,15 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
    */
   public static function calculateDependencies(FieldDefinitionInterface $field_definition) {
     $dependencies = parent::calculateDependencies($field_definition);
-    $manager = \Drupal::entityManager();
-    $target_entity_type = $manager->getDefinition($field_definition->getFieldStorageDefinition()->getSetting('target_type'));
+    $entity_type_manager = \Drupal::entityTypeManager();
+    $target_entity_type = $entity_type_manager->getDefinition($field_definition->getFieldStorageDefinition()->getSetting('target_type'));
 
     // Depend on default values entity types configurations.
     if ($default_value = $field_definition->getDefaultValueLiteral()) {
+      $entity_repository = \Drupal::service('entity.repository');
       foreach ($default_value as $value) {
         if (is_array($value) && isset($value['target_uuid'])) {
-          $entity = \Drupal::entityManager()->loadEntityByUuid($target_entity_type->id(), $value['target_uuid']);
+          $entity = $entity_repository->loadEntityByUuid($target_entity_type->id(), $value['target_uuid']);
           // If the entity does not exist do not create the dependency.
           // @see \Drupal\Core\Field\EntityReferenceFieldItemList::processDefaultValue()
           if ($entity) {
@@ -489,7 +563,7 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
     $handler = $field_definition->getSetting('handler_settings');
     if (!empty($handler['target_bundles'])) {
       if ($bundle_entity_type_id = $target_entity_type->getBundleEntityType()) {
-        if ($storage = $manager->getStorage($bundle_entity_type_id)) {
+        if ($storage = $entity_type_manager->getStorage($bundle_entity_type_id)) {
           foreach ($storage->loadMultiple($handler['target_bundles']) as $bundle) {
             $dependencies[$bundle->getConfigDependencyKey()][] = $bundle->getConfigDependencyName();
           }
@@ -505,7 +579,7 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
    */
   public static function calculateStorageDependencies(FieldStorageDefinitionInterface $field_definition) {
     $dependencies = parent::calculateStorageDependencies($field_definition);
-    $target_entity_type = \Drupal::entityManager()->getDefinition($field_definition->getSetting('target_type'));
+    $target_entity_type = \Drupal::entityTypeManager()->getDefinition($field_definition->getSetting('target_type'));
     $dependencies['module'][] = $target_entity_type->getProvider();
     return $dependencies;
   }
@@ -515,14 +589,15 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
    */
   public static function onDependencyRemoval(FieldDefinitionInterface $field_definition, array $dependencies) {
     $changed = parent::onDependencyRemoval($field_definition, $dependencies);
-    $entity_manager = \Drupal::entityManager();
-    $target_entity_type = $entity_manager->getDefinition($field_definition->getFieldStorageDefinition()->getSetting('target_type'));
+    $entity_type_manager = \Drupal::entityTypeManager();
+    $target_entity_type = $entity_type_manager->getDefinition($field_definition->getFieldStorageDefinition()->getSetting('target_type'));
 
     // Try to update the default value config dependency, if possible.
     if ($default_value = $field_definition->getDefaultValueLiteral()) {
+      $entity_repository = \Drupal::service('entity.repository');
       foreach ($default_value as $key => $value) {
         if (is_array($value) && isset($value['target_uuid'])) {
-          $entity = $entity_manager->loadEntityByUuid($target_entity_type->id(), $value['target_uuid']);
+          $entity = $entity_repository->loadEntityByUuid($target_entity_type->id(), $value['target_uuid']);
           // @see \Drupal\Core\Field\EntityReferenceFieldItemList::processDefaultValue()
           if ($entity && isset($dependencies[$entity->getConfigDependencyKey()][$entity->getConfigDependencyName()])) {
             unset($default_value[$key]);
@@ -541,7 +616,7 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
     $handler_settings = $field_definition->getSetting('handler_settings');
     if (!empty($handler_settings['target_bundles'])) {
       if ($bundle_entity_type_id = $target_entity_type->getBundleEntityType()) {
-        if ($storage = $entity_manager->getStorage($bundle_entity_type_id)) {
+        if ($storage = $entity_type_manager->getStorage($bundle_entity_type_id)) {
           foreach ($storage->loadMultiple($handler_settings['target_bundles']) as $bundle) {
             if (isset($dependencies[$bundle->getConfigDependencyKey()][$bundle->getConfigDependencyName()])) {
               unset($handler_settings['target_bundles'][$bundle->id()]);
@@ -550,7 +625,7 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
               // setting, disable the auto-creation feature completely.
               $auto_create_bundle = !empty($handler_settings['auto_create_bundle']) ? $handler_settings['auto_create_bundle'] : FALSE;
               if ($auto_create_bundle && $auto_create_bundle == $bundle->id()) {
-                $handler_settings['auto_create'] = NULL;
+                $handler_settings['auto_create'] = FALSE;
                 $handler_settings['auto_create_bundle'] = NULL;
               }
 
@@ -571,21 +646,21 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
   /**
    * {@inheritdoc}
    */
-  public function getPossibleValues(AccountInterface $account = NULL) {
+  public function getPossibleValues(?AccountInterface $account = NULL) {
     return $this->getSettableValues($account);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getPossibleOptions(AccountInterface $account = NULL) {
+  public function getPossibleOptions(?AccountInterface $account = NULL) {
     return $this->getSettableOptions($account);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function getSettableValues(AccountInterface $account = NULL) {
+  public function getSettableValues(?AccountInterface $account = NULL) {
     // Flatten options first, because "settable options" may contain group
     // arrays.
     $flatten_options = OptGroup::flattenOptions($this->getSettableOptions($account));
@@ -595,7 +670,7 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
   /**
    * {@inheritdoc}
    */
-  public function getSettableOptions(AccountInterface $account = NULL) {
+  public function getSettableOptions(?AccountInterface $account = NULL) {
     $field_definition = $this->getFieldDefinition();
     if (!$options = \Drupal::service('plugin.manager.entity_reference_selection')->getSelectionHandler($field_definition, $this->getEntity())->getReferenceableEntities()) {
       return [];
@@ -603,7 +678,7 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
 
     // Rebuild the array by changing the bundle key into the bundle label.
     $target_type = $field_definition->getSetting('target_type');
-    $bundles = \Drupal::entityManager()->getBundleInfo($target_type);
+    $bundles = \Drupal::service('entity_type.bundle.info')->getBundleInfo($target_type);
 
     $return = [];
     foreach ($options as $bundle => $entity_ids) {
@@ -617,8 +692,7 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
   }
 
   /**
-   * Render API callback: Processes the field settings form and allows access to
-   * the form state.
+   * Render API callback: Processes the field settings form.
    *
    * @see static::fieldSettingsForm()
    */
@@ -628,16 +702,16 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
   }
 
   /**
-   * Adds entity_reference specific properties to AJAX form elements from the
-   * field settings form.
+   * Adds the field settings to AJAX form elements.
    *
    * @see static::fieldSettingsAjaxProcess()
    */
   public static function fieldSettingsAjaxProcessElement(&$element, $main_form) {
+    // Elements are marked as TRUE ('#ajax' => TRUE,), so not empty.
     if (!empty($element['#ajax'])) {
       $element['#ajax'] = [
-        'callback' => [get_called_class(), 'settingsAjax'],
-        'wrapper' => $main_form['#id'],
+        'trigger_as' => ['name' => 'handler_settings_submit'],
+        'wrapper' => 'field-combined',
         'element' => $main_form['#array_parents'],
       ];
     }
@@ -648,9 +722,10 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
   }
 
   /**
-   * Render API callback: Moves entity_reference specific Form API elements
-   * (i.e. 'handler_settings') up a level for easier processing by the
-   * validation and submission handlers.
+   * Render API callback that moves entity reference elements up a level.
+   *
+   * The elements (i.e. 'handler_settings') are moved for easier processing by
+   * the validation and submission handlers.
    *
    * @see _entity_reference_field_settings_process()
    */
@@ -662,20 +737,13 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
   }
 
   /**
-   * Ajax callback for the handler settings form.
-   *
-   * @see static::fieldSettingsForm()
-   */
-  public static function settingsAjax($form, FormStateInterface $form_state) {
-    return NestedArray::getValue($form, $form_state->getTriggeringElement()['#ajax']['element']);
-  }
-
-  /**
    * Submit handler for the non-JS case.
    *
    * @see static::fieldSettingsForm()
    */
   public static function settingsAjaxSubmit($form, FormStateInterface $form_state) {
+    $form_storage = &$form_state->getStorage();
+    unset($form_storage['default_value_widget']);
     $form_state->setRebuild();
   }
 
@@ -687,7 +755,7 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
 
     // Add all the commonly referenced entity types as distinct pre-configured
     // options.
-    $entity_types = \Drupal::entityManager()->getDefinitions();
+    $entity_types = \Drupal::entityTypeManager()->getDefinitions();
     $common_references = array_filter($entity_types, function (EntityTypeInterface $entity_type) {
       return $entity_type->isCommonReferenceTarget();
     });
@@ -699,12 +767,27 @@ class EntityReferenceItem extends FieldItemBase implements OptionsProviderInterf
         'field_storage_config' => [
           'settings' => [
             'target_type' => $entity_type->id(),
-          ]
-        ]
+          ],
+        ],
       ];
     }
 
     return $options;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function getReferenceableBundles(FieldDefinitionInterface $field_definition): array {
+    $settings = $field_definition->getSettings();
+    $target_type_id = $settings['target_type'];
+    $handler_settings = $settings['handler_settings'];
+
+    $has_target_bundles = isset($handler_settings['target_bundles']) && !empty($handler_settings['target_bundles']);
+    $target_bundles = $has_target_bundles
+      ? $handler_settings['target_bundles']
+      : array_keys(\Drupal::service('entity_type.bundle.info')->getBundleInfo($target_type_id));
+    return [$target_type_id => $target_bundles];
   }
 
 }

@@ -4,7 +4,6 @@ namespace Drupal\Core\StringTranslation;
 
 use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Component\Utility\ToStringTrait;
-use Drupal\Component\Utility\Unicode;
 
 /**
  * Provides translatable markup class.
@@ -91,7 +90,7 @@ class TranslatableMarkup extends FormattableMarkup {
    * as user names or link URLs into translated text. Variable substitution
    * looks like this:
    * @code
-   * new TranslatableMarkup("@name's blog", array('@name' => $account->getDisplayName()));
+   * new TranslatableMarkup("@name's blog", ['@name' => $account->getDisplayName()]);
    * @endcode
    * Basically, you can put placeholders like @name into your string, and the
    * method will substitute the sanitized values at translation time. (See the
@@ -127,7 +126,7 @@ class TranslatableMarkup extends FormattableMarkup {
    *
    * @ingroup sanitization
    */
-  public function __construct($string, array $arguments = [], array $options = [], TranslationInterface $string_translation = NULL) {
+  public function __construct($string, array $arguments = [], array $options = [], ?TranslationInterface $string_translation = NULL) {
     if (!is_string($string)) {
       $message = $string instanceof TranslatableMarkup ? '$string ("' . $string->getUntranslatedString() . '") must be a string.' : '$string ("' . (string) $string . '") must be a string.';
       throw new \InvalidArgumentException($message);
@@ -157,7 +156,7 @@ class TranslatableMarkup extends FormattableMarkup {
    *   The value of this option or empty string of option is not set.
    */
   public function getOption($name) {
-    return isset($this->options[$name]) ? $this->options[$name] : '';
+    return $this->options[$name] ?? '';
   }
 
   /**
@@ -225,8 +224,9 @@ class TranslatableMarkup extends FormattableMarkup {
    * @return int
    *   The length of the string.
    */
+  #[\ReturnTypeWillChange]
   public function count() {
-    return Unicode::strlen($this->render());
+    return mb_strlen($this->render());
   }
 
 }

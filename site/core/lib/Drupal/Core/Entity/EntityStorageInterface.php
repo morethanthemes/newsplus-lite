@@ -26,13 +26,13 @@ interface EntityStorageInterface {
   const FIELD_LOAD_REVISION = 'FIELD_LOAD_REVISION';
 
   /**
-   * Resets the internal, static entity cache.
+   * Resets the internal entity cache.
    *
    * @param $ids
    *   (optional) If specified, the cache is reset for the entities with the
    *   given ids only.
    */
-  public function resetCache(array $ids = NULL);
+  public function resetCache(?array $ids = NULL);
 
   /**
    * Loads one or more entities.
@@ -44,7 +44,7 @@ interface EntityStorageInterface {
    *   An array of entity objects indexed by their IDs. Returns an empty array
    *   if no matching entities are found.
    */
-  public function loadMultiple(array $ids = NULL);
+  public function loadMultiple(?array $ids = NULL);
 
   /**
    * Loads one entity.
@@ -80,11 +80,12 @@ interface EntityStorageInterface {
    * @return \Drupal\Core\Entity\EntityInterface|null
    *   The specified entity revision or NULL if not found.
    *
-   * @todo Deprecated in Drupal 8.5.0 and will be removed before Drupal 9.0.0.
-   *   Use \Drupal\Core\Entity\RevisionableStorageInterface instead.
+   * @deprecated in drupal:10.1.0 and is removed from drupal:11.0.0. Use
+   * \Drupal\Core\Entity\RevisionableStorageInterface::loadRevision instead.
    *
    * @see https://www.drupal.org/node/2926958
    * @see https://www.drupal.org/node/2927226
+   * @see https://www.drupal.org/node/3294237
    */
   public function loadRevision($revision_id);
 
@@ -96,20 +97,22 @@ interface EntityStorageInterface {
    * @param int $revision_id
    *   The revision id.
    *
-   * @todo Deprecated in Drupal 8.5.0 and will be removed before Drupal 9.0.0.
-   *   Use \Drupal\Core\Entity\RevisionableStorageInterface instead.
+   * @deprecated in drupal:10.1.0 and is removed from drupal:11.0.0. Use
+   * \Drupal\Core\Entity\RevisionableStorageInterface::deleteRevision instead.
    *
    * @see https://www.drupal.org/node/2926958
    * @see https://www.drupal.org/node/2927226
+   * @see https://www.drupal.org/node/3294237
    */
   public function deleteRevision($revision_id);
 
   /**
-   * Load entities by their property values.
+   * Load entities by their property values without any access checks.
    *
    * @param array $values
    *   An associative array where the keys are the property names and the
-   *   values are the values those properties must have.
+   *   values are the values those properties must have. If a property takes
+   *   multiple values, passing an array of values will produce an IN condition.
    *
    * @return \Drupal\Core\Entity\EntityInterface[]
    *   An array of entity objects indexed by their ids.
@@ -145,7 +148,7 @@ interface EntityStorageInterface {
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   The entity to save.
    *
-   * @return
+   * @return int|null
    *   SAVED_NEW or SAVED_UPDATED is returned depending on the operation
    *   performed.
    *
@@ -153,6 +156,28 @@ interface EntityStorageInterface {
    *   In case of failures, an exception is thrown.
    */
   public function save(EntityInterface $entity);
+
+  /**
+   * Restores a previously saved entity.
+   *
+   * Note that the entity is assumed to be in a valid state for the storage, so
+   * the restore process does not invoke any hooks, nor does it perform any pre
+   * or post-save operations.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   The entity to restore.
+   *
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   *   In case of failures, an exception is thrown.
+   *
+   * @internal
+   *   This method should never be used to perform a regular entity save. Its
+   *   only use-case is to assist updating entity types when there are complex
+   *   schema changes, for example, to make them revisionable. Note that
+   *   overriding this method to fix data prior to restoring is a likely sign
+   *   that the current data is corrupt.
+   */
+  public function restore(EntityInterface $entity);
 
   /**
    * Determines if the storage contains any data.
@@ -207,5 +232,17 @@ interface EntityStorageInterface {
    *   Entity type definition.
    */
   public function getEntityType();
+
+  /**
+   * Retrieves the class name used to create the entity.
+   *
+   * @param string|null $bundle
+   *   (optional) A specific entity type bundle identifier. Can be omitted in
+   *   the case of entity types without bundles, like User.
+   *
+   * @return string
+   *   The entity class name.
+   */
+  public function getEntityClass(?string $bundle = NULL): string;
 
 }

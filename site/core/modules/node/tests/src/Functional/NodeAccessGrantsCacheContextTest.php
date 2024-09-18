@@ -1,6 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\node\Functional;
+
+use Drupal\Core\Database\Database;
+use Drupal\user\Entity\User;
 
 /**
  * Tests the node access grants cache context service.
@@ -11,11 +16,22 @@ namespace Drupal\Tests\node\Functional;
 class NodeAccessGrantsCacheContextTest extends NodeTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['node_access_test'];
+  protected static $modules = ['node_access_test'];
+
+  /**
+   * {@inheritdoc}
+   *
+   * @todo Remove and fix test to not rely on super user.
+   * @see https://www.drupal.org/project/drupal/issues/3437620
+   */
+  protected bool $usesSuperUserAccessPolicy = TRUE;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * User with permission to view content.
@@ -28,9 +44,21 @@ class NodeAccessGrantsCacheContextTest extends NodeTestBase {
   protected $noAccessUser;
 
   /**
+   * User without permission to view content.
+   *
+   * @var \Drupal\user\Entity\User
+   */
+  protected User $noAccessUser2;
+
+  /**
+   * @var array
+   */
+  protected array $userMapping;
+
+  /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     node_access_rebuild();
@@ -43,9 +71,19 @@ class NodeAccessGrantsCacheContextTest extends NodeTestBase {
 
     // Create user with simple node access permission. The 'node test view'
     // permission is implemented and granted by the node_access_test module.
-    $this->accessUser = $this->drupalCreateUser(['access content overview', 'access content', 'node test view']);
-    $this->noAccessUser = $this->drupalCreateUser(['access content overview', 'access content']);
-    $this->noAccessUser2 = $this->drupalCreateUser(['access content overview', 'access content']);
+    $this->accessUser = $this->drupalCreateUser([
+      'access content overview',
+      'access content',
+      'node test view',
+    ]);
+    $this->noAccessUser = $this->drupalCreateUser([
+      'access content overview',
+      'access content',
+    ]);
+    $this->noAccessUser2 = $this->drupalCreateUser([
+      'access content overview',
+      'access content',
+    ]);
 
     $this->userMapping = [
       1 => $this->rootUser,
@@ -59,14 +97,15 @@ class NodeAccessGrantsCacheContextTest extends NodeTestBase {
    *
    * @param array $expected
    *   Expected values, keyed by user ID, expected cache contexts as values.
+   *
+   * @internal
    */
-  protected function assertUserCacheContext(array $expected) {
+  protected function assertUserCacheContext(array $expected): void {
     foreach ($expected as $uid => $context) {
       if ($uid > 0) {
         $this->drupalLogin($this->userMapping[$uid]);
       }
-      $this->pass('Asserting cache context for user ' . $uid . '.');
-      $this->assertIdentical($context, $this->container->get('cache_context.user.node_grants')->getContext('view'));
+      $this->assertSame($context, $this->container->get('cache_context.user.node_grants')->getContext('view'));
     }
     $this->drupalLogout();
   }
@@ -74,7 +113,7 @@ class NodeAccessGrantsCacheContextTest extends NodeTestBase {
   /**
    * Tests NodeAccessGrantsCacheContext::getContext().
    */
-  public function testCacheContext() {
+  public function testCacheContext(): void {
     $this->assertUserCacheContext([
       0 => 'view.all:0;node_access_test_author:0;node_access_all:0',
       1 => 'all',
@@ -92,7 +131,7 @@ class NodeAccessGrantsCacheContextTest extends NodeTestBase {
       'grant_update' => 0,
       'grant_delete' => 0,
     ];
-    db_insert('node_access')->fields($record)->execute();
+    Database::getConnection()->insert('node_access')->fields($record)->execute();
 
     // Put user accessUser (uid 0) in the realm.
     \Drupal::state()->set('node_access_test.no_access_uid', 0);

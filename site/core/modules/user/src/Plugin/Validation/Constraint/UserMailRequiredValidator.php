@@ -16,14 +16,23 @@ class UserMailRequiredValidator extends ConstraintValidator {
 
   /**
    * {@inheritdoc}
+   *
+   * phpcs:ignore Drupal.Commenting.FunctionComment.VoidReturn
+   * @return void
    */
   public function validate($items, Constraint $constraint) {
     /** @var \Drupal\Core\Field\FieldItemListInterface $items */
     /** @var \Drupal\user\UserInterface $account */
     $account = $items->getEntity();
+    if (!isset($account)) {
+      return;
+    }
+
     $existing_value = NULL;
-    if ($account->id()) {
-      $account_unchanged = \Drupal::entityManager()
+
+    // Only validate for existing user.
+    if (!$account->isNew()) {
+      $account_unchanged = \Drupal::entityTypeManager()
         ->getStorage('user')
         ->loadUnchanged($account->id());
       $existing_value = $account_unchanged->getEmail();

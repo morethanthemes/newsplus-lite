@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\rest\Kernel\Entity;
 
 use Drupal\KernelTests\KernelTestBase;
@@ -16,12 +18,18 @@ class RestResourceConfigTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['rest', 'entity_test', 'serialization', 'basic_auth', 'user', 'hal'];
+  protected static $modules = [
+    'rest',
+    'entity_test',
+    'serialization',
+    'basic_auth',
+    'user',
+  ];
 
   /**
    * @covers ::calculateDependencies
    */
-  public function testCalculateDependencies() {
+  public function testCalculateDependencies(): void {
     $rest_config = RestResourceConfig::create([
       'plugin_id' => 'entity:entity_test',
       'granularity' => RestResourceConfigInterface::METHOD_GRANULARITY,
@@ -32,13 +40,13 @@ class RestResourceConfigTest extends KernelTestBase {
         ],
         'POST' => [
           'supported_auth' => ['basic_auth'],
-          'supported_formats' => ['hal_json'],
+          'supported_formats' => ['json'],
         ],
       ],
     ]);
 
     $rest_config->calculateDependencies();
-    $this->assertEquals(['module' => ['basic_auth', 'entity_test', 'hal', 'serialization', 'user']], $rest_config->getDependencies());
+    $this->assertEquals(['module' => ['basic_auth', 'entity_test', 'serialization', 'user']], $rest_config->getDependencies());
   }
 
 }

@@ -84,6 +84,9 @@ interface FieldItemInterface extends ComplexDataInterface {
    *     stored in SQL. Also, the possible usage is limited, as you cannot
    *     specify another field as related, only existing SQL tables,
    *     such as {taxonomy_term_data}.
+   *
+   * @throws \Drupal\Core\Field\FieldException
+   *   Throws an exception if the schema is invalid.
    */
   public static function schema(FieldStorageDefinitionInterface $field_definition);
 
@@ -121,7 +124,7 @@ interface FieldItemInterface extends ComplexDataInterface {
    *   The property value.
    *
    * @throws \InvalidArgumentException
-   *   If a not existing property is accessed.
+   *   If a non-existent property is accessed.
    */
   public function __get($property_name);
 
@@ -136,7 +139,7 @@ interface FieldItemInterface extends ComplexDataInterface {
    *   passed instead of a plain value.
    *
    * @throws \InvalidArgumentException
-   *   If a not existing property is set.
+   *   If a non-existent property is set.
    */
   public function __set($property_name, $value);
 
@@ -162,7 +165,7 @@ interface FieldItemInterface extends ComplexDataInterface {
   /**
    * Returns a renderable array for a single field item.
    *
-   * @param array $display_options
+   * @param string|array $display_options
    *   Can be either the name of a view mode, or an array of display settings.
    *   See EntityViewBuilderInterface::viewField() for more information.
    *
@@ -258,6 +261,38 @@ interface FieldItemInterface extends ComplexDataInterface {
    *   A list of default settings, keyed by the setting name.
    */
   public static function defaultFieldSettings();
+
+  /**
+   * Returns a short summary of the field's storage-level settings.
+   *
+   * All information returned by this function should communicate fundamental
+   * information about the field storage settings for users. For example, in the
+   * case of a reference field, the configured target entity type is a crucial
+   * piece of information for understanding how the field can be used.
+   *
+   * @param \Drupal\Core\Field\FieldStorageDefinitionInterface $storage_definition
+   *   The field storage definition.
+   *
+   * @return array
+   *   A renderable array summarizing storage-level settings.
+   */
+  public static function storageSettingsSummary(FieldStorageDefinitionInterface $storage_definition): array;
+
+  /**
+   * Returns a short summary of the field's field-level settings.
+   *
+   * All information returned by this function should communicate fundamental
+   * information about the field settings for users. For example, in the case of
+   * a reference field, the selected target entity bundles are a crucial
+   * piece of information for understanding how the field can be used.
+   *
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field_definition
+   *   The field entity.
+   *
+   * @return array
+   *   A renderable array summarizing the field-level settings.
+   */
+  public static function fieldSettingsSummary(FieldDefinitionInterface $field_definition): array;
 
   /**
    * Returns a settings array that can be stored as a configuration value.
@@ -400,12 +435,12 @@ interface FieldItemInterface extends ComplexDataInterface {
    *   An array of dependencies grouped by type (config, content, module,
    *   theme). For example:
    *   @code
-   *   array(
-   *     'config' => array('user.role.anonymous', 'user.role.authenticated'),
-   *     'content' => array('node:article:f0a189e6-55fb-47fb-8005-5bef81c44d6d'),
-   *     'module' => array('node', 'user'),
-   *     'theme' => array('seven'),
-   *   );
+   *   [
+   *     'config' => ['user.role.anonymous', 'user.role.authenticated'],
+   *     'content' => ['node:article:f0a189e6-55fb-47fb-8005-5bef81c44d6d'],
+   *     'module' => ['node', 'user'],
+   *     'theme' => ['claro'],
+   *   ];
    *   @endcode
    *
    * @see \Drupal\Core\Config\Entity\ConfigDependencyManager
@@ -437,7 +472,7 @@ interface FieldItemInterface extends ComplexDataInterface {
    *     'config' => ['user.role.anonymous', 'user.role.authenticated'],
    *     'content' => ['node:article:f0a189e6-55fb-47fb-8005-5bef81c44d6d'],
    *     'module' => ['node', 'user'],
-   *     'theme' => ['seven'],
+   *     'theme' => ['claro'],
    *   ];
    *   @endcode
    *

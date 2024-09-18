@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Component\PhpStorage;
 
+use Drupal\Component\FileSecurity\FileSecurity;
 use Drupal\Component\Utility\Crypt;
 use Drupal\Component\Utility\Random;
 
@@ -14,6 +17,8 @@ abstract class MTimeProtectedFileStorageBase extends PhpStorageTestBase {
    * The PHP storage class to test.
    *
    * This should be overridden by extending classes.
+   *
+   * @var string
    */
   protected $storageClass;
 
@@ -32,9 +37,14 @@ abstract class MTimeProtectedFileStorageBase extends PhpStorageTestBase {
   protected $settings;
 
   /**
+   * The expected test results for the security test.
+   */
+  protected array $expected;
+
+  /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     // Random generator.
@@ -51,13 +61,8 @@ abstract class MTimeProtectedFileStorageBase extends PhpStorageTestBase {
 
   /**
    * Tests basic load/save/delete operations.
-   *
-   * @covers ::load
-   * @covers ::save
-   * @covers ::delete
-   * @covers ::exists
    */
-  public function testCRUD() {
+  public function testCRUD(): void {
     $php = new $this->storageClass($this->settings);
     $this->assertCRUD($php);
   }
@@ -71,12 +76,12 @@ abstract class MTimeProtectedFileStorageBase extends PhpStorageTestBase {
    * We need to delay over 1 second for mtime test.
    * @medium
    */
-  public function testSecurity() {
+  public function testSecurity(): void {
     $php = new $this->storageClass($this->settings);
-    $name = 'simpletest.php';
+    $name = 'test.php';
     $php->save($name, '<?php');
     $expected_root_directory = $this->directory . '/test';
-    if (substr($name, -4) === '.php') {
+    if (str_ends_with($name, '.php')) {
       $expected_directory = $expected_root_directory . '/' . substr($name, 0, -4);
     }
     else {
@@ -88,13 +93,13 @@ abstract class MTimeProtectedFileStorageBase extends PhpStorageTestBase {
     // Ensure the file exists and that it and the containing directory have
     // minimal permissions. fileperms() can return high bits unrelated to
     // permissions, so mask with 0777.
-    $this->assertTrue(file_exists($expected_filename));
+    $this->assertFileExists($expected_filename);
     $this->assertSame(0444, fileperms($expected_filename) & 0777);
     $this->assertSame(0777, fileperms($expected_directory) & 0777);
 
     // Ensure the root directory for the bin has a .htaccess file denying web
     // access.
-    $this->assertSame(file_get_contents($expected_root_directory . '/.htaccess'), call_user_func([$this->storageClass, 'htaccessLines']));
+    $this->assertSame(file_get_contents($expected_root_directory . '/.htaccess'), FileSecurity::htaccessLines());
 
     // Ensure that if the file is replaced with an untrusted one (due to another
     // script's file upload vulnerability), it does not get loaded. Since mtime

@@ -8,11 +8,12 @@ use Drupal\Core\DependencyInjection\ClassResolverInterface;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
-use Drupal\Core\TypedData\Validation\ExecutionContextFactory;
+use Drupal\Core\TypedData\Attribute\DataType;
 use Drupal\Core\TypedData\Validation\RecursiveValidator;
 use Drupal\Core\Validation\ConstraintManager;
 use Drupal\Core\Validation\ConstraintValidatorFactory;
 use Drupal\Core\Validation\DrupalTranslator;
+use Drupal\Core\Validation\ExecutionContextFactory;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
@@ -67,7 +68,14 @@ class TypedDataManager extends DefaultPluginManager implements TypedDataManagerI
     $this->setCacheBackend($cache_backend, 'typed_data_types_plugins');
     $this->classResolver = $class_resolver;
 
-    parent::__construct('Plugin/DataType', $namespaces, $module_handler, NULL, 'Drupal\Core\TypedData\Annotation\DataType');
+    parent::__construct(
+      'Plugin/DataType',
+      $namespaces,
+      $module_handler,
+      NULL,
+      DataType::class,
+      'Drupal\Core\TypedData\Annotation\DataType',
+    );
   }
 
   /**
@@ -168,9 +176,16 @@ class TypedDataManager extends DefaultPluginManager implements TypedDataManagerI
       // a shorter string than the serialized form, so array access is faster.
       $parts[] = json_encode($settings);
     }
-    // Property path for the requested data object. When creating a list item,
-    // use 0 in the key as all items look the same.
-    $parts[] = $object->getPropertyPath() . '.' . (is_numeric($property_name) ? 0 : $property_name);
+    // Property path for the requested data object.
+    $parts[] = $object->getPropertyPath();
+    // Only property instances of complex data types should be cached by the
+    // property name, as they represent different properties. Properties of list
+    // data types are the items of the list and the property name represents
+    // only the delta in that list and not an unique property, which is why all
+    // items should use the same prototype.
+    if ($object instanceof ComplexDataInterface) {
+      $parts[] = $property_name;
+    }
     $key = implode(':', $parts);
 
     // Create the prototype if needed.
@@ -189,7 +204,7 @@ class TypedDataManager extends DefaultPluginManager implements TypedDataManagerI
         throw new \InvalidArgumentException("Property $property_name is unknown.");
       }
       // Create the prototype without any value, but with initial parenting
-      // so that constructors can set up the objects correclty.
+      // so that constructors can set up the objects correctly.
       $this->prototypes[$key] = $this->create($definition, NULL, $property_name, $object);
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\media\Functional;
 
 use Drupal\media\Entity\Media;
@@ -14,16 +16,28 @@ class MediaContextualLinksTest extends MediaFunctionalTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'contextual',
   ];
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * Tests contextual links.
    */
-  public function testMediaContextualLinks() {
+  public function testMediaContextualLinks(): void {
+    \Drupal::configFactory()
+      ->getEditable('media.settings')
+      ->set('standalone_url', TRUE)
+      ->save(TRUE);
+
+    $this->container->get('router.builder')->rebuild();
+
     // Create a media type.
-    $mediaType = $this->createMediaType();
+    $mediaType = $this->createMediaType('test');
 
     // Create a media item.
     $media = Media::create([

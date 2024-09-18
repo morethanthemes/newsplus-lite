@@ -3,7 +3,9 @@
 namespace Drupal\locale\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\ConfigTarget;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 
 /**
  * Configure locale settings for this site.
@@ -35,26 +37,26 @@ class LocaleSettingsForm extends ConfigFormBase {
     $form['update_interval_days'] = [
       '#type' => 'radios',
       '#title' => $this->t('Check for updates'),
-      '#default_value' => $config->get('translation.update_interval_days'),
+      '#config_target' => 'locale.settings:translation.update_interval_days',
       '#options' => [
         '0' => $this->t('Never (manually)'),
         '7' => $this->t('Weekly'),
         '30' => $this->t('Monthly'),
       ],
-      '#description' => $this->t('Select how frequently you want to check for new interface translations for your currently installed modules and themes. <a href=":url">Check updates now</a>.', [':url' => $this->url('locale.check_translation')]),
+      '#description' => $this->t('Select how frequently you want to check for new interface translations for your currently installed modules and themes. <a href=":url">Check updates now</a>.', [':url' => Url::fromRoute('locale.check_translation')->toString()]),
     ];
 
     if ($directory = $config->get('translation.path')) {
-      $description = $this->t('Translation files are stored locally in the  %path directory. You can change this directory on the <a href=":url">File system</a> configuration page.', ['%path' => $directory, ':url' => $this->url('system.file_system_settings')]);
+      $description = $this->t('Translation files are stored locally in the  %path directory. You can change this directory on the <a href=":url">File system</a> configuration page.', ['%path' => $directory, ':url' => Url::fromRoute('system.file_system_settings')->toString()]);
     }
     else {
-      $description = $this->t('Translation files will not be stored locally. Change the Interface translation directory on the <a href=":url">File system configuration</a> page.', [':url' => $this->url('system.file_system_settings')]);
+      $description = $this->t('Translation files will not be stored locally. Change the Interface translation directory on the <a href=":url">File system configuration</a> page.', [':url' => Url::fromRoute('system.file_system_settings')->toString()]);
     }
     $form['#translation_directory'] = $directory;
     $form['use_source'] = [
       '#type' => 'radios',
       '#title' => $this->t('Translation source'),
-      '#default_value' => $config->get('translation.use_source'),
+      '#config_target' => 'locale.settings:translation.use_source',
       '#options' => [
         LOCALE_TRANSLATION_USE_SOURCE_REMOTE_AND_LOCAL => $this->t('Drupal translation server and local files'),
         LOCALE_TRANSLATION_USE_SOURCE_LOCAL => $this->t('Local files only'),
@@ -62,25 +64,41 @@ class LocaleSettingsForm extends ConfigFormBase {
       '#description' => $this->t('The source of translation files for automatic interface translation.') . ' ' . $description,
     ];
 
-    if ($config->get('translation.overwrite_not_customized') == FALSE) {
-      $default = LOCALE_TRANSLATION_OVERWRITE_NONE;
-    }
-    elseif ($config->get('translation.overwrite_customized') == TRUE) {
-      $default = LOCALE_TRANSLATION_OVERWRITE_ALL;
-    }
-    else {
-      $default = LOCALE_TRANSLATION_OVERWRITE_NON_CUSTOMIZED;
-    }
     $form['overwrite'] = [
       '#type' => 'radios',
       '#title' => $this->t('Import behavior'),
-      '#default_value' => $default,
       '#options' => [
         LOCALE_TRANSLATION_OVERWRITE_NONE => $this->t("Don't overwrite existing translations."),
         LOCALE_TRANSLATION_OVERWRITE_NON_CUSTOMIZED => $this->t('Only overwrite imported translations, customized translations are kept.'),
         LOCALE_TRANSLATION_OVERWRITE_ALL => $this->t('Overwrite existing translations.'),
       ],
       '#description' => $this->t('How to treat existing translations when automatically updating the interface translations.'),
+      '#config_target' => new ConfigTarget(
+        'locale.settings',
+        [
+          'translation.overwrite_customized',
+          'translation.overwrite_not_customized',
+        ],
+        fromConfig: fn (bool $overwrite_customized, bool $overwrite_not_customized): string => match(TRUE) {
+          $overwrite_not_customized == FALSE => LOCALE_TRANSLATION_OVERWRITE_NONE,
+          $overwrite_customized == TRUE => LOCALE_TRANSLATION_OVERWRITE_ALL,
+          default => LOCALE_TRANSLATION_OVERWRITE_NON_CUSTOMIZED,
+        },
+        toConfig: fn (string $radio_option): array => match($radio_option) {
+          LOCALE_TRANSLATION_OVERWRITE_ALL => [
+            'translation.overwrite_customized' => TRUE,
+            'translation.overwrite_not_customized' => TRUE,
+          ],
+          LOCALE_TRANSLATION_OVERWRITE_NON_CUSTOMIZED => [
+            'translation.overwrite_customized' => FALSE,
+            'translation.overwrite_not_customized' => TRUE,
+          ],
+          LOCALE_TRANSLATION_OVERWRITE_NONE => [
+            'translation.overwrite_customized' => FALSE,
+            'translation.overwrite_not_customized' => FALSE,
+          ],
+        }
+      ),
     ];
 
     return parent::buildForm($form, $form_state);
@@ -93,7 +111,7 @@ class LocaleSettingsForm extends ConfigFormBase {
     parent::validateForm($form, $form_state);
 
     if (empty($form['#translation_directory']) && $form_state->getValue('use_source') == LOCALE_TRANSLATION_USE_SOURCE_LOCAL) {
-      $form_state->setErrorByName('use_source', $this->t('You have selected local translation source, but no <a href=":url">Interface translation directory</a> was configured.', [':url' => $this->url('system.file_system_settings')]));
+      $form_state->setErrorByName('use_source', $this->t('You have selected local translation source, but no <a href=":url">Interface translation directory</a> was configured.', [':url' => Url::fromRoute('system.file_system_settings')->toString()]));
     }
   }
 
@@ -101,35 +119,6 @@ class LocaleSettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $values = $form_state->getValues();
-
-    $config = $this->config('locale.settings');
-    $config->set('translation.update_interval_days', $values['update_interval_days'])->save();
-    $config->set('translation.use_source', $values['use_source'])->save();
-
-    switch ($values['overwrite']) {
-      case LOCALE_TRANSLATION_OVERWRITE_ALL:
-        $config
-          ->set('translation.overwrite_customized', TRUE)
-          ->set('translation.overwrite_not_customized', TRUE)
-          ->save();
-        break;
-
-      case LOCALE_TRANSLATION_OVERWRITE_NON_CUSTOMIZED:
-        $config
-          ->set('translation.overwrite_customized', FALSE)
-          ->set('translation.overwrite_not_customized', TRUE)
-          ->save();
-        break;
-
-      case LOCALE_TRANSLATION_OVERWRITE_NONE:
-        $config
-          ->set('translation.overwrite_customized', FALSE)
-          ->set('translation.overwrite_not_customized', FALSE)
-          ->save();
-        break;
-    }
-
     // Invalidate the cached translation status when the configuration setting
     // of 'use_source' changes.
     if ($form['use_source']['#default_value'] != $form_state->getValue('use_source')) {

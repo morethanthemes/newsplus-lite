@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\language\Functional;
 
 use Drupal\Tests\SchemaCheckTestTrait;
@@ -15,11 +17,14 @@ class LanguageConfigSchemaTest extends BrowserTestBase {
   use SchemaCheckTestTrait;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['language', 'menu_link_content'];
+  protected static $modules = ['language', 'menu_link_content'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * A user with administrative permissions.
@@ -31,7 +36,7 @@ class LanguageConfigSchemaTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     // Create user.
@@ -42,10 +47,10 @@ class LanguageConfigSchemaTest extends BrowserTestBase {
   /**
    * Tests whether the language config schema is valid.
    */
-  public function testValidLanguageConfigSchema() {
+  public function testValidLanguageConfigSchema(): void {
     // Make sure no language configuration available by default.
     $config_data = $this->config('language.settings')->get();
-    $this->assertTrue(empty($config_data));
+    $this->assertEmpty($config_data);
 
     $settings_path = 'admin/config/regional/content-language';
 
@@ -58,7 +63,8 @@ class LanguageConfigSchemaTest extends BrowserTestBase {
     $edit['settings[user][user][settings][language][language_alterable]'] = TRUE;
     $edit['settings[user][user][settings][language][langcode]'] = 'en';
 
-    $this->drupalPostForm($settings_path, $edit, t('Save configuration'));
+    $this->drupalGet($settings_path);
+    $this->submitForm($edit, 'Save configuration');
 
     $config_data = $this->config('language.content_settings.menu_link_content.menu_link_content');
     // Make sure configuration saved correctly.

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Functional;
 
 use Drupal\taxonomy\Entity\Vocabulary;
@@ -21,18 +23,23 @@ class VocabularySerializationTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['taxonomy', 'vocabulary_serialization_test'];
+  protected static $modules = ['taxonomy', 'vocabulary_serialization_test'];
 
   /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
-    Vocabulary::create(['vid' => 'test'])->save();
+    Vocabulary::create(['vid' => 'test', 'name' => 'Test'])->save();
   }
 
-  public function testSerialization() {
+  public function testSerialization(): void {
     $this->drupalGet('/vocabulary_serialization_test/test');
     $this->assertSession()->statusCodeEquals(200);
     $this->assertSame('this is the output', $this->getSession()->getPage()->getContent());

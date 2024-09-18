@@ -2,21 +2,22 @@
 
 namespace Drupal\views\Plugin\views\style;
 
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Url;
+use Drupal\views\Attribute\ViewsStyle;
 
 /**
  * Default style plugin to render an OPML feed.
  *
  * @ingroup views_style_plugins
- *
- * @ViewsStyle(
- *   id = "opml",
- *   title = @Translation("OPML Feed"),
- *   help = @Translation("Generates an OPML feed from a view."),
- *   theme = "views_view_opml",
- *   display_types = {"feed"}
- * )
  */
+#[ViewsStyle(
+  id: "opml",
+  title: new TranslatableMarkup("OPML Feed"),
+  help: new TranslatableMarkup("Generates an OPML feed from a view."),
+  theme: "views_view_opml",
+  display_types: ["feed"],
+)]
 class Opml extends StylePluginBase {
 
   /**
@@ -55,10 +56,6 @@ class Opml extends StylePluginBase {
    * {@inheritdoc}
    */
   public function render() {
-    if (empty($this->view->rowPlugin)) {
-      debug('Drupal\views\Plugin\views\style\Opml: Missing row plugin');
-      return;
-    }
     $rows = [];
 
     foreach ($this->view->result as $row_index => $row) {
@@ -71,6 +68,11 @@ class Opml extends StylePluginBase {
       '#view' => $this->view,
       '#options' => $this->options,
       '#rows' => $rows,
+      '#attached' => [
+        'http_header' => [
+          ['Content-Type', 'text/xml; charset=utf-8'],
+        ],
+      ],
     ];
     unset($this->view->row_index);
     return $build;

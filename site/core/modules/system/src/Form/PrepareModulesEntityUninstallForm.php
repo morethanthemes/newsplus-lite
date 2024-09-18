@@ -2,9 +2,13 @@
 
 namespace Drupal\system\Form;
 
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Access\AccessResultInterface;
+use Drupal\Core\Batch\BatchBuilder;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -90,6 +94,36 @@ class PrepareModulesEntityUninstallForm extends ConfirmFormBase {
   }
 
   /**
+   * Gets the form title.
+   *
+   * @param string $entity_type_id
+   *   The entity type ID.
+   *
+   * @return \Drupal\Core\StringTranslation\TranslatableMarkup
+   *   The form title.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   *   Thrown when the entity-type does not exist.
+   */
+  public function formTitle(string $entity_type_id): TranslatableMarkup {
+    $this->entityTypeId = $entity_type_id;
+    return $this->getQuestion();
+  }
+
+  /**
+   * Checks access based on the validity of the entity type ID.
+   *
+   * @param string $entity_type_id
+   *   Entity type ID.
+   *
+   * @return \Drupal\Core\Access\AccessResultInterface
+   *   The access result.
+   */
+  public static function checkAccess(string $entity_type_id): AccessResultInterface {
+    return AccessResult::allowedIf(\Drupal::entityTypeManager()->hasDefinition($entity_type_id));
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $entity_type_id = NULL) {
@@ -100,7 +134,8 @@ class PrepareModulesEntityUninstallForm extends ConfirmFormBase {
     $form = parent::buildForm($form, $form_state);
 
     $storage = $this->entityTypeManager->getStorage($entity_type_id);
-    $count = $storage->getQuery()->count()->execute();
+    $count = $storage->getQuery()->accessCheck(FALSE)->count()->execute();
+    $accessible_count = $storage->getQuery()->accessCheck(TRUE)->count()->execute();
 
     $form['entity_type_id'] = [
       '#type' => 'value',
@@ -117,8 +152,9 @@ class PrepareModulesEntityUninstallForm extends ConfirmFormBase {
         ),
       ];
     }
-    elseif ($entity_type->hasKey('label')) {
+    elseif ($accessible_count > 0 && $entity_type->hasKey('label')) {
       $recent_entity_ids = $storage->getQuery()
+        ->accessCheck(TRUE)
         ->sort($entity_type->getKey('id'), 'DESC')
         ->pager(10)
         ->execute();
@@ -159,7 +195,7 @@ class PrepareModulesEntityUninstallForm extends ConfirmFormBase {
             '@entity_type_singular' => $entity_type->getSingularLabel(),
             '@entity_type_plural' => $entity_type->getPluralLabel(),
           ]
-        )
+        ),
       ];
     }
 
@@ -180,19 +216,12 @@ class PrepareModulesEntityUninstallForm extends ConfirmFormBase {
     $entity_type_id = $form_state->getValue('entity_type_id');
 
     $entity_type_plural = $this->entityTypeManager->getDefinition($entity_type_id)->getPluralLabel();
-    $batch = [
-      'title' => t('Deleting @entity_type_plural', [
-        '@entity_type_plural' => $entity_type_plural,
-      ]),
-      'operations' => [
-        [
-          [__CLASS__, 'deleteContentEntities'], [$entity_type_id],
-        ],
-      ],
-      'finished' => [__CLASS__, 'moduleBatchFinished'],
-      'progress_message' => '',
-    ];
-    batch_set($batch);
+    $batch_builder = (new BatchBuilder())
+      ->setTitle($this->t('Deleting @entity_type_plural', ['@entity_type_plural' => $entity_type_plural]))
+      ->setProgressMessage('')
+      ->setFinishCallback([__CLASS__, 'moduleBatchFinished'])
+      ->addOperation([__CLASS__, 'deleteContentEntities'], [$entity_type_id]);
+    batch_set($batch_builder->toArray());
   }
 
   /**
@@ -215,11 +244,12 @@ class PrepareModulesEntityUninstallForm extends ConfirmFormBase {
 
     if (!isset($context['sandbox']['progress'])) {
       $context['sandbox']['progress'] = 0;
-      $context['sandbox']['max'] = $storage->getQuery()->count()->execute();
+      $context['sandbox']['max'] = $storage->getQuery()->accessCheck(FALSE)->count()->execute();
     }
 
     $entity_type = \Drupal::entityTypeManager()->getDefinition($entity_type_id);
     $entity_ids = $storage->getQuery()
+      ->accessCheck(FALSE)
       ->sort($entity_type->getKey('id'), 'ASC')
       ->range(0, 10)
       ->execute();
@@ -227,14 +257,14 @@ class PrepareModulesEntityUninstallForm extends ConfirmFormBase {
       $storage->delete($entities);
     }
     // Sometimes deletes cause secondary deletes. For example, deleting a
-    // taxonomy term can cause its children to be be deleted too.
-    $context['sandbox']['progress'] = $context['sandbox']['max'] - $storage->getQuery()->count()->execute();
+    // taxonomy term can cause its children to be deleted too.
+    $context['sandbox']['progress'] = $context['sandbox']['max'] - $storage->getQuery()->accessCheck(FALSE)->count()->execute();
 
     // Inform the batch engine that we are not finished and provide an
     // estimation of the completion level we reached.
     if (count($entity_ids) > 0 && $context['sandbox']['progress'] != $context['sandbox']['max']) {
       $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
-      $context['message'] = t('Deleting items... Completed @percentage% (@current of @total).', ['@percentage' => round(100 * $context['sandbox']['progress'] / $context['sandbox']['max']), '@current' => $context['sandbox']['progress'], '@total' => $context['sandbox']['max']]);
+      $context['message'] = new TranslatableMarkup('Deleting items... Completed @percentage% (@current of @total).', ['@percentage' => round(100 * $context['sandbox']['progress'] / $context['sandbox']['max']), '@current' => $context['sandbox']['progress'], '@total' => $context['sandbox']['max']]);
 
     }
     else {
@@ -250,7 +280,7 @@ class PrepareModulesEntityUninstallForm extends ConfirmFormBase {
    */
   public static function moduleBatchFinished($success, $results, $operations) {
     $entity_type_plural = \Drupal::entityTypeManager()->getDefinition($results['entity_type_id'])->getPluralLabel();
-    drupal_set_message(t('All @entity_type_plural have been deleted.', ['@entity_type_plural' => $entity_type_plural]));
+    \Drupal::messenger()->addStatus(new TranslatableMarkup('All @entity_type_plural have been deleted.', ['@entity_type_plural' => $entity_type_plural]));
 
     return new RedirectResponse(Url::fromRoute('system.modules_uninstall')->setAbsolute()->toString());
   }

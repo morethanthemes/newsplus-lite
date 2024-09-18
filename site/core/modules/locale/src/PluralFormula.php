@@ -31,18 +31,20 @@ class PluralFormula implements PluralFormulaInterface {
    *   'de' => [
    *     'plurals' => 2,
    *     'formula' => [
-   *       // @todo
+   *       // @todo Provide the formula.
    *     ]
    *   ],
    * ]
    * @endcode
-   * @var []
+   * @var array
    */
   protected $formulae;
 
   /**
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
+   *   The language manager.
    * @param \Drupal\Core\State\StateInterface $state
+   *   The state.
    */
   public function __construct(LanguageManagerInterface $language_manager, StateInterface $state) {
     $this->languageManager = $language_manager;
@@ -86,13 +88,11 @@ class PluralFormula implements PluralFormulaInterface {
    */
   public function getFormula($langcode) {
     $this->loadFormulae();
-    return isset($this->formulae[$langcode]['formula']) ? $this->formulae[$langcode]['formula'] : FALSE;
+    return $this->formulae[$langcode]['formula'] ?? FALSE;
   }
 
   /**
    * Loads the formulae and stores them on the PluralFormula object if not set.
-   *
-   * @return array
    */
   protected function loadFormulae() {
     if (!isset($this->formulae)) {

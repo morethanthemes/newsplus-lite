@@ -2,6 +2,7 @@
 
 namespace Drupal\shortcut\Plugin\migrate\destination;
 
+use Drupal\migrate\Attribute\MigrateDestination;
 use Drupal\shortcut\ShortcutSetStorageInterface;
 use Drupal\user\Entity\User;
 use Drupal\migrate\Plugin\MigrationInterface;
@@ -11,10 +12,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 
 /**
- * @MigrateDestination(
- *   id = "shortcut_set_users"
- * )
+ * Migration destination for shortcut_set_users.
  */
+#[MigrateDestination('shortcut_set_users')]
 class ShortcutSetUsers extends DestinationBase implements ContainerFactoryPluginInterface {
 
   /**
@@ -46,13 +46,13 @@ class ShortcutSetUsers extends DestinationBase implements ContainerFactoryPlugin
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, ?MigrationInterface $migration = NULL) {
     return new static(
       $configuration,
       $plugin_id,
       $plugin_definition,
       $migration,
-      $container->get('entity.manager')->getStorage('shortcut_set')
+      $container->get('entity_type.manager')->getStorage('shortcut_set')
     );
   }
 
@@ -73,7 +73,7 @@ class ShortcutSetUsers extends DestinationBase implements ContainerFactoryPlugin
   /**
    * {@inheritdoc}
    */
-  public function fields(MigrationInterface $migration = NULL) {
+  public function fields() {
     return [
       'uid' => 'The users.uid for this set.',
       'source' => 'The shortcut_set.set_name that will be displayed for this user.',

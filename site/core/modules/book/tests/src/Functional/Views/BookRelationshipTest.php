@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\book\Functional\Views;
 
 use Drupal\Tests\views\Functional\ViewTestBase;
@@ -9,6 +11,7 @@ use Drupal\views\Tests\ViewTestData;
  * Tests entity reference relationship data.
  *
  * @group book
+ * @group legacy
  *
  * @see book_views_data()
  */
@@ -26,7 +29,12 @@ class BookRelationshipTest extends ViewTestBase {
    *
    * @var array
    */
-  public static $modules = ['book_test_views', 'book', 'views'];
+  protected static $modules = ['book_test_views', 'book', 'views'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * A book node.
@@ -45,8 +53,8 @@ class BookRelationshipTest extends ViewTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
-    parent::setUp($import_test_views);
+  protected function setUp($import_test_views = TRUE, $modules = []): void {
+    parent::setUp($import_test_views, $modules);
 
     // Create users.
     $this->bookAuthor = $this->drupalCreateUser(
@@ -57,7 +65,7 @@ class BookRelationshipTest extends ViewTestBase {
         'add content to books',
       ]
     );
-    ViewTestData::createTestViews(get_class($this), ['book_test_views']);
+    ViewTestData::createTestViews(static::class, ['book_test_views']);
   }
 
   /**
@@ -111,21 +119,23 @@ class BookRelationshipTest extends ViewTestBase {
     static $number = 0;
 
     $edit = [];
-    $edit['title[0][value]'] = $number . ' - SimpleTest test node ' . $this->randomMachineName(10);
-    $edit['body[0][value]'] = 'SimpleTest test body ' . $this->randomMachineName(32) . ' ' . $this->randomMachineName(32);
+    $edit['title[0][value]'] = $number . ' - test node ' . $this->randomMachineName(10);
+    $edit['body[0][value]'] = 'test body ' . $this->randomMachineName(32) . ' ' . $this->randomMachineName(32);
     $edit['book[bid]'] = $book_nid;
 
     if ($parent !== NULL) {
-      $this->drupalPostForm('node/add/book', $edit, t('Change book (update list of parents)'));
+      $this->drupalGet('node/add/book');
+      $this->submitForm($edit, 'Change book (update list of parents)');
 
       $edit['book[pid]'] = $parent;
-      $this->drupalPostForm(NULL, $edit, t('Save'));
+      $this->submitForm($edit, 'Save');
       // Make sure the parent was flagged as having children.
-      $parent_node = \Drupal::entityManager()->getStorage('node')->loadUnchanged($parent);
-      $this->assertFalse(empty($parent_node->book['has_children']), 'Parent node is marked as having children');
+      $parent_node = \Drupal::entityTypeManager()->getStorage('node')->loadUnchanged($parent);
+      $this->assertNotEmpty($parent_node->book['has_children'], 'Parent node is marked as having children');
     }
     else {
-      $this->drupalPostForm('node/add/book', $edit, t('Save'));
+      $this->drupalGet('node/add/book');
+      $this->submitForm($edit, 'Save');
     }
 
     // Check to make sure the book node was created.
@@ -139,16 +149,16 @@ class BookRelationshipTest extends ViewTestBase {
   /**
    * Tests using the views relationship.
    */
-  public function testRelationship() {
+  public function testRelationship(): void {
 
     // Create new book.
-    // @var \Drupal\node\NodeInterface[] $nodes
+    /** @var \Drupal\node\NodeInterface[] $nodes */
     $nodes = $this->createBook();
     for ($i = 0; $i < 8; $i++) {
       $this->drupalGet('test-book/' . $nodes[$i]->id());
 
       for ($j = 0; $j < $i; $j++) {
-        $this->assertLink($nodes[$j]->label());
+        $this->assertSession()->linkExists($nodes[$j]->label());
       }
     }
   }

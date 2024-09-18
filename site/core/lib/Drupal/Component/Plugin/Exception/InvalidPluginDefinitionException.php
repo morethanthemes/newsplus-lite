@@ -15,16 +15,20 @@ class InvalidPluginDefinitionException extends PluginException {
   protected $pluginId;
 
   /**
-   * Constructs a InvalidPluginDefinitionException.
-   *
-   * For the remaining parameters see \Exception.
+   * Constructs an InvalidPluginDefinitionException.
    *
    * @param string $plugin_id
    *   The plugin ID of the mapper.
+   * @param string $message
+   *   The exception message.
+   * @param int $code
+   *   The exception code.
+   * @param \Exception|null $previous
+   *   The previous throwable used for exception chaining.
    *
    * @see \Exception
    */
-  public function __construct($plugin_id, $message = '', $code = 0, \Exception $previous = NULL) {
+  public function __construct($plugin_id, $message = '', $code = 0, ?\Exception $previous = NULL) {
     $this->pluginId = $plugin_id;
     parent::__construct($message, $code, $previous);
   }

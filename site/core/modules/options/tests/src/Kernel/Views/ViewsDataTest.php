@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\options\Kernel\Views;
 
 use Drupal\field\Entity\FieldConfig;
@@ -15,7 +17,12 @@ class ViewsDataTest extends OptionsTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['options', 'options_test', 'entity_test', 'views'];
+  protected static $modules = [
+    'options',
+    'options_test',
+    'entity_test',
+    'views',
+  ];
 
   /**
    * The field storage.
@@ -25,11 +32,17 @@ class ViewsDataTest extends OptionsTestBase {
   protected $fieldStorage;
 
   /**
+   * @var int
+   */
+  protected int $field;
+
+  /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
+  protected function setUp($import_test_views = TRUE): void {
     parent::setUp();
 
+    $this->installEntitySchema('entity_test');
     $field_name = 'test_options';
     $this->fieldStorage = FieldStorageConfig::create([
       'field_name' => $field_name,
@@ -53,13 +66,13 @@ class ViewsDataTest extends OptionsTestBase {
   /**
    * Tests the option module's implementation of hook_field_views_data().
    */
-  public function testOptionsFieldViewsData() {
+  public function testOptionsFieldViewsData(): void {
     $field_data = \Drupal::service('views.views_data')->get('entity_test__test_options');
 
     // Check that the options module has properly overridden default views data.
     $test_options_field = $field_data['test_options_value'];
-    $this->assertEqual($test_options_field['argument']['id'], 'string_list_field', 'Argument handler is properly set for fields with allowed value callbacks.');
-    $this->assertEqual($test_options_field['filter']['id'], 'list_field', 'Filter handler is properly set for fields with allowed value callbacks.');
+    $this->assertEquals('string_list_field', $test_options_field['argument']['id'], 'Argument handler is properly set for fields with allowed value callbacks.');
+    $this->assertEquals('list_field', $test_options_field['filter']['id'], 'Filter handler is properly set for fields with allowed value callbacks.');
   }
 
 }

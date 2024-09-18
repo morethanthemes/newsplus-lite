@@ -9,7 +9,7 @@ use Drupal\Component\Annotation\Plugin;
  *
  * Plugin Namespace: Plugin\rest\resource
  *
- * For a working example, see \Drupal\dblog\Plugin\rest\resource\DBLogResource
+ * For a working example, see \Drupal\dblog\Plugin\rest\resource\DbLogResource
  *
  * @see \Drupal\rest\Plugin\Type\ResourcePluginManager
  * @see \Drupal\rest\Plugin\ResourceBase
@@ -41,9 +41,11 @@ class RestResource extends Plugin {
   /**
    * The serialization class to deserialize serialized data into.
    *
+   * This property is optional and it does not need to be declared.
+   *
    * @see \Symfony\Component\Serializer\SerializerInterface's "type" parameter.
    *
-   * @var string (optional)
+   * @var string
    */
   public $serialization_class;
 

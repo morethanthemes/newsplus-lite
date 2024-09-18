@@ -7,6 +7,7 @@
  * This file handles tokens for the global 'site' and 'date' tokens.
  */
 
+use Drupal\Core\Url;
 use Drupal\Core\Datetime\Entity\DateFormat;
 use Drupal\Core\Render\BubbleableMetadata;
 
@@ -36,9 +37,20 @@ function system_token_info() {
     'name' => t("Email"),
     'description' => t("The administrative email address for the site."),
   ];
+  $site['base-url'] = [
+    'name' => t("Base URL"),
+    'description' => t("The base URL of the site, currently: @base_url",
+      [
+        '@base_url' => \Drupal::service('router.request_context')->getCompleteBaseUrl(),
+      ]),
+  ];
+  $site['base-path'] = [
+    'name' => t("Base path"),
+    'description' => t("The base path of the site, currently: @base_path", ['@base_path' => \Drupal::request()->getBasePath()]),
+  ];
   $site['url'] = [
     'name' => t("URL"),
-    'description' => t("The URL of the site's front page."),
+    'description' => t("The URL of the site's front page with the language prefix, if it exists."),
   ];
   $site['url-brief'] = [
     'name' => t("URL (brief)"),
@@ -49,30 +61,34 @@ function system_token_info() {
     'description' => t("The URL of the site's login page."),
   ];
 
+  /** @var \Drupal\Core\Datetime\DateFormatterInterface $date_formatter */
+  $date_formatter = \Drupal::service('date.formatter');
+
   // Date related tokens.
+  $request_time = \Drupal::time()->getRequestTime();
   $date['short'] = [
     'name' => t("Short format"),
-    'description' => t("A date in 'short' format. (%date)", ['%date' => format_date(REQUEST_TIME, 'short')]),
+    'description' => t("The current date in 'short' format. (%date)", ['%date' => $date_formatter->format($request_time, 'short')]),
   ];
   $date['medium'] = [
     'name' => t("Medium format"),
-    'description' => t("A date in 'medium' format. (%date)", ['%date' => format_date(REQUEST_TIME, 'medium')]),
+    'description' => t("The current date in 'medium' format. (%date)", ['%date' => $date_formatter->format($request_time, 'medium')]),
   ];
   $date['long'] = [
     'name' => t("Long format"),
-    'description' => t("A date in 'long' format. (%date)", ['%date' => format_date(REQUEST_TIME, 'long')]),
+    'description' => t("The current date in 'long' format. (%date)", ['%date' => $date_formatter->format($request_time, 'long')]),
   ];
   $date['custom'] = [
     'name' => t("Custom format"),
-    'description' => t('A date in a custom format. See <a href="http://php.net/manual/function.date.php">the PHP documentation</a> for details.'),
+    'description' => t('The current date in a custom format. See <a href="https://www.php.net/manual/datetime.format.php#refsect1-datetime.format-parameters">the PHP documentation</a> for details.'),
   ];
   $date['since'] = [
     'name' => t("Time-since"),
-    'description' => t("A date in 'time-since' format. (%date)", ['%date' => \Drupal::service('date.formatter')->formatTimeDiffSince(REQUEST_TIME - 360)]),
+    'description' => t("The current date in 'time-since' format. (%date)", ['%date' => $date_formatter->formatTimeDiffSince($request_time - 360)]),
   ];
   $date['raw'] = [
     'name' => t("Raw timestamp"),
-    'description' => t("A date in UNIX timestamp format (%date)", ['%date' => REQUEST_TIME]),
+    'description' => t("The current date in UNIX timestamp format (%date)", ['%date' => $request_time]),
   ];
 
   return [
@@ -118,7 +134,7 @@ function system_tokens($type, $tokens, array $data, array $options, BubbleableMe
             '#markup' => $slogan,
           ];
           // @todo Fix in https://www.drupal.org/node/2577827
-          $replacements[$original] = \Drupal::service('renderer')->renderPlain($build);
+          $replacements[$original] = \Drupal::service('renderer')->renderInIsolation($build);
           break;
 
         case 'mail':
@@ -127,23 +143,33 @@ function system_tokens($type, $tokens, array $data, array $options, BubbleableMe
           $replacements[$original] = $config->get('mail');
           break;
 
+        case 'base-url':
+          $bubbleable_metadata->addCacheContexts(['url.site']);
+          $replacements[$original] = \Drupal::service('router.request_context')->getCompleteBaseUrl();
+          break;
+
+        case 'base-path':
+          $bubbleable_metadata->addCacheContexts(['url.site']);
+          $replacements[$original] = \Drupal::request()->getBasePath();
+          break;
+
         case 'url':
           /** @var \Drupal\Core\GeneratedUrl $result */
-          $result = \Drupal::url('<front>', [], $url_options, TRUE);
+          $result = Url::fromRoute('<front>', [], $url_options)->toString(TRUE);
           $bubbleable_metadata->addCacheableDependency($result);
           $replacements[$original] = $result->getGeneratedUrl();
           break;
 
         case 'url-brief':
           /** @var \Drupal\Core\GeneratedUrl $result */
-          $result = \Drupal::url('<front>', [], $url_options, TRUE);
+          $result = Url::fromRoute('<front>', [], $url_options)->toString(TRUE);
           $bubbleable_metadata->addCacheableDependency($result);
           $replacements[$original] = preg_replace(['!^https?://!', '!/$!'], '', $result->getGeneratedUrl());
           break;
 
         case 'login-url':
           /** @var \Drupal\Core\GeneratedUrl $result */
-          $result = \Drupal::url('user.page', [], $url_options, TRUE);
+          $result = Url::fromRoute('user.page', [], $url_options)->toString(TRUE);
           $bubbleable_metadata->addCacheableDependency($result);
           $replacements[$original] = $result->getGeneratedUrl();
           break;
@@ -153,7 +179,7 @@ function system_tokens($type, $tokens, array $data, array $options, BubbleableMe
 
   elseif ($type == 'date') {
     if (empty($data['date'])) {
-      $date = REQUEST_TIME;
+      $date = \Drupal::time()->getRequestTime();
       // We depend on the current request time, so the tokens are not cacheable
       // at all.
       $bubbleable_metadata->setCacheMaxAge(0);
@@ -169,7 +195,7 @@ function system_tokens($type, $tokens, array $data, array $options, BubbleableMe
         case 'long':
           $date_format = DateFormat::load($name);
           $bubbleable_metadata->addCacheableDependency($date_format);
-          $replacements[$original] = format_date($date, $name, '', NULL, $langcode);
+          $replacements[$original] = \Drupal::service('date.formatter')->format($date, $name, '', NULL, $langcode);
           break;
 
         case 'since':
@@ -185,7 +211,7 @@ function system_tokens($type, $tokens, array $data, array $options, BubbleableMe
 
     if ($created_tokens = $token_service->findWithPrefix($tokens, 'custom')) {
       foreach ($created_tokens as $name => $original) {
-        $replacements[$original] = format_date($date, 'custom', $name, NULL, $langcode);
+        $replacements[$original] = \Drupal::service('date.formatter')->format($date, 'custom', $name, NULL, $langcode);
       }
     }
   }

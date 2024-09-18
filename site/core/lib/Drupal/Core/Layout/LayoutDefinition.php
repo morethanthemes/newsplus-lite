@@ -2,6 +2,8 @@
 
 namespace Drupal\Core\Layout;
 
+use Drupal\Component\Plugin\Definition\ContextAwarePluginDefinitionInterface;
+use Drupal\Component\Plugin\Definition\ContextAwarePluginDefinitionTrait;
 use Drupal\Component\Plugin\Definition\DerivablePluginDefinitionInterface;
 use Drupal\Component\Plugin\Definition\PluginDefinitionInterface;
 use Drupal\Component\Plugin\Definition\PluginDefinition;
@@ -11,8 +13,9 @@ use Drupal\Core\Plugin\Definition\DependentPluginDefinitionTrait;
 /**
  * Provides an implementation of a layout definition and its metadata.
  */
-class LayoutDefinition extends PluginDefinition implements PluginDefinitionInterface, DerivablePluginDefinitionInterface, DependentPluginDefinitionInterface {
+class LayoutDefinition extends PluginDefinition implements PluginDefinitionInterface, DerivablePluginDefinitionInterface, DependentPluginDefinitionInterface, ContextAwarePluginDefinitionInterface {
 
+  use ContextAwarePluginDefinitionTrait;
   use DependentPluginDefinitionTrait;
 
   /**
@@ -62,6 +65,7 @@ class LayoutDefinition extends PluginDefinition implements PluginDefinitionInter
    *
    * @var string|null
    */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
   protected $theme_hook;
 
   /**
@@ -92,6 +96,7 @@ class LayoutDefinition extends PluginDefinition implements PluginDefinitionInter
    *
    * @see \Drupal\Core\Layout\Icon\IconBuilderInterface::build()
    */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
   protected $icon_map;
 
   /**
@@ -113,6 +118,7 @@ class LayoutDefinition extends PluginDefinition implements PluginDefinitionInter
    *
    * @var string
    */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
   protected $default_region;
 
   /**
@@ -126,9 +132,19 @@ class LayoutDefinition extends PluginDefinition implements PluginDefinitionInter
    * LayoutDefinition constructor.
    *
    * @param array $definition
-   *   An array of values from the annotation.
+   *   An array of values from the attribute.
    */
   public function __construct(array $definition) {
+    // If there are context definitions in the plugin definition, they should
+    // be added to this object using ::addContextDefinition() so that they can
+    // be manipulated using other ContextAwarePluginDefinitionInterface methods.
+    if (isset($definition['context_definitions'])) {
+      foreach ($definition['context_definitions'] as $name => $context_definition) {
+        $this->addContextDefinition($name, $context_definition);
+      }
+      unset($definition['context_definitions']);
+    }
+
     foreach ($definition as $property => $value) {
       $this->set($property, $value);
     }
@@ -145,10 +161,10 @@ class LayoutDefinition extends PluginDefinition implements PluginDefinitionInter
    */
   public function get($property) {
     if (property_exists($this, $property)) {
-      $value = isset($this->{$property}) ? $this->{$property} : NULL;
+      $value = $this->{$property} ?? NULL;
     }
     else {
-      $value = isset($this->additional[$property]) ? $this->additional[$property] : NULL;
+      $value = $this->additional[$property] ?? NULL;
     }
     return $value;
   }

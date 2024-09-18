@@ -1,13 +1,11 @@
 name: 'Workflows'
 type: module
-description: 'Provides UI and API for managing workflows. This module can be used with the Content moderation module to add highly customizable workflows to content.'
+description: 'Provides an interface to create workflows with transitions between different states (for example publication or user status) provided by other modules.'
 # version: VERSION
-# core: 8.x
 package: Core
 configure: entity.workflow.collection
 
-# Information added by Drupal.org packaging script on 2018-06-06
-version: '8.5.4'
-core: '8.x'
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
 project: 'drupal'
-datestamp: 1528319624
+datestamp: 1726135113

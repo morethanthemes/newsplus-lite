@@ -2,6 +2,7 @@
 
 namespace Drupal\migrate\Plugin\migrate\process;
 
+use Drupal\migrate\Attribute\MigrateProcess;
 use Drupal\migrate\MigrateException;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\ProcessPluginBase;
@@ -68,12 +69,11 @@ use Drupal\migrate\Row;
  * @endcode
  *
  * @see \Drupal\migrate\Plugin\MigrateProcessInterface
- *
- * @MigrateProcessPlugin(
- *   id = "array_build",
- *   handle_multiples = TRUE
- * )
  */
+#[MigrateProcess(
+  id: "array_build",
+  handle_multiples: TRUE,
+)]
 class ArrayBuild extends ProcessPluginBase {
 
   /**
@@ -82,7 +82,7 @@ class ArrayBuild extends ProcessPluginBase {
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
     $new_value = [];
 
-    foreach ((array) $value as $old_key => $old_value) {
+    foreach ((array) $value as $old_value) {
       // Checks that $old_value is an array.
       if (!is_array($old_value)) {
         throw new MigrateException("The input should be an array of arrays");

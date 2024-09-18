@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Lock;
 
 use Drupal\Core\Lock\DatabaseLockBackend;
@@ -19,7 +21,10 @@ class LockTest extends KernelTestBase {
    */
   protected $lock;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
     $this->lock = new DatabaseLockBackend($this->container->get('database'));
   }
@@ -27,7 +32,7 @@ class LockTest extends KernelTestBase {
   /**
    * Tests backend release functionality.
    */
-  public function testBackendLockRelease() {
+  public function testBackendLockRelease(): void {
     $success = $this->lock->acquire('lock_a');
     $this->assertTrue($success, 'Could acquire first lock.');
 
@@ -48,7 +53,7 @@ class LockTest extends KernelTestBase {
 
     $this->lock->release('lock_b');
 
-    // Test acquiring an releasing a lock with a long key (over 255 chars).
+    // Test acquiring and releasing a lock with a long key (over 255 chars).
     $long_key = 'long_key:BZoMiSf9IIPULsJ98po18TxJ6T4usd3MZrLE0d3qMgG6iAgDlOi1G3oMap7zI5df84l7LtJBg4bOj6XvpO6vDRmP5h5QbA0Bj9rVFiPIPAIQZ9qFvJqTALiK1OR3GpOkWQ4vgEA4LkY0UfznrWBeuK7IWZfv1um6DLosnVXd1z1cJjvbEUqYGJj92rwHfhYihLm8IO9t3P2gAvEkH5Mhc8GBoiTsIDnP01Te1kxGFHO3RuvJIxPnHmZtSdBggmuVN7x9';
 
     $success = $this->lock->acquire($long_key);
@@ -67,7 +72,7 @@ class LockTest extends KernelTestBase {
   /**
    * Tests backend release functionality.
    */
-  public function testBackendLockReleaseAll() {
+  public function testBackendLockReleaseAll(): void {
     $success = $this->lock->acquire('lock_a');
     $this->assertTrue($success, 'Could acquire first lock.');
 

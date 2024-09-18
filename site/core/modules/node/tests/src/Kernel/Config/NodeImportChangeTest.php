@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\node\Kernel\Config;
 
 use Drupal\node\Entity\NodeType;
@@ -13,26 +15,31 @@ use Drupal\KernelTests\KernelTestBase;
 class NodeImportChangeTest extends KernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['node', 'field', 'text', 'system', 'node_test_config', 'user'];
+  protected static $modules = [
+    'node',
+    'field',
+    'text',
+    'system',
+    'node_test_config',
+    'user',
+  ];
 
   /**
    * Set the default field storage backend for fields created during tests.
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     // Set default storage backend.
-    $this->installConfig(['field', 'node_test_config']);
+    $this->installConfig(['system', 'field', 'node_test_config']);
   }
 
   /**
    * Tests importing an updated content type.
    */
-  public function testImportChange() {
+  public function testImportChange(): void {
     $node_type_id = 'default';
     $node_type_config_name = "node.type.$node_type_id";
 
@@ -53,7 +60,7 @@ class NodeImportChangeTest extends KernelTestBase {
 
     // Check that the updated config was correctly imported.
     $node_type = NodeType::load($node_type_id);
-    $this->assertEqual($node_type->label(), $new_label, 'Node type name has been updated.');
+    $this->assertEquals($new_label, $node_type->label(), 'Node type name has been updated.');
   }
 
 }

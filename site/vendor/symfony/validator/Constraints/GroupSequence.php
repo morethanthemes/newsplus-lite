@@ -17,7 +17,7 @@ namespace Symfony\Component\Validator\Constraints;
  * When validating a group sequence, each group will only be validated if all
  * of the previous groups in the sequence succeeded. For example:
  *
- *     $validator->validate($address, null, new GroupSequence(array('Basic', 'Strict')));
+ *     $validator->validate($address, null, new GroupSequence(['Basic', 'Strict']));
  *
  * In the first step, all constraints that belong to the group "Basic" will be
  * validated. If none of the constraints fail, the validator will then validate
@@ -28,10 +28,7 @@ namespace Symfony\Component\Validator\Constraints;
  *
  * When adding metadata to a class, you can override the "Default" group of
  * that class with a group sequence:
- *
- *     /**
- *      * @GroupSequence({"Address", "Strict"})
- *      *\/
+ *     #[GroupSequence(['Address', 'Strict'])]
  *     class Address
  *     {
  *         // ...
@@ -52,12 +49,13 @@ namespace Symfony\Component\Validator\Constraints;
  *
  * @author Bernhard Schussek <bschussek@gmail.com>
  */
+#[\Attribute(\Attribute::TARGET_CLASS)]
 class GroupSequence
 {
     /**
      * The groups in the sequence.
      *
-     * @var string[]|array[]|GroupSequence[]
+     * @var array<int, string|string[]|GroupSequence>
      */
     public $groups;
 
@@ -80,11 +78,10 @@ class GroupSequence
     /**
      * Creates a new group sequence.
      *
-     * @param string[] $groups The groups in the sequence
+     * @param array<string|string[]|GroupSequence> $groups The groups in the sequence
      */
     public function __construct(array $groups)
     {
-        // Support for Doctrine annotations
-        $this->groups = isset($groups['value']) ? $groups['value'] : $groups;
+        $this->groups = $groups['value'] ?? $groups;
     }
 }

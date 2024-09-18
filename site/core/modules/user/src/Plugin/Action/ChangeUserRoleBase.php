@@ -8,6 +8,7 @@ use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\user\Entity\Role;
 use Drupal\user\RoleInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -41,7 +42,7 @@ abstract class ChangeUserRoleBase extends ConfigurableActionBase implements Cont
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('entity.manager')->getDefinition('user_role')
+      $container->get('entity_type.manager')->getDefinition('user_role')
     );
   }
 
@@ -58,11 +59,13 @@ abstract class ChangeUserRoleBase extends ConfigurableActionBase implements Cont
    * {@inheritdoc}
    */
   public function buildConfigurationForm(array $form, FormStateInterface $form_state) {
-    $roles = user_role_names(TRUE);
+    $roles = Role::loadMultiple();
+    unset($roles[RoleInterface::ANONYMOUS_ID]);
     unset($roles[RoleInterface::AUTHENTICATED_ID]);
+    $roles = array_map(fn(RoleInterface $role) => $role->label(), $roles);
     $form['rid'] = [
       '#type' => 'radios',
-      '#title' => t('Role'),
+      '#title' => $this->t('Role'),
       '#options' => $roles,
       '#default_value' => $this->configuration['rid'],
       '#required' => TRUE,
@@ -91,7 +94,7 @@ abstract class ChangeUserRoleBase extends ConfigurableActionBase implements Cont
   /**
    * {@inheritdoc}
    */
-  public function access($object, AccountInterface $account = NULL, $return_as_object = FALSE) {
+  public function access($object, ?AccountInterface $account = NULL, $return_as_object = FALSE) {
     /** @var \Drupal\user\UserInterface $object */
     $access = $object->access('update', $account, TRUE)
       ->andIf($object->roles->access('edit', $account, TRUE));

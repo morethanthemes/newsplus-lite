@@ -4,11 +4,11 @@ namespace Drupal\migrate\Plugin\migrate\process;
 
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\migrate\Attribute\MigrateProcess;
 use Drupal\migrate\MigrateException;
 use Drupal\migrate\MigrateExecutableInterface;
-use Drupal\migrate\ProcessPluginBase;
 use Drupal\migrate\Row;
-use GuzzleHttp\Client;
+use GuzzleHttp\ClientInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -19,8 +19,12 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * - destination URI, e.g. 'public://images/foo.img'
  *
  * Available configuration keys:
- * - rename: (optional) If set, a unique destination URI is generated. If not
- *   set, the destination URI will be overwritten if it exists.
+ * - file_exists: (optional) Replace behavior when the destination file already
+ *   exists:
+ *   - 'replace' - (default) Replace the existing file.
+ *   - 'rename' - Append _{incrementing number} until the filename is
+ *     unique.
+ *   - 'use existing' - Do nothing and return FALSE.
  * - guzzle_options: (optional)
  *   @link http://docs.guzzlephp.org/en/latest/request-options.html Array of request options for Guzzle. @endlink
  *
@@ -28,32 +32,35 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @code
  * process:
- *   plugin: download
- *   source:
- *     - source_url
- *     - destination_uri
+ *   path_to_file:
+ *     plugin: download
+ *     source:
+ *       - source_url
+ *       - destination_uri
  * @endcode
  *
  * This will download source_url to destination_uri.
  *
  * @code
  * process:
- *   plugin: download
- *   source:
- *     - source_url
- *     - destination_uri
- *   rename: true
+ *   uri:
+ *     plugin: download
+ *     source:
+ *       - source_url
+ *       - destination_uri
+ *     file_exists: rename
+ *   # other fields ...
+ * destination:
+ *   plugin: entity:file
  * @endcode
  *
  * This will download source_url to destination_uri and ensure that the
  * destination URI is unique. If a file with the same name exists at the
  * destination, a numbered suffix like '_0' will be appended to make it unique.
- *
- * @MigrateProcessPlugin(
- *   id = "download"
- * )
+ * The destination URI is saved in a file entity.
  */
-class Download extends ProcessPluginBase implements ContainerFactoryPluginInterface {
+#[MigrateProcess('download')]
+class Download extends FileProcessBase implements ContainerFactoryPluginInterface {
 
   /**
    * The file system service.
@@ -76,16 +83,15 @@ class Download extends ProcessPluginBase implements ContainerFactoryPluginInterf
    *   The plugin configuration.
    * @param string $plugin_id
    *   The plugin ID.
-   * @param mixed $plugin_definition
+   * @param array $plugin_definition
    *   The plugin definition.
    * @param \Drupal\Core\File\FileSystemInterface $file_system
    *   The file system service.
-   * @param \GuzzleHttp\Client $http_client
+   * @param \GuzzleHttp\ClientInterface $http_client
    *   The HTTP client.
    */
-  public function __construct(array $configuration, $plugin_id, array $plugin_definition, FileSystemInterface $file_system, Client $http_client) {
+  public function __construct(array $configuration, $plugin_id, array $plugin_definition, FileSystemInterface $file_system, ClientInterface $http_client) {
     $configuration += [
-      'rename' => FALSE,
       'guzzle_options' => [],
     ];
     parent::__construct($configuration, $plugin_id, $plugin_definition);
@@ -115,22 +121,24 @@ class Download extends ProcessPluginBase implements ContainerFactoryPluginInterf
     if ($row->isStub()) {
       return NULL;
     }
-    list($source, $destination) = $value;
+    [$source, $destination] = $value;
 
     // Modify the destination filename if necessary.
-    $replace = !empty($this->configuration['rename']) ?
-      FILE_EXISTS_RENAME :
-      FILE_EXISTS_REPLACE;
-    $final_destination = file_destination($destination, $replace);
+    $final_destination = $this->fileSystem->getDestinationFilename($destination, $this->configuration['file_exists']);
 
-    // Try opening the file first, to avoid calling file_prepare_directory()
+    // Reuse if file exists.
+    if (!$final_destination) {
+      return $destination;
+    }
+
+    // Try opening the file first, to avoid calling prepareDirectory()
     // unnecessarily. We're suppressing fopen() errors because we want to try
     // to prepare the directory before we give up and fail.
     $destination_stream = @fopen($final_destination, 'w');
     if (!$destination_stream) {
       // If fopen didn't work, make sure there's a writable directory in place.
       $dir = $this->fileSystem->dirname($final_destination);
-      if (!file_prepare_directory($dir, FILE_CREATE_DIRECTORY | FILE_MODIFY_PERMISSIONS)) {
+      if (!$this->fileSystem->prepareDirectory($dir, FileSystemInterface:: CREATE_DIRECTORY | FileSystemInterface::MODIFY_PERMISSIONS)) {
         throw new MigrateException("Could not create or write to directory '$dir'");
       }
       // Let's try that fopen again.
@@ -149,6 +157,10 @@ class Download extends ProcessPluginBase implements ContainerFactoryPluginInterf
     }
     catch (\Exception $e) {
       throw new MigrateException("{$e->getMessage()} ($source)");
+    }
+
+    if (is_resource($destination_stream)) {
+      fclose($destination_stream);
     }
 
     return $final_destination;

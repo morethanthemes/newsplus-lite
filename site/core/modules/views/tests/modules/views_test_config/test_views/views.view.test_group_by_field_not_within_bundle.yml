@@ -2,13 +2,12 @@ langcode: en
 status: true
 dependencies: {  }
 id: test_group_by_field_not_within_bundle
-label: ''
+label: test_group_by_field_not_within_bundle
 module: views
 description: ''
 tag: ''
 base_table: entity_test_mul_property_data
 base_field: id
-core: '8'
 display:
   default:
     display_options:
@@ -56,6 +55,6 @@ display:
       row:
         type: fields
     display_plugin: default
-    display_title: Master
+    display_title: Default
     id: default
     position: 0

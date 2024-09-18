@@ -1,0 +1,11 @@
+name: CKEditor 5 Plugin Conditions Test
+type: module
+description: "Provides test plugins for CKEditor 5 to test plugin conditions."
+package: Testing
+dependencies:
+  - ckeditor5:ckeditor5
+
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
+project: 'drupal'
+datestamp: 1726135113

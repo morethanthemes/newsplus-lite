@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Kernel\Migrate\d6;
 
 use Drupal\field\Entity\FieldStorageConfig;
@@ -15,12 +17,12 @@ class MigrateVocabularyFieldTest extends MigrateDrupal6TestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['taxonomy', 'menu_ui'];
+  protected static $modules = ['taxonomy', 'menu_ui'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->migrateTaxonomy();
   }
@@ -28,7 +30,7 @@ class MigrateVocabularyFieldTest extends MigrateDrupal6TestBase {
   /**
    * Tests the Drupal 6 vocabulary-node type association to Drupal 8 migration.
    */
-  public function testVocabularyField() {
+  public function testVocabularyField(): void {
     // Test that the field exists.
     $field_storage_id = 'node.field_tags';
     /** @var \Drupal\field\FieldStorageConfigInterface $field_storage */
@@ -39,7 +41,7 @@ class MigrateVocabularyFieldTest extends MigrateDrupal6TestBase {
     $this->assertSame('taxonomy_term', $settings['target_type'], "Target type is correct.");
     $this->assertSame(1, $field_storage->getCardinality(), "Field cardinality in 1.");
 
-    $this->assertSame(['node', 'field_tags'], $this->getMigration('d6_vocabulary_field')->getIdMap()->lookupDestinationId([4]), "Test IdMap");
+    $this->assertSame([['node', 'field_tags']], $this->getMigration('d6_vocabulary_field')->getIdMap()->lookupDestinationIds([4]), "Test IdMap");
 
     // Tests that a vocabulary named like a D8 base field will be migrated and
     // prefixed with 'field_' to avoid conflicts.

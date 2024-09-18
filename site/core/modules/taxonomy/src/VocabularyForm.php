@@ -19,7 +19,7 @@ class VocabularyForm extends BundleEntityFormBase {
   /**
    * The vocabulary storage.
    *
-   * @var \Drupal\taxonomy\VocabularyStorageInterface.
+   * @var \Drupal\taxonomy\VocabularyStorageInterface
    */
   protected $vocabularyStorage;
 
@@ -38,8 +38,23 @@ class VocabularyForm extends BundleEntityFormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity.manager')->getStorage('taxonomy_vocabulary')
+      $container->get('entity_type.manager')->getStorage('taxonomy_vocabulary')
     );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function buildEntity(array $form, FormStateInterface $form_state) {
+    /** @var \Drupal\taxonomy\VocabularyInterface $entity */
+    $entity = parent::buildEntity($form, $form_state);
+
+    // The description cannot be an empty string.
+    if (trim($form_state->getValue('description')) === '') {
+      $entity->set('description', NULL);
+    }
+
+    return $entity;
   }
 
   /**
@@ -76,6 +91,13 @@ class VocabularyForm extends BundleEntityFormBase {
       '#default_value' => $vocabulary->getDescription(),
     ];
 
+    $form['revision'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Create new revision'),
+      '#default_value' => $vocabulary->shouldCreateNewRevision(),
+      '#description' => $this->t('Create a new revision by default for this vocabulary.'),
+    ];
+
     // $form['langcode'] is not wrapped in an
     // if ($this->moduleHandler->moduleExists('language')) check because the
     // language_select form element works also without the language module being
@@ -89,7 +111,7 @@ class VocabularyForm extends BundleEntityFormBase {
     if ($this->moduleHandler->moduleExists('language')) {
       $form['default_terms_language'] = [
         '#type' => 'details',
-        '#title' => $this->t('Terms language'),
+        '#title' => $this->t('Term language'),
         '#open' => TRUE,
       ];
       $form['default_terms_language']['default_language'] = [
@@ -117,23 +139,24 @@ class VocabularyForm extends BundleEntityFormBase {
    */
   public function save(array $form, FormStateInterface $form_state) {
     $vocabulary = $this->entity;
+    $vocabulary->setNewRevision($form_state->getValue(['revision']));
 
     // Prevent leading and trailing spaces in vocabulary names.
     $vocabulary->set('name', trim($vocabulary->label()));
 
     $status = $vocabulary->save();
-    $edit_link = $this->entity->link($this->t('Edit'));
+    $edit_link = $this->entity->toLink($this->t('Edit'), 'edit-form')->toString();
     switch ($status) {
       case SAVED_NEW:
-        drupal_set_message($this->t('Created new vocabulary %name.', ['%name' => $vocabulary->label()]));
+        $this->messenger()->addStatus($this->t('Created new vocabulary %name.', ['%name' => $vocabulary->label()]));
         $this->logger('taxonomy')->notice('Created new vocabulary %name.', ['%name' => $vocabulary->label(), 'link' => $edit_link]);
-        $form_state->setRedirectUrl($vocabulary->urlInfo('overview-form'));
+        $form_state->setRedirectUrl($vocabulary->toUrl('overview-form'));
         break;
 
       case SAVED_UPDATED:
-        drupal_set_message($this->t('Updated vocabulary %name.', ['%name' => $vocabulary->label()]));
+        $this->messenger()->addStatus($this->t('Updated vocabulary %name.', ['%name' => $vocabulary->label()]));
         $this->logger('taxonomy')->notice('Updated vocabulary %name.', ['%name' => $vocabulary->label(), 'link' => $edit_link]);
-        $form_state->setRedirectUrl($vocabulary->urlInfo('collection'));
+        $form_state->setRedirectUrl($vocabulary->toUrl('collection'));
         break;
     }
 

@@ -4,6 +4,7 @@ namespace Drupal\Core\Render\Element;
 
 use Drupal\Component\Utility\Html as HtmlUtility;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Attribute\RenderElement;
 use Drupal\Core\Render\Element;
 
 /**
@@ -18,38 +19,37 @@ use Drupal\Core\Render\Element;
  *
  * Usage example:
  * @code
- * $form['needs_accommodation'] = array(
+ * $form['needs_accommodation'] = [
  *   '#type' => 'checkbox',
  *   '#title' => $this->t('Need Special Accommodations?'),
- * );
+ * ];
  *
- * $form['accommodation'] = array(
+ * $form['accommodation'] = [
  *   '#type' => 'container',
- *   '#attributes' => array(
- *     'class' => 'accommodation',
- *   ),
- *   '#states' => array(
- *     'invisible' => array(
- *       'input[name="needs_accommodation"]' => array('checked' => FALSE),
- *     ),
- *   ),
- * );
+ *   '#attributes' => [
+ *     'class' => ['accommodation'],
+ *   ],
+ *   '#states' => [
+ *     'invisible' => [
+ *       'input[name="needs_accommodation"]' => ['checked' => FALSE],
+ *     ],
+ *   ],
+ * ];
  *
- * $form['accommodation']['diet'] = array(
+ * $form['accommodation']['diet'] = [
  *   '#type' => 'textfield',
  *   '#title' => $this->t('Dietary Restrictions'),
- * );
+ * ];
  * @endcode
- *
- * @RenderElement("container")
  */
-class Container extends RenderElement {
+#[RenderElement('container')]
+class Container extends RenderElementBase {
 
   /**
    * {@inheritdoc}
    */
   public function getInfo() {
-    $class = get_class($this);
+    $class = static::class;
     return [
       '#optional' => FALSE,
       '#process' => [

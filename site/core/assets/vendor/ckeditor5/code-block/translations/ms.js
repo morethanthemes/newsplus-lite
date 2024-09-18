@@ -1,0 +1,1 @@
+!function(o){const n=o.ms=o.ms||{};n.dictionary=Object.assign(n.dictionary||{},{"Code block":"Sekatan kod","Insert code block":"Masukkan blok kod","Plain text":"Teks kosong"})}(window.CKEDITOR_TRANSLATIONS||(window.CKEDITOR_TRANSLATIONS={}));

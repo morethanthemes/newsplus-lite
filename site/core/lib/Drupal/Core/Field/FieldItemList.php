@@ -149,15 +149,15 @@ class FieldItemList extends ItemList implements FieldItemListInterface {
   /**
    * {@inheritdoc}
    */
-  public function access($operation = 'view', AccountInterface $account = NULL, $return_as_object = FALSE) {
-    $access_control_handler = \Drupal::entityManager()->getAccessControlHandler($this->getEntity()->getEntityTypeId());
+  public function access($operation = 'view', ?AccountInterface $account = NULL, $return_as_object = FALSE) {
+    $access_control_handler = \Drupal::entityTypeManager()->getAccessControlHandler($this->getEntity()->getEntityTypeId());
     return $access_control_handler->fieldAccess($operation, $this->getFieldDefinition(), $account, $this, $return_as_object);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function defaultAccess($operation = 'view', AccountInterface $account = NULL) {
+  public function defaultAccess($operation = 'view', ?AccountInterface $account = NULL) {
     // Grant access per default.
     return AccessResult::allowed();
   }
@@ -239,7 +239,7 @@ class FieldItemList extends ItemList implements FieldItemListInterface {
    * {@inheritdoc}
    */
   public function view($display_options = []) {
-    $view_builder = \Drupal::entityManager()->getViewBuilder($this->getEntity()->getEntityTypeId());
+    $view_builder = \Drupal::entityTypeManager()->getViewBuilder($this->getEntity()->getEntityTypeId());
     return $view_builder->viewField($this, $display_options);
   }
 
@@ -322,6 +322,7 @@ class FieldItemList extends ItemList implements FieldItemListInterface {
       $widget->extractFormValues($this, $element, $form_state);
       return $this->getValue();
     }
+    return [];
   }
 
   /**
@@ -349,12 +350,37 @@ class FieldItemList extends ItemList implements FieldItemListInterface {
       $definition->setRequired(FALSE);
       $definition->setDescription('');
 
+      /** @var \Drupal\Core\Entity\Display\EntityFormDisplayInterface $entity_form_display */
+      $entity_form_display = \Drupal::service('entity_display.repository')
+        ->getFormDisplay($entity->getEntityTypeId(), $entity->bundle());
+      /** @var \Drupal\Core\Field\WidgetPluginManager $field_widget_plugin_manager */
+      $field_widget_plugin_manager = \Drupal::service('plugin.manager.field.widget');
+
       // Use the widget currently configured for the 'default' form mode, or
       // fallback to the default widget for the field type.
-      $entity_form_display = entity_get_form_display($entity->getEntityTypeId(), $entity->bundle(), 'default');
-      $widget = $entity_form_display->getRenderer($this->getFieldDefinition()->getName());
-      if (!$widget) {
-        $widget = \Drupal::service('plugin.manager.field.widget')->getInstance(['field_definition' => $this->getFieldDefinition()]);
+      if (($configuration = $entity_form_display->getComponent($definition->getName())) && isset($configuration['type'])) {
+        // Get the plugin instance manually to ensure an up-to-date field
+        // definition is used.
+        // @see \Drupal\Core\Entity\Entity\EntityFormDisplay::getRenderer
+        $widget = $field_widget_plugin_manager->getInstance([
+          'field_definition' => $definition,
+          'form_mode' => $entity_form_display->getOriginalMode(),
+          'prepare' => FALSE,
+          'configuration' => $configuration,
+        ]);
+      }
+      else {
+        $options = [
+          'field_definition' => $this->getFieldDefinition(),
+        ];
+        // If the field does not have a widget configured in the 'default' form
+        // mode, check if there are default entity form display options defined
+        // for the 'default' form mode in the form state.
+        // @see \Drupal\field_ui\Controller\FieldConfigAddController::fieldConfigAddConfigureForm
+        if (($default_options = $form_state->get('default_options')) && isset($default_options['entity_form_display']['default'])) {
+          $options['configuration'] = $default_options['entity_form_display']['default'];
+        }
+        $widget = $field_widget_plugin_manager->getInstance($options);
       }
 
       $form_state->set('default_value_widget', $widget);
@@ -391,6 +417,15 @@ class FieldItemList extends ItemList implements FieldItemListInterface {
     $callback = function (&$value) use ($non_computed_properties) {
       if (is_array($value)) {
         $value = array_intersect_key($value, $non_computed_properties);
+
+        // Also filter out properties with a NULL value as they might exist in
+        // one field item and not in the other, depending on how the values are
+        // set. Do not filter out empty strings or other false-y values as e.g.
+        // a NULL or FALSE in a boolean field is not the same.
+        $value = array_filter($value, function ($property) {
+          return $property !== NULL;
+        });
+
         ksort($value);
       }
     };
@@ -398,6 +433,13 @@ class FieldItemList extends ItemList implements FieldItemListInterface {
     array_walk($value2, $callback);
 
     return $value1 == $value2;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function hasAffectingChanges(FieldItemListInterface $original_items, $langcode) {
+    return !$this->equals($original_items);
   }
 
 }

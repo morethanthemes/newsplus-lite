@@ -1,25 +1,38 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\FunctionalJavascript\Plugin\views\Handler;
 
-use Drupal\Tests\SchemaCheckTestTrait;
 use Drupal\field\Entity\FieldConfig;
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
+use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
+use Drupal\Tests\SchemaCheckTestTrait;
 use Drupal\views\Tests\ViewTestData;
 
 /**
- * Tests the field field handler UI.
+ * Tests the field handler UI.
  *
  * @group views
  */
-class FieldTest extends JavascriptTestBase {
+class FieldTest extends WebDriverTestBase {
   use SchemaCheckTestTrait;
 
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['node', 'views', 'views_ui', 'views_test_config'];
+  protected static $modules = [
+    'node',
+    'views',
+    'views_ui',
+    'views_test_config',
+  ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Views used by this test.
@@ -38,19 +51,20 @@ class FieldTest extends JavascriptTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
-    ViewTestData::createTestViews(get_class($this), ['views_test_config']);
+    ViewTestData::createTestViews(static::class, ['views_test_config']);
 
     // Disable automatic live preview to make the sequence of calls clearer.
     \Drupal::configFactory()->getEditable('views.settings')->set('ui.always_live_preview', FALSE)->save();
 
-    $this->account = $this->drupalCreateUser(['administer views']);
+    $this->account = $this->drupalCreateUser(['administer views', 'access content overview']);
     $this->drupalLogin($this->account);
 
     NodeType::create([
       'type' => 'page',
+      'name' => 'Page',
     ])->save();
 
     FieldConfig::create([
@@ -60,7 +74,45 @@ class FieldTest extends JavascriptTestBase {
     ])->save();
   }
 
-  public function testFormatterChanging() {
+  /**
+   * Tests custom text field modal title.
+   */
+  public function testModalDialogTitle(): void {
+    $web_assert = $this->assertSession();
+    Node::create([
+      'title' => $this->randomString(),
+      'type' => 'page',
+      'body' => 'page',
+    ])->save();
+    $base_path = \Drupal::request()->getBasePath();
+    $url = "$base_path/admin/structure/views/view/content";
+    $this->drupalGet($url);
+    $page = $this->getSession()->getPage();
+    // Open the 'Add fields dialog'.
+    $page->clickLink('views-add-field');
+    $web_assert->waitForField('name[views.nothing]');
+    // Select the custom text field.
+    $page->checkField('name[views.nothing]');
+    $page->find('css', '.ui-dialog .ui-dialog-buttonset')->pressButton('Add and configure fields');
+    $web_assert->waitForField('options[alter][text]');
+    $page->fillField('options[alter][text]', "{{ attach_library(\"core/drupal.dialog.ajax\") }}
+<p><a class=\"use-ajax\" data-dialog-type=\"modal\" href=\"$base_path/admin/content\">Content link</a></p>");
+    $page->find('css', '.ui-dialog .ui-dialog-buttonset')->pressButton('Apply');
+    $web_assert->waitForText('Content: body (exposed)');
+    $web_assert->waitForButton('Save');
+    $page->pressButton('Save');
+    $web_assert->waitForText('The view Content has been saved.');
+    $web_assert->waitForButton('Update preview');
+    $page->pressButton('Update preview');
+    // Open the custom text link modal.
+    $this->assertNotNull($web_assert->waitForLink('Content link'));
+    $page->clickLink('Content link');
+    // Verify the modal title.
+    $web_assert->assertWaitOnAjaxRequest();
+    $this->assertEquals('Content', $web_assert->waitForElement('css', '.ui-dialog-title')->getText());
+  }
+
+  public function testFormatterChanging(): void {
     $web_assert = $this->assertSession();
     $url = '/admin/structure/views/view/test_field_body';
     $this->drupalGet($url);
@@ -75,7 +127,7 @@ class FieldTest extends JavascriptTestBase {
     $web_assert->assertWaitOnAjaxRequest();
     $page->fillField('options[settings][trim_length]', '700');
     $apply_button = $page->find('css', '.views-ui-dialog button.button--primary');
-    $this->assertTrue(!empty($apply_button));
+    $this->assertNotEmpty($apply_button);
     $apply_button->press();
     $web_assert->assertWaitOnAjaxRequest();
 

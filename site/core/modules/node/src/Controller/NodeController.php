@@ -6,12 +6,13 @@ use Drupal\Component\Utility\Xss;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
+use Drupal\Core\Entity\EntityRepositoryInterface;
+use Drupal\Core\Link;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Url;
 use Drupal\node\NodeStorageInterface;
 use Drupal\node\NodeTypeInterface;
 use Drupal\node\NodeInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Returns responses for Node routes.
@@ -33,26 +34,26 @@ class NodeController extends ControllerBase implements ContainerInjectionInterfa
   protected $renderer;
 
   /**
+   * The entity repository service.
+   *
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
+   */
+  protected $entityRepository;
+
+  /**
    * Constructs a NodeController object.
    *
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   The date formatter service.
    * @param \Drupal\Core\Render\RendererInterface $renderer
    *   The renderer service.
+   * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
+   *   The entity repository.
    */
-  public function __construct(DateFormatterInterface $date_formatter, RendererInterface $renderer) {
+  public function __construct(DateFormatterInterface $date_formatter, RendererInterface $renderer, EntityRepositoryInterface $entity_repository) {
     $this->dateFormatter = $date_formatter;
     $this->renderer = $renderer;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('date.formatter'),
-      $container->get('renderer')
-    );
+    $this->entityRepository = $entity_repository;
   }
 
   /**
@@ -67,18 +68,21 @@ class NodeController extends ControllerBase implements ContainerInjectionInterfa
    *   type.
    */
   public function addPage() {
+    $definition = $this->entityTypeManager()->getDefinition('node_type');
     $build = [
       '#theme' => 'node_add_list',
       '#cache' => [
-        'tags' => $this->entityManager()->getDefinition('node_type')->getListCacheTags(),
+        'tags' => $this->entityTypeManager()->getDefinition('node_type')->getListCacheTags(),
       ],
     ];
 
     $content = [];
 
+    $types = $this->entityTypeManager()->getStorage('node_type')->loadMultiple();
+    uasort($types, [$definition->getClass(), 'sort']);
     // Only use node types the user has access to.
-    foreach ($this->entityManager()->getStorage('node_type')->loadMultiple() as $type) {
-      $access = $this->entityManager()->getAccessControlHandler('node')->createAccess($type->id(), NULL, [], TRUE);
+    foreach ($types as $type) {
+      $access = $this->entityTypeManager()->getAccessControlHandler('node')->createAccess($type->id(), NULL, [], TRUE);
       if ($access->isAllowed()) {
         $content[$type->id()] = $type;
       }
@@ -97,54 +101,35 @@ class NodeController extends ControllerBase implements ContainerInjectionInterfa
   }
 
   /**
-   * Provides the node submission form.
-   *
-   * @param \Drupal\node\NodeTypeInterface $node_type
-   *   The node type entity for the node.
-   *
-   * @return array
-   *   A node submission form.
-   */
-  public function add(NodeTypeInterface $node_type) {
-    $node = $this->entityManager()->getStorage('node')->create([
-      'type' => $node_type->id(),
-    ]);
-
-    $form = $this->entityFormBuilder()->getForm($node);
-
-    return $form;
-  }
-
-  /**
    * Displays a node revision.
    *
-   * @param int $node_revision
-   *   The node revision ID.
+   * @param \Drupal\node\NodeInterface $node_revision
+   *   The node revision.
    *
    * @return array
    *   An array suitable for \Drupal\Core\Render\RendererInterface::render().
    */
-  public function revisionShow($node_revision) {
-    $node = $this->entityManager()->getStorage('node')->loadRevision($node_revision);
-    $node = $this->entityManager()->getTranslationFromContext($node);
-    $node_view_controller = new NodeViewController($this->entityManager, $this->renderer, $this->currentUser());
-    $page = $node_view_controller->view($node);
-    unset($page['nodes'][$node->id()]['#cache']);
+  public function revisionShow(NodeInterface $node_revision) {
+    $node_view_controller = new NodeViewController($this->entityTypeManager(), $this->renderer, $this->currentUser(), $this->entityRepository);
+    $page = $node_view_controller->view($node_revision);
+    unset($page['nodes'][$node_revision->id()]['#cache']);
     return $page;
   }
 
   /**
    * Page title callback for a node revision.
    *
-   * @param int $node_revision
-   *   The node revision ID.
+   * @param \Drupal\node\NodeInterface $node_revision
+   *   The node revision.
    *
    * @return string
    *   The page title.
    */
-  public function revisionPageTitle($node_revision) {
-    $node = $this->entityManager()->getStorage('node')->loadRevision($node_revision);
-    return $this->t('Revision of %title from %date', ['%title' => $node->label(), '%date' => format_date($node->getRevisionCreationTime())]);
+  public function revisionPageTitle(NodeInterface $node_revision) {
+    return $this->t('Revision of %title from %date', [
+      '%title' => $node_revision->label(),
+      '%date' => $this->dateFormatter->format($node_revision->getRevisionCreationTime()),
+    ]);
   }
 
   /**
@@ -157,22 +142,21 @@ class NodeController extends ControllerBase implements ContainerInjectionInterfa
    *   An array as expected by \Drupal\Core\Render\RendererInterface::render().
    */
   public function revisionOverview(NodeInterface $node) {
-    $account = $this->currentUser();
+    // Always use the latest revision in the current content language to
+    // determine if this node has translations. This supports showing the
+    // correct translation revisions for translations that only have.
+    // non-default revisions.
+    $node = $this->entityRepository->getActive($node->getEntityTypeId(), $node->id());
     $langcode = $node->language()->getId();
-    $langname = $node->language()->getName();
+    $language_name = $node->language()->getName();
     $languages = $node->getTranslationLanguages();
     $has_translations = (count($languages) > 1);
-    $node_storage = $this->entityManager()->getStorage('node');
-    $type = $node->getType();
+    $node_storage = $this->entityTypeManager()->getStorage('node');
 
-    $build['#title'] = $has_translations ? $this->t('@langname revisions for %title', ['@langname' => $langname, '%title' => $node->label()]) : $this->t('Revisions for %title', ['%title' => $node->label()]);
+    $build['#title'] = $has_translations ? $this->t('@language_name revisions for %title', ['@language_name' => $language_name, '%title' => $node->label()]) : $this->t('Revisions for %title', ['%title' => $node->label()]);
     $header = [$this->t('Revision'), $this->t('Operations')];
 
-    $revert_permission = (($account->hasPermission("revert $type revisions") || $account->hasPermission('revert all revisions') || $account->hasPermission('administer nodes')) && $node->access('update'));
-    $delete_permission = (($account->hasPermission("delete $type revisions") || $account->hasPermission('delete all revisions') || $account->hasPermission('administer nodes')) && $node->access('delete'));
-
     $rows = [];
-    $default_revision = $node->getRevisionId();
     $current_revision_displayed = FALSE;
 
     foreach ($this->getRevisionIds($node, $node_storage) as $vid) {
@@ -193,12 +177,12 @@ class NodeController extends ControllerBase implements ContainerInjectionInterfa
         // revision, if it was the default revision, as its values for the
         // current language will be the same of the current default revision in
         // this case.
-        $is_current_revision = $vid == $default_revision || (!$current_revision_displayed && $revision->wasDefaultRevision());
+        $is_current_revision = $revision->isDefaultRevision() || (!$current_revision_displayed && $revision->wasDefaultRevision());
         if (!$is_current_revision) {
-          $link = $this->l($date, new Url('entity.node.revision', ['node' => $node->id(), 'node_revision' => $vid]));
+          $link = Link::fromTextAndUrl($date, new Url('entity.node.revision', ['node' => $node->id(), 'node_revision' => $vid]))->toString();
         }
         else {
-          $link = $node->link($date);
+          $link = $node->toLink($date)->toString();
           $current_revision_displayed = TRUE;
         }
 
@@ -209,7 +193,7 @@ class NodeController extends ControllerBase implements ContainerInjectionInterfa
             '#template' => '{% trans %}{{ date }} by {{ username }}{% endtrans %}{% if message %}<p class="revision-log">{{ message }}</p>{% endif %}',
             '#context' => [
               'date' => $link,
-              'username' => $this->renderer->renderPlain($username),
+              'username' => $this->renderer->renderInIsolation($username),
               'message' => ['#markup' => $revision->revision_log->value, '#allowed_tags' => Xss::getHtmlTagList()],
             ],
           ],
@@ -234,16 +218,16 @@ class NodeController extends ControllerBase implements ContainerInjectionInterfa
         }
         else {
           $links = [];
-          if ($revert_permission) {
+          if ($revision->access('revert revision')) {
             $links['revert'] = [
               'title' => $vid < $node->getRevisionId() ? $this->t('Revert') : $this->t('Set as current revision'),
               'url' => $has_translations ?
-                Url::fromRoute('node.revision_revert_translation_confirm', ['node' => $node->id(), 'node_revision' => $vid, 'langcode' => $langcode]) :
-                Url::fromRoute('node.revision_revert_confirm', ['node' => $node->id(), 'node_revision' => $vid]),
+              Url::fromRoute('node.revision_revert_translation_confirm', ['node' => $node->id(), 'node_revision' => $vid, 'langcode' => $langcode]) :
+              Url::fromRoute('node.revision_revert_confirm', ['node' => $node->id(), 'node_revision' => $vid]),
             ];
           }
 
-          if ($delete_permission) {
+          if ($revision->access('delete revision')) {
             $links['delete'] = [
               'title' => $this->t('Delete'),
               'url' => Url::fromRoute('node.revision_delete_confirm', ['node' => $node->id(), 'node_revision' => $vid]),
@@ -269,7 +253,7 @@ class NodeController extends ControllerBase implements ContainerInjectionInterfa
       '#attached' => [
         'library' => ['node/drupal.node.admin'],
       ],
-      '#attributes' => ['class' => 'node-revision-table'],
+      '#attributes' => ['class' => ['node-revision-table']],
     ];
 
     $build['pager'] = ['#type' => 'pager'];
@@ -303,6 +287,7 @@ class NodeController extends ControllerBase implements ContainerInjectionInterfa
    */
   protected function getRevisionIds(NodeInterface $node, NodeStorageInterface $node_storage) {
     $result = $node_storage->getQuery()
+      ->accessCheck(TRUE)
       ->allRevisions()
       ->condition($node->getEntityType()->getKey('id'), $node->id())
       ->sort($node->getEntityType()->getKey('revision'), 'DESC')

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Kernel\Handler;
 
 use Drupal\Tests\views\Kernel\ViewsKernelTestBase;
@@ -22,7 +24,7 @@ class SortTest extends ViewsKernelTestBase {
   /**
    * Tests numeric ordering of the result set.
    */
-  public function testNumericOrdering() {
+  public function testNumericOrdering(): void {
     $view = Views::getView('test_view');
     $view->setDisplay();
 
@@ -41,7 +43,7 @@ class SortTest extends ViewsKernelTestBase {
     $this->executeView($view);
 
     // Verify the result.
-    $this->assertEqual(count($this->dataSet()), count($view->result), 'The number of returned rows match.');
+    $this->assertSameSize($this->dataSet(), $view->result, 'The number of returned rows match.');
     $this->assertIdenticalResultset($view, $this->orderResultSet($this->dataSet(), 'age'), [
       'views_test_data_name' => 'name',
       'views_test_data_age' => 'age',
@@ -65,7 +67,7 @@ class SortTest extends ViewsKernelTestBase {
     $this->executeView($view);
 
     // Verify the result.
-    $this->assertEqual(count($this->dataSet()), count($view->result), 'The number of returned rows match.');
+    $this->assertSameSize($this->dataSet(), $view->result, 'The number of returned rows match.');
     $this->assertIdenticalResultset($view, $this->orderResultSet($this->dataSet(), 'age', TRUE), [
       'views_test_data_name' => 'name',
       'views_test_data_age' => 'age',
@@ -75,7 +77,7 @@ class SortTest extends ViewsKernelTestBase {
   /**
    * Tests string ordering of the result set.
    */
-  public function testStringOrdering() {
+  public function testStringOrdering(): void {
     $view = Views::getView('test_view');
     $view->setDisplay();
 
@@ -94,7 +96,7 @@ class SortTest extends ViewsKernelTestBase {
     $this->executeView($view);
 
     // Verify the result.
-    $this->assertEqual(count($this->dataSet()), count($view->result), 'The number of returned rows match.');
+    $this->assertSameSize($this->dataSet(), $view->result, 'The number of returned rows match.');
     $this->assertIdenticalResultset($view, $this->orderResultSet($this->dataSet(), 'name'), [
       'views_test_data_name' => 'name',
       'views_test_data_age' => 'age',
@@ -118,7 +120,7 @@ class SortTest extends ViewsKernelTestBase {
     $this->executeView($view);
 
     // Verify the result.
-    $this->assertEqual(count($this->dataSet()), count($view->result), 'The number of returned rows match.');
+    $this->assertSameSize($this->dataSet(), $view->result, 'The number of returned rows match.');
     $this->assertIdenticalResultset($view, $this->orderResultSet($this->dataSet(), 'name', TRUE), [
       'views_test_data_name' => 'name',
       'views_test_data_age' => 'age',

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views_ui\Functional;
 
 use Drupal\Tests\views\Functional\ViewTestBase;
@@ -24,17 +26,15 @@ abstract class UITestBase extends ViewTestBase {
   protected $fullAdminUser;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['node', 'views_ui', 'block', 'taxonomy'];
+  protected static $modules = ['node', 'views_ui', 'block', 'taxonomy'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
-    parent::setUp($import_test_views);
+  protected function setUp($import_test_views = TRUE, $modules = ['views_test_config']): void {
+    parent::setUp($import_test_views, $modules);
 
     $this->enableViewsTestModule();
 
@@ -57,14 +57,15 @@ abstract class UITestBase extends ViewTestBase {
     // Create a new view in the UI.
     $default = [];
     $default['label'] = $this->randomMachineName(16);
-    $default['id'] = strtolower($this->randomMachineName(16));
+    $default['id'] = $this->randomMachineName(16);
     $default['description'] = $this->randomMachineName(16);
     $default['page[create]'] = TRUE;
     $default['page[path]'] = $default['id'];
 
     $view += $default;
 
-    $this->drupalPostForm('admin/structure/views/add', $view, t('Save and edit'));
+    $this->drupalGet('admin/structure/views/add');
+    $this->submitForm($view, 'Save and edit');
 
     return $default;
   }
@@ -76,12 +77,12 @@ abstract class UITestBase extends ViewTestBase {
     $url = $this->buildUrl($path, $options);
 
     // Ensure that each nojs page is accessible via ajax as well.
-    if (strpos($url, '/nojs/') !== FALSE) {
+    if (str_contains($url, '/nojs/')) {
       $url = preg_replace('|/nojs/|', '/ajax/', $url, 1);
       $result = $this->drupalGet($url, $options);
       $this->assertSession()->statusCodeEquals(200);
-      $this->assertEquals('application/json', $this->getSession()->getResponseHeader('Content-Type'));
-      $this->assertTrue(json_decode($result), 'Ensure that the AJAX request returned valid content.');
+      $this->assertSession()->responseHeaderEquals('Content-Type', 'application/json');
+      $this->assertNotEmpty(json_decode($result), 'Ensure that the AJAX request returned valid content.');
     }
 
     return parent::drupalGet($path, $options, $headers);

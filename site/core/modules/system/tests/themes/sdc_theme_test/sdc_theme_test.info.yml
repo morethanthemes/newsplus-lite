@@ -1,0 +1,12 @@
+name: 'SDC test theme'
+type: theme
+description: 'Test theme for sdc.'
+# version: VERSION
+base theme: sdc_theme_test_base
+
+enforce_prop_schemas: false
+
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
+project: 'drupal'
+datestamp: 1726135113

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views_ui\Functional;
 
 /**
@@ -10,11 +12,14 @@ namespace Drupal\Tests\views_ui\Functional;
 class AnalyzeTest extends UITestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['views_ui'];
+  protected static $modules = ['views_ui'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Views used by this test.
@@ -26,23 +31,23 @@ class AnalyzeTest extends UITestBase {
   /**
    * Tests that analyze works in general.
    */
-  public function testAnalyzeBasic() {
+  public function testAnalyzeBasic(): void {
     $this->drupalLogin($this->adminUser);
 
     $this->drupalGet('admin/structure/views/view/test_view/edit');
-    $this->assertLink(t('Analyze view'));
+    $this->assertSession()->linkExists('Analyze view');
 
     // This redirects the user to the analyze form.
-    $this->clickLink(t('Analyze view'));
+    $this->clickLink('Analyze view');
     $this->assertSession()->titleEquals('View analysis | Drupal');
 
     foreach (['ok', 'warning', 'error'] as $type) {
-      $xpath = $this->xpath('//div[contains(@class, :class)]', [':class' => $type]);
-      $this->assertTrue(count($xpath), format_string('Analyse messages with @type found', ['@type' => $type]));
+      // Check that analyze messages with the expected type found.
+      $this->assertSession()->elementExists('css', 'div.' . $type);
     }
 
     // This redirects the user back to the main views edit page.
-    $this->drupalPostForm(NULL, [], t('Ok'));
+    $this->submitForm([], 'Ok');
   }
 
 }

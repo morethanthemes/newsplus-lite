@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\PageCache;
 
 use Drupal\Core\PageCache\ResponsePolicyInterface;
@@ -35,7 +37,12 @@ class ChainResponsePolicyTest extends UnitTestCase {
    */
   protected $response;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
+    parent::setUp();
+
     $this->policy = new ChainResponsePolicy();
     $this->response = new Response();
     $this->request = new Request();
@@ -46,9 +53,9 @@ class ChainResponsePolicyTest extends UnitTestCase {
    *
    * @covers ::check
    */
-  public function testEmptyChain() {
+  public function testEmptyChain(): void {
     $result = $this->policy->check($this->response, $this->request);
-    $this->assertSame(NULL, $result);
+    $this->assertNull($result);
   }
 
   /**
@@ -56,17 +63,17 @@ class ChainResponsePolicyTest extends UnitTestCase {
    *
    * @covers ::check
    */
-  public function testNullRuleChain() {
-    $rule = $this->getMock('Drupal\Core\PageCache\ResponsePolicyInterface');
+  public function testNullRuleChain(): void {
+    $rule = $this->createMock('Drupal\Core\PageCache\ResponsePolicyInterface');
     $rule->expects($this->once())
       ->method('check')
       ->with($this->response, $this->request)
-      ->will($this->returnValue(NULL));
+      ->willReturn(NULL);
 
     $this->policy->addPolicy($rule);
 
     $result = $this->policy->check($this->response, $this->request);
-    $this->assertSame(NULL, $result);
+    $this->assertNull($result);
   }
 
   /**
@@ -75,16 +82,16 @@ class ChainResponsePolicyTest extends UnitTestCase {
    * @dataProvider providerChainExceptionOnInvalidReturnValue
    * @covers ::check
    */
-  public function testChainExceptionOnInvalidReturnValue($return_value) {
-    $rule = $this->getMock('Drupal\Core\PageCache\ResponsePolicyInterface');
+  public function testChainExceptionOnInvalidReturnValue($return_value): void {
+    $rule = $this->createMock('Drupal\Core\PageCache\ResponsePolicyInterface');
     $rule->expects($this->once())
       ->method('check')
       ->with($this->response, $this->request)
-      ->will($this->returnValue($return_value));
+      ->willReturn($return_value);
 
     $this->policy->addPolicy($rule);
 
-    $this->setExpectedException(\UnexpectedValueException::class);
+    $this->expectException(\UnexpectedValueException::class);
     $this->policy->check($this->response, $this->request);
   }
 
@@ -94,7 +101,7 @@ class ChainResponsePolicyTest extends UnitTestCase {
    * @return array
    *   Test input and expected result.
    */
-  public function providerChainExceptionOnInvalidReturnValue() {
+  public static function providerChainExceptionOnInvalidReturnValue() {
     return [
       [FALSE],
       [0],
@@ -108,27 +115,27 @@ class ChainResponsePolicyTest extends UnitTestCase {
   /**
    * Asserts that check() returns immediately when a rule returned DENY.
    */
-  public function testStopChainOnFirstDeny() {
-    $rule1 = $this->getMock('Drupal\Core\PageCache\ResponsePolicyInterface');
+  public function testStopChainOnFirstDeny(): void {
+    $rule1 = $this->createMock('Drupal\Core\PageCache\ResponsePolicyInterface');
     $rule1->expects($this->once())
       ->method('check')
       ->with($this->response, $this->request);
     $this->policy->addPolicy($rule1);
 
-    $deny_rule = $this->getMock('Drupal\Core\PageCache\ResponsePolicyInterface');
+    $deny_rule = $this->createMock('Drupal\Core\PageCache\ResponsePolicyInterface');
     $deny_rule->expects($this->once())
       ->method('check')
       ->with($this->response, $this->request)
-      ->will($this->returnValue(ResponsePolicyInterface::DENY));
+      ->willReturn(ResponsePolicyInterface::DENY);
     $this->policy->addPolicy($deny_rule);
 
-    $ignored_rule = $this->getMock('Drupal\Core\PageCache\ResponsePolicyInterface');
+    $ignored_rule = $this->createMock('Drupal\Core\PageCache\ResponsePolicyInterface');
     $ignored_rule->expects($this->never())
       ->method('check');
     $this->policy->addPolicy($ignored_rule);
 
     $actual_result = $this->policy->check($this->response, $this->request);
-    $this->assertsame(ResponsePolicyInterface::DENY, $actual_result);
+    $this->assertSame(ResponsePolicyInterface::DENY, $actual_result);
   }
 
 }

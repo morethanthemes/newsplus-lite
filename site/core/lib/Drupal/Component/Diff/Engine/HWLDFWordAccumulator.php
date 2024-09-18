@@ -2,8 +2,6 @@
 
 namespace Drupal\Component\Diff\Engine;
 
-use Drupal\Component\Utility\Unicode;
-
 /**
  * Additions by Axel Boldt follow, partly taken from diff.php, phpwiki-1.3.3
  */
@@ -64,9 +62,9 @@ class HWLDFWordAccumulator {
       }
       if ($word[0] == "\n") {
         $this->_flushLine($tag);
-        $word = Unicode::substr($word, 1);
+        $word = mb_substr($word, 1);
       }
-      assert(!strstr($word, "\n"));
+      assert(!str_contains($word, "\n"));
       $this->group .= $word;
     }
   }

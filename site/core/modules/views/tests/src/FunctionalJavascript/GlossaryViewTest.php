@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\FunctionalJavascript;
 
 use Drupal\Core\Url;
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 use Drupal\language\Entity\ConfigurableLanguage;
-use Drupal\simpletest\ContentTypeCreationTrait;
-use Drupal\simpletest\NodeCreationTrait;
+use Drupal\Tests\node\Traits\ContentTypeCreationTrait;
+use Drupal\Tests\node\Traits\NodeCreationTrait;
 use Drupal\views\Tests\ViewTestData;
 
 /**
@@ -14,7 +16,7 @@ use Drupal\views\Tests\ViewTestData;
  *
  * @group node
  */
-class GlossaryViewTest extends JavascriptTestBase {
+class GlossaryViewTest extends WebDriverTestBase {
 
   use ContentTypeCreationTrait;
   use NodeCreationTrait;
@@ -22,7 +24,17 @@ class GlossaryViewTest extends JavascriptTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['language', 'node', 'views', 'views_test_config'];
+  protected static $modules = [
+    'language',
+    'node',
+    'views',
+    'views_test_config',
+  ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'starterkit_theme';
 
   /**
    * @var array
@@ -33,10 +45,10 @@ class GlossaryViewTest extends JavascriptTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
-    ViewTestData::createTestViews(get_class($this), ['views_test_config']);
+    ViewTestData::createTestViews(static::class, ['views_test_config']);
 
     // Create a Content type and some test nodes with titles that start with
     // different letters.
@@ -70,7 +82,7 @@ class GlossaryViewTest extends JavascriptTestBase {
   /**
    * Tests the AJAX callbacks for the glossary view.
    */
-  public function testGlossaryDefault() {
+  public function testGlossaryDefault(): void {
     // Visit the default Glossary page.
     $url = Url::fromRoute('view.test_glossary.page_1');
     $this->drupalGet($url);
@@ -90,9 +102,9 @@ class GlossaryViewTest extends JavascriptTestBase {
   }
 
   /**
-   * Test that the glossary also works on a language prefixed URL.
+   * Tests that the glossary also works on a language prefixed URL.
    */
-  public function testGlossaryLanguagePrefix() {
+  public function testGlossaryLanguagePrefix(): void {
     ConfigurableLanguage::createFromLangcode('nl')->save();
 
     $config = $this->config('language.negotiation');

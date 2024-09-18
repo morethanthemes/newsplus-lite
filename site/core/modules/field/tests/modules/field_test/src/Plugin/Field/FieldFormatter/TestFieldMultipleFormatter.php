@@ -2,24 +2,25 @@
 
 namespace Drupal\field_test\Plugin\Field\FieldFormatter;
 
+use Drupal\Core\Field\Attribute\FieldFormatter;
 use Drupal\Core\Field\FormatterBase;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Plugin implementation of the 'field_test_multiple' formatter.
- *
- * @FieldFormatter(
- *   id = "field_test_multiple",
- *   label = @Translation("Multiple"),
- *   description = @Translation("Multiple formatter"),
- *   field_types = {
- *     "test_field",
- *     "test_field_with_preconfigured_options"
- *   },
- *   weight = 5
- * )
  */
+#[FieldFormatter(
+  id: 'field_test_multiple',
+  label: new TranslatableMarkup('Multiple'),
+  description: new TranslatableMarkup('Multiple formatter'),
+  field_types: [
+    'test_field',
+    'test_field_with_preconfigured_options',
+  ],
+  weight: 5,
+)]
 class TestFieldMultipleFormatter extends FormatterBase {
 
   /**
@@ -37,7 +38,7 @@ class TestFieldMultipleFormatter extends FormatterBase {
    */
   public function settingsForm(array $form, FormStateInterface $form_state) {
     $element['test_formatter_setting_multiple'] = [
-      '#title' => t('Setting'),
+      '#title' => $this->t('Setting'),
       '#type' => 'textfield',
       '#size' => 20,
       '#default_value' => $this->getSetting('test_formatter_setting_multiple'),
@@ -51,7 +52,7 @@ class TestFieldMultipleFormatter extends FormatterBase {
    */
   public function settingsSummary() {
     $summary = [];
-    $summary[] = t('@setting: @value', ['@setting' => 'test_formatter_setting_multiple', '@value' => $this->getSetting('test_formatter_setting_multiple')]);
+    $summary[] = $this->t('@setting: @value', ['@setting' => 'test_formatter_setting_multiple', '@value' => $this->getSetting('test_formatter_setting_multiple')]);
     return $summary;
   }
 

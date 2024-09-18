@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\StringTranslation;
 
 use Drupal\Core\Site\Settings;
@@ -14,18 +16,16 @@ use Drupal\language\Entity\ConfigurableLanguage;
 class TranslationStringTest extends KernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = [
-    'language'
+  protected static $modules = [
+    'language',
   ];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     ConfigurableLanguage::createFromLangcode('de')->save();
   }
@@ -33,7 +33,7 @@ class TranslationStringTest extends KernelTestBase {
   /**
    * Tests that TranslatableMarkup objects can be compared.
    */
-  public function testComparison() {
+  public function testComparison(): void {
     $this->rebootAndPrepareSettings();
     $a = \Drupal::service('string_translation')->translate('Example @number', ['@number' => 42], ['langcode' => 'de']);
 
@@ -46,7 +46,7 @@ class TranslationStringTest extends KernelTestBase {
     $this->assertEquals($a, $b);
     // The two objects are not the same object.
     $this->assertNotSame($a, $b);
-    // TranslationWrappers which have different settings are not equal.
+    // TranslatableMarkup which have different settings are not equal.
     $this->assertNotEquals($a, $c);
     $this->assertNotEquals($a, $d);
   }
@@ -58,8 +58,10 @@ class TranslationStringTest extends KernelTestBase {
     // Reboot the container so that different services are injected and the new
     // settings are picked.
     $kernel = $this->container->get('kernel');
-    $kernel->shutdown();
-    $kernel->boot();
+    // @todo This used to call shutdown() and boot(). rebuildContainer() is
+    // needed until we stop pushing the request twice and only popping it once.
+    // @see https://www.drupal.org/i/2613044
+    $kernel->rebuildContainer();
     $settings = Settings::getAll();
     $settings['locale_custom_strings_de'] = ['' => ['Example @number' => 'Example @number translated']];
     // Recreate the settings static.

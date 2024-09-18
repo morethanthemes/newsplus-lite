@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\book\Functional;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Core\Url;
 use Drupal\Core\Entity\EntityInterface;
 
 /**
@@ -86,66 +88,66 @@ trait BookTestTrait {
    *   The nodes that should be displayed in the breadcrumb.
    */
   public function checkBookNode(EntityInterface $node, $nodes, $previous, $up, $next, array $breadcrumb) {
-    // $number does not use drupal_static as it should not be reset
-    // since it uniquely identifies each call to checkBookNode().
-    static $number = 0;
     $this->drupalGet('node/' . $node->id());
-
     // Check outline structure.
     if ($nodes !== NULL) {
-      $this->assertPattern($this->generateOutlinePattern($nodes), format_string('Node @number outline confirmed.', ['@number' => $number]));
-    }
-    else {
-      $this->pass(format_string('Node %number does not have outline.', ['%number' => $number]));
+      $book_navigation = $this->getSession()->getPage()->find('css', sprintf('nav[aria-labelledby="book-label-%s"] ul', $this->book->id()));
+      $this->assertNotNull($book_navigation);
+      $links = $book_navigation->findAll('css', 'a');
+      $this->assertCount(count($nodes), $links);
+      foreach ($nodes as $delta => $node) {
+        $link = $links[$delta];
+        $this->assertEquals($node->label(), $link->getText());
+        $this->assertEquals($node->toUrl()->toString(), $link->getAttribute('href'));
+      }
     }
 
     // Check previous, up, and next links.
     if ($previous) {
-      /** @var \Drupal\Core\Url $url */
-      $url = $previous->urlInfo();
-      $url->setOptions(['attributes' => ['rel' => ['prev'], 'title' => t('Go to previous page')]]);
-      $text = SafeMarkup::format('<b>‹</b> @label', ['@label' => $previous->label()]);
-      $this->assertRaw(\Drupal::l($text, $url), 'Previous page link found.');
+      $previous_element = $this->assertSession()->elementExists('named_exact', [
+        'link',
+        'Go to previous page',
+      ]);
+      $this->assertEquals($previous->toUrl()->toString(), $previous_element->getAttribute('href'));
     }
 
     if ($up) {
-      /** @var \Drupal\Core\Url $url */
-      $url = $up->urlInfo();
-      $url->setOptions(['attributes' => ['title' => t('Go to parent page')]]);
-      $this->assertRaw(\Drupal::l('Up', $url), 'Up page link found.');
+      $parent_element = $this->assertSession()->elementExists('named_exact', [
+        'link',
+        'Go to parent page',
+      ]);
+      $this->assertEquals($up->toUrl()->toString(), $parent_element->getAttribute('href'));
     }
 
     if ($next) {
-      /** @var \Drupal\Core\Url $url */
-      $url = $next->urlInfo();
-      $url->setOptions(['attributes' => ['rel' => ['next'], 'title' => t('Go to next page')]]);
-      $text = SafeMarkup::format('@label <b>›</b>', ['@label' => $next->label()]);
-      $this->assertRaw(\Drupal::l($text, $url), 'Next page link found.');
+      $next_element = $this->assertSession()->elementExists('named_exact', [
+        'link',
+        'Go to next page',
+      ]);
+      $this->assertEquals($next->toUrl()->toString(), $next_element->getAttribute('href'));
     }
 
     // Compute the expected breadcrumb.
     $expected_breadcrumb = [];
-    $expected_breadcrumb[] = \Drupal::url('<front>');
+    $expected_breadcrumb[] = Url::fromRoute('<front>')->toString();
     foreach ($breadcrumb as $a_node) {
-      $expected_breadcrumb[] = $a_node->url();
+      $expected_breadcrumb[] = $a_node->toUrl()->toString();
     }
 
     // Fetch links in the current breadcrumb.
-    $links = $this->xpath('//nav[@class="breadcrumb"]/ol/li/a');
+    $links = $this->xpath('//nav[@aria-labelledby="system-breadcrumb"]/ol/li/a');
     $got_breadcrumb = [];
     foreach ($links as $link) {
       $got_breadcrumb[] = $link->getAttribute('href');
     }
 
     // Compare expected and got breadcrumbs.
-    $this->assertIdentical($expected_breadcrumb, $got_breadcrumb, 'The breadcrumb is correctly displayed on the page.');
+    $this->assertSame($expected_breadcrumb, $got_breadcrumb, 'The breadcrumb is correctly displayed on the page.');
 
     // Check printer friendly version.
     $this->drupalGet('book/export/html/' . $node->id());
-    $this->assertText($node->label(), 'Printer friendly title found.');
-    $this->assertRaw($node->body->processed, 'Printer friendly body found.');
-
-    $number++;
+    $this->assertSession()->pageTextContains($node->label());
+    $this->assertSession()->responseContains($node->body->processed);
   }
 
   /**
@@ -156,14 +158,19 @@ trait BookTestTrait {
    *
    * @return string
    *   A regular expression that locates sub-nodes of the outline.
+   *
+   * @deprecated in drupal:10.1.0 and is removed from drupal:11.0.0. Use
+   *   methods from \Drupal\Tests\WebAssert instead.
+   *
+   * @see https://www.drupal.org/node/3325904
    */
   public function generateOutlinePattern($nodes) {
+    @trigger_error(__METHOD__ . ' is deprecated in drupal:10.1.0 and is removed from drupal:11.0.0. Use methods from \Drupal\Tests\WebAssert instead. See https://www.drupal.org/node/3325904', E_USER_DEPRECATED);
     $outline = '';
     foreach ($nodes as $node) {
       $outline .= '(node\/' . $node->id() . ')(.*?)(' . $node->label() . ')(.*?)';
     }
-
-    return '/<nav id="book-navigation-' . $this->book->id() . '"(.*?)<ul(.*?)' . $outline . '<\/ul>/s';
+    return '/<nav role="navigation" aria-labelledby="book-label-' . $this->book->id() . '"(.*?)<ul(.*?)' . $outline . '<\/ul>/s';
   }
 
   /**
@@ -187,21 +194,23 @@ trait BookTestTrait {
     // Used to ensure that when sorted nodes stay in same order.
     static $number = 0;
 
-    $edit['title[0][value]'] = str_pad($number, 2, '0', STR_PAD_LEFT) . ' - SimpleTest test node ' . $this->randomMachineName(10);
-    $edit['body[0][value]'] = 'SimpleTest test body ' . $this->randomMachineName(32) . ' ' . $this->randomMachineName(32);
+    $edit['title[0][value]'] = str_pad((string) $number, 2, '0', STR_PAD_LEFT) . ' - test node ' . $this->randomMachineName(10);
+    $edit['body[0][value]'] = 'test body ' . $this->randomMachineName(32) . ' ' . $this->randomMachineName(32);
     $edit['book[bid]'] = $book_nid;
 
     if ($parent !== NULL) {
-      $this->drupalPostForm('node/add/book', $edit, t('Change book (update list of parents)'));
+      $this->drupalGet('node/add/book');
+      $this->submitForm($edit, 'Change book (update list of parents)');
 
       $edit['book[pid]'] = $parent;
-      $this->drupalPostForm(NULL, $edit, t('Save'));
+      $this->submitForm($edit, 'Save');
       // Make sure the parent was flagged as having children.
-      $parent_node = \Drupal::entityManager()->getStorage('node')->loadUnchanged($parent);
-      $this->assertFalse(empty($parent_node->book['has_children']), 'Parent node is marked as having children');
+      $parent_node = \Drupal::entityTypeManager()->getStorage('node')->loadUnchanged($parent);
+      $this->assertNotEmpty($parent_node->book['has_children'], 'Parent node is marked as having children');
     }
     else {
-      $this->drupalPostForm('node/add/book', $edit, t('Save'));
+      $this->drupalGet('node/add/book');
+      $this->submitForm($edit, 'Save');
     }
 
     // Check to make sure the book node was created.

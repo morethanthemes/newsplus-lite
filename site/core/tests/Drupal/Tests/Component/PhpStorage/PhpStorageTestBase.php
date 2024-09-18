@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Component\PhpStorage;
 
 use Drupal\Component\PhpStorage\PhpStorageInterface;
@@ -22,7 +24,7 @@ abstract class PhpStorageTestBase extends TestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     vfsStream::setup('exampleDir');
     $this->directory = vfsStream::url('exampleDir');
@@ -39,11 +41,11 @@ abstract class PhpStorageTestBase extends TestCase {
 
     // Find a global that doesn't exist.
     do {
-      $random = mt_rand(10000, 100000);
+      $random = 'test' . mt_rand(10000, 100000);
     } while (isset($GLOBALS[$random]));
 
     // Write out a PHP file and ensure it's successfully loaded.
-    $code = "<?php\n\$GLOBALS[$random] = TRUE;";
+    $code = "<?php\n\$GLOBALS['$random'] = TRUE;";
     $success = $php->save($name, $code);
     $this->assertTrue($success, 'Saved php file');
     $php->load($name);

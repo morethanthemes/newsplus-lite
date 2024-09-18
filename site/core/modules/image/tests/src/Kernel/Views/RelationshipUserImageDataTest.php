@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\image\Kernel\Views;
 
 use Drupal\field\Entity\FieldConfig;
@@ -18,11 +20,16 @@ use Drupal\field\Entity\FieldStorageConfig;
 class RelationshipUserImageDataTest extends ViewsKernelTestBase {
 
   /**
-   * Modules to install.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['file', 'field', 'image', 'image_test_views', 'system', 'user'];
+  protected static $modules = [
+    'file',
+    'field',
+    'image',
+    'image_test_views',
+    'system',
+    'user',
+  ];
 
   /**
    * Views used by this test.
@@ -31,7 +38,10 @@ class RelationshipUserImageDataTest extends ViewsKernelTestBase {
    */
   public static $testViews = ['test_image_user_image_data'];
 
-  protected function setUp($import_test_views = TRUE) {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp($import_test_views = TRUE): void {
     parent::setUp($import_test_views);
 
     $this->installEntitySchema('file');
@@ -54,13 +64,13 @@ class RelationshipUserImageDataTest extends ViewsKernelTestBase {
       'required' => 0,
     ])->save();
 
-    ViewTestData::createTestViews(get_class($this), ['image_test_views']);
+    ViewTestData::createTestViews(static::class, ['image_test_views']);
   }
 
   /**
    * Tests using the views image relationship.
    */
-  public function testViewsHandlerRelationshipUserImageData() {
+  public function testViewsHandlerRelationshipUserImageData(): void {
     $file = File::create([
       'fid' => 2,
       'uid' => 2,
@@ -69,10 +79,10 @@ class RelationshipUserImageDataTest extends ViewsKernelTestBase {
       'filemime' => 'image/jpeg',
       'created' => 1,
       'changed' => 1,
-      'status' => FILE_STATUS_PERMANENT,
     ]);
+    $file->setPermanent();
     $file->enforceIsNew();
-    file_put_contents($file->getFileUri(), file_get_contents('core/modules/simpletest/files/image-1.png'));
+    file_put_contents($file->getFileUri(), file_get_contents('core/tests/fixtures/files/image-1.png'));
     $file->save();
 
     $account = User::create([
@@ -89,7 +99,7 @@ class RelationshipUserImageDataTest extends ViewsKernelTestBase {
         'user',
       ],
     ];
-    $this->assertIdentical($expected, $view->getDependencies());
+    $this->assertSame($expected, $view->getDependencies());
     $this->executeView($view);
     $expected_result = [
       [

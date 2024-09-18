@@ -2,12 +2,12 @@ langcode: en
 status: true
 dependencies: {  }
 id: test_display_entity_reference
+label: test_display_entity_reference
 module: views
 description: ''
 tag: ''
 base_table: entity_test
 base_field: id
-core: '8'
 display:
   default:
     display_options:
@@ -26,7 +26,7 @@ display:
       style:
         type: html_list
     display_plugin: default
-    display_title: Master
+    display_title: Default
     id: default
     position: 0
   entity_reference_1:

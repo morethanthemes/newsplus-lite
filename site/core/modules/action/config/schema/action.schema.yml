@@ -1,40 +1,30 @@
 # Schema for the configuration files of the Action module.
-
-action.settings:
-  type: config_object
-  label: 'Action settings'
-  mapping:
-    recursion_limit:
-      type: integer
-      label: 'Recursion limit for actions'
-
-
-action.configuration.action_send_email_action:
+action.configuration.comment_unpublish_by_keyword_action:
   type: mapping
-  label: 'Send email configuration'
+  label: 'Unpublish comment containing keyword(s) configuration'
   mapping:
-    recipient:
-      type: string
-      label: 'Recipient'
-    subject:
-      type: label
-      label: 'Subject'
-    message:
+    keywords:
+      type: sequence
+      label: 'Keywords'
+      sequence:
+        type: string
+        label: 'Keyword'
+
+action.configuration.node_unpublish_by_keyword_action:
+  type: mapping
+  label: 'Unpublish content containing keyword(s) configuration'
+  mapping:
+    keywords:
+      type: sequence
+      label: 'Keywords'
+      sequence:
+        type: string
+        label: 'Keyword'
+
+action.configuration.node_assign_owner_action:
+  type: mapping
+  label: 'Change the author of content configuration'
+  mapping:
+    owner_uid:
       type: text
-      label: 'Message'
-
-action.configuration.action_goto_action:
-  type: mapping
-  label: 'Redirect to URL configuration'
-  mapping:
-    url:
-      type: string
-      label: 'URL'
-
-action.configuration.action_message_action:
-  type: mapping
-  label: 'Display a message to the user configuration'
-  mapping:
-    message:
-      type: text
-      label: 'Message'
+      label: 'Username'

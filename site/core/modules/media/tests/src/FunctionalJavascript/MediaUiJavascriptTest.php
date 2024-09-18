@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\media\FunctionalJavascript;
 
 use Drupal\field\FieldConfigInterface;
@@ -15,14 +17,17 @@ use Drupal\media\MediaSourceInterface;
 class MediaUiJavascriptTest extends MediaJavascriptTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'block',
     'media_test_source',
   ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * The test media type.
@@ -34,7 +39,7 @@ class MediaUiJavascriptTest extends MediaJavascriptTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->drupalPlaceBlock('local_actions_block');
     $this->drupalPlaceBlock('local_tasks_block');
@@ -43,7 +48,7 @@ class MediaUiJavascriptTest extends MediaJavascriptTestBase {
   /**
    * Tests a media type administration.
    */
-  public function testMediaTypes() {
+  public function testMediaTypes(): void {
     $session = $this->getSession();
     $page = $session->getPage();
     $assert_session = $this->assertSession();
@@ -60,13 +65,13 @@ class MediaUiJavascriptTest extends MediaJavascriptTestBase {
     $machine_name = strtolower($name);
     $this->assertJsCondition("jQuery('.machine-name-value').html() == '$machine_name'");
     $page->selectFieldOption('source', 'test');
-    $this->assertJsCondition("jQuery('.form-item-source-configuration-test-config-value').length > 0;");
+    $this->assertJsCondition("jQuery('.form-item-source-configuration-test-config-value').length > 0");
     $page->fillField('description', $description);
-    $page->pressButton('Save');
+    $page->pressButton('Save and manage fields');
     // The wait prevents intermittent test failures.
-    $result = $assert_session->waitForLink('Add media type');
+    $result = $assert_session->waitForLink('Create a new field');
     $this->assertNotEmpty($result);
-    $assert_session->addressEquals('admin/structure/media');
+    $assert_session->addressEquals('admin/structure/media/manage/' . $machine_name . '/fields');
     $assert_session->pageTextContains('The media type ' . $name . ' has been added.');
     $this->drupalGet('admin/structure/media');
     $assert_session->pageTextContains($name);
@@ -81,7 +86,7 @@ class MediaUiJavascriptTest extends MediaJavascriptTestBase {
     $source = $media_type->getSource();
     /** @var \Drupal\field\FieldConfigInterface $source_field */
     $source_field = $source->getSourceFieldDefinition($media_type);
-    $this->assertInstanceOf(FieldConfigInterface::class, $source_field, 'Source field exists.');
+    $this->assertInstanceOf(FieldConfigInterface::class, $source_field);
     $this->assertFalse($source_field->isNew(), 'Source field was saved.');
     /** @var \Drupal\field\FieldStorageConfigInterface $storage */
     $storage = $source_field->getFieldStorageDefinition();
@@ -160,15 +165,15 @@ class MediaUiJavascriptTest extends MediaJavascriptTestBase {
     $loaded_media_type = $this->container->get('entity_type.manager')
       ->getStorage('media_type')
       ->load($this->testMediaType->id());
-    $this->assertEquals($loaded_media_type->id(), $this->testMediaType->id());
-    $this->assertEquals($loaded_media_type->label(), $new_name);
-    $this->assertEquals($loaded_media_type->getDescription(), $new_description);
-    $this->assertEquals($loaded_media_type->getSource()->getPluginId(), 'test');
-    $this->assertEquals($loaded_media_type->getSource()->getConfiguration()['test_config_value'], 'This is new config value.');
+    $this->assertSame($loaded_media_type->id(), $this->testMediaType->id());
+    $this->assertSame($loaded_media_type->label(), $new_name);
+    $this->assertSame($loaded_media_type->getDescription(), $new_description);
+    $this->assertSame($loaded_media_type->getSource()->getPluginId(), 'test');
+    $this->assertSame($loaded_media_type->getSource()->getConfiguration()['test_config_value'], 'This is new config value.');
     $this->assertTrue($loaded_media_type->shouldCreateNewRevision());
     $this->assertTrue($loaded_media_type->thumbnailDownloadsAreQueued());
     $this->assertFalse($loaded_media_type->getStatus());
-    $this->assertEquals($loaded_media_type->getFieldMap(), ['attribute_1' => 'name']);
+    $this->assertSame($loaded_media_type->getFieldMap(), ['attribute_1' => 'name']);
 
     // We need to clear the statically cached field definitions to account for
     // fields that have been created by API calls in this test, since they exist
@@ -184,21 +189,25 @@ class MediaUiJavascriptTest extends MediaJavascriptTestBase {
 
     // Tests media type delete form.
     $page->clickLink('Delete');
-    $assert_session->addressEquals('admin/structure/media/manage/' . $this->testMediaType->id() . '/delete');
-    $page->pressButton('Delete');
+    $assert_session->assertWaitOnAjaxRequest();
+    $this->assertNotEmpty($assert_session->waitForElementVisible('css', '#drupal-modal'));
+    $assert_session->addressEquals('admin/structure/media/manage/' . $this->testMediaType->id());
+    $this->click('.ui-dialog button:contains("Delete")');
     $assert_session->addressEquals('admin/structure/media');
     $assert_session->pageTextContains('The media type ' . $new_name . ' has been deleted.');
 
     // Test that the system for preventing the deletion of media types works
     // (they cannot be deleted if there is media content of that type/bundle).
-    $media_type2 = $this->createMediaType();
+    $media_type2 = $this->createMediaType('test');
     $label2 = $media_type2->label();
     $media = Media::create(['name' => 'lorem ipsum', 'bundle' => $media_type2->id()]);
     $media->save();
     $this->drupalGet('admin/structure/media/manage/' . $media_type2->id());
     $page->clickLink('Delete');
-    $assert_session->addressEquals('admin/structure/media/manage/' . $media_type2->id() . '/delete');
-    $assert_session->buttonNotExists('edit-submit');
+    $assert_session->assertWaitOnAjaxRequest();
+    $this->assertNotEmpty($assert_session->waitForElementVisible('css', '#drupal-modal'));
+    $assert_session->addressEquals('admin/structure/media/manage/' . $media_type2->id());
+    $assert_session->elementNotExists('css', '.ui-dialog button:contains("Delete")');
     $assert_session->pageTextContains("$label2 is used by 1 media item on your site. You can not remove this media type until you have removed all of the $label2 media items.");
   }
 

@@ -2,17 +2,16 @@
 
 namespace Drupal\file\Plugin\migrate\destination;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Field\Plugin\Field\FieldType\UriItem;
+use Drupal\migrate\Attribute\MigrateDestination;
 use Drupal\migrate\Row;
 use Drupal\migrate\MigrateException;
 use Drupal\migrate\Plugin\migrate\destination\EntityContentBase;
 
 /**
- * @MigrateDestination(
- *   id = "entity:file"
- * )
+ * Provides migrate destination plugin for File entities.
  */
+#[MigrateDestination('entity:file')]
 class EntityFile extends EntityContentBase {
 
   /**
@@ -46,7 +45,7 @@ class EntityFile extends EntityContentBase {
   protected function processStubRow(Row $row) {
     // We stub the uri value ourselves so we can create a real stub file for it.
     if (!$row->getDestinationProperty('uri')) {
-      $field_definitions = $this->entityManager
+      $field_definitions = $this->entityFieldManager
         ->getFieldDefinitions($this->storage->getEntityTypeId(),
           $this->getKey('bundle'));
       $value = UriItem::generateSampleValue($field_definitions['uri']);
@@ -58,7 +57,7 @@ class EntityFile extends EntityContentBase {
       // Make it into a proper public file uri, stripping off the existing
       // scheme if present.
       $value = 'public://' . preg_replace('|^[a-z]+://|i', '', $value);
-      $value = Unicode::substr($value, 0, $field_definitions['uri']->getSetting('max_length'));
+      $value = mb_substr($value, 0, $field_definitions['uri']->getSetting('max_length'));
       // Create a real file, so File::preSave() can do filesize() on it.
       touch($value);
       $row->setDestinationProperty('uri', $value);

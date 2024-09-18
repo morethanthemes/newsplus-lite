@@ -1,15 +1,15 @@
 name: Statistics
 type: module
-description: 'Logs content statistics for your site.'
+description: 'Logs how many times content is viewed.'
 package: Core
 # version: VERSION
-# core: 8.x
+lifecycle: deprecated
+lifecycle_link: https://www.drupal.org/node/3223395#s-statistics
 configure: statistics.settings
 dependencies:
-  - node
+  - drupal:node
 
-# Information added by Drupal.org packaging script on 2018-06-06
-version: '8.5.4'
-core: '8.x'
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
 project: 'drupal'
-datestamp: 1528319624
+datestamp: 1726135113

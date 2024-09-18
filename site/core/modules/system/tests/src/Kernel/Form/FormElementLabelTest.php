@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\system\Kernel\Form;
 
 use Drupal\KernelTests\KernelTestBase;
@@ -15,12 +17,12 @@ class FormElementLabelTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['system'];
+  protected static $modules = ['system'];
 
   /**
    * Ensures that attributes can be placed for form element label.
    */
-  public function testAttributes() {
+  public function testAttributes(): void {
     $render_array = [
       '#type' => 'label',
       '#attributes' => ['class' => ['kitten']],

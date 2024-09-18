@@ -1,0 +1,10 @@
+name: 'Nightwatch theme install utility'
+type: module
+description: 'Helper module facilitate theme installation in Nightwatch tests'
+package: Testing
+# version: VERSION
+
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
+project: 'drupal'
+datestamp: 1726135113

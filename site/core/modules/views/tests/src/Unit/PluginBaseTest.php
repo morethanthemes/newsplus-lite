@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Unit;
 
 use Drupal\Tests\UnitTestCase;
@@ -21,7 +23,7 @@ class PluginBaseTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->testHelperPlugin = new TestHelperPlugin([], 'default', []);
@@ -44,7 +46,7 @@ class PluginBaseTest extends UnitTestCase {
    * @dataProvider providerTestUnpackOptions
    * @covers ::unpackOptions
    */
-  public function testUnpackOptions($storage, $options, $definition, $expected, $all = FALSE) {
+  public function testUnpackOptions($storage, $options, $definition, $expected, $all = FALSE): void {
     $this->testHelperPlugin->unpackOptions($storage, $options, $definition, $all);
     $this->assertEquals($storage, $expected);
   }
@@ -62,7 +64,7 @@ class PluginBaseTest extends UnitTestCase {
    * @dataProvider providerTestSetOptionDefault
    * @covers ::setOptionDefaults
    */
-  public function testSetOptionDefault($storage, $definition, $expected) {
+  public function testSetOptionDefault($storage, $definition, $expected): void {
     $this->testHelperPlugin->testSetOptionDefaults($storage, $definition);
     $this->assertEquals($storage, $expected);
   }
@@ -72,7 +74,7 @@ class PluginBaseTest extends UnitTestCase {
    *
    * @return array
    */
-  public function providerTestUnpackOptions() {
+  public static function providerTestUnpackOptions() {
     $test_parameters = [];
     // Set a storage but no value, so the storage value should be kept.
     $test_parameters[] = [
@@ -87,7 +89,7 @@ class PluginBaseTest extends UnitTestCase {
         'key' => 'value',
       ],
     ];
-    // Set a storage and a option value, so the option value should be kept.
+    // Set a storage and an option value, so the option value should be kept.
     $test_parameters[] = [
       'storage' => [
         'key' => 'value',
@@ -101,7 +103,7 @@ class PluginBaseTest extends UnitTestCase {
       'expected' => [
         'key' => 'value2',
       ],
-      ''
+      '',
     ];
     // Set no storage but an options value, so the options value should be kept.
     $test_parameters[] = [
@@ -221,7 +223,7 @@ class PluginBaseTest extends UnitTestCase {
    *
    * @return array
    */
-  public function providerTestSetOptionDefault() {
+  public static function providerTestSetOptionDefault() {
     $test_parameters = [];
     // No definition should change anything on the storage.
     $test_parameters[] = [
@@ -281,13 +283,13 @@ class PluginBaseTest extends UnitTestCase {
    * @dataProvider providerTestFilterByDefinedOptions
    * @covers ::filterByDefinedOptions
    */
-  public function testFilterByDefinedOptions($storage, $options, $expected_storage) {
+  public function testFilterByDefinedOptions($storage, $options, $expected_storage): void {
     $this->testHelperPlugin->setDefinedOptions($options);
     $this->testHelperPlugin->filterByDefinedOptions($storage);
     $this->assertEquals($expected_storage, $storage);
   }
 
-  public function providerTestFilterByDefinedOptions() {
+  public static function providerTestFilterByDefinedOptions() {
     $data = [];
 
     // A simple defined option.

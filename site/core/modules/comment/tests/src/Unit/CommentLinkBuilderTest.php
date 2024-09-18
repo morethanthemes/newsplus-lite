@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\comment\Unit;
 
 use Drupal\comment\CommentLinkBuilder;
 use Drupal\comment\Plugin\Field\FieldType\CommentItemInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Url;
-use Drupal\node\NodeInterface;
 use Drupal\Tests\Traits\Core\GeneratePermutationsTrait;
 use Drupal\Tests\UnitTestCase;
 
@@ -20,35 +22,35 @@ class CommentLinkBuilderTest extends UnitTestCase {
   /**
    * Comment manager mock.
    *
-   * @var \Drupal\comment\CommentManagerInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\comment\CommentManagerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $commentManager;
 
   /**
    * String translation mock.
    *
-   * @var \Drupal\Core\StringTranslation\TranslationInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\StringTranslation\TranslationInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $stringTranslation;
 
   /**
-   * The entity manager service.
+   * The entity type manager.
    *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
-  protected $entityManager;
+  protected $entityTypeManager;
 
   /**
    * Module handler mock.
    *
-   * @var \Drupal\Core\Extension\ModuleHandlerInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $moduleHandler;
 
   /**
    * Current user proxy mock.
    *
-   * @var \Drupal\Core\Session\AccountProxyInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Session\AccountProxyInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $currentUser;
 
@@ -60,20 +62,22 @@ class CommentLinkBuilderTest extends UnitTestCase {
   protected $timestamp;
 
   /**
-   * @var \Drupal\comment\CommentLinkBuilderInterface;
+   * @var \Drupal\comment\CommentLinkBuilderInterface
    */
   protected $commentLinkBuilder;
 
   /**
    * Prepares mocks for the test.
    */
-  protected function setUp() {
-    $this->commentManager = $this->getMock('\Drupal\comment\CommentManagerInterface');
+  protected function setUp(): void {
+    parent::setUp();
+
+    $this->commentManager = $this->createMock('\Drupal\comment\CommentManagerInterface');
     $this->stringTranslation = $this->getStringTranslationStub();
-    $this->entityManager = $this->getMock('\Drupal\Core\Entity\EntityManagerInterface');
-    $this->moduleHandler = $this->getMock('\Drupal\Core\Extension\ModuleHandlerInterface');
-    $this->currentUser = $this->getMock('\Drupal\Core\Session\AccountProxyInterface');
-    $this->commentLinkBuilder = new CommentLinkBuilder($this->currentUser, $this->commentManager, $this->moduleHandler, $this->stringTranslation, $this->entityManager);
+    $this->entityTypeManager = $this->createMock(EntityTypeManagerInterface::class);
+    $this->moduleHandler = $this->createMock('\Drupal\Core\Extension\ModuleHandlerInterface');
+    $this->currentUser = $this->createMock('\Drupal\Core\Session\AccountProxyInterface');
+    $this->commentLinkBuilder = new CommentLinkBuilder($this->currentUser, $this->commentManager, $this->moduleHandler, $this->stringTranslation, $this->entityTypeManager);
     $this->commentManager->expects($this->any())
       ->method('getFields')
       ->with('node')
@@ -89,10 +93,10 @@ class CommentLinkBuilderTest extends UnitTestCase {
   }
 
   /**
-   * Test the buildCommentedEntityLinks method.
+   * Tests the buildCommentedEntityLinks method.
    *
-   * @param \Drupal\node\NodeInterface|\PHPUnit_Framework_MockObject_MockObject $node
-   *   Mock node.
+   * @param array $node_args
+   *   Arguments for the mock node.
    * @param array $context
    *   Context for the links.
    * @param bool $has_access_comments
@@ -111,7 +115,8 @@ class CommentLinkBuilderTest extends UnitTestCase {
    *
    * @covers ::buildCommentedEntityLinks
    */
-  public function testCommentLinkBuilder(NodeInterface $node, $context, $has_access_comments, $history_exists, $has_post_comments, $is_anonymous, $expected) {
+  public function testCommentLinkBuilder(array $node_args, $context, $has_access_comments, $history_exists, $has_post_comments, $is_anonymous, $expected): void {
+    $node = $this->getMockNode(...$node_args);
     $this->moduleHandler->expects($this->any())
       ->method('moduleExists')
       ->with('history')
@@ -156,11 +161,11 @@ class CommentLinkBuilderTest extends UnitTestCase {
   /**
    * Data provider for ::testCommentLinkBuilder.
    */
-  public function getLinkCombinations() {
+  public static function getLinkCombinations() {
     $cases = [];
     // No links should be created if the entity doesn't have the field.
     $cases[] = [
-      $this->getMockNode(FALSE, CommentItemInterface::OPEN, CommentItemInterface::FORM_BELOW, 1),
+      [FALSE, CommentItemInterface::OPEN, CommentItemInterface::FORM_BELOW, 1],
       ['view_mode' => 'teaser'],
       TRUE,
       TRUE,
@@ -171,7 +176,7 @@ class CommentLinkBuilderTest extends UnitTestCase {
     foreach (['search_result', 'search_index', 'print'] as $view_mode) {
       // Nothing should be output in these view modes.
       $cases[] = [
-        $this->getMockNode(TRUE, CommentItemInterface::OPEN, CommentItemInterface::FORM_BELOW, 1),
+        [TRUE, CommentItemInterface::OPEN, CommentItemInterface::FORM_BELOW, 1],
         ['view_mode' => $view_mode],
         TRUE,
         TRUE,
@@ -197,10 +202,10 @@ class CommentLinkBuilderTest extends UnitTestCase {
         'teaser', 'rss', 'full',
       ],
     ];
-    $permutations = $this->generatePermutations($combinations);
+    $permutations = static::generatePermutations($combinations);
     foreach ($permutations as $combination) {
       $case = [
-        $this->getMockNode(TRUE, $combination['comments'], $combination['form_location'], $combination['comment_count']),
+        [TRUE, $combination['comments'], $combination['form_location'], $combination['comment_count']],
         ['view_mode' => $combination['view_mode']],
         $combination['has_access_comments'],
         $combination['history_exists'],
@@ -226,7 +231,7 @@ class CommentLinkBuilderTest extends UnitTestCase {
             // If the view mode is teaser, or the user can access comments and
             // comments exist or the form is on a separate page.
             if ($combination['view_mode'] == 'teaser' || ($combination['has_access_comments'] && $combination['comment_count']) || $combination['form_location'] == CommentItemInterface::FORM_SEPARATE_PAGE) {
-              // There should be a add comment link.
+              // There should be an add comment link.
               $expected['comment-add'] = ['title' => 'Add new comment'];
               if ($combination['form_location'] == CommentItemInterface::FORM_BELOW) {
                 // On the same page.
@@ -264,11 +269,11 @@ class CommentLinkBuilderTest extends UnitTestCase {
    * @param int $comment_count
    *   Number of comments against the field.
    *
-   * @return \Drupal\node\NodeInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @return \Drupal\node\NodeInterface|\PHPUnit\Framework\MockObject\MockObject
    *   Mock node for testing.
    */
   protected function getMockNode($has_field, $comment_status, $form_location, $comment_count) {
-    $node = $this->getMock('\Drupal\node\NodeInterface');
+    $node = $this->createMock('\Drupal\node\NodeInterface');
     $node->expects($this->any())
       ->method('hasField')
       ->willReturn($has_field);
@@ -286,7 +291,7 @@ class CommentLinkBuilderTest extends UnitTestCase {
       ->with('comment')
       ->willReturn($field_item);
 
-    $field_definition = $this->getMock('\Drupal\Core\Field\FieldDefinitionInterface');
+    $field_definition = $this->createMock('\Drupal\Core\Field\FieldDefinitionInterface');
     $field_definition->expects($this->any())
       ->method('getSetting')
       ->with('form_location')
@@ -310,11 +315,8 @@ class CommentLinkBuilderTest extends UnitTestCase {
 
     $url = Url::fromRoute('node.view');
     $node->expects($this->any())
-      ->method('urlInfo')
+      ->method('toUrl')
       ->willReturn($url);
-    $node->expects($this->any())
-      ->method('url')
-      ->willReturn(['route_name' => 'node.view']);
 
     return $node;
   }
@@ -324,7 +326,9 @@ class CommentLinkBuilderTest extends UnitTestCase {
 namespace Drupal\comment;
 
 if (!function_exists('history_read')) {
-  function history_read() {
+
+  function history_read($nid) {
     return 0;
   }
+
 }

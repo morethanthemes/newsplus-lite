@@ -3,11 +3,14 @@
 namespace Drupal\migrate\Plugin\migrate\destination;
 
 use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\FieldTypePluginManagerInterface;
+use Drupal\Core\Session\AccountSwitcherInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\migrate\Attribute\MigrateDestination;
 use Drupal\migrate\MigrateException;
+use Drupal\migrate\Plugin\Derivative\MigrateEntityRevision;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\Row;
 
@@ -103,30 +106,21 @@ use Drupal\migrate\Row;
  *   required:
  *     - custom_article_migration
  * @endcode
- *
- * @MigrateDestination(
- *   id = "entity_revision",
- *   deriver = "Drupal\migrate\Plugin\Derivative\MigrateEntityRevision"
- * )
  */
+#[MigrateDestination(
+  id: 'entity_revision',
+  deriver: MigrateEntityRevision::class
+)]
 class EntityRevision extends EntityContentBase {
 
   /**
    * {@inheritdoc}
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration, EntityStorageInterface $storage, array $bundles, EntityManagerInterface $entity_manager, FieldTypePluginManagerInterface $field_type_manager) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration, EntityStorageInterface $storage, array $bundles, EntityFieldManagerInterface $entity_field_manager, FieldTypePluginManagerInterface $field_type_manager, AccountSwitcherInterface $account_switcher) {
     $plugin_definition += [
       'label' => new TranslatableMarkup('@entity_type revisions', ['@entity_type' => $storage->getEntityType()->getSingularLabel()]),
     ];
-    parent::__construct($configuration, $plugin_id, $plugin_definition, $migration, $storage, $bundles, $entity_manager, $field_type_manager);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  protected static function getEntityTypeId($plugin_id) {
-    // Remove entity_revision:
-    return substr($plugin_id, 16);
+    parent::__construct($configuration, $plugin_id, $plugin_definition, $migration, $storage, $bundles, $entity_field_manager, $field_type_manager, $account_switcher);
   }
 
   /**
@@ -144,10 +138,15 @@ class EntityRevision extends EntityContentBase {
     $revision_id = $old_destination_id_values ?
       reset($old_destination_id_values) :
       $row->getDestinationProperty($this->getKey('revision'));
-    if (!empty($revision_id) && ($entity = $this->storage->loadRevision($revision_id))) {
-      $entity->setNewRevision(FALSE);
+    $entity = NULL;
+    if (!empty($revision_id)) {
+      /** @var \Drupal\Core\Entity\RevisionableStorageInterface $storage */
+      $storage = $this->storage;
+      if ($entity = $storage->loadRevision($revision_id)) {
+        $entity->setNewRevision(FALSE);
+      }
     }
-    else {
+    if ($entity === NULL) {
       $entity_id = $row->getDestinationProperty($this->getKey('id'));
       $entity = $this->storage->load($entity_id);
 
@@ -160,7 +159,9 @@ class EntityRevision extends EntityContentBase {
       $entity->enforceIsNew(FALSE);
       $entity->setNewRevision(TRUE);
     }
-    $this->updateEntity($entity, $row);
+    // We need to update the entity, so that the destination row IDs are
+    // correct.
+    $entity = $this->updateEntity($entity, $row);
     $entity->isDefaultRevision(FALSE);
     return $entity;
   }
@@ -169,6 +170,7 @@ class EntityRevision extends EntityContentBase {
    * {@inheritdoc}
    */
   protected function save(ContentEntityInterface $entity, array $old_destination_id_values = []) {
+    $entity->setSyncing(TRUE);
     $entity->save();
     return [$entity->getRevisionId()];
   }
@@ -177,10 +179,23 @@ class EntityRevision extends EntityContentBase {
    * {@inheritdoc}
    */
   public function getIds() {
-    if ($key = $this->getKey('revision')) {
-      return [$key => $this->getDefinitionFromEntity($key)];
+    $ids = [];
+
+    $revision_key = $this->getKey('revision');
+    if (!$revision_key) {
+      throw new MigrateException(sprintf('The "%s" entity type does not support revisions.', $this->storage->getEntityTypeId()));
     }
-    throw new MigrateException('This entity type does not support revisions.');
+    $ids[$revision_key] = $this->getDefinitionFromEntity($revision_key);
+
+    if ($this->isTranslationDestination()) {
+      $langcode_key = $this->getKey('langcode');
+      if (!$langcode_key) {
+        throw new MigrateException(sprintf('The "%s" entity type does not support translations.', $this->storage->getEntityTypeId()));
+      }
+      $ids[$langcode_key] = $this->getDefinitionFromEntity($langcode_key);
+    }
+
+    return $ids;
   }
 
   /**

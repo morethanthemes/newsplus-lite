@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\layout_builder\Kernel;
 
 use Drupal\Core\Entity\Entity\EntityViewDisplay;
@@ -16,14 +18,14 @@ abstract class LayoutBuilderCompatibilityTestBase extends EntityKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'layout_discovery',
   ];
 
   /**
    * The entity view display.
    *
-   * @var \Drupal\field_layout\Display\EntityDisplayWithLayoutInterface
+   * @var \Drupal\layout_builder\Entity\LayoutEntityDisplayInterface
    */
   protected $display;
 
@@ -37,18 +39,17 @@ abstract class LayoutBuilderCompatibilityTestBase extends EntityKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installEntitySchema('entity_test_base_field_display');
     $this->installConfig(['filter']);
-    $this->installSchema('system', ['key_value_expire']);
 
     // Set up a non-admin user that is allowed to view test entities.
-    \Drupal::currentUser()->setAccount($this->createUser(['uid' => 2], ['view test entity']));
+    \Drupal::currentUser()->setAccount($this->createUser(['view test entity'], NULL, FALSE, ['uid' => 2]));
 
-    \Drupal::service('theme_handler')->install(['classy']);
-    $this->config('system.theme')->set('default', 'classy')->save();
+    \Drupal::service('theme_installer')->install(['starterkit_theme']);
+    $this->config('system.theme')->set('default', 'starterkit_theme')->save();
 
     $field_storage = FieldStorageConfig::create([
       'entity_type' => 'entity_test_base_field_display',
@@ -86,13 +87,21 @@ abstract class LayoutBuilderCompatibilityTestBase extends EntityKernelTestBase {
   /**
    * Installs the Layout Builder.
    *
-   * Also configures and reloads the entity display, and reloads the entity.
+   * Also configures and reloads the entity display.
    */
   protected function installLayoutBuilder() {
     $this->container->get('module_installer')->install(['layout_builder']);
     $this->refreshServices();
 
     $this->display = $this->reloadEntity($this->display);
+    $this->display->enableLayoutBuilder()->save();
+    $this->entity = $this->reloadEntity($this->entity);
+  }
+
+  /**
+   * Enables overrides for the display and reloads the entity.
+   */
+  protected function enableOverrides() {
     $this->display->setOverridable()->save();
     $this->entity = $this->reloadEntity($this->entity);
   }
@@ -104,9 +113,6 @@ abstract class LayoutBuilderCompatibilityTestBase extends EntityKernelTestBase {
    *   The entity to render.
    * @param array $attributes
    *   An array of field attributes to assert.
-   *
-   * @return string
-   *   The rendered string output (typically HTML).
    */
   protected function assertFieldAttributes(EntityInterface $entity, array $attributes) {
     $view_builder = $this->container->get('entity_type.manager')->getViewBuilder($entity->getEntityTypeId());

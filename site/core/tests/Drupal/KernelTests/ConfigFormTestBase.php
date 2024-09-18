@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests;
 
 use Drupal\Core\Form\FormState;
@@ -14,7 +16,7 @@ abstract class ConfigFormTestBase extends KernelTestBase {
   /**
    * Form ID to use for testing.
    *
-   * @var \Drupal\Core\Form\FormInterface.
+   * @var \Drupal\Core\Form\FormInterface
    */
   protected $form;
 
@@ -24,13 +26,13 @@ abstract class ConfigFormTestBase extends KernelTestBase {
    * Contains details for form key, configuration object name, and config key.
    * Example:
    * @code
-   *   array(
-   *     'user_mail_cancel_confirm_body' => array(
+   *   [
+   *     'user_mail_cancel_confirm_body' => [
    *       '#value' => $this->randomString(),
    *       '#config_name' => 'user.mail',
    *       '#config_key' => 'cancel_confirm.body',
-   *     ),
-   *   );
+   *     ],
+   *   ];
    * @endcode
    *
    * @var array
@@ -40,7 +42,7 @@ abstract class ConfigFormTestBase extends KernelTestBase {
   /**
    * Submit the system_config_form ensure the configuration has expected values.
    */
-  public function testConfigForm() {
+  public function testConfigForm(): void {
     // Programmatically submit the given values.
     $values = [];
     foreach ($this->values as $form_key => $data) {
@@ -52,14 +54,11 @@ abstract class ConfigFormTestBase extends KernelTestBase {
     // Check that the form returns an error when expected, and vice versa.
     $errors = $form_state->getErrors();
     $valid_form = empty($errors);
-    $args = [
-      '%values' => print_r($values, TRUE),
-      '%errors' => $valid_form ? t('None') : implode(' ', $errors),
-    ];
-    $this->assertTrue($valid_form, format_string('Input values: %values<br/>Validation handler errors: %errors', $args));
-
+    $values = print_r($values, TRUE);
+    $errors = $valid_form ? t('None') : implode(' ', $errors);
+    $this->assertTrue($valid_form, sprintf('Input values: %s<br/>Validation handler errors: %s', $values, $errors));
     foreach ($this->values as $data) {
-      $this->assertEqual($data['#value'], $this->config($data['#config_name'])->get($data['#config_key']));
+      $this->assertEquals($this->config($data['#config_name'])->get($data['#config_key']), $data['#value']);
     }
   }
 

@@ -11,7 +11,6 @@ description: ''
 tag: default
 base_table: node_field_data
 base_field: nid
-core: 8.0-dev
 display:
   default:
     display_options:
@@ -71,7 +70,6 @@ display:
           default_argument_type: fixed
           default_argument_options:
             argument: ''
-          default_argument_skip_url: false
           summary_options:
             base_path: ''
             count: true
@@ -91,7 +89,7 @@ display:
           entity_type: node
           plugin_id: node_uid_revision
     display_plugin: default
-    display_title: Master
+    display_title: Default
     id: default
     position: 0
     cache_metadata:

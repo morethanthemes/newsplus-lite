@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Datetime;
 
 use Drupal\Core\Datetime\DrupalDateTime;
@@ -18,7 +20,7 @@ use Drupal\Tests\BrowserTestBase;
 class TimestampTest extends BrowserTestBase {
 
   /**
-   * An array of display options to pass to entity_get_display().
+   * An array of display options to pass to EntityDisplayRepositoryInterface::getViewDisplay().
    *
    * @var array
    */
@@ -41,12 +43,17 @@ class TimestampTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['node', 'entity_test', 'field_ui'];
+  protected static $modules = ['node', 'entity_test', 'field_ui'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $web_user = $this->drupalCreateUser([
@@ -74,6 +81,7 @@ class TimestampTest extends BrowserTestBase {
       'field_storage' => $this->fieldStorage,
       'bundle' => 'entity_test',
       'required' => TRUE,
+      'description' => 'Description for timestamp field.',
     ]);
     $this->field->save();
 
@@ -98,20 +106,22 @@ class TimestampTest extends BrowserTestBase {
   /**
    * Tests the "datetime_timestamp" widget.
    */
-  public function testWidget() {
+  public function testWidget(): void {
     // Build up a date in the UTC timezone.
     $value = '2012-12-31 00:00:00';
     $date = new DrupalDateTime($value, 'UTC');
 
     // Update the timezone to the system default.
-    $date->setTimezone(timezone_open(drupal_get_user_timezone()));
+    $date->setTimezone(timezone_open(date_default_timezone_get()));
 
     // Display creation form.
     $this->drupalGet('entity_test/add');
 
+    // Make sure the field description is properly displayed.
+    $this->assertSession()->pageTextContains('Description for timestamp field.');
+
     // Make sure the "datetime_timestamp" widget is on the page.
-    $fields = $this->xpath('//div[contains(@class, "field--widget-datetime-timestamp") and @id="edit-field-timestamp-wrapper"]');
-    $this->assertEquals(1, count($fields));
+    $this->assertSession()->elementsCount('xpath', '//div[contains(@class, "field--widget-datetime-timestamp") and @id="edit-field-timestamp-wrapper"]', 1);
 
     // Look for the widget elements and make sure they are empty.
     $this->assertSession()->fieldExists('field_timestamp[0][value][date]');
@@ -127,7 +137,7 @@ class TimestampTest extends BrowserTestBase {
       'field_timestamp[0][value][date]' => $date->format($date_format),
       'field_timestamp[0][value][time]' => $date->format($time_format),
     ];
-    $this->drupalPostForm(NULL, $edit, 'Save');
+    $this->submitForm($edit, 'Save');
 
     // Make sure the submitted date is set as the default in the widget.
     $this->assertSession()->fieldExists('field_timestamp[0][value][date]');
@@ -144,6 +154,25 @@ class TimestampTest extends BrowserTestBase {
     $medium = DateFormat::load('medium')->getPattern();
     $this->drupalGet('entity_test/' . $id);
     $this->assertSession()->pageTextContains($date->format($medium));
+
+    // Build up a date in the UTC timezone.
+    $value = '2024-01-16 00:00:00';
+    $date = new DrupalDateTime($value, 'UTC');
+
+    // Set a default value for the field.
+    $this->field->setDefaultValue($date->getTimestamp())->save();
+
+    // Update the timezone to the system default.
+    $date->setTimezone(timezone_open(date_default_timezone_get()));
+
+    $this->drupalGet('entity_test/add');
+    $date_format = DateFormat::load('html_date')->getPattern();
+    $time_format = DateFormat::load('html_time')->getPattern();
+    // Make sure the default field value is set as the default value in the widget.
+    $this->assertSession()->fieldExists('field_timestamp[0][value][date]');
+    $this->assertSession()->fieldValueEquals('field_timestamp[0][value][date]', $date->format($date_format));
+    $this->assertSession()->fieldExists('field_timestamp[0][value][time]');
+    $this->assertSession()->fieldValueEquals('field_timestamp[0][value][time]', $date->format($time_format));
   }
 
 }

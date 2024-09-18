@@ -2,26 +2,16 @@
 
 namespace Drupal\block_content;
 
+use Drupal\block_content\Access\RefinableDependentAccessInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityChangedInterface;
 use Drupal\Core\Entity\EntityPublishedInterface;
 use Drupal\Core\Entity\RevisionLogInterface;
 
 /**
- * Provides an interface defining a custom block entity.
+ * Provides an interface defining a content block entity.
  */
-interface BlockContentInterface extends ContentEntityInterface, EntityChangedInterface, RevisionLogInterface, EntityPublishedInterface {
-
-  /**
-   * Returns the block revision log message.
-   *
-   * @return string
-   *   The revision log message.
-   *
-   * @deprecated in Drupal 8.2.0, will be removed before Drupal 9.0.0. Use
-   *   \Drupal\Core\Entity\RevisionLogInterface::getRevisionLogMessage() instead.
-   */
-  public function getRevisionLog();
+interface BlockContentInterface extends ContentEntityInterface, EntityChangedInterface, RevisionLogInterface, EntityPublishedInterface, RefinableDependentAccessInterface {
 
   /**
    * Sets the block description.
@@ -29,24 +19,32 @@ interface BlockContentInterface extends ContentEntityInterface, EntityChangedInt
    * @param string $info
    *   The block description.
    *
-   * @return \Drupal\block_content\BlockContentInterface
+   * @return $this
    *   The class instance that this method is called on.
    */
   public function setInfo($info);
 
   /**
-   * Sets the block revision log message.
+   * Determines if the block is reusable or not.
    *
-   * @param string $revision_log
-   *   The revision log message.
-   *
-   * @return \Drupal\block_content\BlockContentInterface
-   *   The class instance that this method is called on.
-   *
-   * @deprecated in Drupal 8.2.0, will be removed before Drupal 9.0.0. Use
-   *   \Drupal\Core\Entity\RevisionLogInterface::setRevisionLogMessage() instead.
+   * @return bool
+   *   Returns TRUE if reusable and FALSE otherwise.
    */
-  public function setRevisionLog($revision_log);
+  public function isReusable();
+
+  /**
+   * Sets the block to be reusable.
+   *
+   * @return $this
+   */
+  public function setReusable();
+
+  /**
+   * Sets the block to be non-reusable.
+   *
+   * @return $this
+   */
+  public function setNonReusable();
 
   /**
    * Sets the theme value.
@@ -58,7 +56,7 @@ interface BlockContentInterface extends ContentEntityInterface, EntityChangedInt
    * @param string $theme
    *   The theme name.
    *
-   * @return \Drupal\block_content\BlockContentInterface
+   * @return $this
    *   The class instance that this method is called on.
    */
   public function setTheme($theme);
@@ -76,7 +74,7 @@ interface BlockContentInterface extends ContentEntityInterface, EntityChangedInt
   public function getTheme();
 
   /**
-   * Gets the configured instances of this custom block.
+   * Gets the configured instances of this content block.
    *
    * @return array
    *   Array of Drupal\block\Core\Plugin\Entity\Block entities.

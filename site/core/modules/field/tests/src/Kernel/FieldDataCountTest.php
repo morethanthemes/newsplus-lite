@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\field\Kernel;
 
+use Drupal\Core\Database\Database;
 use Drupal\Core\Entity\Sql\SqlContentEntityStorage;
 use Drupal\entity_test\Entity\EntityTest;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
 
 /**
- * Tests counting field data records and the hasData() method on
- * FieldStorageConfig entity.
+ * Tests the count of field data records.
  *
  * @group field
  * @see \Drupal\Core\Entity\FieldableEntityStorageInterface::countFieldData()
@@ -35,18 +37,18 @@ class FieldDataCountTest extends FieldKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installEntitySchema('entity_test_rev');
-    $this->storage = \Drupal::entityManager()->getStorage('entity_test');
-    $this->storageRev = \Drupal::entityManager()->getStorage('entity_test_rev');
-    $this->storageUser = \Drupal::entityManager()->getStorage('user');
+    $this->storage = \Drupal::entityTypeManager()->getStorage('entity_test');
+    $this->storageRev = \Drupal::entityTypeManager()->getStorage('entity_test_rev');
+    $this->storageUser = \Drupal::entityTypeManager()->getStorage('user');
   }
 
   /**
    * Tests entityCount() and hadData() methods.
    */
-  public function testEntityCountAndHasData() {
+  public function testEntityCountAndHasData(): void {
     // Create a field with a cardinality of 2 to show that we are counting
     // entities and not rows in a table.
     /** @var \Drupal\field\Entity\FieldStorageConfig $field_storage */
@@ -62,16 +64,16 @@ class FieldDataCountTest extends FieldKernelTestBase {
       'bundle' => 'entity_test',
     ])->save();
 
-    $this->assertIdentical($field_storage->hasdata(), FALSE, 'There are no entities with field data.');
-    $this->assertIdentical($this->storage->countFieldData($field_storage), 0, 'There are 0 entities with field data.');
+    $this->assertFalse($field_storage->hasData(), 'There are no entities with field data.');
+    $this->assertSame(0, $this->storage->countFieldData($field_storage), 'There are 0 entities with field data.');
 
     // Create 1 entity without the field.
     $entity = EntityTest::create();
     $entity->name->value = $this->randomMachineName();
     $entity->save();
 
-    $this->assertIdentical($field_storage->hasdata(), FALSE, 'There are no entities with field data.');
-    $this->assertIdentical($this->storage->countFieldData($field_storage), 0, 'There are 0 entities with field data.');
+    $this->assertFalse($field_storage->hasData(), 'There are no entities with field data.');
+    $this->assertSame(0, $this->storage->countFieldData($field_storage), 'There are 0 entities with field data.');
 
     // Create 12 entities to ensure that the purging works as expected.
     for ($i = 0; $i < 12; $i++) {
@@ -82,30 +84,30 @@ class FieldDataCountTest extends FieldKernelTestBase {
       $entity->save();
     }
 
-    $storage = \Drupal::entityManager()->getStorage('entity_test');
+    $storage = \Drupal::entityTypeManager()->getStorage('entity_test');
     if ($storage instanceof SqlContentEntityStorage) {
       // Count the actual number of rows in the field table.
       $table_mapping = $storage->getTableMapping();
       $field_table_name = $table_mapping->getDedicatedDataTableName($field_storage);
-      $result = db_select($field_table_name, 't')
+      $result = Database::getConnection()->select($field_table_name, 't')
         ->fields('t')
         ->countQuery()
         ->execute()
         ->fetchField();
-      $this->assertEqual($result, 24, 'The field table has 24 rows.');
+      $this->assertEquals(24, $result, 'The field table has 24 rows.');
     }
 
-    $this->assertIdentical($field_storage->hasdata(), TRUE, 'There are entities with field data.');
-    $this->assertEqual($this->storage->countFieldData($field_storage), 12, 'There are 12 entities with field data.');
+    $this->assertTrue($field_storage->hasData(), 'There are entities with field data.');
+    $this->assertEquals(12, $this->storage->countFieldData($field_storage), 'There are 12 entities with field data.');
 
     // Ensure the methods work on deleted fields.
     $field_storage->delete();
-    $this->assertIdentical($field_storage->hasdata(), TRUE, 'There are entities with deleted field data.');
-    $this->assertEqual($this->storage->countFieldData($field_storage), 12, 'There are 12 entities with deleted field data.');
+    $this->assertTrue($field_storage->hasData(), 'There are entities with deleted field data.');
+    $this->assertEquals(12, $this->storage->countFieldData($field_storage), 'There are 12 entities with deleted field data.');
 
     field_purge_batch(6);
-    $this->assertIdentical($field_storage->hasdata(), TRUE, 'There are entities with deleted field data.');
-    $this->assertEqual($this->storage->countFieldData($field_storage), 6, 'There are 6 entities with deleted field data.');
+    $this->assertTrue($field_storage->hasData(), 'There are entities with deleted field data.');
+    $this->assertEquals(6, $this->storage->countFieldData($field_storage), 'There are 6 entities with deleted field data.');
 
     $entity_type = 'entity_test_rev';
     $this->createFieldWithStorage('_2', $entity_type);
@@ -115,8 +117,8 @@ class FieldDataCountTest extends FieldKernelTestBase {
       ->create(['type' => $entity_type]);
     $cardinality = $this->fieldTestData->field_storage_2->getCardinality();
 
-    $this->assertIdentical($this->fieldTestData->field_storage_2->hasData(), FALSE, 'There are no entities with field data.');
-    $this->assertIdentical($this->storageRev->countFieldData($this->fieldTestData->field_storage_2), 0, 'There are 0 entities with field data.');
+    $this->assertFalse($this->fieldTestData->field_storage_2->hasData(), 'There are no entities with field data.');
+    $this->assertSame(0, $this->storageRev->countFieldData($this->fieldTestData->field_storage_2), 'There are 0 entities with field data.');
 
     // Create 1 entity with the field.
     $entity = clone($entity_init);
@@ -126,24 +128,25 @@ class FieldDataCountTest extends FieldKernelTestBase {
     $entity->save();
     $first_revision = $entity->getRevisionId();
 
-    $this->assertIdentical($this->fieldTestData->field_storage_2->hasData(), TRUE, 'There are entities with field data.');
-    $this->assertIdentical($this->storageRev->countFieldData($this->fieldTestData->field_storage_2), 1, 'There is 1 entity with field data.');
+    $this->assertTrue($this->fieldTestData->field_storage_2->hasData(), 'There are entities with field data.');
+    $this->assertSame(1, $this->storageRev->countFieldData($this->fieldTestData->field_storage_2), 'There is 1 entity with field data.');
 
     $entity->{$this->fieldTestData->field_name_2} = [];
     $entity->setNewRevision();
     $entity->save();
 
-    $this->assertIdentical($this->fieldTestData->field_storage_2->hasData(), TRUE, 'There are entities with field data.');
+    $this->assertTrue($this->fieldTestData->field_storage_2->hasData(), 'There are entities with field data.');
 
-    $storage = $this->container->get('entity.manager')->getStorage($entity_type);
+    /** @var \Drupal\Core\Entity\RevisionableStorageInterface $storage */
+    $storage = $this->container->get('entity_type.manager')->getStorage($entity_type);
     $entity = $storage->loadRevision($first_revision);
-    $this->assertEqual(count($entity->{$this->fieldTestData->field_name_2}), $cardinality, format_string('Revision %revision_id: expected number of values.', ['%revision_id' => $first_revision]));
+    $this->assertCount($cardinality, $entity->{$this->fieldTestData->field_name_2}, "Revision $first_revision: expected number of values.");
   }
 
   /**
    * Verify that we can count a table that contains an entry with index 0.
    */
-  public function testCountWithIndex0() {
+  public function testCountWithIndex0(): void {
     // Create a field that will require dedicated storage.
     /** @var \Drupal\field\Entity\FieldStorageConfig $field_storage */
     $field_storage = FieldStorageConfig::create([
@@ -171,11 +174,11 @@ class FieldDataCountTest extends FieldKernelTestBase {
 
     // Test shared table storage.
     $storage = $user->getFieldDefinition('name')->getFieldStorageDefinition();
-    $this->assertIdentical(TRUE, $this->storageUser->countFieldData($storage, TRUE));
+    $this->assertTrue($this->storageUser->countFieldData($storage, TRUE));
 
     // Test dedicated table storage.
     $storage = $user->getFieldDefinition('field_int')->getFieldStorageDefinition();
-    $this->assertIdentical(TRUE, $this->storageUser->countFieldData($storage, TRUE));
+    $this->assertTrue($this->storageUser->countFieldData($storage, TRUE));
   }
 
 }

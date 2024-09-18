@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\filter\Functional;
 
 use Drupal\comment\Tests\CommentTestTrait;
@@ -19,20 +21,19 @@ class FilterHtmlImageSecureTest extends BrowserTestBase {
   use TestFileCreationTrait;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['filter', 'node', 'comment'];
+  protected static $modules = ['filter', 'node', 'comment'];
 
   /**
-   * An authenticated user.
-   *
-   * @var \Drupal\user\UserInterface
+   * {@inheritdoc}
    */
-  protected $webUser;
+  protected $defaultTheme = 'stark';
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     // Setup Filtered HTML text format.
@@ -43,7 +44,7 @@ class FilterHtmlImageSecureTest extends BrowserTestBase {
         'filter_html' => [
           'status' => 1,
           'settings' => [
-            'allowed_html' => '<img src testattribute> <a>',
+            'allowed_html' => '<img src test-attribute> <a>',
           ],
         ],
         'filter_autop' => [
@@ -57,27 +58,28 @@ class FilterHtmlImageSecureTest extends BrowserTestBase {
     $filtered_html_format->save();
 
     // Setup users.
-    $this->webUser = $this->drupalCreateUser([
+    $webUser = $this->drupalCreateUser([
       'access content',
       'access comments',
       'post comments',
       'skip comment approval',
       $filtered_html_format->getPermissionName(),
     ]);
-    $this->drupalLogin($this->webUser);
+    $this->drupalLogin($webUser);
 
     // Setup a node to comment and test on.
     $this->drupalCreateContentType(['type' => 'page', 'name' => 'Basic page']);
     // Add a comment field.
     $this->addDefaultCommentField('node', 'page');
-    $this->node = $this->drupalCreateNode();
   }
 
   /**
    * Tests removal of images having a non-local source.
    */
-  public function testImageSource() {
+  public function testImageSource(): void {
     global $base_url;
+
+    $node = $this->drupalCreateNode();
 
     $public_files_path = PublicStream::basePath();
 
@@ -88,18 +90,17 @@ class FilterHtmlImageSecureTest extends BrowserTestBase {
 
     $druplicon = 'core/misc/druplicon.png';
     $red_x_image = base_path() . 'core/misc/icons/e32700/error.svg';
-    $alt_text = t('Image removed.');
-    $title_text = t('This image has been removed. For security reasons, only images from the local domain are allowed.');
 
     // Put a test image in the files directory.
     $test_images = $this->getTestFiles('image');
     $test_image = $test_images[0]->filename;
 
     // Put a test image in the files directory with special filename.
+    // cspell:ignore tést fïle nàme
     $special_filename = 'tést fïle nàme.png';
     $special_image = rawurlencode($special_filename);
     $special_uri = str_replace($test_images[0]->filename, $special_filename, $test_images[0]->uri);
-    file_unmanaged_copy($test_images[0]->uri, $special_uri);
+    \Drupal::service('file_system')->copy($test_images[0]->uri, $special_uri);
 
     // Create a list of test image sources.
     // The keys become the value of the IMG 'src' attribute, the values are the
@@ -109,7 +110,7 @@ class FilterHtmlImageSecureTest extends BrowserTestBase {
     $images = [
       $http_base_url . '/' . $druplicon => base_path() . $druplicon,
       $https_base_url . '/' . $druplicon => base_path() . $druplicon,
-      // Test a url that includes a port.
+      // Test a URL that includes a port.
       preg_replace($host_pattern, 'http://' . $host . ':', $http_base_url . '/' . $druplicon) => base_path() . $druplicon,
       preg_replace($host_pattern, 'http://' . $host . ':80', $http_base_url . '/' . $druplicon) => base_path() . $druplicon,
       preg_replace($host_pattern, 'http://' . $host . ':443', $http_base_url . '/' . $druplicon) => base_path() . $druplicon,
@@ -132,28 +133,29 @@ class FilterHtmlImageSecureTest extends BrowserTestBase {
       $comment[] = $image . ':';
       // Hash the image source in a custom test attribute, because it might
       // contain characters that confuse XPath.
-      $comment[] = '<img src="' . $image . '" testattribute="' . hash('sha256', $image) . '" />';
+      $comment[] = '<img src="' . $image . '" test-attribute="' . hash('sha256', $image) . '" />';
     }
     $edit = [
       'comment_body[0][value]' => implode("\n", $comment),
     ];
-    $this->drupalPostForm('node/' . $this->node->id(), $edit, t('Save'));
+    $this->drupalGet('node/' . $node->id());
+    $this->submitForm($edit, 'Save');
     foreach ($images as $image => $converted) {
       $found = FALSE;
-      foreach ($this->xpath('//img[@testattribute="' . hash('sha256', $image) . '"]') as $element) {
+      foreach ($this->xpath('//img[@test-attribute="' . hash('sha256', $image) . '"]') as $element) {
         $found = TRUE;
         if ($converted == $red_x_image) {
-          $this->assertEqual($element->getAttribute('src'), $red_x_image);
-          $this->assertEqual($element->getAttribute('alt'), $alt_text);
-          $this->assertEqual($element->getAttribute('title'), $title_text);
-          $this->assertEqual($element->getAttribute('height'), '16');
-          $this->assertEqual($element->getAttribute('width'), '16');
+          $this->assertEquals($red_x_image, $element->getAttribute('src'));
+          $this->assertEquals('Image removed.', $element->getAttribute('alt'));
+          $this->assertEquals('This image has been removed. For security reasons, only images from the local domain are allowed.', $element->getAttribute('title'));
+          $this->assertEquals('16', $element->getAttribute('height'));
+          $this->assertEquals('16', $element->getAttribute('width'));
         }
         else {
-          $this->assertEqual($element->getAttribute('src'), $converted);
+          $this->assertEquals($converted, $element->getAttribute('src'));
         }
       }
-      $this->assertTrue($found, format_string('@image was found.', ['@image' => $image]));
+      $this->assertTrue($found, "$image was found.");
     }
   }
 

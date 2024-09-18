@@ -9,6 +9,7 @@ use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\OptGroup;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Base class for the 'options_*' widgets.
@@ -23,12 +24,34 @@ use Drupal\Core\Form\OptGroup;
 abstract class OptionsWidgetBase extends WidgetBase {
 
   /**
-   * Abstract over the actual field columns, to allow different field types to
-   * reuse those widgets.
+   * Abstract over the actual field columns.
+   *
+   * Allows different field types to reuse those widgets.
    *
    * @var string
    */
   protected $column;
+
+  /**
+   * Tracks whether the field is required.
+   */
+  protected bool $required;
+
+  /**
+   * Tracks whether the data is multi-valued.
+   */
+  protected bool $multiple;
+
+  /**
+   * Tracks whether the field has a value.
+   */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
+  protected bool $has_value;
+
+  /**
+   * The array of options for the widget.
+   */
+  protected array $options;
 
   /**
    * {@inheritdoc}
@@ -50,7 +73,7 @@ abstract class OptionsWidgetBase extends WidgetBase {
     $this->has_value = isset($items[0]->{$this->column});
 
     // Add our custom validator.
-    $element['#element_validate'][] = [get_class($this), 'validateElement'];
+    $element['#element_validate'][] = [static::class, 'validateElement'];
     $element['#key_column'] = $this->column;
 
     // The rest of the $element is built by child method implementations.
@@ -68,7 +91,12 @@ abstract class OptionsWidgetBase extends WidgetBase {
    */
   public static function validateElement(array $element, FormStateInterface $form_state) {
     if ($element['#required'] && $element['#value'] == '_none') {
-      $form_state->setError($element, t('@name field is required.', ['@name' => $element['#title']]));
+      if (isset($element['#required_error'])) {
+        $form_state->setError($element, $element['#required_error']);
+      }
+      else {
+        $form_state->setError($element, new TranslatableMarkup('@name field is required.', ['@name' => $element['#title']]));
+      }
     }
 
     // Massage submitted form values.
@@ -124,6 +152,7 @@ abstract class OptionsWidgetBase extends WidgetBase {
       $context = [
         'fieldDefinition' => $this->fieldDefinition,
         'entity' => $entity,
+        'widget' => $this,
       ];
       $module_handler->alter('options_list', $options, $context);
 

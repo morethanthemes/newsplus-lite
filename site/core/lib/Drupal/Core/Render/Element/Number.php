@@ -3,6 +3,7 @@
 namespace Drupal\Core\Render\Element;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Attribute\FormElement;
 use Drupal\Core\Render\Element;
 use Drupal\Component\Utility\Number as NumberUtility;
 
@@ -16,28 +17,26 @@ use Drupal\Component\Utility\Number as NumberUtility;
  * - #step: Ensures that the number is an even multiple of step, offset by #min
  *   if specified. A #min of 1 and a #step of 2 would allow values of 1, 3, 5,
  *   etc.
- * - #size: The size of the input element in characters.
  *
  * Usage example:
  * @code
- * $form['quantity'] = array(
+ * $form['quantity'] = [
  *   '#type' => 'number',
  *   '#title' => $this->t('Quantity'),
- * );
+ * ];
  * @endcode
  *
  * @see \Drupal\Core\Render\Element\Range
  * @see \Drupal\Core\Render\Element\Textfield
- *
- * @FormElement("number")
  */
-class Number extends FormElement {
+#[FormElement('number')]
+class Number extends FormElementBase {
 
   /**
    * {@inheritdoc}
    */
   public function getInfo() {
-    $class = get_class($this);
+    $class = static::class;
     return [
       '#input' => TRUE,
       '#step' => 1,
@@ -87,7 +86,7 @@ class Number extends FormElement {
     if (isset($element['#step']) && strtolower($element['#step']) != 'any') {
       // Check that the input is an allowed multiple of #step (offset by #min if
       // #min is set).
-      $offset = isset($element['#min']) ? $element['#min'] : 0.0;
+      $offset = $element['#min'] ?? 0.0;
 
       if (!NumberUtility::validStep($value, $element['#step'], $offset)) {
         $form_state->setError($element, t('%name is not a valid number.', ['%name' => $name]));

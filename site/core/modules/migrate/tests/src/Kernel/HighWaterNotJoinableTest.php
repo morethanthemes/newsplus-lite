@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\migrate\Kernel;
 
 /**
@@ -13,12 +15,16 @@ class HighWaterNotJoinableTest extends MigrateSqlSourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['migrate', 'migrate_drupal', 'migrate_high_water_test'];
+  protected static $modules = [
+    'migrate',
+    'migrate_drupal',
+    'migrate_high_water_test',
+  ];
 
   /**
    * {@inheritdoc}
    */
-  public function providerSource() {
+  public static function providerSource() {
     $tests = [];
 
     // Test high water when the map is not joinable.

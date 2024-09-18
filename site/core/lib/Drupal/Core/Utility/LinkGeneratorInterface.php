@@ -26,7 +26,7 @@ interface LinkGeneratorInterface {
    * However, for links enclosed in translatable text you should use t() and
    * embed the HTML anchor tag directly in the translated string. For example:
    * @code
-   * $text = t('Visit the <a href=":url">content types</a> page', array(':url' => \Drupal::url('entity.node_type.collection')));
+   * $text = t('Visit the <a href=":url">content types</a> page', [':url' => Url::fromRoute('entity.node_type.collection')->toString()]);
    * @endcode
    * This keeps the context of the link title ('settings' in the example) for
    * translators.
@@ -36,7 +36,7 @@ interface LinkGeneratorInterface {
    *   Strings will be sanitized automatically. If you need to output HTML in
    *   the link text, use a render array or an already sanitized string such as
    *   the output of \Drupal\Component\Utility\Xss::filter() or
-   *   \Drupal\Component\Utility\SafeMarkup::format().
+   *   \Drupal\Component\Render\FormattableMarkup.
    * @param \Drupal\Core\Url $url
    *   The URL object used for the link. Amongst its options, the following may
    *   be set to affect the generated link:
@@ -86,6 +86,11 @@ interface LinkGeneratorInterface {
    * @internal
    *   Should not be used in user code.
    *   Use \Drupal\Core\Link instead.
+   *
+   * @deprecated in drupal:10.1.0 and is removed from drupal:11.0.0. Use
+   *   \Drupal\Core\Utility\LinkGeneratorInterface::generate() instead.
+   *
+   * @see https://www.drupal.org/node/3342992
    */
   public function generateFromLink(Link $link);
 

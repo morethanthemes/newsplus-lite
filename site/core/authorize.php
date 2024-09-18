@@ -11,7 +11,7 @@
  * user interface which knows how to redirect the user to this script as part of
  * a multistep process. This script actually performs the selected operations
  * without loading all of Drupal, to be able to more gracefully recover from
- * errors. Access to the script is controlled by a global killswitch in
+ * errors. Access to the script is controlled by a global kill switch in
  * settings.php ('allow_authorize_operations') and via the 'administer software
  * updates' permission.
  *
@@ -27,6 +27,8 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Drupal\Core\Site\Settings;
+use Drupal\Core\Routing\RouteObjectInterface;
+use Symfony\Component\Routing\Route;
 
 // Change the directory to the Drupal root.
 chdir('..');
@@ -45,7 +47,7 @@ const MAINTENANCE_MODE = 'update';
 /**
  * Determines if the current user is allowed to run authorize.php.
  *
- * The killswitch in settings.php overrides all else, otherwise, the user must
+ * The kill switch in settings.php overrides all else, otherwise, the user must
  * have access to the 'administer software updates' permission.
  *
  * @param \Symfony\Component\HttpFoundation\Request $request
@@ -65,7 +67,15 @@ function authorize_access_allowed(Request $request) {
 try {
   $request = Request::createFromGlobals();
   $kernel = DrupalKernel::createFromRequest($request, $autoloader, 'prod');
-  $kernel->prepareLegacyRequest($request);
+  $kernel->boot();
+  // A route is required for route matching.
+  $request->attributes->set(RouteObjectInterface::ROUTE_OBJECT, new Route('<none>'));
+  $request->attributes->set(RouteObjectInterface::ROUTE_NAME, '<none>');
+  $kernel->preHandle($request);
+  // Ensure our request includes the session if appropriate.
+  if (PHP_SAPI !== 'cli') {
+    $request->setSession($kernel->getContainer()->get('session'));
+  }
 }
 catch (HttpExceptionInterface $e) {
   $response = new Response('', $e->getStatusCode());
@@ -94,26 +104,20 @@ if ($is_allowed) {
   require_once __DIR__ . '/includes/form.inc';
   require_once __DIR__ . '/includes/batch.inc';
 
-  if (isset($_SESSION['authorize_page_title'])) {
-    $page_title = $_SESSION['authorize_page_title'];
-  }
-  else {
-    $page_title = t('Authorize file system changes');
-  }
+  $page_title = $request->getSession()->get('authorize_page_title', t('Authorize file system changes'));
 
   // See if we've run the operation and need to display a report.
-  if (isset($_SESSION['authorize_results']) && $results = $_SESSION['authorize_results']) {
+  if ($results = $request->getSession()->remove('authorize_results')) {
 
     // Clear the session out.
-    unset($_SESSION['authorize_results']);
-    unset($_SESSION['authorize_operation']);
-    unset($_SESSION['authorize_filetransfer_info']);
+    $request->getSession()->remove('authorize_operation');
+    $request->getSession()->remove('authorize_filetransfer_info');
 
     if (!empty($results['page_title'])) {
       $page_title = $results['page_title'];
     }
     if (!empty($results['page_message'])) {
-      drupal_set_message($results['page_message']['message'], $results['page_message']['type']);
+      \Drupal::messenger()->addMessage($results['page_message']['message'], $results['page_message']['type']);
     }
 
     $content['authorize_report'] = [
@@ -125,7 +129,7 @@ if ($is_allowed) {
       $links = $results['tasks'];
     }
     else {
-      // Since this is being called outsite of the primary front controller,
+      // Since this is being called outside of the primary front controller,
       // the base_url needs to be set explicitly to ensure that links are
       // relative to the site root.
       // @todo Simplify with https://www.drupal.org/node/2548095
@@ -165,7 +169,7 @@ if ($is_allowed) {
     }
   }
   else {
-    if (empty($_SESSION['authorize_operation']) || empty($_SESSION['authorize_filetransfer_info'])) {
+    if (!$request->getSession()->has('authorize_operation') || !$request->getSession()->has('authorize_filetransfer_info')) {
       $content = ['#markup' => t('It appears you have reached this page in error.')];
     }
     elseif (!$batch = batch_get()) {

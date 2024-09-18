@@ -5,6 +5,7 @@ namespace Drupal\Core\Queue;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Plugin\DefaultPluginManager;
+use Drupal\Core\Queue\Attribute\QueueWorker;
 
 /**
  * Defines the queue worker manager.
@@ -17,7 +18,7 @@ use Drupal\Core\Plugin\DefaultPluginManager;
 class QueueWorkerManager extends DefaultPluginManager implements QueueWorkerManagerInterface {
 
   /**
-   * Constructs an QueueWorkerManager object.
+   * Constructs a QueueWorkerManager object.
    *
    * @param \Traversable $namespaces
    *   An object that implements \Traversable which contains the root paths
@@ -28,7 +29,7 @@ class QueueWorkerManager extends DefaultPluginManager implements QueueWorkerMana
    *   The module handler.
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler) {
-    parent::__construct('Plugin/QueueWorker', $namespaces, $module_handler, 'Drupal\Core\Queue\QueueWorkerInterface', 'Drupal\Core\Annotation\QueueWorker');
+    parent::__construct('Plugin/QueueWorker', $namespaces, $module_handler, 'Drupal\Core\Queue\QueueWorkerInterface', QueueWorker::class, 'Drupal\Core\Annotation\QueueWorker');
 
     $this->setCacheBackend($cache_backend, 'queue_plugins');
     $this->alterInfo('queue_info');
@@ -40,11 +41,16 @@ class QueueWorkerManager extends DefaultPluginManager implements QueueWorkerMana
   public function processDefinition(&$definition, $plugin_id) {
     parent::processDefinition($definition, $plugin_id);
 
-    // Assign a default time if a cron is specified.
+    // Safeguard to ensure the default lease time is used in the case of a
+    // malformed queue worker annotation where cron is specified without a time,
+    // or an invalid time is provided.
+    //
+    // @see \Drupal\Core\Cron::processQueues()
     if (isset($definition['cron'])) {
-      $definition['cron'] += [
-        'time' => 15,
-      ];
+      $time = $definition['cron']['time'] ?? 0;
+      if ($time <= 0) {
+        $definition['cron']['time'] = self::DEFAULT_QUEUE_CRON_TIME;
+      }
     }
   }
 

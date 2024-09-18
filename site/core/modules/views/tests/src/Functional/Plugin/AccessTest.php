@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Functional\Plugin;
 
 use Drupal\Tests\views\Functional\ViewTestBase;
@@ -23,11 +25,14 @@ class AccessTest extends ViewTestBase {
   public static $testViews = ['test_access_none', 'test_access_static', 'test_access_dynamic'];
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['node'];
+  protected static $modules = ['node'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Web user for testing.
@@ -43,17 +48,22 @@ class AccessTest extends ViewTestBase {
    */
   protected $normalUser;
 
-  protected function setUp($import_test_views = TRUE) {
-    parent::setUp($import_test_views);
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp($import_test_views = TRUE, $modules = ['views_test_config']): void {
+    parent::setUp($import_test_views, $modules);
 
     $this->enableViewsTestModule();
 
-    ViewTestData::createTestViews(get_class($this), ['views_test_data']);
+    ViewTestData::createTestViews(static::class, ['views_test_data']);
 
     $this->webUser = $this->drupalCreateUser();
 
     $normal_role = $this->drupalCreateRole([]);
-    $this->normalUser = $this->drupalCreateUser(['views_test_data test permission']);
+    $this->normalUser = $this->drupalCreateUser([
+      'views_test_data test permission',
+    ]);
     $this->normalUser->addRole($normal_role);
     // @todo when all the plugin information is cached make a reset function and
     // call it here.
@@ -62,7 +72,7 @@ class AccessTest extends ViewTestBase {
   /**
    * Tests none access plugin.
    */
-  public function testAccessNone() {
+  public function testAccessNone(): void {
     $view = Views::getView('test_access_none');
     $view->setDisplay();
 
@@ -79,7 +89,7 @@ class AccessTest extends ViewTestBase {
    *
    * @see \Drupal\views_test\Plugin\views\access\StaticTest
    */
-  public function testStaticAccessPlugin() {
+  public function testStaticAccessPlugin(): void {
     $view = Views::getView('test_access_static');
     $view->setDisplay();
 
@@ -87,7 +97,7 @@ class AccessTest extends ViewTestBase {
 
     $this->assertFalse($access_plugin->access($this->normalUser));
     $this->drupalGet('test_access_static');
-    $this->assertResponse(403);
+    $this->assertSession()->statusCodeEquals(403);
 
     $display = &$view->storage->getDisplay('default');
     $display['display_options']['access']['options']['access'] = TRUE;
@@ -100,7 +110,7 @@ class AccessTest extends ViewTestBase {
     $this->assertTrue($access_plugin->access($this->normalUser));
 
     $this->drupalGet('test_access_static');
-    $this->assertResponse(200);
+    $this->assertSession()->statusCodeEquals(200);
   }
 
 }

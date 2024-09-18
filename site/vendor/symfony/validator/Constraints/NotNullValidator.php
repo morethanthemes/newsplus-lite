@@ -21,12 +21,12 @@ use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 class NotNullValidator extends ConstraintValidator
 {
     /**
-     * {@inheritdoc}
+     * @return void
      */
-    public function validate($value, Constraint $constraint)
+    public function validate(mixed $value, Constraint $constraint)
     {
         if (!$constraint instanceof NotNull) {
-            throw new UnexpectedTypeException($constraint, __NAMESPACE__.'\NotNull');
+            throw new UnexpectedTypeException($constraint, NotNull::class);
         }
 
         if (null === $value) {

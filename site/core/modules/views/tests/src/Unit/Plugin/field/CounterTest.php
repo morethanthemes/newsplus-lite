@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Unit\Plugin\field;
 
 use Drupal\Tests\UnitTestCase;
@@ -7,6 +9,7 @@ use Drupal\views\Entity\View;
 use Drupal\views\Plugin\views\field\Counter;
 use Drupal\views\ResultRow;
 use Drupal\views\Tests\ViewTestData;
+use Drupal\views\ViewExecutable;
 
 /**
  * @coversDefaultClass \Drupal\views\Plugin\views\field\Counter
@@ -26,7 +29,7 @@ class CounterTest extends UnitTestCase {
    *
    * @var \Drupal\views\ViewExecutable
    */
-  protected  $view;
+  protected $view;
 
   /**
    * The display plugin instance.
@@ -53,7 +56,7 @@ class CounterTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     // Setup basic stuff like the view and the display.
@@ -65,12 +68,15 @@ class CounterTest extends UnitTestCase {
     ];
 
     $storage = new View($config, 'view');
-    $user = $this->getMock('Drupal\Core\Session\AccountInterface');
+    $user = $this->createMock('Drupal\Core\Session\AccountInterface');
     $views_data = $this->getMockBuilder('Drupal\views\ViewsData')
       ->disableOriginalConstructor()
       ->getMock();
-    $route_provider = $this->getMock('Drupal\Core\Routing\RouteProviderInterface');
-    $this->view = $this->getMock('Drupal\views\ViewExecutable', NULL, [$storage, $user, $views_data, $route_provider]);
+    $route_provider = $this->createMock('Drupal\Core\Routing\RouteProviderInterface');
+    $display_plugin_manager = $this->getMockBuilder('\Drupal\views\Plugin\ViewsPluginManager')
+      ->disableOriginalConstructor()
+      ->getMock();
+    $this->view = new ViewExecutable($storage, $user, $views_data, $route_provider, $display_plugin_manager);
 
     $this->display = $this->getMockBuilder('Drupal\views\Plugin\views\display\DisplayPluginBase')
       ->disableOriginalConstructor()
@@ -78,7 +84,7 @@ class CounterTest extends UnitTestCase {
 
     $this->pager = $this->getMockBuilder('Drupal\views\Plugin\views\pager\Full')
       ->disableOriginalConstructor()
-      ->setMethods(NULL)
+      ->onlyMethods([])
       ->getMock();
 
     $this->view->display_handler = $this->display;
@@ -97,7 +103,7 @@ class CounterTest extends UnitTestCase {
    * @return array
    *   Returns an array of row index to test.
    */
-  public function providerRowIndexes() {
+  public static function providerRowIndexes() {
     return [
       [0],
       [1],
@@ -110,7 +116,7 @@ class CounterTest extends UnitTestCase {
    *
    * @dataProvider providerRowIndexes
    */
-  public function testSimpleCounter($i) {
+  public function testSimpleCounter($i): void {
     $counter_handler = new Counter([], 'counter', $this->definition);
     $options = [];
     $counter_handler->init($this->view, $this->display, $options);
@@ -132,7 +138,7 @@ class CounterTest extends UnitTestCase {
    *
    * @dataProvider providerRowIndexes
    */
-  public function testCounterRandomStart($i) {
+  public function testCounterRandomStart($i): void {
     // Setup a counter field with a random start.
     $rand_start = rand(5, 10);
     $counter_handler = new Counter([], 'counter', $this->definition);
@@ -158,7 +164,7 @@ class CounterTest extends UnitTestCase {
    *
    * @dataProvider providerRowIndexes
    */
-  public function testCounterRandomPagerOffset($i) {
+  public function testCounterRandomPagerOffset($i): void {
     // Setup a counter field with a pager with a random offset.
     $offset = 3;
     $this->pager->setOffset($offset);
@@ -187,7 +193,7 @@ class CounterTest extends UnitTestCase {
    *
    * @dataProvider providerRowIndexes
    */
-  public function testCounterSecondPage($i) {
+  public function testCounterSecondPage($i): void {
     $offset = 3;
     // Setup a pager on the second page.
     $this->pager->setOffset($offset);

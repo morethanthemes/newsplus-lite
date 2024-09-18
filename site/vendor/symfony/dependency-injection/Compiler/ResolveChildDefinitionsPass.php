@@ -12,9 +12,11 @@
 namespace Symfony\Component\DependencyInjection\Compiler;
 
 use Symfony\Component\DependencyInjection\ChildDefinition;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Exception\ExceptionInterface;
 use Symfony\Component\DependencyInjection\Exception\RuntimeException;
+use Symfony\Component\DependencyInjection\Exception\ServiceCircularReferenceException;
 
 /**
  * This replaces all ChildDefinition instances with their equivalent fully
@@ -25,7 +27,11 @@ use Symfony\Component\DependencyInjection\Exception\RuntimeException;
  */
 class ResolveChildDefinitionsPass extends AbstractRecursivePass
 {
-    protected function processValue($value, $isRoot = false)
+    protected bool $skipScalars = true;
+
+    private array $currentPath;
+
+    protected function processValue(mixed $value, bool $isRoot = false): mixed
     {
         if (!$value instanceof Definition) {
             return parent::processValue($value, $isRoot);
@@ -36,6 +42,7 @@ class ResolveChildDefinitionsPass extends AbstractRecursivePass
             $value = $this->container->getDefinition($this->currentId);
         }
         if ($value instanceof ChildDefinition) {
+            $this->currentPath = [];
             $value = $this->resolveDefinition($value);
             if ($isRoot) {
                 $this->container->setDefinition($this->currentId, $value);
@@ -48,27 +55,33 @@ class ResolveChildDefinitionsPass extends AbstractRecursivePass
     /**
      * Resolves the definition.
      *
-     * @return Definition
-     *
      * @throws RuntimeException When the definition is invalid
      */
-    private function resolveDefinition(ChildDefinition $definition)
+    private function resolveDefinition(ChildDefinition $definition): Definition
     {
         try {
             return $this->doResolveDefinition($definition);
+        } catch (ServiceCircularReferenceException $e) {
+            throw $e;
         } catch (ExceptionInterface $e) {
             $r = new \ReflectionProperty($e, 'message');
-            $r->setAccessible(true);
             $r->setValue($e, sprintf('Service "%s": %s', $this->currentId, $e->getMessage()));
 
             throw $e;
         }
     }
 
-    private function doResolveDefinition(ChildDefinition $definition)
+    private function doResolveDefinition(ChildDefinition $definition): Definition
     {
         if (!$this->container->has($parent = $definition->getParent())) {
             throw new RuntimeException(sprintf('Parent definition "%s" does not exist.', $parent));
+        }
+
+        $searchKey = array_search($parent, $this->currentPath);
+        $this->currentPath[] = $parent;
+
+        if (false !== $searchKey) {
+            throw new ServiceCircularReferenceException($parent, \array_slice($this->currentPath, $searchKey));
         }
 
         $parentDef = $this->container->findDefinition($parent);
@@ -89,11 +102,9 @@ class ResolveChildDefinitionsPass extends AbstractRecursivePass
         $def->setArguments($parentDef->getArguments());
         $def->setMethodCalls($parentDef->getMethodCalls());
         $def->setProperties($parentDef->getProperties());
-        if ($parentDef->getAutowiringTypes(false)) {
-            $def->setAutowiringTypes($parentDef->getAutowiringTypes(false));
-        }
         if ($parentDef->isDeprecated()) {
-            $def->setDeprecated(true, $parentDef->getDeprecationMessage('%service_id%'));
+            $deprecation = $parentDef->getDeprecation('%service_id%');
+            $def->setDeprecated($deprecation['package'], $deprecation['version'], $deprecation['message']);
         }
         $def->setFactory($parentDef->getFactory());
         $def->setConfigurator($parentDef->getConfigurator());
@@ -104,6 +115,8 @@ class ResolveChildDefinitionsPass extends AbstractRecursivePass
         $def->setChanges($parentDef->getChanges());
 
         $def->setBindings($definition->getBindings() + $parentDef->getBindings());
+
+        $def->setSynthetic($definition->isSynthetic());
 
         // overwrite with values specified in the decorator
         $changes = $definition->getChanges();
@@ -122,13 +135,14 @@ class ResolveChildDefinitionsPass extends AbstractRecursivePass
         if (isset($changes['public'])) {
             $def->setPublic($definition->isPublic());
         } else {
-            $def->setPrivate($definition->isPrivate() || $parentDef->isPrivate());
+            $def->setPublic($parentDef->isPublic());
         }
         if (isset($changes['lazy'])) {
             $def->setLazy($definition->isLazy());
         }
-        if (isset($changes['deprecated'])) {
-            $def->setDeprecated($definition->isDeprecated(), $definition->getDeprecationMessage('%service_id%'));
+        if (isset($changes['deprecated']) && $definition->isDeprecated()) {
+            $deprecation = $definition->getDeprecation('%service_id%');
+            $def->setDeprecated($deprecation['package'], $deprecation['version'], $deprecation['message']);
         }
         if (isset($changes['autowired'])) {
             $def->setAutowired($definition->isAutowired());
@@ -141,7 +155,7 @@ class ResolveChildDefinitionsPass extends AbstractRecursivePass
             if (null === $decoratedService) {
                 $def->setDecoratedService($decoratedService);
             } else {
-                $def->setDecoratedService($decoratedService[0], $decoratedService[1], $decoratedService[2]);
+                $def->setDecoratedService($decoratedService[0], $decoratedService[1], $decoratedService[2], $decoratedService[3] ?? ContainerInterface::EXCEPTION_ON_INVALID_REFERENCE);
             }
         }
 
@@ -149,8 +163,8 @@ class ResolveChildDefinitionsPass extends AbstractRecursivePass
         foreach ($definition->getArguments() as $k => $v) {
             if (is_numeric($k)) {
                 $def->addArgument($v);
-            } elseif (0 === strpos($k, 'index_')) {
-                $def->replaceArgument((int) substr($k, strlen('index_')), $v);
+            } elseif (str_starts_with($k, 'index_')) {
+                $def->replaceArgument((int) substr($k, \strlen('index_')), $v);
             } else {
                 $def->setArgument($k, $v);
             }
@@ -166,10 +180,8 @@ class ResolveChildDefinitionsPass extends AbstractRecursivePass
             $def->setMethodCalls(array_merge($def->getMethodCalls(), $calls));
         }
 
-        // merge autowiring types
-        foreach ($definition->getAutowiringTypes(false) as $autowiringType) {
-            $def->addAutowiringType($autowiringType);
-        }
+        $def->addError($parentDef);
+        $def->addError($definition);
 
         // these attributes are always taken from the child
         $def->setAbstract($definition->isAbstract());
@@ -178,8 +190,12 @@ class ResolveChildDefinitionsPass extends AbstractRecursivePass
         // and it's not legal on an instanceof
         $def->setAutoconfigured($definition->isAutoconfigured());
 
+        if (!$def->hasTag('proxy')) {
+            foreach ($parentDef->getTag('proxy') as $v) {
+                $def->addTag('proxy', $v);
+            }
+        }
+
         return $def;
     }
 }
-
-class_alias(ResolveChildDefinitionsPass::class, ResolveDefinitionTemplatesPass::class);

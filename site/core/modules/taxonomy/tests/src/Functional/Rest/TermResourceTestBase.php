@@ -1,22 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Functional\Rest;
 
 use Drupal\Core\Cache\Cache;
 use Drupal\taxonomy\Entity\Term;
 use Drupal\taxonomy\Entity\Vocabulary;
-use Drupal\Tests\rest\Functional\BcTimestampNormalizerUnixTestTrait;
 use Drupal\Tests\rest\Functional\EntityResource\EntityResourceTestBase;
 use GuzzleHttp\RequestOptions;
 
 abstract class TermResourceTestBase extends EntityResourceTestBase {
 
-  use BcTimestampNormalizerUnixTestTrait;
-
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['taxonomy', 'path'];
+  protected static $modules = ['content_translation', 'path', 'taxonomy'];
 
   /**
    * {@inheritdoc}
@@ -27,13 +26,24 @@ abstract class TermResourceTestBase extends EntityResourceTestBase {
    * {@inheritdoc}
    */
   protected static $patchProtectedFieldNames = [
-    'changed',
+    'changed' => NULL,
   ];
 
   /**
    * @var \Drupal\taxonomy\TermInterface
    */
   protected $entity;
+
+  /**
+   * Marks some tests as skipped because XML cannot be deserialized.
+   *
+   * @before
+   */
+  public function termResourceTestBaseSkipTests(): void {
+    if (static::$format === 'xml' && $this->name() === 'testPatchPath') {
+      $this->markTestSkipped('Deserialization of the XML format is not supported.');
+    }
+  }
 
   /**
    * {@inheritdoc}
@@ -92,8 +102,74 @@ abstract class TermResourceTestBase extends EntityResourceTestBase {
    * {@inheritdoc}
    */
   protected function getExpectedNormalizedEntity() {
+    // We test with multiple parent terms, and combinations thereof.
+    // @see ::createEntity()
+    // @see ::testGet()
+    // @see ::testGetTermWithParent()
+    // @see ::providerTestGetTermWithParent()
+    $parent_term_ids = [];
+    for ($i = 0; $i < $this->entity->get('parent')->count(); $i++) {
+      $parent_term_ids[$i] = (int) $this->entity->get('parent')[$i]->target_id;
+    }
+
+    $expected_parent_normalization = FALSE;
+    switch ($parent_term_ids) {
+      case [0]:
+        $expected_parent_normalization = [
+          [
+            'target_id' => NULL,
+          ],
+        ];
+        break;
+
+      case [2]:
+        $expected_parent_normalization = [
+          [
+            'target_id' => 2,
+            'target_type' => 'taxonomy_term',
+            'target_uuid' => Term::load(2)->uuid(),
+            'url' => base_path() . 'taxonomy/term/2',
+          ],
+        ];
+        break;
+
+      case [0, 2]:
+        $expected_parent_normalization = [
+          [
+            'target_id' => NULL,
+          ],
+          [
+            'target_id' => 2,
+            'target_type' => 'taxonomy_term',
+            'target_uuid' => Term::load(2)->uuid(),
+            'url' => base_path() . 'taxonomy/term/2',
+          ],
+        ];
+        break;
+
+      case [3, 2]:
+        $expected_parent_normalization = [
+          [
+            'target_id' => 3,
+            'target_type' => 'taxonomy_term',
+            'target_uuid' => Term::load(3)->uuid(),
+            'url' => base_path() . 'taxonomy/term/3',
+          ],
+          [
+            'target_id' => 2,
+            'target_type' => 'taxonomy_term',
+            'target_uuid' => Term::load(2)->uuid(),
+            'url' => base_path() . 'taxonomy/term/2',
+          ],
+        ];
+        break;
+    }
+
     return [
       'tid' => [
+        ['value' => 1],
+      ],
+      'revision_id' => [
         ['value' => 1],
       ],
       'uuid' => [
@@ -116,7 +192,7 @@ abstract class TermResourceTestBase extends EntityResourceTestBase {
           'processed' => "<p>It is a little known fact that llamas cannot count higher than seven.</p>\n",
         ],
       ],
-      'parent' => [],
+      'parent' => $expected_parent_normalization,
       'weight' => [
         ['value' => 0],
       ],
@@ -126,7 +202,10 @@ abstract class TermResourceTestBase extends EntityResourceTestBase {
         ],
       ],
       'changed' => [
-        $this->formatExpectedTimestampItemValues($this->entity->getChangedTime()),
+        [
+          'value' => (new \DateTime())->setTimestamp($this->entity->getChangedTime())->setTimezone(new \DateTimeZone('UTC'))->format(\DateTime::RFC3339),
+          'format' => \DateTime::RFC3339,
+        ],
       ],
       'default_langcode' => [
         [
@@ -138,6 +217,25 @@ abstract class TermResourceTestBase extends EntityResourceTestBase {
           'alias' => '/llama',
           'pid' => 1,
           'langcode' => 'en',
+        ],
+      ],
+      'status' => [
+        [
+          'value' => TRUE,
+        ],
+      ],
+      'revision_created' => [
+        [
+          'value' => (new \DateTime())->setTimestamp((int) $this->entity->getRevisionCreationTime())
+            ->setTimezone(new \DateTimeZone('UTC'))
+            ->format(\DateTime::RFC3339),
+          'format' => \DateTime::RFC3339,
+        ],
+      ],
+      'revision_user' => [],
+      'revision_translation_affected' => [
+        [
+          'value' => TRUE,
         ],
       ],
     ];
@@ -155,12 +253,12 @@ abstract class TermResourceTestBase extends EntityResourceTestBase {
       ],
       'name' => [
         [
-          'value' => 'Dramallama',
+          'value' => 'Drama llama',
         ],
       ],
       'description' => [
         [
-          'value' => 'Dramallamas are the coolest camelids.',
+          'value' => 'Drama llamas are the coolest camelids.',
           'format' => NULL,
         ],
       ],
@@ -171,19 +269,19 @@ abstract class TermResourceTestBase extends EntityResourceTestBase {
    * {@inheritdoc}
    */
   protected function getExpectedUnauthorizedAccessMessage($method) {
-    if ($this->config('rest.settings')->get('bc_entity_resource_permissions')) {
-      return parent::getExpectedUnauthorizedAccessMessage($method);
-    }
-
     switch ($method) {
       case 'GET':
-        return "The 'access content' permission is required.";
+        return "The 'access content' permission is required and the taxonomy term must be published.";
+
       case 'POST':
         return "The following permissions are required: 'create terms in camelids' OR 'administer taxonomy'.";
+
       case 'PATCH':
         return "The following permissions are required: 'edit terms in camelids' OR 'administer taxonomy'.";
+
       case 'DELETE':
         return "The following permissions are required: 'delete terms in camelids' OR 'administer taxonomy'.";
+
       default:
         return parent::getExpectedUnauthorizedAccessMessage($method);
     }
@@ -196,7 +294,7 @@ abstract class TermResourceTestBase extends EntityResourceTestBase {
    *
    * @see \Drupal\Tests\rest\Functional\EntityResource\Node\NodeResourceTestBase::testPatchPath()
    */
-  public function testPatchPath() {
+  public function testPatchPath(): void {
     $this->initAuthentication();
     $this->provisionEntityResource();
     $this->setUpAuthorization('GET');
@@ -236,6 +334,65 @@ abstract class TermResourceTestBase extends EntityResourceTestBase {
    */
   protected function getExpectedCacheContexts() {
     return Cache::mergeContexts(['url.site'], $this->container->getParameter('renderer.config')['required_cache_contexts']);
+  }
+
+  /**
+   * Tests GETting a term with a parent term other than the default <root> (0).
+   *
+   * @see ::getExpectedNormalizedEntity()
+   *
+   * @dataProvider providerTestGetTermWithParent
+   */
+  public function testGetTermWithParent(array $parent_term_ids): void {
+    // Create all possible parent terms.
+    Term::create(['vid' => Vocabulary::load('camelids')->id()])
+      ->setName('Lamoids')
+      ->save();
+    Term::create(['vid' => Vocabulary::load('camelids')->id()])
+      ->setName('Camels')
+      ->save();
+
+    // Modify the entity under test to use the provided parent terms.
+    $this->entity->set('parent', $parent_term_ids)->save();
+
+    $this->initAuthentication();
+    $url = $this->getEntityResourceUrl();
+    $url->setOption('query', ['_format' => static::$format]);
+    $request_options = $this->getAuthenticationRequestOptions('GET');
+    $this->provisionEntityResource();
+    $this->setUpAuthorization('GET');
+    $response = $this->request('GET', $url, $request_options);
+    $expected = $this->getExpectedNormalizedEntity();
+    static::recursiveKSort($expected);
+    $actual = $this->serializer->decode((string) $response->getBody(), static::$format);
+    static::recursiveKSort($actual);
+    $this->assertSame($expected, $actual);
+  }
+
+  public static function providerTestGetTermWithParent() {
+    return [
+      'root parent: [0] (= no parent)' => [
+        [0],
+      ],
+      'non-root parent: [2]' => [
+        [2],
+      ],
+      'multiple parents: [0,2] (root + non-root parent)' => [
+        [0, 2],
+      ],
+      'multiple parents: [3,2] (both non-root parents)' => [
+        [3, 2],
+      ],
+    ];
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getExpectedUnauthorizedEntityAccessCacheability($is_authenticated) {
+    // @see \Drupal\taxonomy\TermAccessControlHandler::checkAccess()
+    return parent::getExpectedUnauthorizedEntityAccessCacheability($is_authenticated)
+      ->addCacheTags(['taxonomy_term:1']);
   }
 
 }

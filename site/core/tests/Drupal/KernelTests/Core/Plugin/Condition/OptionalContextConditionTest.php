@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Plugin\Condition;
 
 use Drupal\Core\Plugin\Context\Context;
-use Drupal\Core\Plugin\Context\ContextDefinition;
+use Drupal\Core\Plugin\Context\EntityContext;
+use Drupal\Core\Plugin\Context\EntityContextDefinition;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\node\Entity\Node;
 use Drupal\node\Entity\NodeType;
@@ -18,12 +21,12 @@ class OptionalContextConditionTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['system', 'user', 'condition_test', 'node'];
+  protected static $modules = ['system', 'user', 'condition_test', 'node'];
 
   /**
    * Tests with both contexts mapped to the same user.
    */
-  public function testContextMissing() {
+  public function testContextMissing(): void {
     /** @var \Drupal\Core\Condition\ConditionPluginBase $condition */
     $condition = \Drupal::service('plugin.manager.condition')
       ->createInstance('condition_test_optional_context')
@@ -37,14 +40,14 @@ class OptionalContextConditionTest extends KernelTestBase {
   /**
    * Tests with both contexts mapped to the same user.
    */
-  public function testContextNoValue() {
+  public function testContextNoValue(): void {
     /** @var \Drupal\Core\Condition\ConditionPluginBase $condition */
     $condition = \Drupal::service('plugin.manager.condition')
       ->createInstance('condition_test_optional_context')
       ->setContextMapping([
         'node' => 'node',
       ]);
-    $definition = new ContextDefinition('entity:node');
+    $definition = EntityContextDefinition::fromEntityTypeId('node');
     $contexts['node'] = (new Context($definition));
     \Drupal::service('context.handler')->applyContextMapping($condition, $contexts);
     $this->assertTrue($condition->execute());
@@ -53,7 +56,7 @@ class OptionalContextConditionTest extends KernelTestBase {
   /**
    * Tests with both contexts mapped to the same user.
    */
-  public function testContextAvailable() {
+  public function testContextAvailable(): void {
     NodeType::create(['type' => 'example', 'name' => 'Example'])->save();
     /** @var \Drupal\Core\Condition\ConditionPluginBase $condition */
     $condition = \Drupal::service('plugin.manager.condition')
@@ -61,9 +64,8 @@ class OptionalContextConditionTest extends KernelTestBase {
       ->setContextMapping([
         'node' => 'node',
       ]);
-    $definition = new ContextDefinition('entity:node');
     $node = Node::create(['type' => 'example']);
-    $contexts['node'] = new Context($definition, $node);
+    $contexts['node'] = EntityContext::fromEntity($node);
     \Drupal::service('context.handler')->applyContextMapping($condition, $contexts);
     $this->assertFalse($condition->execute());
   }

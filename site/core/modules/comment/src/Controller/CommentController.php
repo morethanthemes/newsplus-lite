@@ -8,9 +8,11 @@ use Drupal\comment\Plugin\Field\FieldType\CommentItemInterface;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Cache\CacheableResponseInterface;
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Entity\EntityRepositoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -40,11 +42,18 @@ class CommentController extends ControllerBase {
   protected $commentManager;
 
   /**
-   * The entity manager.
+   * The entity field manager.
    *
-   * @var \Drupal\Core\Entity\EntityStorageInterface
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
    */
-  protected $entityManager;
+  protected $entityFieldManager;
+
+  /**
+   * The entity repository.
+   *
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
+   */
+  protected $entityRepository;
 
   /**
    * Constructs a CommentController object.
@@ -53,24 +62,19 @@ class CommentController extends ControllerBase {
    *   HTTP kernel to handle requests.
    * @param \Drupal\comment\CommentManagerInterface $comment_manager
    *   The comment manager service.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager service.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager service.
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
+   *   The entity field manager service.
+   * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
+   *   The entity repository service.
    */
-  public function __construct(HttpKernelInterface $http_kernel, CommentManagerInterface $comment_manager, EntityManagerInterface $entity_manager) {
+  public function __construct(HttpKernelInterface $http_kernel, CommentManagerInterface $comment_manager, EntityTypeManagerInterface $entity_type_manager, EntityFieldManagerInterface $entity_field_manager, EntityRepositoryInterface $entity_repository) {
     $this->httpKernel = $http_kernel;
     $this->commentManager = $comment_manager;
-    $this->entityManager = $entity_manager;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('http_kernel'),
-      $container->get('comment.manager'),
-      $container->get('entity.manager')
-    );
+    $this->entityTypeManager = $entity_type_manager;
+    $this->entityFieldManager = $entity_field_manager;
+    $this->entityRepository = $entity_repository;
   }
 
   /**
@@ -82,10 +86,10 @@ class CommentController extends ControllerBase {
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
    */
   public function commentApprove(CommentInterface $comment) {
-    $comment->setPublished(TRUE);
+    $comment->setPublished();
     $comment->save();
 
-    drupal_set_message($this->t('Comment approved.'));
+    $this->messenger()->addStatus($this->t('Comment approved.'));
     $permalink_uri = $comment->permalink();
     $permalink_uri->setAbsolute();
     return new RedirectResponse($permalink_uri->toString());
@@ -119,17 +123,15 @@ class CommentController extends ControllerBase {
       if (!$entity->access('view')) {
         throw new AccessDeniedHttpException();
       }
-      $field_definition = $this->entityManager()->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle())[$comment->getFieldName()];
+      $field_definition = $this->entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle())[$comment->getFieldName()];
 
       // Find the current display page for this comment.
-      $page = $this->entityManager()->getStorage('comment')->getDisplayOrdinal($comment, $field_definition->getSetting('default_mode'), $field_definition->getSetting('per_page'));
-      // @todo: Cleaner sub request handling.
-      $subrequest_url = $entity->urlInfo()->setOption('query', ['page' => $page])->toString(TRUE);
+      $page = $this->entityTypeManager()->getStorage('comment')->getDisplayOrdinal($comment, $field_definition->getSetting('default_mode'), $field_definition->getSetting('per_page'));
+      // @todo Cleaner sub request handling.
+      $subrequest_url = $entity->toUrl()->setOption('query', ['page' => $page])->toString(TRUE);
       $redirect_request = Request::create($subrequest_url->getGeneratedUrl(), 'GET', $request->query->all(), $request->cookies->all(), [], $request->server->all());
       // Carry over the session to the subrequest.
-      if ($session = $request->getSession()) {
-        $redirect_request->setSession($session);
-      }
+      $redirect_request->setSession($request->getSession());
       $request->query->set('page', $page);
       $response = $this->httpKernel->handle($redirect_request, HttpKernelInterface::SUB_REQUEST);
       if ($response instanceof CacheableResponseInterface) {
@@ -155,7 +157,7 @@ class CommentController extends ControllerBase {
    *   The translated comment subject.
    */
   public function commentPermalinkTitle(CommentInterface $comment) {
-    return $this->entityManager()->getTranslationFromContext($comment)->label();
+    return $this->entityRepository->getTranslationFromContext($comment)->label();
   }
 
   /**
@@ -165,7 +167,7 @@ class CommentController extends ControllerBase {
    *   The node object identified by the legacy URL.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
-   *   Redirects user to new url.
+   *   Redirects user to new URL.
    *
    * @throws \Symfony\Component\HttpKernel\Exception\NotFoundHttpException
    */
@@ -219,19 +221,19 @@ class CommentController extends ControllerBase {
       // $pid indicates that this is a reply to a comment.
       if ($pid) {
         // Load the parent comment.
-        $comment = $this->entityManager()->getStorage('comment')->load($pid);
+        $comment = $this->entityTypeManager()->getStorage('comment')->load($pid);
         // Display the parent comment.
-        $build['comment_parent'] = $this->entityManager()->getViewBuilder('comment')->view($comment);
+        $build['comment_parent'] = $this->entityTypeManager()->getViewBuilder('comment')->view($comment);
       }
 
-      // The comment is in response to a entity.
+      // The comment is in response to an entity.
       elseif ($entity->access('view', $account)) {
         // We make sure the field value isn't set so we don't end up with a
         // redirect loop.
         $entity = clone $entity;
         $entity->{$field_name}->status = CommentItemInterface::HIDDEN;
         // Render array of the entity full view mode.
-        $build['commented_entity'] = $this->entityManager()->getViewBuilder($entity->getEntityTypeId())->view($entity, 'full');
+        $build['commented_entity'] = $this->entityTypeManager()->getViewBuilder($entity->getEntityTypeId())->view($entity, 'full');
         unset($build['commented_entity']['#cache']);
       }
     }
@@ -240,7 +242,7 @@ class CommentController extends ControllerBase {
     }
 
     // Show the actual reply box.
-    $comment = $this->entityManager()->getStorage('comment')->create([
+    $comment = $this->entityTypeManager()->getStorage('comment')->create([
       'entity_id' => $entity->id(),
       'pid' => $pid,
       'entity_type' => $entity->getEntityTypeId(),
@@ -292,7 +294,7 @@ class CommentController extends ControllerBase {
       $access = $access->andIf(AccessResult::allowedIfHasPermission($account, 'access comments'));
 
       // Load the parent comment.
-      $comment = $this->entityManager()->getStorage('comment')->load($pid);
+      $comment = $this->entityTypeManager()->getStorage('comment')->load($pid);
       // Check if the parent comment is published and belongs to the entity.
       $access = $access->andIf(AccessResult::allowedIf($comment && $comment->isPublished() && $comment->getCommentedEntityId() == $entity->id()));
       if ($comment) {
@@ -319,24 +321,25 @@ class CommentController extends ControllerBase {
       throw new AccessDeniedHttpException();
     }
 
-    $nids = $request->request->get('node_ids');
-    $field_name = $request->request->get('field_name');
-    if (!isset($nids)) {
+    if (!$request->request->has('node_ids') || !$request->request->has('field_name')) {
       throw new NotFoundHttpException();
     }
+    $nids = $request->request->all('node_ids');
+    $field_name = $request->request->get('field_name');
+
     // Only handle up to 100 nodes.
     $nids = array_slice($nids, 0, 100);
 
     $links = [];
     foreach ($nids as $nid) {
-      $node = $this->entityManager->getStorage('node')->load($nid);
+      $node = $this->entityTypeManager()->getStorage('node')->load($nid);
       $new = $this->commentManager->getCountNewComments($node);
-      $page_number = $this->entityManager()->getStorage('comment')
+      $page_number = $this->entityTypeManager()->getStorage('comment')
         ->getNewCommentPageNumber($node->{$field_name}->comment_count, $new, $node, $field_name);
       $query = $page_number ? ['page' => $page_number] : NULL;
       $links[$nid] = [
         'new_comment_count' => (int) $new,
-        'first_new_comment_link' => $this->getUrlGenerator()->generateFromRoute('entity.node.canonical', ['node' => $node->id()], ['query' => $query, 'fragment' => 'new']),
+        'first_new_comment_link' => Url::fromRoute('entity.node.canonical', ['node' => $node->id()], ['query' => $query, 'fragment' => 'new'])->toString(),
       ];
     }
 

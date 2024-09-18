@@ -12,7 +12,7 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *
  * @ContentEntityType(
  *   id = "entity_test_mul_changed",
- *   label = @Translation("Test entity - data table"),
+ *   label = @Translation("Test entity - multiple changed and data table"),
  *   handlers = {
  *     "view_builder" = "Drupal\entity_test\EntityTestViewBuilder",
  *     "access" = "Drupal\entity_test\EntityTestAccessControlHandler",
@@ -23,7 +23,6 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *     "route_provider" = {
  *       "html" = "Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider",
  *     },
- *     "translation" = "Drupal\content_translation\ContentTranslationHandler",
  *     "views_data" = "Drupal\views\EntityViewsData"
  *   },
  *   base_table = "entity_test_mul_changed",
@@ -73,7 +72,7 @@ class EntityTestMulChanged extends EntityTestMul implements EntityChangedInterfa
   public function save() {
     // Ensure a new timestamp.
     sleep(1);
-    parent::save();
+    return parent::save();
   }
 
 }

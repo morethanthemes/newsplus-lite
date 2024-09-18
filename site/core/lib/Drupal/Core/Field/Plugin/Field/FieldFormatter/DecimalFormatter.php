@@ -2,7 +2,9 @@
 
 namespace Drupal\Core\Field\Plugin\Field\FieldFormatter;
 
+use Drupal\Core\Field\Attribute\FieldFormatter;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Plugin implementation of the 'number_decimal' formatter.
@@ -10,16 +12,15 @@ use Drupal\Core\Form\FormStateInterface;
  * The 'Default' formatter is different for integer fields on the one hand, and
  * for decimal and float fields on the other hand, in order to be able to use
  * different settings.
- *
- * @FieldFormatter(
- *   id = "number_decimal",
- *   label = @Translation("Default"),
- *   field_types = {
- *     "decimal",
- *     "float"
- *   }
- * )
  */
+#[FieldFormatter(
+  id: 'number_decimal',
+  label: new TranslatableMarkup('Default'),
+  field_types: [
+    'decimal',
+    'float',
+  ],
+)]
 class DecimalFormatter extends NumericFormatterBase {
 
   /**
@@ -42,18 +43,18 @@ class DecimalFormatter extends NumericFormatterBase {
 
     $elements['decimal_separator'] = [
       '#type' => 'select',
-      '#title' => t('Decimal marker'),
-      '#options' => ['.' => t('Decimal point'), ',' => t('Comma')],
+      '#title' => $this->t('Decimal marker'),
+      '#options' => ['.' => $this->t('Decimal point'), ',' => $this->t('Comma')],
       '#default_value' => $this->getSetting('decimal_separator'),
       '#weight' => 5,
     ];
     $elements['scale'] = [
       '#type' => 'number',
-      '#title' => t('Scale', [], ['context' => 'decimal places']),
+      '#title' => $this->t('Scale', [], ['context' => 'decimal places']),
       '#min' => 0,
       '#max' => 10,
       '#default_value' => $this->getSetting('scale'),
-      '#description' => t('The number of digits to the right of the decimal.'),
+      '#description' => $this->t('The number of digits to the right of the decimal.'),
       '#weight' => 6,
     ];
 

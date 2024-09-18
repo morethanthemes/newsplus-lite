@@ -2,13 +2,12 @@ langcode: en
 status: true
 dependencies: {  }
 id: test_page_display_arguments
-label: ''
+label: test_page_display_arguments
 module: views
 description: ''
 tag: ''
 base_table: views_test_data
 base_field: id
-core: '8'
 display:
   default:
     display_options:
@@ -23,7 +22,7 @@ display:
           table: views_test_data
           plugin_id: numeric
     display_plugin: default
-    display_title: Master
+    display_title: Default
     id: default
     position: 0
   page_1:

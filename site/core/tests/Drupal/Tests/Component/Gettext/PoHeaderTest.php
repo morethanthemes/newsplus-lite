@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Component\Gettext;
 
 use Drupal\Component\Gettext\PoHeader;
@@ -27,12 +29,12 @@ class PoHeaderTest extends TestCase {
    *
    * @dataProvider providerTestPluralsFormula
    */
-  public function testPluralsFormula($plural, $expected) {
+  public function testPluralsFormula($plural, $expected): void {
     $p = new PoHeader();
     $parsed = $p->parsePluralForms($plural);
-    list($nplurals, $new_plural) = $parsed;
+    [$nplurals, $new_plural] = $parsed;
     foreach ($expected as $number => $plural_form) {
-      $result = isset($new_plural[$number]) ? $new_plural[$number] : $new_plural['default'];
+      $result = $new_plural[$number] ?? $new_plural['default'];
       $this->assertEquals($result, $plural_form, 'Difference found at ' . $number . ': ' . $plural_form . ' versus ' . $result);
     }
   }
@@ -47,7 +49,7 @@ class PoHeaderTest extends TestCase {
    *   Pairs of plural expressions and expected plural positions keyed by plural
    *   value.
    */
-  public function providerTestPluralsFormula() {
+  public static function providerTestPluralsFormula() {
     return [
       [
         'nplurals=1; plural=0;',

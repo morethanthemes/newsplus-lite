@@ -2,11 +2,14 @@
 
 namespace Drupal\views\Plugin\views\argument;
 
+use Drupal\views\Attribute\ViewsArgument;
+
 /**
  * Argument handler for a week.
- *
- * @ViewsArgument("date_week")
  */
+#[ViewsArgument(
+  id: 'date_week',
+)]
 class WeekDate extends Date {
 
   /**
@@ -15,7 +18,7 @@ class WeekDate extends Date {
   protected $argFormat = 'W';
 
   /**
-   * Provide a link to the next level of the view
+   * Provide a link to the next level of the view.
    */
   public function summaryName($data) {
     $created = $data->{$this->name_alias};

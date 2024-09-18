@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\update\Kernel\Migrate\d6;
 
 use Drupal\Tests\SchemaCheckTestTrait;
@@ -17,12 +19,12 @@ class MigrateUpdateConfigsTest extends MigrateDrupal6TestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['update'];
+  protected static $modules = ['update'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->executeMigration('update_settings');
   }
@@ -30,13 +32,13 @@ class MigrateUpdateConfigsTest extends MigrateDrupal6TestBase {
   /**
    * Tests migration of update variables to update.settings.yml.
    */
-  public function testUpdateSettings() {
+  public function testUpdateSettings(): void {
     $config = $this->config('update.settings');
-    $this->assertIdentical(2, $config->get('fetch.max_attempts'));
-    $this->assertIdentical('http://updates.drupal.org/release-history', $config->get('fetch.url'));
-    $this->assertIdentical('all', $config->get('notification.threshold'));
-    $this->assertIdentical([], $config->get('notification.emails'));
-    $this->assertIdentical(7, $config->get('check.interval_days'));
+    $this->assertSame(2, $config->get('fetch.max_attempts'));
+    $this->assertSame('https://updates.drupal.org/release-history', $config->get('fetch.url'));
+    $this->assertSame('all', $config->get('notification.threshold'));
+    $this->assertSame([], $config->get('notification.emails'));
+    $this->assertSame(7, $config->get('check.interval_days'));
     $this->assertConfigSchema(\Drupal::service('config.typed'), 'update.settings', $config->get());
   }
 

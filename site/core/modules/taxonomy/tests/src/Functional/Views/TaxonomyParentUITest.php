@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Functional\Views;
 
-use Drupal\views\Tests\ViewTestData;
 use Drupal\Tests\views_ui\Functional\UITestBase;
 
 /**
@@ -21,27 +22,28 @@ class TaxonomyParentUITest extends UITestBase {
   public static $testViews = ['test_taxonomy_parent'];
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['taxonomy', 'taxonomy_test_views'];
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
-    parent::setUp($import_test_views);
+  protected static $modules = ['taxonomy', 'taxonomy_test_views'];
 
-    ViewTestData::createTestViews(get_class($this), ['taxonomy_test_views']);
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp($import_test_views = TRUE, $modules = ['taxonomy_test_views']): void {
+    parent::setUp($import_test_views, $modules);
   }
 
   /**
    * Tests the taxonomy parent plugin UI.
    */
-  public function testTaxonomyParentUI() {
+  public function testTaxonomyParentUI(): void {
     $this->drupalGet('admin/structure/views/nojs/handler/test_taxonomy_parent/default/relationship/parent');
-    $this->assertNoText('The handler for this item is broken or missing.');
+    $this->assertSession()->pageTextNotContains('The handler for this item is broken or missing.');
   }
 
 }

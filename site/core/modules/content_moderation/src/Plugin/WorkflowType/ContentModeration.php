@@ -10,6 +10,8 @@ use Drupal\Core\Entity\EntityPublishedInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\content_moderation\ContentModerationState;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\workflows\Attribute\WorkflowType;
 use Drupal\workflows\Plugin\WorkflowTypeBase;
 use Drupal\workflows\StateInterface;
 use Drupal\workflows\WorkflowInterface;
@@ -17,20 +19,19 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Attaches workflows to content entity types and their bundles.
- *
- * @WorkflowType(
- *   id = "content_moderation",
- *   label = @Translation("Content moderation"),
- *   required_states = {
- *     "draft",
- *     "published",
- *   },
- *   forms = {
- *     "configure" = "\Drupal\content_moderation\Form\ContentModerationConfigureForm",
- *     "state" = "\Drupal\content_moderation\Form\ContentModerationStateForm"
- *   },
- * )
  */
+#[WorkflowType(
+  id: 'content_moderation',
+  label: new TranslatableMarkup('Content moderation'),
+  forms: [
+    'configure' => '\Drupal\content_moderation\Form\ContentModerationConfigureForm',
+    'state' => '\Drupal\content_moderation\Form\ContentModerationStateForm',
+  ],
+  required_states: [
+    'draft',
+    'published',
+  ]
+)]
 class ContentModeration extends WorkflowTypeBase implements ContentModerationInterface, ContainerFactoryPluginInterface {
 
   use StringTranslationTrait;
@@ -67,6 +68,8 @@ class ContentModeration extends WorkflowTypeBase implements ContentModerationInt
    *   The plugin implementation definition.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
+   * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entity_type_bundle_info
+   *   The entity type bundle info.
    * @param \Drupal\content_moderation\ModerationInformationInterface $moderation_info
    *   Moderation information service.
    */
@@ -145,7 +148,7 @@ class ContentModeration extends WorkflowTypeBase implements ContentModerationInt
    * {@inheritdoc}
    */
   public function getBundlesForEntityType($entity_type_id) {
-    return isset($this->configuration['entity_types'][$entity_type_id]) ? $this->configuration['entity_types'][$entity_type_id] : [];
+    return $this->configuration['entity_types'][$entity_type_id] ?? [];
   }
 
   /**
@@ -306,11 +309,11 @@ class ContentModeration extends WorkflowTypeBase implements ContentModerationInt
     if (!($entity instanceof ContentEntityInterface)) {
       throw new \InvalidArgumentException('A content entity object must be supplied.');
     }
-    if ($entity instanceof EntityPublishedInterface) {
-      return $this->getState($entity->isPublished() && !$entity->isNew() ? 'published' : 'draft');
+    if ($entity instanceof EntityPublishedInterface && !$entity->isNew()) {
+      return $this->getState($entity->isPublished() ? 'published' : 'draft');
     }
-    // Workflows determines the initial state for non-publishable entities.
-    return parent::getInitialState();
+
+    return $this->getState(!empty($this->configuration['default_moderation_state']) ? $this->configuration['default_moderation_state'] : 'draft');
   }
 
 }

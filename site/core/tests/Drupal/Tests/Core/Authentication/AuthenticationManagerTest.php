@@ -1,9 +1,6 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\Core\Authentication\AuthenticationManagerTest.
- */
+declare(strict_types=1);
 
 namespace Drupal\Tests\Core\Authentication;
 
@@ -12,7 +9,7 @@ use Drupal\Core\Authentication\AuthenticationManager;
 use Drupal\Core\Authentication\AuthenticationProviderFilterInterface;
 use Drupal\Core\Authentication\AuthenticationProviderInterface;
 use Drupal\Tests\UnitTestCase;
-use Symfony\Cmf\Component\Routing\RouteObjectInterface;
+use Drupal\Core\Routing\RouteObjectInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Route;
 
@@ -28,8 +25,8 @@ class AuthenticationManagerTest extends UnitTestCase {
    *
    * @dataProvider providerTestDefaultFilter
    */
-  public function testDefaultFilter($applies, $has_route, $auth_option, $provider_id, $global) {
-    $auth_provider = $this->getMock('Drupal\Core\Authentication\AuthenticationProviderInterface');
+  public function testDefaultFilter($applies, $has_route, $auth_option, $provider_id, $global): void {
+    $auth_provider = $this->createMock('Drupal\Core\Authentication\AuthenticationProviderInterface');
     $auth_collector = new AuthenticationCollector();
     $auth_collector->addProvider($auth_provider, $provider_id, 0, $global);
     $authentication_manager = new AuthenticationManager($auth_collector);
@@ -49,8 +46,8 @@ class AuthenticationManagerTest extends UnitTestCase {
   /**
    * @covers ::applyFilter
    */
-  public function testApplyFilterWithFilterprovider() {
-    $auth_provider = $this->getMock('Drupal\Tests\Core\Authentication\TestAuthenticationProviderInterface');
+  public function testApplyFilterWithFilterProvider(): void {
+    $auth_provider = $this->createMock('Drupal\Tests\Core\Authentication\TestAuthenticationProviderInterface');
     $auth_provider->expects($this->once())
       ->method('appliesToRoutedRequest')
       ->willReturn(TRUE);
@@ -67,7 +64,7 @@ class AuthenticationManagerTest extends UnitTestCase {
   /**
    * Provides data to self::testDefaultFilter().
    */
-  public function providerTestDefaultFilter() {
+  public static function providerTestDefaultFilter() {
     $data = [];
     // No route, cookie is global, should apply.
     $data[] = [TRUE, FALSE, [], 'cookie', TRUE];

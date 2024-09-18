@@ -41,7 +41,7 @@ class ViewsBlock implements ContainerDeriverInterface {
   public static function create(ContainerInterface $container, $base_plugin_id) {
     return new static(
       $base_plugin_id,
-      $container->get('entity.manager')->getStorage('view')
+      $container->get('entity_type.manager')->getStorage('view')
     );
   }
 
@@ -95,7 +95,7 @@ class ViewsBlock implements ContainerDeriverInterface {
             else {
               // Allow translators to control the punctuation. Plugin
               // definitions get cached, so use TranslatableMarkup() instead of
-              // t() to avoid double escaping when $admin_label is rendered
+              // $this->t() to avoid double escaping when $admin_label is rendered
               // during requests that use the cached definition.
               $admin_label = new TranslatableMarkup('@view: @display', ['@view' => $view->label(), '@display' => $display->display['display_title']]);
             }
@@ -115,7 +115,7 @@ class ViewsBlock implements ContainerDeriverInterface {
           foreach ($display->getHandlers('argument') as $argument_name => $argument) {
             /** @var \Drupal\views\Plugin\views\argument\ArgumentPluginBase $argument */
             if ($context_definition = $argument->getContextDefinition()) {
-              $this->derivatives[$delta]['context'][$argument_name] = $context_definition;
+              $this->derivatives[$delta]['context_definitions'][$argument_name] = $context_definition;
             }
           }
 

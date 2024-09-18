@@ -1,13 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\comment\Functional;
 
 use Drupal\comment\Entity\CommentType;
 use Drupal\comment\Plugin\Field\FieldType\CommentItemInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\comment\CommentInterface;
-use Drupal\Tests\taxonomy\Functional\TaxonomyTestTrait;
 use Drupal\comment\Entity\Comment;
+use Drupal\Tests\taxonomy\Traits\TaxonomyTestTrait;
 
 /**
  * Tests comments with other entities.
@@ -16,19 +18,33 @@ use Drupal\comment\Entity\Comment;
  */
 class CommentEntityTest extends CommentTestBase {
 
-  /**
-   * Modules to install.
-   *
-   * @var array
-   */
-  public static $modules = ['block', 'comment', 'node', 'history', 'field_ui', 'datetime', 'taxonomy'];
-
   use TaxonomyTestTrait;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected static $modules = [
+    'block',
+    'comment',
+    'node',
+    'history',
+    'field_ui',
+    'datetime',
+    'taxonomy',
+  ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   protected $vocab;
   protected $commentType;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->vocab = $this->createVocabulary();
@@ -51,7 +67,7 @@ class CommentEntityTest extends CommentTestBase {
   /**
    * Tests CSS classes on comments.
    */
-  public function testEntityChanges() {
+  public function testEntityChanges(): void {
     $this->drupalLogin($this->webUser);
     // Create a new node.
     $term = $this->createTerm($this->vocab, ['uid' => $this->webUser->id()]);

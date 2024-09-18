@@ -5,7 +5,7 @@ namespace Drupal\big_pipe\EventSubscriber;
 use Drupal\Core\Render\HtmlResponse;
 use Drupal\big_pipe\Render\BigPipe;
 use Drupal\big_pipe\Render\BigPipeResponse;
-use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
@@ -38,10 +38,10 @@ class HtmlResponseBigPipeSubscriber implements EventSubscriberInterface {
   /**
    * Adds markers to the response necessary for the BigPipe render strategy.
    *
-   * @param \Symfony\Component\HttpKernel\Event\FilterResponseEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\ResponseEvent $event
    *   The event to process.
    */
-  public function onRespondEarly(FilterResponseEvent $event) {
+  public function onRespondEarly(ResponseEvent $event) {
     $response = $event->getResponse();
     if (!$response instanceof HtmlResponse) {
       return;
@@ -63,10 +63,10 @@ class HtmlResponseBigPipeSubscriber implements EventSubscriberInterface {
   /**
    * Transforms a HtmlResponse to a BigPipeResponse.
    *
-   * @param \Symfony\Component\HttpKernel\Event\FilterResponseEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\ResponseEvent $event
    *   The event to process.
    */
-  public function onRespond(FilterResponseEvent $event) {
+  public function onRespond(ResponseEvent $event) {
     $response = $event->getResponse();
     if (!$response instanceof HtmlResponse) {
       return;
@@ -93,26 +93,27 @@ class HtmlResponseBigPipeSubscriber implements EventSubscriberInterface {
 
     $big_pipe_response = new BigPipeResponse($response);
     $big_pipe_response->setBigPipeService($this->getBigPipeService($event));
+
     $event->setResponse($big_pipe_response);
   }
 
   /**
    * Returns the BigPipe service to use to send the current response.
    *
-   * @param \Symfony\Component\HttpKernel\Event\FilterResponseEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\ResponseEvent $event
    *   A response event.
    *
    * @return \Drupal\big_pipe\Render\BigPipe
    *   The BigPipe service.
    */
-  protected function getBigPipeService(FilterResponseEvent $event) {
+  protected function getBigPipeService(ResponseEvent $event) {
     return $this->bigPipe;
   }
 
   /**
    * {@inheritdoc}
    */
-  public static function getSubscribedEvents() {
+  public static function getSubscribedEvents(): array {
     // Run after HtmlResponsePlaceholderStrategySubscriber (priority 5), i.e.
     // after BigPipeStrategy has been applied, but before normal (priority 0)
     // response subscribers have been applied, because by then it'll be too late

@@ -3,22 +3,27 @@
 namespace Drupal\Core\Datetime\Element;
 
 use Drupal\Component\Utility\NestedArray;
+use Drupal\Component\Utility\Variable;
 use Drupal\Core\Datetime\DateHelper;
 use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Attribute\FormElement;
+use Drupal\Core\Security\DoTrustedCallbackTrait;
+use Drupal\Core\Security\StaticTrustedCallbackHelper;
 
 /**
  * Provides a datelist element.
- *
- * @FormElement("datelist")
  */
+#[FormElement('datelist')]
 class Datelist extends DateElementBase {
+
+  use DoTrustedCallbackTrait;
 
   /**
    * {@inheritdoc}
    */
   public function getInfo() {
-    $class = get_class($this);
+    $class = static::class;
     return [
       '#input' => TRUE,
       '#element_validate' => [
@@ -33,7 +38,7 @@ class Datelist extends DateElementBase {
       '#date_year_range' => '1900:2050',
       '#date_increment' => 1,
       '#date_date_callbacks' => [],
-      '#date_timezone' => '',
+      '#date_timezone' => date_default_timezone_get(),
     ];
   }
 
@@ -60,9 +65,8 @@ class Datelist extends DateElementBase {
           }
           unset($input['ampm']);
         }
-        $timezone = !empty($element['#date_timezone']) ? $element['#date_timezone'] : NULL;
         try {
-          $date = DrupalDateTime::createFromArray($input, $timezone);
+          $date = DrupalDateTime::createFromArray($input, $element['#date_timezone']);
         }
         catch (\Exception $e) {
           $form_state->setError($element, t('Selected combination of day and month is not valid.'));
@@ -77,6 +81,7 @@ class Datelist extends DateElementBase {
       if (!empty($element['#default_value'])) {
         $date = $element['#default_value'];
         if ($date instanceof DrupalDateTime && !$date->hasErrors()) {
+          $date->setTimezone(new \DateTimeZone($element['#date_timezone']));
           static::incrementRound($date, $increment);
           foreach ($parts as $part) {
             switch ($part) {
@@ -134,7 +139,7 @@ class Datelist extends DateElementBase {
    * Optional properties include:
    *   - #date_part_order: Array of date parts indicating the parts and order
    *     that should be used in the selector, optionally including 'ampm' for
-   *     12 hour time. Default is array('year', 'month', 'day', 'hour', 'minute').
+   *     12 hour time. Default is ['year', 'month', 'day', 'hour', 'minute'].
    *   - #date_text_parts: Array of date parts that should be presented as
    *     text fields instead of drop-down selectors. Default is an empty array.
    *   - #date_date_callbacks: Array of optional callbacks for the date element.
@@ -147,24 +152,21 @@ class Datelist extends DateElementBase {
    *   - #date_increment: The increment to use for minutes and seconds, i.e.
    *     '15' would show only :00, :15, :30 and :45. Defaults to 1 to show every
    *     minute.
-   *   - #date_timezone: The local timezone to use when creating dates. Generally
-   *     this should be left empty and it will be set correctly for the user using
-   *     the form. Useful if the default value is empty to designate a desired
-   *     timezone for dates created in form processing. If a default date is
-   *     provided, this value will be ignored, the timezone in the default date
-   *     takes precedence. Defaults to the value returned by
-   *     drupal_get_user_timezone().
+   *   - #date_timezone: The Time Zone Identifier (TZID) to use when displaying
+   *     or interpreting dates, i.e: 'Asia/Kolkata'. Defaults to the value
+   *     returned by date_default_timezone_get().
    *
    * Example usage:
    * @code
-   *   $form = array(
+   *   $form = [
    *     '#type' => 'datelist',
    *     '#default_value' => new DrupalDateTime('2000-01-01 00:00:00'),
-   *     '#date_part_order' => array('month', 'day', 'year', 'hour', 'minute', 'ampm'),
-   *     '#date_text_parts' => array('year'),
+   *     '#date_part_order' => ['month', 'day', 'year', 'hour', 'minute', 'ampm'],
+   *     '#date_text_parts' => ['year'],
    *     '#date_year_range' => '2010:2020',
    *     '#date_increment' => 15,
-   *   );
+   *     '#date_timezone' => 'Asia/Kolkata'
+   *   ];
    * @endcode
    *
    * @param array $element
@@ -182,17 +184,6 @@ class Datelist extends DateElementBase {
 
     // The value callback has populated the #value array.
     $date = !empty($element['#value']['object']) ? $element['#value']['object'] : NULL;
-
-    // Set a fallback timezone.
-    if ($date instanceof DrupalDateTime) {
-      $element['#date_timezone'] = $date->getTimezone()->getName();
-    }
-    elseif (!empty($element['#timezone'])) {
-      $element['#date_timezone'] = $element['#date_timezone'];
-    }
-    else {
-      $element['#date_timezone'] = drupal_get_user_timezone();
-    }
 
     $element['#tree'] = TRUE;
 
@@ -275,9 +266,8 @@ class Datelist extends DateElementBase {
     // Allows custom callbacks to alter the element.
     if (!empty($element['#date_date_callbacks'])) {
       foreach ($element['#date_date_callbacks'] as $callback) {
-        if (function_exists($callback)) {
-          $callback($element, $form_state, $date);
-        }
+        $message = sprintf('Datelist element #date_date_callbacks callbacks must be methods of a class that implements \Drupal\Core\Security\TrustedCallbackInterface or be an anonymous function. The callback was %s. See https://www.drupal.org/node/3217966', Variable::callableToString($callback));
+        StaticTrustedCallbackHelper::callback($callback, [&$element, $form_state, $date], $message);
       }
     }
 
@@ -352,6 +342,9 @@ class Datelist extends DateElementBase {
    *   Array of keys from the input array that have no value, may be empty.
    */
   protected static function checkEmptyInputs($input, $parts) {
+    // The object key does not represent an input value, see
+    // \Drupal\Core\Datetime\Element\Datelist::valueCallback().
+    unset($input['object']);
     // Filters out empty array values, any valid value would have a string length.
     $filtered_input = array_filter($input, 'strlen');
     return array_diff($parts, array_keys($filtered_input));
@@ -361,9 +354,11 @@ class Datelist extends DateElementBase {
    * Rounds minutes and seconds to nearest requested value.
    *
    * @param $date
+   *   The date.
    * @param $increment
+   *   The value to round to.
    *
-   * @return
+   * @return \Drupal\Core\Datetime\DrupalDateTime
    */
   protected static function incrementRound(&$date, $increment) {
     // Round minutes and seconds, if necessary.

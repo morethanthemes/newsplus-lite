@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\datetime\Kernel\Views;
 
 use Drupal\node\Entity\Node;
@@ -20,7 +22,7 @@ class SortDateTimeTest extends DateTimeHandlerTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
+  protected function setUp($import_test_views = TRUE): void {
     parent::setUp($import_test_views);
 
     // Add some basic test nodes.
@@ -39,7 +41,7 @@ class SortDateTimeTest extends DateTimeHandlerTestBase {
         'type' => 'page',
         'field_date' => [
           'value' => $date,
-        ]
+        ],
       ]);
       $node->save();
       $this->nodes[] = $node;
@@ -49,8 +51,8 @@ class SortDateTimeTest extends DateTimeHandlerTestBase {
   /**
    * Tests the datetime sort handler.
    */
-  public function testDateTimeSort() {
-    $field = static::$field_name . '_value';
+  public function testDateTimeSort(): void {
+    $field = static::$fieldName . '_value';
     $view = Views::getView('test_sort_datetime');
 
     // Set granularity to 'minute', and the secondary node ID order should
@@ -73,7 +75,7 @@ class SortDateTimeTest extends DateTimeHandlerTestBase {
 
     // Check ASC.
     $view->initHandlers();
-    $field = static::$field_name . '_value';
+    $field = static::$fieldName . '_value';
     $view->sort[$field]->options['order'] = 'ASC';
     $view->setDisplay('default');
     $this->executeView($view);

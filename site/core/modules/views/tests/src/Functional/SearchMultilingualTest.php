@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Functional;
 
-use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\node\NodeInterface;
+use Drupal\Tests\language\Traits\LanguageTestTrait;
 use Drupal\Tests\Traits\Core\CronRunTrait;
 
 /**
@@ -14,13 +16,22 @@ use Drupal\Tests\Traits\Core\CronRunTrait;
 class SearchMultilingualTest extends ViewTestBase {
 
   use CronRunTrait;
+  use LanguageTestTrait;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['node', 'search', 'language', 'content_translation'];
+  protected static $modules = [
+    'node',
+    'search',
+    'language',
+    'content_translation',
+  ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Views used by this test.
@@ -32,29 +43,13 @@ class SearchMultilingualTest extends ViewTestBase {
   /**
    * Tests search with multilingual nodes.
    */
-  public function testMultilingualSearchFilter() {
-    // Create a user with admin for languages, content, and content types, plus
-    // the ability to access content and searches.
-    $user = $this->drupalCreateUser(['administer nodes', 'administer content types', 'administer languages', 'administer content translation', 'access content', 'search content']);
-    $this->drupalLogin($user);
-
+  public function testMultilingualSearchFilter(): void {
     // Add Spanish language programmatically.
-    ConfigurableLanguage::createFromLangcode('es')->save();
+    static::createLanguageFromLangcode('es');
 
     // Create a content type and make it translatable.
     $type = $this->drupalCreateContentType();
-    $edit = [
-      'language_configuration[language_alterable]' => TRUE,
-    ];
-    $this->drupalPostForm('admin/structure/types/manage/' . $type->id(), $edit, t('Save content type'));
-    $edit = [
-      'entity_types[node]' => TRUE,
-      'settings[node][' . $type->id() . '][translatable]' => TRUE,
-      'settings[node][' . $type->id() . '][fields][title]' => TRUE,
-      'settings[node][' . $type->id() . '][fields][body]' => TRUE,
-    ];
-    $this->drupalPostForm('admin/config/regional/content-language', $edit, t('Save configuration'));
-    \Drupal::entityManager()->clearCachedDefinitions();
+    static::enableBundleTranslation('node', $type->id());
 
     // Add a node in English, with title "sandwich".
     $values = [
@@ -78,8 +73,8 @@ class SearchMultilingualTest extends ViewTestBase {
     // translated node, which has 'pizza' in the title, but not the English
     // one, which does not have the word 'pizza' in it.
     $this->drupalGet('test-filter');
-    $this->assertLink('pizza', 0, 'Found translation with matching title');
-    $this->assertNoLink('sandwich', 'Did not find translation with non-matching title');
+    $this->assertSession()->linkExists('pizza', 0, 'Found translation with matching title');
+    $this->assertSession()->linkNotExists('sandwich', 'Did not find translation with non-matching title');
   }
 
 }

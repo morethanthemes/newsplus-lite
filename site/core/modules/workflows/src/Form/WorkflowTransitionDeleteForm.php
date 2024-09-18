@@ -78,7 +78,7 @@ class WorkflowTransitionDeleteForm extends ConfirmFormBase {
    * @return array
    *   The form structure.
    */
-  public function buildForm(array $form, FormStateInterface $form_state, WorkflowInterface $workflow = NULL, $workflow_transition = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, ?WorkflowInterface $workflow = NULL, $workflow_transition = NULL) {
     try {
       $this->transition = $workflow->getTypePlugin()->getTransition($workflow_transition);
     }
@@ -98,7 +98,7 @@ class WorkflowTransitionDeleteForm extends ConfirmFormBase {
       ->deleteTransition($this->transition->id());
     $this->workflow->save();
 
-    drupal_set_message($this->t('%transition transition deleted.', ['%transition' => $this->transition->label()]));
+    $this->messenger()->addStatus($this->t('%transition transition deleted.', ['%transition' => $this->transition->label()]));
     $form_state->setRedirectUrl($this->getCancelUrl());
   }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Functional\Views;
 
 /**
@@ -12,7 +14,17 @@ class TaxonomyTermArgumentDepthTest extends TaxonomyTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['taxonomy', 'taxonomy_test_views', 'views', 'node'];
+  protected static $modules = [
+    'taxonomy',
+    'taxonomy_test_views',
+    'views',
+    'node',
+  ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
@@ -32,8 +44,8 @@ class TaxonomyTermArgumentDepthTest extends TaxonomyTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
-    parent::setUp($import_test_views);
+  protected function setUp($import_test_views = TRUE, $modules = []): void {
+    parent::setUp($import_test_views, $modules);
 
     // Create a term with markup in the label.
     $first = $this->createTerm(['name' => '<em>First</em>']);
@@ -51,9 +63,9 @@ class TaxonomyTermArgumentDepthTest extends TaxonomyTestBase {
   /**
    * Tests title escaping.
    */
-  public function testTermWithDepthArgumentTitleEscaping() {
+  public function testTermWithDepthArgumentTitleEscaping(): void {
     $this->drupalGet('test_argument_taxonomy_index_tid_depth/' . $this->terms[0]->id());
-    $this->assertEscaped($this->terms[0]->label());
+    $this->assertSession()->assertEscaped($this->terms[0]->label());
   }
 
 }

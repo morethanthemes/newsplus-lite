@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Functional;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\language\Entity\ContentLanguageSettings;
 
@@ -13,9 +14,17 @@ use Drupal\language\Entity\ContentLanguageSettings;
  */
 class VocabularyLanguageTest extends TaxonomyTestBase {
 
-  public static $modules = ['language'];
+  protected static $modules = ['language'];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     // Create an administrative user.
@@ -36,77 +45,79 @@ class VocabularyLanguageTest extends TaxonomyTestBase {
   /**
    * Tests language settings for vocabularies.
    */
-  public function testVocabularyLanguage() {
+  public function testVocabularyLanguage(): void {
     $this->drupalGet('admin/structure/taxonomy/add');
 
     // Check that we have the language selector available.
-    $this->assertField('edit-langcode', 'The language selector field was found on the page.');
+    $this->assertSession()->fieldExists('edit-langcode');
 
     // Create the vocabulary.
-    $vid = Unicode::strtolower($this->randomMachineName());
+    $vid = $this->randomMachineName();
     $edit['name'] = $this->randomMachineName();
     $edit['description'] = $this->randomMachineName();
     $edit['langcode'] = 'aa';
     $edit['vid'] = $vid;
-    $this->drupalPostForm(NULL, $edit, t('Save'));
+    $this->submitForm($edit, 'Save');
 
     // Check the language on the edit page.
     $this->drupalGet('admin/structure/taxonomy/manage/' . $vid);
-    $this->assertOptionSelected('edit-langcode', $edit['langcode'], 'The vocabulary language was correctly selected.');
+    $this->assertTrue($this->assertSession()->optionExists('edit-langcode', $edit['langcode'])->isSelected());
 
     // Change the language and save again.
     $edit['langcode'] = 'bb';
     unset($edit['vid']);
-    $this->drupalPostForm(NULL, $edit, t('Save'));
+    $this->submitForm($edit, 'Save');
 
     // Check again the language on the edit page.
     $this->drupalGet('admin/structure/taxonomy/manage/' . $vid);
-    $this->assertOptionSelected('edit-langcode', $edit['langcode'], 'The vocabulary language was correctly selected.');
+    $this->assertTrue($this->assertSession()->optionExists('edit-langcode', $edit['langcode'])->isSelected());
   }
 
   /**
    * Tests term language settings for vocabulary terms are saved and updated.
    */
-  public function testVocabularyDefaultLanguageForTerms() {
+  public function testVocabularyDefaultLanguageForTerms(): void {
     // Add a new vocabulary and check that the default language settings are for
     // the terms are saved.
     $edit = [
       'name' => $this->randomMachineName(),
-      'vid' => Unicode::strtolower($this->randomMachineName()),
+      'vid' => $this->randomMachineName(),
       'default_language[langcode]' => 'bb',
       'default_language[language_alterable]' => TRUE,
     ];
     $vid = $edit['vid'];
-    $this->drupalPostForm('admin/structure/taxonomy/add', $edit, t('Save'));
+    $this->drupalGet('admin/structure/taxonomy/add');
+    $this->submitForm($edit, 'Save');
 
     // Check that the vocabulary was actually created.
     $this->drupalGet('admin/structure/taxonomy/manage/' . $edit['vid']);
-    $this->assertResponse(200, 'The vocabulary has been created.');
+    $this->assertSession()->statusCodeEquals(200);
 
     // Check that the language settings were saved.
     $language_settings = ContentLanguageSettings::loadByEntityTypeBundle('taxonomy_term', $edit['vid']);
-    $this->assertEqual($language_settings->getDefaultLangcode(), 'bb', 'The langcode was saved.');
+    $this->assertEquals('bb', $language_settings->getDefaultLangcode(), 'The langcode was saved.');
     $this->assertTrue($language_settings->isLanguageAlterable(), 'The visibility setting was saved.');
 
     // Check that the correct options are selected in the interface.
-    $this->assertOptionSelected('edit-default-language-langcode', 'bb', 'The correct default language for the terms of this vocabulary is selected.');
-    $this->assertFieldChecked('edit-default-language-language-alterable', 'Show language selection option is checked.');
+    $this->assertTrue($this->assertSession()->optionExists('edit-default-language-langcode', 'bb')->isSelected());
+    $this->assertSession()->checkboxChecked('edit-default-language-language-alterable');
 
     // Edit the vocabulary and check that the new settings are updated.
     $edit = [
       'default_language[langcode]' => 'aa',
       'default_language[language_alterable]' => FALSE,
     ];
-    $this->drupalPostForm('admin/structure/taxonomy/manage/' . $vid, $edit, t('Save'));
+    $this->drupalGet('admin/structure/taxonomy/manage/' . $vid);
+    $this->submitForm($edit, 'Save');
 
     // And check again the settings and also the interface.
     $language_settings = ContentLanguageSettings::loadByEntityTypeBundle('taxonomy_term', $vid);
-    $this->assertEqual($language_settings->getDefaultLangcode(), 'aa', 'The langcode was saved.');
+    $this->assertEquals('aa', $language_settings->getDefaultLangcode(), 'The langcode was saved.');
     $this->assertFalse($language_settings->isLanguageAlterable(), 'The visibility setting was saved.');
 
     $this->drupalGet('admin/structure/taxonomy/manage/' . $vid);
-    $this->assertOptionSelected('edit-default-language-langcode', 'aa', 'The correct default language for the terms of this vocabulary is selected.');
-    $this->assertNoFieldChecked('edit-default-language-language-alterable', 'Show language selection option is not checked.');
+    $this->assertTrue($this->assertSession()->optionExists('edit-default-language-langcode', 'aa')->isSelected());
+    $this->assertSession()->checkboxNotChecked('edit-default-language-language-alterable');
 
     // Check that language settings are changed after editing vocabulary.
     $edit = [
@@ -114,11 +125,12 @@ class VocabularyLanguageTest extends TaxonomyTestBase {
       'default_language[langcode]' => 'authors_default',
       'default_language[language_alterable]' => FALSE,
     ];
-    $this->drupalPostForm('admin/structure/taxonomy/manage/' . $vid, $edit, t('Save'));
+    $this->drupalGet('admin/structure/taxonomy/manage/' . $vid);
+    $this->submitForm($edit, 'Save');
 
     // Check that we have the new settings.
     $new_settings = ContentLanguageSettings::loadByEntityTypeBundle('taxonomy_term', $vid);
-    $this->assertEqual($new_settings->getDefaultLangcode(), 'authors_default', 'The langcode was saved.');
+    $this->assertEquals('authors_default', $new_settings->getDefaultLangcode(), 'The langcode was saved.');
     $this->assertFalse($new_settings->isLanguageAlterable(), 'The new visibility setting was saved.');
   }
 

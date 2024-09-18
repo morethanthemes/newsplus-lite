@@ -1,26 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Common;
 
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\KernelTests\KernelTestBase;
 
 /**
- * Confirm that \Drupal\Component\Utility\Xss::filter() and check_url() work
- * correctly, including invalid multi-byte sequences.
+ * Tests XSS filtering.
+ *
+ * @see \Drupal\Component\Utility\Xss::filter()
+ * @see \Drupal\Component\Utility\UrlHelper::filterBadProtocol
+ * @see \Drupal\Component\Utility\UrlHelper::stripDangerousProtocols
  *
  * @group Common
  */
 class XssUnitTest extends KernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['filter', 'system'];
+  protected static $modules = ['filter', 'system'];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
     $this->installConfig(['system']);
   }
@@ -28,19 +34,19 @@ class XssUnitTest extends KernelTestBase {
   /**
    * Tests t() functionality.
    */
-  public function testT() {
+  public function testT(): void {
     $text = t('Simple text');
-    $this->assertEqual($text, 'Simple text', 't leaves simple text alone.');
+    $this->assertSame('Simple text', (string) $text, 't leaves simple text alone.');
     $text = t('Escaped text: @value', ['@value' => '<script>']);
-    $this->assertEqual($text, 'Escaped text: &lt;script&gt;', 't replaces and escapes string.');
+    $this->assertSame('Escaped text: &lt;script&gt;', (string) $text, 't replaces and escapes string.');
     $text = t('Placeholder text: %value', ['%value' => '<script>']);
-    $this->assertEqual($text, 'Placeholder text: <em class="placeholder">&lt;script&gt;</em>', 't replaces, escapes and themes string.');
+    $this->assertSame('Placeholder text: <em class="placeholder">&lt;script&gt;</em>', (string) $text, 't replaces, escapes and themes string.');
   }
 
   /**
    * Checks that harmful protocols are stripped.
    */
-  public function testBadProtocolStripping() {
+  public function testBadProtocolStripping(): void {
     // Ensure that check_url() strips out harmful protocols, and encodes for
     // HTML.
     // Ensure \Drupal\Component\Utility\UrlHelper::stripDangerousProtocols() can
@@ -48,9 +54,8 @@ class XssUnitTest extends KernelTestBase {
     $url = 'javascript:http://www.example.com/?x=1&y=2';
     $expected_plain = 'http://www.example.com/?x=1&y=2';
     $expected_html = 'http://www.example.com/?x=1&amp;y=2';
-    $this->assertIdentical(check_url($url), $expected_html, 'check_url() filters a URL and encodes it for HTML.');
-    $this->assertIdentical(UrlHelper::filterBadProtocol($url), $expected_html, '\Drupal\Component\Utility\UrlHelper::filterBadProtocol() filters a URL and encodes it for HTML.');
-    $this->assertIdentical(UrlHelper::stripDangerousProtocols($url), $expected_plain, '\Drupal\Component\Utility\UrlHelper::stripDangerousProtocols() filters a URL and returns plain text.');
+    $this->assertSame($expected_html, UrlHelper::filterBadProtocol($url), '\\Drupal\\Component\\Utility\\UrlHelper::filterBadProtocol() filters a URL and encodes it for HTML.');
+    $this->assertSame($expected_plain, UrlHelper::stripDangerousProtocols($url), '\\Drupal\\Component\\Utility\\UrlHelper::stripDangerousProtocols() filters a URL and returns plain text.');
 
   }
 

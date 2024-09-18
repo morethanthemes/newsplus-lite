@@ -2,10 +2,12 @@
 
 namespace Drupal\taxonomy\Plugin\views\argument;
 
-use Drupal\Core\Database\Query\Condition;
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\taxonomy\TaxonomyIndexDepthQueryTrait;
+use Drupal\views\Attribute\ViewsArgument;
 use Drupal\views\Plugin\views\argument\ArgumentPluginBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -16,30 +18,47 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * because it uses a subquery to find nodes with.
  *
  * @ingroup views_argument_handlers
- *
- * @ViewsArgument("taxonomy_index_tid_depth")
  */
+#[ViewsArgument(
+  id: 'taxonomy_index_tid_depth',
+)]
 class IndexTidDepth extends ArgumentPluginBase implements ContainerFactoryPluginInterface {
+  use TaxonomyIndexDepthQueryTrait;
 
   /**
    * @var \Drupal\Core\Entity\EntityStorageInterface
+   *
+   * @deprecated in drupal:10.3.0 and is removed from drupal:11.0.0. There is no
+   *   replacement.
+   *
+   * @see https://www.drupal.org/node/3427843
    */
   protected $termStorage;
 
   /**
    * {@inheritdoc}
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityStorageInterface $termStorage) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, protected EntityStorageInterface|EntityRepositoryInterface $entityRepository) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
-    $this->termStorage = $termStorage;
+    if ($entityRepository instanceof EntityStorageInterface) {
+      // @phpstan-ignore-next-line
+      $this->termStorage = $entityRepository;
+      @trigger_error('Calling ' . __CLASS__ . '::__construct() with the $termStorage argument as \Drupal\Core\Entity\EntityStorageInterface is deprecated in drupal:10.3.0 and it will require Drupal\Core\Entity\EntityRepositoryInterface in drupal:11.0.0. See https://www.drupal.org/node/3427843', E_USER_DEPRECATED);
+      $this->entityRepository = \Drupal::service('entity.repository');
+    }
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    return new static($configuration, $plugin_id, $plugin_definition, $container->get('entity.manager')->getStorage('taxonomy_term'));
+    return new static(
+      $configuration,
+      $plugin_id,
+      $plugin_definition,
+      $container->get('entity.repository')
+    );
   }
 
   protected function defineOptions() {
@@ -96,47 +115,22 @@ class IndexTidDepth extends ArgumentPluginBase implements ContainerFactoryPlugin
       if ($break->value === [-1]) {
         return FALSE;
       }
-
-      $operator = (count($break->value) > 1) ? 'IN' : '=';
       $tids = $break->value;
     }
     else {
-      $operator = "=";
       $tids = $this->argument;
     }
-    // Now build the subqueries.
-    $subquery = db_select('taxonomy_index', 'tn');
-    $subquery->addField('tn', 'nid');
-    $where = (new Condition('OR'))->condition('tn.tid', $tids, $operator);
-    $last = "tn";
 
-    if ($this->options['depth'] > 0) {
-      $subquery->leftJoin('taxonomy_term_hierarchy', 'th', "th.tid = tn.tid");
-      $last = "th";
-      foreach (range(1, abs($this->options['depth'])) as $count) {
-        $subquery->leftJoin('taxonomy_term_hierarchy', "th$count", "$last.parent = th$count.tid");
-        $where->condition("th$count.tid", $tids, $operator);
-        $last = "th$count";
-      }
-    }
-    elseif ($this->options['depth'] < 0) {
-      foreach (range(1, abs($this->options['depth'])) as $count) {
-        $subquery->leftJoin('taxonomy_term_hierarchy', "th$count", "$last.tid = th$count.parent");
-        $where->condition("th$count.tid", $tids, $operator);
-        $last = "th$count";
-      }
-    }
-
-    $subquery->condition($where);
-    $this->query->addWhere(0, "$this->tableAlias.$this->realField", $subquery, 'IN');
+    $this->addSubQueryJoin($tids);
   }
 
   public function title() {
-    $term = $this->termStorage->load($this->argument);
+    $term = $this->entityRepository->getCanonical('taxonomy_term', $this->argument);
     if (!empty($term)) {
-      return $term->getName();
+      return $term->label();
     }
-    // TODO review text
+    // @todo Review text.
+
     return $this->t('No name');
   }
 

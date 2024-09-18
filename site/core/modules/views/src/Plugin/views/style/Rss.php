@@ -3,22 +3,34 @@
 namespace Drupal\views\Plugin\views\style;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\Core\Url;
+use Drupal\views\Attribute\ViewsStyle;
 
 /**
  * Default style plugin to render an RSS feed.
  *
  * @ingroup views_style_plugins
- *
- * @ViewsStyle(
- *   id = "rss",
- *   title = @Translation("RSS Feed"),
- *   help = @Translation("Generates an RSS feed from a view."),
- *   theme = "views_view_rss",
- *   display_types = {"feed"}
- * )
  */
+#[ViewsStyle(
+  id: "rss",
+  title: new TranslatableMarkup("RSS Feed"),
+  help: new TranslatableMarkup("Generates an RSS feed from a view."),
+  theme: "views_view_rss",
+  display_types: ["feed"],
+)]
 class Rss extends StylePluginBase {
+
+  /**
+   * The RSS namespaces.
+   */
+  public array $namespaces;
+
+  /**
+   * The channel elements.
+   */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
+  public array $channel_elements;
 
   /**
    * {@inheritdoc}
@@ -74,7 +86,7 @@ class Rss extends StylePluginBase {
   /**
    * Return an array of additional XHTML elements to add to the channel.
    *
-   * @return
+   * @return array
    *   A render array.
    */
   protected function getChannelElements() {
@@ -97,10 +109,6 @@ class Rss extends StylePluginBase {
   }
 
   public function render() {
-    if (empty($this->view->rowPlugin)) {
-      debug('Drupal\views\Plugin\views\style\Rss: Missing row plugin');
-      return [];
-    }
     $rows = [];
 
     // This will be filled in by the row plugin and is used later on in the
@@ -126,6 +134,11 @@ class Rss extends StylePluginBase {
       '#view' => $this->view,
       '#options' => $this->options,
       '#rows' => $rows,
+      '#attached' => [
+        'http_header' => [
+          ['Content-Type', 'application/rss+xml; charset=utf-8'],
+        ],
+      ],
     ];
     unset($this->view->row_index);
     return $build;

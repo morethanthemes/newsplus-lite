@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Unit\Plugin\argument_default;
 
 use Drupal\Core\Path\CurrentPathStack;
+use Drupal\path_alias\AliasManagerInterface;
 use Drupal\Tests\UnitTestCase;
 use Drupal\views\Plugin\views\argument_default\Raw;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,11 +18,11 @@ use Symfony\Component\HttpFoundation\RequestStack;
 class RawTest extends UnitTestCase {
 
   /**
-   * Test the getArgument() method.
+   * Tests the getArgument() method.
    *
    * @see \Drupal\views\Plugin\views\argument_default\Raw::getArgument()
    */
-  public function testGetArgument() {
+  public function testGetArgument(): void {
     $view = $this->getMockBuilder('Drupal\views\ViewExecutable')
       ->disableOriginalConstructor()
       ->getMock();
@@ -32,8 +35,8 @@ class RawTest extends UnitTestCase {
     $current_path->setPath('/test/example', $request);
     $view->expects($this->any())
       ->method('getRequest')
-      ->will($this->returnValue($request));
-    $alias_manager = $this->getMock('Drupal\Core\Path\AliasManagerInterface');
+      ->willReturn($request);
+    $alias_manager = $this->createMock(AliasManagerInterface::class);
     $alias_manager->expects($this->never())
       ->method('getAliasByPath');
 
@@ -71,11 +74,11 @@ class RawTest extends UnitTestCase {
     $this->assertEquals(NULL, $raw->getArgument());
 
     // Setup an alias manager with a path alias.
-    $alias_manager = $this->getMock('Drupal\Core\Path\AliasManagerInterface');
+    $alias_manager = $this->createMock(AliasManagerInterface::class);
     $alias_manager->expects($this->any())
       ->method('getAliasByPath')
       ->with($this->equalTo('/test/example'))
-      ->will($this->returnValue('/other/example'));
+      ->willReturn('/other/example');
 
     $raw = new Raw([], 'raw', [], $alias_manager, $current_path);
     $options = [

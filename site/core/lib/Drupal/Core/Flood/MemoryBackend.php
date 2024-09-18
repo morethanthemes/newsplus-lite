@@ -7,7 +7,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 /**
  * Defines the memory flood backend. This is used for testing.
  */
-class MemoryBackend implements FloodInterface {
+class MemoryBackend implements FloodInterface, PrefixFloodInterface {
 
   /**
    * The request stack.
@@ -41,7 +41,7 @@ class MemoryBackend implements FloodInterface {
     // We can't use REQUEST_TIME here, because that would not guarantee
     // uniqueness.
     $time = microtime(TRUE);
-    $this->events[$name][$identifier][$time + $window] = $time;
+    $this->events[$name][$identifier][] = ['expire' => $time + $window, 'time' => $time];
   }
 
   /**
@@ -57,6 +57,20 @@ class MemoryBackend implements FloodInterface {
   /**
    * {@inheritdoc}
    */
+  public function clearByPrefix(string $name, string $prefix): void {
+    foreach ($this->events as $event_name => $identifier) {
+      $identifier_key = key($identifier);
+      $identifier_parts = explode("-", $identifier_key);
+      $identifier_prefix = reset($identifier_parts);
+      if ($prefix == $identifier_prefix && $name == $event_name) {
+        unset($this->events[$event_name][$identifier_key]);
+      }
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function isAllowed($name, $threshold, $window = 3600, $identifier = NULL) {
     if (!isset($identifier)) {
       $identifier = $this->requestStack->getCurrentRequest()->getClientIp();
@@ -65,8 +79,8 @@ class MemoryBackend implements FloodInterface {
       return $threshold > 0;
     }
     $limit = microtime(TRUE) - $window;
-    $number = count(array_filter($this->events[$name][$identifier], function ($timestamp) use ($limit) {
-      return $timestamp > $limit;
+    $number = count(array_filter($this->events[$name][$identifier], function ($entry) use ($limit) {
+      return $entry['time'] > $limit;
     }));
     return ($number < $threshold);
   }
@@ -76,12 +90,10 @@ class MemoryBackend implements FloodInterface {
    */
   public function garbageCollection() {
     foreach ($this->events as $name => $identifiers) {
-      foreach ($this->events[$name] as $identifier => $timestamps) {
-        // Filter by key (expiration) but preserve key => value  associations.
-        $this->events[$name][$identifier] = array_filter($timestamps, function () use (&$timestamps) {
-          $expiration = key($timestamps);
-          next($timestamps);
-          return $expiration > microtime(TRUE);
+      foreach ($this->events[$name] as $identifier => $entries) {
+        // Remove expired entries.
+        $this->events[$name][$identifier] = array_filter($entries, function ($entry) {
+          return $entry['expire'] > microtime(TRUE);
         });
       }
     }

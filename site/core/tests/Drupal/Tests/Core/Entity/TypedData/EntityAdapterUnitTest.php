@@ -1,18 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Entity\TypedData;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
-use Drupal\Core\Entity\EntityManager;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\Plugin\DataType\EntityAdapter;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\TypedData\Exception\MissingDataException;
 use Drupal\Core\TypedData\TypedDataManagerInterface;
+use Drupal\Tests\Core\Entity\ContentEntityBaseMockableClass;
 use Drupal\Tests\UnitTestCase;
 use Drupal\Core\Language\Language;
+use PHPUnit\Framework\MockObject\MockObject;
 
 /**
  * @coversDefaultClass \Drupal\Core\Entity\Plugin\DataType\EntityAdapter
@@ -30,17 +33,8 @@ class EntityAdapterUnitTest extends UnitTestCase {
 
   /**
    * The content entity used for testing.
-   *
-   * @var \Drupal\Core\Entity\ContentEntityBase|\PHPUnit_Framework_MockObject_MockObject
    */
-  protected $entity;
-
-  /**
-   * The config entity used for testing.
-   *
-   * @var \Drupal\Core\Entity\ConfigtEntityBase|\PHPUnit_Framework_MockObject_MockObject
-   */
-  protected $configEntity;
+  protected ContentEntityBaseMockableClass&MockObject $entity;
 
   /**
    * The content entity adapter under test.
@@ -50,36 +44,22 @@ class EntityAdapterUnitTest extends UnitTestCase {
   protected $entityAdapter;
 
   /**
-   * The config entity adapter under test.
-   *
-   * @var \Drupal\Core\Entity\Plugin\DataType\EntityAdapter
-   */
-  protected $configEntityAdapter;
-
-  /**
    * The entity type used for testing.
    *
-   * @var \Drupal\Core\Entity\EntityTypeInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Entity\EntityTypeInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $entityType;
 
   /**
-   * The entity manager used for testing.
-   *
-   * @var \Drupal\Core\Entity\EntityManagerInterface|\PHPUnit_Framework_MockObject_MockObject
-   */
-  protected $entityManager;
-
-  /**
    * The entity type manager used for testing.
    *
-   * @var \Drupal\Core\Entity\EntityTypeManagerInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $entityTypeManager;
 
   /**
    *
-   * @var \Drupal\Core\Entity\EntityFieldManagerInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $entityFieldManager;
 
@@ -93,35 +73,35 @@ class EntityAdapterUnitTest extends UnitTestCase {
   /**
    * The typed data manager used for testing.
    *
-   * @var \Drupal\Core\TypedData\TypedDataManager|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\TypedData\TypedDataManager|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $typedDataManager;
 
   /**
    * The field item list returned by the typed data manager.
    *
-   * @var \Drupal\Core\Field\FieldItemListInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Field\FieldItemListInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $fieldItemList;
 
   /**
    * The field type manager used for testing.
    *
-   * @var \Drupal\Core\Field\FieldTypePluginManager|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Field\FieldTypePluginManager|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $fieldTypePluginManager;
 
   /**
    * The language manager.
    *
-   * @var \Drupal\Core\Language\LanguageManagerInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Language\LanguageManagerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $languageManager;
 
   /**
    * The UUID generator used for testing.
    *
-   * @var \Drupal\Component\Uuid\UuidInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Component\Uuid\UuidInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $uuid;
 
@@ -142,7 +122,9 @@ class EntityAdapterUnitTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
+    parent::setUp();
+
     $this->id = 1;
     $values = [
       'id' => $this->id,
@@ -152,29 +134,27 @@ class EntityAdapterUnitTest extends UnitTestCase {
     $this->entityTypeId = $this->randomMachineName();
     $this->bundle = $this->randomMachineName();
 
-    $this->entityType = $this->getMock('\Drupal\Core\Entity\EntityTypeInterface');
+    $this->entityType = $this->createMock('\Drupal\Core\Entity\EntityTypeInterface');
     $this->entityType->expects($this->any())
       ->method('getKeys')
-      ->will($this->returnValue([
+      ->willReturn([
         'id' => 'id',
         'uuid' => 'uuid',
-    ]));
+      ]);
 
-    $this->entityManager = new EntityManager();
-
-    $this->entityTypeManager = $this->getMock(EntityTypeManagerInterface::class);
+    $this->entityTypeManager = $this->createMock(EntityTypeManagerInterface::class);
     $this->entityTypeManager->expects($this->any())
       ->method('getDefinition')
       ->with($this->entityTypeId)
-      ->will($this->returnValue($this->entityType));
+      ->willReturn($this->entityType);
 
-    $this->uuid = $this->getMock('\Drupal\Component\Uuid\UuidInterface');
+    $this->uuid = $this->createMock('\Drupal\Component\Uuid\UuidInterface');
 
-    $this->typedDataManager = $this->getMock(TypedDataManagerInterface::class);
+    $this->typedDataManager = $this->createMock(TypedDataManagerInterface::class);
     $this->typedDataManager->expects($this->any())
       ->method('getDefinition')
       ->with('entity')
-      ->will($this->returnValue(['class' => '\Drupal\Core\Entity\Plugin\DataType\EntityAdapter']));
+      ->willReturn(['class' => '\Drupal\Core\Entity\Plugin\DataType\EntityAdapter']);
     $this->typedDataManager->expects($this->any())
       ->method('getDefaultConstraints')
       ->willReturn([]);
@@ -190,44 +170,40 @@ class EntityAdapterUnitTest extends UnitTestCase {
       ->willReturn($validation_constraint_manager);
 
     $not_specified = new Language(['id' => LanguageInterface::LANGCODE_NOT_SPECIFIED, 'locked' => TRUE]);
-    $this->languageManager = $this->getMock('\Drupal\Core\Language\LanguageManagerInterface');
+    $this->languageManager = $this->createMock('\Drupal\Core\Language\LanguageManagerInterface');
     $this->languageManager->expects($this->any())
       ->method('getLanguages')
-      ->will($this->returnValue([LanguageInterface::LANGCODE_NOT_SPECIFIED => $not_specified]));
+      ->willReturn([LanguageInterface::LANGCODE_NOT_SPECIFIED => $not_specified]);
 
     $this->languageManager->expects($this->any())
       ->method('getLanguage')
       ->with(LanguageInterface::LANGCODE_NOT_SPECIFIED)
-      ->will($this->returnValue($not_specified));
+      ->willReturn($not_specified);
 
     $this->fieldTypePluginManager = $this->getMockBuilder('\Drupal\Core\Field\FieldTypePluginManager')
       ->disableOriginalConstructor()
       ->getMock();
     $this->fieldTypePluginManager->expects($this->any())
       ->method('getDefaultStorageSettings')
-      ->will($this->returnValue([]));
+      ->willReturn([]);
     $this->fieldTypePluginManager->expects($this->any())
       ->method('getDefaultFieldSettings')
-      ->will($this->returnValue([]));
+      ->willReturn([]);
 
-    $this->fieldItemList = $this->getMock('\Drupal\Core\Field\FieldItemListInterface');
+    $this->fieldItemList = $this->createMock('\Drupal\Core\Field\FieldItemListInterface');
     $this->fieldTypePluginManager->expects($this->any())
       ->method('createFieldItemList')
       ->willReturn($this->fieldItemList);
 
-    $this->entityFieldManager = $this->getMockForAbstractClass(EntityFieldManagerInterface::class);
+    $this->entityFieldManager = $this->createMock(EntityFieldManagerInterface::class);
 
     $container = new ContainerBuilder();
-    $container->set('entity.manager', $this->entityManager);
     $container->set('entity_type.manager', $this->entityTypeManager);
     $container->set('entity_field.manager', $this->entityFieldManager);
     $container->set('uuid', $this->uuid);
     $container->set('typed_data_manager', $this->typedDataManager);
     $container->set('language_manager', $this->languageManager);
     $container->set('plugin.manager.field.field_type', $this->fieldTypePluginManager);
-    // Inject the container into entity.manager so it can defer to
-    // entity_type.manager and other services.
-    $this->entityManager->setContainer($container);
     \Drupal::setContainer($container);
 
     $this->fieldDefinitions = [
@@ -237,58 +213,57 @@ class EntityAdapterUnitTest extends UnitTestCase {
     $this->entityFieldManager->expects($this->any())
       ->method('getFieldDefinitions')
       ->with($this->entityTypeId, $this->bundle)
-      ->will($this->returnValue($this->fieldDefinitions));
+      ->willReturn($this->fieldDefinitions);
 
-    $this->entity = $this->getMockForAbstractClass('\Drupal\Core\Entity\ContentEntityBase', [$values, $this->entityTypeId, $this->bundle]);
+    $this->entity = $this->getMockBuilder(ContentEntityBaseMockableClass::class)
+      ->setConstructorArgs([$values, $this->entityTypeId, $this->bundle])
+      ->onlyMethods([])
+      ->getMock();
 
     $this->entityAdapter = EntityAdapter::createFromEntity($this->entity);
-
-    $this->configEntity = $this->getMockForAbstractClass('\Drupal\Core\Config\Entity\ConfigEntityBase', [$values, $this->entityTypeId, $this->bundle]);
-
-    $this->configEntityAdapter = EntityAdapter::createFromEntity($this->configEntity);
   }
 
   /**
    * @covers ::getConstraints
    */
-  public function testGetConstraints() {
-    $this->assertInternalType('array', $this->entityAdapter->getConstraints());
+  public function testGetConstraints(): void {
+    $this->assertIsArray($this->entityAdapter->getConstraints());
   }
 
   /**
    * @covers ::getName
    */
-  public function testGetName() {
+  public function testGetName(): void {
     $this->assertNull($this->entityAdapter->getName());
   }
 
   /**
    * @covers ::getRoot
    */
-  public function testGetRoot() {
+  public function testGetRoot(): void {
     $this->assertSame(spl_object_hash($this->entityAdapter), spl_object_hash($this->entityAdapter->getRoot()));
   }
 
   /**
    * @covers ::getPropertyPath
    */
-  public function testGetPropertyPath() {
+  public function testGetPropertyPath(): void {
     $this->assertSame('', $this->entityAdapter->getPropertyPath());
   }
 
   /**
    * @covers ::getParent
    */
-  public function testGetParent() {
+  public function testGetParent(): void {
     $this->assertNull($this->entityAdapter->getParent());
   }
 
   /**
    * @covers ::setContext
    */
-  public function testSetContext() {
+  public function testSetContext(): void {
     $name = $this->randomMachineName();
-    $parent = $this->getMock('\Drupal\Core\TypedData\TraversableTypedDataInterface');
+    $parent = $this->createMock('\Drupal\Core\TypedData\TraversableTypedDataInterface');
     // Our mocked entity->setContext() returns NULL, so assert that.
     $this->assertNull($this->entityAdapter->setContext($name, $parent));
     $this->assertEquals($name, $this->entityAdapter->getName());
@@ -298,14 +273,21 @@ class EntityAdapterUnitTest extends UnitTestCase {
   /**
    * @covers ::getValue
    */
-  public function testGetValue() {
+  public function testGetValue(): void {
     $this->assertEquals($this->entity, $this->entityAdapter->getValue());
+  }
+
+  /**
+   * @covers ::getEntity
+   */
+  public function testGetEntity(): void {
+    $this->assertSame($this->entity, $this->entityAdapter->getEntity());
   }
 
   /**
    * @covers ::setValue
    */
-  public function testSetValue() {
+  public function testSetValue(): void {
     $this->entityAdapter->setValue(NULL);
     $this->assertNull($this->entityAdapter->getValue());
   }
@@ -313,31 +295,31 @@ class EntityAdapterUnitTest extends UnitTestCase {
   /**
    * @covers ::get
    */
-  public function testGet() {
+  public function testGet(): void {
     $this->assertInstanceOf('\Drupal\Core\Field\FieldItemListInterface', $this->entityAdapter->get('id'));
   }
 
   /**
    * @covers ::get
    */
-  public function testGetInvalidField() {
-    $this->setExpectedException(\InvalidArgumentException::class);
+  public function testGetInvalidField(): void {
+    $this->expectException(\InvalidArgumentException::class);
     $this->entityAdapter->get('invalid');
   }
 
   /**
    * @covers ::get
    */
-  public function testGetWithoutData() {
+  public function testGetWithoutData(): void {
     $this->entityAdapter->setValue(NULL);
-    $this->setExpectedException(MissingDataException::class);
+    $this->expectException(MissingDataException::class);
     $this->entityAdapter->get('id');
   }
 
   /**
    * @covers ::set
    */
-  public function testSet() {
+  public function testSet(): void {
     $id_items = [['value' => $this->id + 1]];
 
     $this->fieldItemList->expects($this->once())
@@ -350,17 +332,17 @@ class EntityAdapterUnitTest extends UnitTestCase {
   /**
    * @covers ::set
    */
-  public function testSetWithoutData() {
+  public function testSetWithoutData(): void {
     $this->entityAdapter->setValue(NULL);
     $id_items = [['value' => $this->id + 1]];
-    $this->setExpectedException(MissingDataException::class);
+    $this->expectException(MissingDataException::class);
     $this->entityAdapter->set('id', $id_items);
   }
 
   /**
- * @covers ::getProperties
- */
-  public function testGetProperties() {
+   * @covers ::getProperties
+   */
+  public function testGetProperties(): void {
     $fields = $this->entityAdapter->getProperties();
     $this->assertInstanceOf('Drupal\Core\Field\FieldItemListInterface', $fields['id']);
     $this->assertInstanceOf('Drupal\Core\Field\FieldItemListInterface', $fields['revision_id']);
@@ -369,27 +351,27 @@ class EntityAdapterUnitTest extends UnitTestCase {
   /**
    * @covers ::toArray
    */
-  public function testToArray() {
+  public function testToArray(): void {
     $array = $this->entityAdapter->toArray();
     // Mock field objects return NULL values, so test keys only.
     $this->assertArrayHasKey('id', $array);
     $this->assertArrayHasKey('revision_id', $array);
-    $this->assertEquals(count($array), 2);
+    $this->assertCount(2, $array);
   }
 
   /**
    * @covers ::toArray
    */
-  public function testToArrayWithoutData() {
+  public function testToArrayWithoutData(): void {
     $this->entityAdapter->setValue(NULL);
-    $this->setExpectedException(MissingDataException::class);
+    $this->expectException(MissingDataException::class);
     $this->entityAdapter->toArray();
   }
 
   /**
    * @covers ::isEmpty
    */
-  public function testIsEmpty() {
+  public function testIsEmpty(): void {
     $this->assertFalse($this->entityAdapter->isEmpty());
     $this->entityAdapter->setValue(NULL);
     $this->assertTrue($this->entityAdapter->isEmpty());
@@ -398,8 +380,8 @@ class EntityAdapterUnitTest extends UnitTestCase {
   /**
    * @covers ::onChange
    */
-  public function testOnChange() {
-    $entity = $this->getMock('\Drupal\Core\Entity\ContentEntityInterface');
+  public function testOnChange(): void {
+    $entity = $this->createMock('\Drupal\Core\Entity\ContentEntityInterface');
     $entity->expects($this->once())
       ->method('onChange')
       ->with('foo')
@@ -411,7 +393,7 @@ class EntityAdapterUnitTest extends UnitTestCase {
   /**
    * @covers ::getDataDefinition
    */
-  public function testGetDataDefinition() {
+  public function testGetDataDefinition(): void {
     $definition = $this->entityAdapter->getDataDefinition();
     $this->assertInstanceOf('\Drupal\Core\Entity\TypedData\EntityDataDefinitionInterface', $definition);
     $this->assertEquals($definition->getEntityTypeId(), $this->entityTypeId);
@@ -421,8 +403,8 @@ class EntityAdapterUnitTest extends UnitTestCase {
   /**
    * @covers ::getString
    */
-  public function testGetString() {
-    $entity = $this->getMock('\Drupal\Core\Entity\ContentEntityInterface');
+  public function testGetString(): void {
+    $entity = $this->createMock('\Drupal\Core\Entity\ContentEntityInterface');
     $entity->expects($this->once())
       ->method('label')
       ->willReturn('foo');
@@ -435,7 +417,7 @@ class EntityAdapterUnitTest extends UnitTestCase {
   /**
    * @covers ::applyDefaultValue
    */
-  public function testApplyDefaultValue() {
+  public function testApplyDefaultValue(): void {
     // For each field on the entity the mock method has to be invoked once.
     $this->fieldItemList->expects($this->exactly(2))
       ->method('applyDefaultValue');
@@ -445,20 +427,15 @@ class EntityAdapterUnitTest extends UnitTestCase {
   /**
    * @covers ::getIterator
    */
-  public function testGetIterator() {
+  public function testGetIterator(): void {
     // Content entity test.
     $iterator = $this->entityAdapter->getIterator();
     $fields = iterator_to_array($iterator);
     $this->assertArrayHasKey('id', $fields);
     $this->assertArrayHasKey('revision_id', $fields);
-    $this->assertEquals(count($fields), 2);
+    $this->assertCount(2, $fields);
 
     $this->entityAdapter->setValue(NULL);
-    $this->assertEquals(new \ArrayIterator([]), $this->entityAdapter->getIterator());
-
-    // Config entity test.
-    $iterator = $this->configEntityAdapter->getIterator();
-    $this->configEntityAdapter->setValue(NULL);
     $this->assertEquals(new \ArrayIterator([]), $this->entityAdapter->getIterator());
   }
 

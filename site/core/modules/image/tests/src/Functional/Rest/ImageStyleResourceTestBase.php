@@ -1,19 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\image\Functional\Rest;
 
 use Drupal\image\Entity\ImageStyle;
-use Drupal\Tests\rest\Functional\EntityResource\EntityResourceTestBase;
+use Drupal\Tests\rest\Functional\EntityResource\ConfigEntityResourceTestBase;
 
 /**
  * ResourceTestBase for ImageStyle entity.
  */
-abstract class ImageStyleResourceTestBase extends EntityResourceTestBase {
+abstract class ImageStyleResourceTestBase extends ConfigEntityResourceTestBase {
 
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['image'];
+  protected static $modules = ['image'];
 
   /**
    * {@inheritdoc}
@@ -33,6 +35,18 @@ abstract class ImageStyleResourceTestBase extends EntityResourceTestBase {
    * @var string
    */
   protected $effectUuid;
+
+  /**
+   * Marks some tests as skipped because XML cannot be deserialized.
+   *
+   * @before
+   */
+  public function imageStyleResourceTestBaseSkipTests(): void {
+    if ($this->name() === 'testGet' && static::$format === 'xml') {
+      // @todo Remove this method override in https://www.drupal.org/node/2905655
+      $this->markTestSkipped('XML encoder does not support UUIDs as keys: makes ImageStyle config entity XML serialization crash');
+    }
+  }
 
   /**
    * {@inheritdoc}
@@ -55,6 +69,7 @@ abstract class ImageStyleResourceTestBase extends EntityResourceTestBase {
     $effect = [
       'id' => 'image_scale_and_crop',
       'data' => [
+        'anchor' => 'center-center',
         'width' => 120,
         'height' => 121,
       ],
@@ -79,6 +94,7 @@ abstract class ImageStyleResourceTestBase extends EntityResourceTestBase {
           'id' => 'image_scale_and_crop',
           'weight' => 0,
           'data' => [
+            'anchor' => 'center-center',
             'width' => 120,
             'height' => 121,
           ],
@@ -97,16 +113,13 @@ abstract class ImageStyleResourceTestBase extends EntityResourceTestBase {
    */
   protected function getNormalizedPostEntity() {
     // @todo Update in https://www.drupal.org/node/2300677.
+    return [];
   }
 
   /**
    * {@inheritdoc}
    */
   protected function getExpectedUnauthorizedAccessMessage($method) {
-    if ($this->config('rest.settings')->get('bc_entity_resource_permissions')) {
-      return parent::getExpectedUnauthorizedAccessMessage($method);
-    }
-
     return "The 'administer image styles' permission is required.";
   }
 

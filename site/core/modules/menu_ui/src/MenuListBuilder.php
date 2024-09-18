@@ -4,6 +4,7 @@ namespace Drupal\menu_ui;
 
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Url;
 
 /**
  * Defines a class to build a listing of menu entities.
@@ -12,6 +13,22 @@ use Drupal\Core\Entity\EntityInterface;
  * @see menu_entity_info()
  */
 class MenuListBuilder extends ConfigEntityListBuilder {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getEntityIds() {
+    $query = $this
+      ->getStorage()
+      ->getQuery()
+      ->sort('label', 'ASC');
+
+    // Only add the pager if a limit is specified.
+    if ($this->limit) {
+      $query->pager($this->limit);
+    }
+    return $query->execute();
+  }
 
   /**
    * {@inheritdoc}
@@ -48,13 +65,26 @@ class MenuListBuilder extends ConfigEntityListBuilder {
       $operations['add'] = [
         'title' => t('Add link'),
         'weight' => 20,
-        'url' => $entity->urlInfo('add-link-form'),
+        'url' => $entity->toUrl('add-link-form'),
+        'query' => [
+          'destination' => $entity->toUrl('edit-form')->toString(),
+        ],
       ];
     }
     if (isset($operations['delete'])) {
       $operations['delete']['title'] = t('Delete menu');
     }
     return $operations;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function ensureDestination(Url $url) {
+    // We don't want to add the destination URL here, as it means we get
+    // redirected back to the list-builder after adding/deleting menu links from
+    // a menu.
+    return $url;
   }
 
   /**

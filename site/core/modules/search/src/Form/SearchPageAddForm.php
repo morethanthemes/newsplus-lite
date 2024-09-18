@@ -35,13 +35,18 @@ class SearchPageAddForm extends SearchPageFormBase {
    */
   public function save(array $form, FormStateInterface $form_state) {
     // If there is no default search page, make the added search the default.
-    if (!$this->searchPageRepository->getDefaultSearchPage()) {
-      $this->searchPageRepository->setDefaultSearchPage($this->entity);
-    }
+    // TRICKY: ::getDefaultSearchPage() will return the first active search page
+    // as the default if no explicit default is configured in `search.settings`.
+    // That's why this must be checked *before* saving the form.
+    $make_default = !$this->searchPageRepository->getDefaultSearchPage();
 
     parent::save($form, $form_state);
 
-    drupal_set_message($this->t('The %label search page has been added.', ['%label' => $this->entity->label()]));
+    if ($make_default) {
+      $this->searchPageRepository->setDefaultSearchPage($this->entity);
+    }
+
+    $this->messenger()->addStatus($this->t('The %label search page has been added.', ['%label' => $this->entity->label()]));
   }
 
 }

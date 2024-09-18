@@ -2,11 +2,14 @@
 
 namespace Drupal\views\Plugin\views\argument;
 
+use Drupal\views\Attribute\ViewsArgument;
+
 /**
  * Argument handler for a day (DD)
- *
- * @ViewsArgument("date_day")
- */
+  */
+#[ViewsArgument(
+  id: 'date_day',
+)]
 class DayDate extends Date {
 
   /**
@@ -20,20 +23,21 @@ class DayDate extends Date {
   protected $argFormat = 'd';
 
   /**
-   * Provide a link to the next level of the view
+   * {@inheritdoc}
    */
   public function summaryName($data) {
     $day = str_pad($data->{$this->name_alias}, 2, '0', STR_PAD_LEFT);
-    // strtotime respects server timezone, so we need to set the time fixed as utc time
-    return format_date(strtotime("2005" . "05" . $day . " 00:00:00 UTC"), 'custom', $this->format, 'UTC');
+    // strtotime() respects server timezone, so we need to set the time fixed
+    // as utc time
+    return $this->dateFormatter->format(strtotime("2005" . "05" . $day . " 00:00:00 UTC"), 'custom', $this->format, 'UTC');
   }
 
   /**
-   * Provide a link to the next level of the view
+   * {@inheritdoc}
    */
   public function title() {
     $day = str_pad($this->argument, 2, '0', STR_PAD_LEFT);
-    return format_date(strtotime("2005" . "05" . $day . " 00:00:00 UTC"), 'custom', $this->format, 'UTC');
+    return $this->dateFormatter->format(strtotime("2005" . "05" . $day . " 00:00:00 UTC"), 'custom', $this->format, 'UTC');
   }
 
   public function summaryArgument($data) {

@@ -4,12 +4,12 @@ namespace Drupal\datetime\Plugin\Field\FieldFormatter;
 
 use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Datetime\DrupalDateTime;
+use Drupal\Core\Datetime\TimeZoneFormHelper;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\FormatterBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItem;
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -17,7 +17,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Base class for 'DateTime Field formatter' plugin implementations.
  */
-abstract class DateTimeFormatterBase extends FormatterBase implements ContainerFactoryPluginInterface {
+abstract class DateTimeFormatterBase extends FormatterBase {
 
   /**
    * The date formatter service.
@@ -75,7 +75,7 @@ abstract class DateTimeFormatterBase extends FormatterBase implements ContainerF
       $configuration['view_mode'],
       $configuration['third_party_settings'],
       $container->get('date.formatter'),
-      $container->get('entity.manager')->getStorage('date_format')
+      $container->get('entity_type.manager')->getStorage('date_format')
     );
   }
 
@@ -98,7 +98,7 @@ abstract class DateTimeFormatterBase extends FormatterBase implements ContainerF
       '#type' => 'select',
       '#title' => $this->t('Time zone override'),
       '#description' => $this->t('The time zone selected here will always be used'),
-      '#options' => system_time_zones(TRUE, TRUE),
+      '#options' => TimeZoneFormHelper::getOptionsListByRegion(TRUE),
       '#default_value' => $this->getSetting('timezone_override'),
     ];
 
@@ -160,8 +160,6 @@ abstract class DateTimeFormatterBase extends FormatterBase implements ContainerF
    * zone applied to it.  This method will apply the time zone for the current
    * user, based on system and user settings.
    *
-   * @see drupal_get_user_timezone()
-   *
    * @param \Drupal\Core\Datetime\DrupalDateTime $date
    *   A DrupalDateTime object.
    */
@@ -171,7 +169,7 @@ abstract class DateTimeFormatterBase extends FormatterBase implements ContainerF
       $timezone = DateTimeItemInterface::STORAGE_TIMEZONE;
     }
     else {
-      $timezone = drupal_get_user_timezone();
+      $timezone = date_default_timezone_get();
     }
     $date->setTimeZone(timezone_open($timezone));
   }
@@ -234,7 +232,6 @@ abstract class DateTimeFormatterBase extends FormatterBase implements ContainerF
     $build = [
       '#theme' => 'time',
       '#text' => $this->formatDate($date),
-      '#html' => FALSE,
       '#attributes' => [
         'datetime' => $iso_date,
       ],

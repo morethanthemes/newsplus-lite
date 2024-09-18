@@ -5,6 +5,7 @@ namespace Drupal\layout_builder\Plugin\Block;
 use Drupal\Component\Plugin\Factory\DefaultFactory;
 use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Block\Attribute\Block;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Entity\EntityDisplayBase;
@@ -14,25 +15,32 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FormatterInterface;
 use Drupal\Core\Field\FormatterPluginManager;
+use Drupal\Core\Form\EnforcedResponseException;
+use Drupal\Core\Form\FormHelper;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Plugin\ContextAwarePluginInterface;
-use Drupal\Core\Render\Element;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\field\FieldConfigInterface;
+use Drupal\layout_builder\Plugin\Derivative\FieldBlockDeriver;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\field\FieldLabelOptionsTrait;
 
 /**
  * Provides a block that renders a field from an entity.
  *
- * @Block(
- *   id = "field_block",
- *   deriver = "\Drupal\layout_builder\Plugin\Derivative\FieldBlockDeriver",
- * )
+ * @internal
+ *   Plugin classes are internal.
  */
+#[Block(
+  id: "field_block",
+  deriver: FieldBlockDeriver::class
+)]
 class FieldBlock extends BlockBase implements ContextAwarePluginInterface, ContainerFactoryPluginInterface {
 
+  use FieldLabelOptionsTrait;
   /**
    * The entity field manager.
    *
@@ -114,7 +122,7 @@ class FieldBlock extends BlockBase implements ContextAwarePluginInterface, Conta
     $this->logger = $logger;
 
     // Get the entity type and field name from the plugin ID.
-    list (, $entity_type_id, $bundle, $field_name) = explode(static::DERIVATIVE_SEPARATOR, $plugin_id, 4);
+    [, $entity_type_id, $bundle, $field_name] = explode(static::DERIVATIVE_SEPARATOR, $plugin_id, 4);
     $this->entityTypeId = $entity_type_id;
     $this->bundle = $bundle;
     $this->fieldName = $field_name;
@@ -152,19 +160,32 @@ class FieldBlock extends BlockBase implements ContextAwarePluginInterface, Conta
    */
   public function build() {
     $display_settings = $this->getConfiguration()['formatter'];
+    $display_settings['third_party_settings']['layout_builder']['view_mode'] = $this->getContextValue('view_mode');
     $entity = $this->getEntity();
     try {
-      $build = $entity->get($this->fieldName)->view($display_settings);
+      $build = [];
+      $view = $entity->get($this->fieldName)->view($display_settings);
+      if ($view) {
+        $build = [$view];
+      }
+    }
+    // @todo Remove in https://www.drupal.org/project/drupal/issues/2367555.
+    catch (EnforcedResponseException $e) {
+      throw $e;
     }
     catch (\Exception $e) {
       $build = [];
       $this->logger->warning('The field "%field" failed to render with the error of "%error".', ['%field' => $this->fieldName, '%error' => $e->getMessage()]);
     }
-    if (!empty($entity->in_preview) && !Element::getVisibleChildren($build)) {
-      $build['content']['#markup'] = new TranslatableMarkup('Placeholder for the "@field" field', ['@field' => $this->getFieldDefinition()->getLabel()]);
-    }
-    CacheableMetadata::createFromObject($this)->applyTo($build);
+    CacheableMetadata::createFromRenderArray($build)->addCacheableDependency($this)->applyTo($build);
     return $build;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getPreviewFallbackString() {
+    return new TranslatableMarkup('"@field" field', ['@field' => $this->getFieldDefinition()->getLabel()]);
   }
 
   /**
@@ -191,8 +212,8 @@ class FieldBlock extends BlockBase implements ContextAwarePluginInterface, Conta
       return $access;
     }
 
-    // Check to see if the field has any values.
-    if ($field->isEmpty()) {
+    // Check to see if the field has any values or a default value.
+    if ($field->isEmpty() && !$this->entityFieldHasDefaultValue()) {
       return $access->andIf(AccessResult::forbidden());
     }
     return $access;
@@ -228,15 +249,7 @@ class FieldBlock extends BlockBase implements ContextAwarePluginInterface, Conta
     $form['formatter']['label'] = [
       '#type' => 'select',
       '#title' => $this->t('Label'),
-      // @todo This is directly copied from
-      //   \Drupal\field_ui\Form\EntityViewDisplayEditForm::getFieldLabelOptions(),
-      //   resolve this in https://www.drupal.org/project/drupal/issues/2933924.
-      '#options' => [
-        'above' => $this->t('Above'),
-        'inline' => $this->t('Inline'),
-        'hidden' => '- ' . $this->t('Hidden') . ' -',
-        'visually_hidden' => '- ' . $this->t('Visually Hidden') . ' -',
-      ],
+      '#options' => $this->getFieldLabelOptions(),
       '#default_value' => $config['formatter']['label'],
     ];
 
@@ -270,6 +283,7 @@ class FieldBlock extends BlockBase implements ContextAwarePluginInterface, Conta
       $element['settings_wrapper']['settings']['#parents'] = array_merge($element['#parents'], ['settings']);
       $element['settings_wrapper']['third_party_settings'] = $this->thirdPartySettingsForm($formatter, $this->getFieldDefinition(), $complete_form, $form_state);
       $element['settings_wrapper']['third_party_settings']['#parents'] = array_merge($element['#parents'], ['third_party_settings']);
+      FormHelper::rewriteStatesSelector($element['settings_wrapper'], "fields[$this->fieldName][settings_edit_form]", 'settings[formatter]');
 
       // Store the array parents for our element so that we can retrieve the
       // formatter settings in our AJAX callback.
@@ -297,15 +311,18 @@ class FieldBlock extends BlockBase implements ContextAwarePluginInterface, Conta
     $settings_form = [];
     // Invoke hook_field_formatter_third_party_settings_form(), keying resulting
     // subforms by module name.
-    foreach ($this->moduleHandler->getImplementations('field_formatter_third_party_settings_form') as $module) {
-      $settings_form[$module] = $this->moduleHandler->invoke($module, 'field_formatter_third_party_settings_form', [
-        $plugin,
-        $field_definition,
-        EntityDisplayBase::CUSTOM_MODE,
-        $form,
-        $form_state,
-      ]);
-    }
+    $this->moduleHandler->invokeAllWith(
+      'field_formatter_third_party_settings_form',
+      function (callable $hook, string $module) use (&$settings_form, $plugin, $field_definition, $form, $form_state) {
+        $settings_form[$module] = $hook(
+          $plugin,
+          $field_definition,
+          EntityDisplayBase::CUSTOM_MODE,
+          $form,
+          $form_state,
+        );
+      }
+    );
     return $settings_form;
   }
 
@@ -390,6 +407,35 @@ class FieldBlock extends BlockBase implements ContextAwarePluginInterface, Conta
       'view_mode' => EntityDisplayBase::CUSTOM_MODE,
       'prepare' => TRUE,
     ]);
+  }
+
+  /**
+   * Checks whether there is a default value set on the field.
+   *
+   * @return bool
+   *   TRUE if default value set, FALSE otherwise.
+   */
+  protected function entityFieldHasDefaultValue(): bool {
+    $entity = $this->getEntity();
+    $field = $entity->get($this->fieldName);
+    $definition = $field->getFieldDefinition();
+    if ($definition->getDefaultValue($entity)) {
+      return TRUE;
+    }
+
+    // @todo Remove special handling of image fields after
+    // https://www.drupal.org/project/drupal/issues/3005528.
+    if ($definition->getType() !== 'image') {
+      return FALSE;
+    }
+
+    $default_image = $definition->getSetting('default_image');
+    // If we are dealing with a configurable field, look in both instance-level
+    // and field-level settings.
+    if (empty($default_image['uuid']) && ($definition instanceof FieldConfigInterface)) {
+      $default_image = $definition->getFieldStorageDefinition()->getSetting('default_image');
+    }
+    return !empty($default_image['uuid']);
   }
 
 }

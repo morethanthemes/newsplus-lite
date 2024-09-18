@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\contact\Functional\Views;
 
 use Drupal\Core\Cache\Cache;
 use Drupal\Tests\views\Functional\ViewTestBase;
-use Drupal\views\Tests\ViewTestData;
 use Drupal\user\Entity\User;
 
 /**
@@ -23,11 +24,14 @@ class ContactLinkTest extends ViewTestBase {
   public $userData;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['contact_test_views'];
+  protected static $modules = ['contact_test_views'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Views used by this test.
@@ -39,10 +43,8 @@ class ContactLinkTest extends ViewTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
-    parent::setUp($import_test_views);
-
-    ViewTestData::createTestViews(get_class($this), ['contact_test_views']);
+  protected function setUp($import_test_views = TRUE, $modules = ['contact_test_views']): void {
+    parent::setUp($import_test_views, $modules);
 
     $this->userData = $this->container->get('user.data');
   }
@@ -50,7 +52,7 @@ class ContactLinkTest extends ViewTestBase {
   /**
    * Tests contact link.
    */
-  public function testContactLink() {
+  public function testContactLink(): void {
     $accounts = [];
     $accounts['root'] = User::load(1);
     // Create an account with access to all contact pages.
@@ -66,7 +68,7 @@ class ContactLinkTest extends ViewTestBase {
 
     $this->drupalLogin($admin_account);
     $this->drupalGet('test-contact-link');
-    // The admin user has access to all contact links beside his own.
+    // The admin user has access to all contact links beside their own.
     $this->assertContactLinks($accounts, ['root', 'no_contact', 'contact']);
 
     $this->drupalLogin($no_contact_account);
@@ -93,15 +95,14 @@ class ContactLinkTest extends ViewTestBase {
    *   All user objects used by the test.
    * @param array $names
    *   Users which should have contact links.
+   *
+   * @internal
    */
-  public function assertContactLinks(array $accounts, array $names) {
-    $result = $this->xpath('//div[contains(@class, "views-field-contact")]//a');
-    $this->assertEqual(count($result), count($names));
+  public function assertContactLinks(array $accounts, array $names): void {
+    $this->assertSession()->elementsCount('xpath', '//div[contains(@class, "views-field-contact")]//a', count($names));
     foreach ($names as $name) {
-      $account = $accounts[$name];
-
-      $result = $this->xpath('//div[contains(@class, "views-field-contact")]//a[contains(@href, :url)]', [':url' => $account->url('contact-form')]);
-      $this->assertTrue(count($result));
+      $account_url = $accounts[$name]->toUrl('contact-form')->toString();
+      $this->assertSession()->elementExists('xpath', "//div[contains(@class, 'views-field-contact')]//a[contains(@href, '$account_url')]");
     }
   }
 

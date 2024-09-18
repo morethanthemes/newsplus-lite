@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\migrate\Unit\process;
 
 use Drupal\migrate\MigrateException;
@@ -17,13 +19,14 @@ class FormatDateTest extends MigrateProcessTestCase {
   /**
    * Tests that missing configuration will throw an exception.
    */
-  public function testMigrateExceptionMissingFromFormat() {
+  public function testMigrateExceptionMissingFromFormat(): void {
     $configuration = [
       'from_format' => '',
       'to_format' => 'Y-m-d',
     ];
 
-    $this->setExpectedException(MigrateException::class, 'Format date plugin is missing from_format configuration.');
+    $this->expectException(MigrateException::class);
+    $this->expectExceptionMessage('Format date plugin is missing from_format configuration.');
     $this->plugin = new FormatDate($configuration, 'test_format_date', []);
     $this->plugin->transform('01/05/1955', $this->migrateExecutable, $this->row, 'field_date');
   }
@@ -31,13 +34,14 @@ class FormatDateTest extends MigrateProcessTestCase {
   /**
    * Tests that missing configuration will throw an exception.
    */
-  public function testMigrateExceptionMissingToFormat() {
+  public function testMigrateExceptionMissingToFormat(): void {
     $configuration = [
       'from_format' => 'm/d/Y',
       'to_format' => '',
     ];
 
-    $this->setExpectedException(MigrateException::class, 'Format date plugin is missing to_format configuration.');
+    $this->expectException(MigrateException::class);
+    $this->expectExceptionMessage('Format date plugin is missing to_format configuration.');
     $this->plugin = new FormatDate($configuration, 'test_format_date', []);
     $this->plugin->transform('01/05/1955', $this->migrateExecutable, $this->row, 'field_date');
   }
@@ -45,49 +49,31 @@ class FormatDateTest extends MigrateProcessTestCase {
   /**
    * Tests that date format mismatches will throw an exception.
    */
-  public function testMigrateExceptionBadFormat() {
+  public function testMigrateExceptionBadFormat(): void {
     $configuration = [
       'from_format' => 'm/d/Y',
       'to_format' => 'Y-m-d',
     ];
 
-    $this->setExpectedException(MigrateException::class, 'Format date plugin could not transform "January 5, 1955" using the format "m/d/Y". Error: The date cannot be created from a format.');
+    $this->expectException(MigrateException::class);
+    $this->expectExceptionMessage("Format date plugin could not transform 'January 5, 1955' using the format 'm/d/Y'. Error: The date cannot be created from a format.");
     $this->plugin = new FormatDate($configuration, 'test_format_date', []);
     $this->plugin->transform('January 5, 1955', $this->migrateExecutable, $this->row, 'field_date');
   }
 
   /**
-   * Tests that "timezone" configuration key triggers deprecation error.
-   *
-   * @covers ::transform
-   *
-   * @dataProvider providerTestDeprecatedTimezoneConfigurationKey
-   *
-   * @group legacy
-   * @expectedDeprecation Configuration key "timezone" is deprecated in 8.4.x and will be removed before Drupal 9.0.0, use "from_timezone" and "to_timezone" instead. See https://www.drupal.org/node/2885746
+   * Tests that an unexpected date value will throw an exception.
    */
-  public function testDeprecatedTimezoneConfigurationKey($configuration, $value, $expected) {
-    $this->plugin = new FormatDate($configuration, 'test_format_date', []);
-    $actual = $this->plugin->transform($value, $this->migrateExecutable, $this->row, 'field_date');
-
-    $this->assertEquals($expected, $actual);
-  }
-
-  /**
-   * Data provider for testDeprecatedTimezoneConfigurationKey.
-   */
-  public function providerTestDeprecatedTimezoneConfigurationKey() {
-    return [
-      [
-        'configuration' => [
-          'from_format' => 'Y-m-d\TH:i:sO',
-          'to_format' => 'c e',
-          'timezone' => 'America/Managua',
-        ],
-        'value' => '2004-12-19T10:19:42-0600',
-        'expected' => '2004-12-19T10:19:42-06:00 -06:00'
-      ],
+  public function testMigrateExceptionUnexpectedValue(): void {
+    $configuration = [
+      'from_format' => 'm/d/Y',
+      'to_format' => 'Y-m-d',
     ];
+
+    $this->expectException(MigrateException::class);
+    $this->expectExceptionMessage("Format date plugin could not transform '01/05/55' using the format 'm/d/Y'. Error: The created date does not match the input value.");
+    $this->plugin = new FormatDate($configuration, 'test_format_date', []);
+    $this->plugin->transform('01/05/55', $this->migrateExecutable, $this->row, 'field_date');
   }
 
   /**
@@ -104,7 +90,7 @@ class FormatDateTest extends MigrateProcessTestCase {
    * @param $expected
    *   The expected value of the migration process plugin.
    */
-  public function testTransform($configuration, $value, $expected) {
+  public function testTransform($configuration, $value, $expected): void {
     $this->plugin = new FormatDate($configuration, 'test_format_date', []);
     $actual = $this->plugin->transform($value, $this->migrateExecutable, $this->row, 'field_date');
 
@@ -117,7 +103,7 @@ class FormatDateTest extends MigrateProcessTestCase {
    * @return array
    *   Array of date formats and actual/expected values.
    */
-  public function datesDataProvider() {
+  public static function datesDataProvider() {
     return [
       'datetime_date' => [
         'configuration' => [
@@ -174,6 +160,58 @@ class FormatDateTest extends MigrateProcessTestCase {
         // Unit tests use Australia/Sydney timezone, so date value will be
         // converted from Australia/Sydney to America/Managua timezone.
         'expected' => '2004-12-18 17:19:42 America/Managua',
+      ],
+      'integer_0' => [
+        'configuration' => [
+          'from_format' => 'U',
+          'to_format' => 'Y-m-d',
+        ],
+        'value' => 0,
+        'expected' => '1970-01-01',
+      ],
+      'string_0' => [
+        'configuration' => [
+          'from_format' => 'U',
+          'to_format' => 'Y-m-d',
+        ],
+        'value' => '0',
+        'expected' => '1970-01-01',
+      ],
+      'zeros' => [
+        'configuration' => [
+          'from_format' => 'Y-m-d H:i:s',
+          'to_format' => 'Y-m-d H:i:s e',
+          'settings' => ['validate_format' => FALSE],
+        ],
+        'value' => '0000-00-00 00:00:00',
+        'expected' => '-0001-11-30 00:00:00 Australia/Sydney',
+      ],
+      'zeros_same_timezone' => [
+        'configuration' => [
+          'from_format' => 'Y-m-d H:i:s',
+          'to_format' => 'Y-m-d H:i:s',
+          'settings' => ['validate_format' => FALSE],
+          'from_timezone' => 'UTC',
+          'to_timezone' => 'UTC',
+        ],
+        'value' => '0000-00-00 00:00:00',
+        'expected' => '-0001-11-30 00:00:00',
+      ],
+      'collected_date_attributes_day' => [
+        'configuration' => [
+          'from_format' => 'Y-m-d\TH:i:s',
+          'to_format' => 'Y-m-d\TH:i:s',
+        ],
+        'value' => '2012-01-00T00:00:00',
+        'expected' => '2012-01-01T00:00:00',
+      ],
+      'collected_date_attributes_month' => [
+        'configuration' => [
+          'from_format' => 'Y-m-d\TH:i:s',
+          'to_format' => 'Y-m-d\TH:i:s',
+        ],
+        'value' => '2012-00-00T00:00:00',
+        'expected' => '2012-01-01T00:00:00',
       ],
     ];
   }

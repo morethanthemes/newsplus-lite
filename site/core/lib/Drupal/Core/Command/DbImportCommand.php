@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 /**
  * Provides a command to import the current database from a script.
  *
- * This script runs on databases exported using using one of the database dump
+ * This script runs on databases exported using one of the database dump
  * commands and imports it into the current database connection.
  *
  * @see \Drupal\Core\Command\DbImportApplication
@@ -32,16 +32,17 @@ class DbImportCommand extends DbCommandBase {
   /**
    * {@inheritdoc}
    */
-  protected function execute(InputInterface $input, OutputInterface $output) {
+  protected function execute(InputInterface $input, OutputInterface $output): int {
     $script = $input->getArgument('script');
     if (!is_file($script)) {
       $output->writeln('File must exist.');
-      return;
+      return 1;
     }
 
     $connection = $this->getDatabaseConnection($input);
     $this->runScript($connection, $script);
     $output->writeln('Import completed successfully.');
+    return 0;
   }
 
   /**
@@ -55,7 +56,7 @@ class DbImportCommand extends DbCommandBase {
   protected function runScript(Connection $connection, $script) {
     $old_key = Database::setActiveConnection($connection->getKey());
 
-    if (substr($script, -3) == '.gz') {
+    if (str_ends_with($script, '.gz')) {
       $script = "compress.zlib://$script";
     }
     try {

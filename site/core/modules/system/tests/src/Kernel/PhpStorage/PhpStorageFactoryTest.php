@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\system\Kernel\PhpStorage;
 
 use Drupal\Component\PhpStorage\MTimeProtectedFileStorage;
@@ -20,7 +22,7 @@ class PhpStorageFactoryTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     // Empty the PHP storage settings, as KernelTestBase sets it by default.
@@ -32,46 +34,46 @@ class PhpStorageFactoryTest extends KernelTestBase {
   /**
    * Tests the get() method with no settings.
    */
-  public function testGetNoSettings() {
+  public function testGetNoSettings(): void {
     $php = PhpStorageFactory::get('test');
     // This should be the default class used.
-    $this->assertTrue($php instanceof MTimeProtectedFileStorage, 'An MTimeProtectedFileStorage instance was returned with no settings.');
+    $this->assertInstanceOf(MTimeProtectedFileStorage::class, $php);
   }
 
   /**
    * Tests the get() method using the 'default' settings.
    */
-  public function testGetDefault() {
+  public function testGetDefault(): void {
     $this->setSettings();
     $php = PhpStorageFactory::get('test');
-    $this->assertTrue($php instanceof MockPhpStorage, 'A FileReadOnlyStorage instance was returned with default settings.');
+    $this->assertInstanceOf(MockPhpStorage::class, $php);
   }
 
   /**
    * Tests the get() method with overridden settings.
    */
-  public function testGetOverride() {
+  public function testGetOverride(): void {
     $this->setSettings('test');
     $php = PhpStorageFactory::get('test');
     // The FileReadOnlyStorage should be used from settings.
-    $this->assertTrue($php instanceof MockPhpStorage, 'A MockPhpStorage instance was returned from overridden settings.');
+    $this->assertInstanceOf(MockPhpStorage::class, $php);
 
     // Test that the name is used for the bin when it is NULL.
     $this->setSettings('test', ['bin' => NULL]);
     $php = PhpStorageFactory::get('test');
-    $this->assertTrue($php instanceof MockPhpStorage, 'An MockPhpStorage instance was returned from overridden settings.');
+    $this->assertInstanceOf(MockPhpStorage::class, $php);
     $this->assertSame('test', $php->getConfigurationValue('bin'), 'Name value was used for bin.');
 
     // Test that a default directory is set if it's empty.
     $this->setSettings('test', ['directory' => NULL]);
     $php = PhpStorageFactory::get('test');
-    $this->assertTrue($php instanceof MockPhpStorage, 'An MockPhpStorage instance was returned from overridden settings.');
+    $this->assertInstanceOf(MockPhpStorage::class, $php);
     $this->assertSame(PublicStream::basePath() . '/php', $php->getConfigurationValue('directory'), 'Default file directory was used.');
 
     // Test that a default storage class is set if it's empty.
     $this->setSettings('test', ['class' => NULL]);
     $php = PhpStorageFactory::get('test');
-    $this->assertTrue($php instanceof MTimeProtectedFileStorage, 'An MTimeProtectedFileStorage instance was returned from overridden settings with no class.');
+    $this->assertInstanceOf(MTimeProtectedFileStorage::class, $php);
 
     // Test that a default secret is not returned if it's set in the override.
     $this->setSettings('test');

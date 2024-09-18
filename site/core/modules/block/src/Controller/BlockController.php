@@ -6,7 +6,6 @@ use Drupal\Component\Utility\Html;
 use Drupal\block\BlockInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\Core\Extension\ThemeHandlerInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -32,15 +31,6 @@ class BlockController extends ControllerBase {
   }
 
   /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('theme_handler')
-    );
-  }
-
-  /**
    * Calls a method on a block and reloads the listing page.
    *
    * @param \Drupal\block\BlockInterface $block
@@ -53,7 +43,7 @@ class BlockController extends ControllerBase {
    */
   public function performOperation(BlockInterface $block, $op) {
     $block->$op()->save();
-    drupal_set_message($this->t('The block settings have been updated.'));
+    $this->messenger()->addStatus($this->t('The block settings have been updated.'));
     return $this->redirect('block.admin_display');
   }
 

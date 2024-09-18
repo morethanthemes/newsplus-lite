@@ -2,10 +2,10 @@
 
 namespace Drupal\Core\Plugin;
 
+use Drupal\Component\Plugin\ConfigurableInterface;
 use Drupal\Component\Plugin\Exception\PluginNotFoundException;
 use Drupal\Component\Plugin\LazyPluginCollection;
 use Drupal\Component\Plugin\PluginManagerInterface;
-use Drupal\Component\Plugin\ConfigurablePluginInterface;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 
 /**
@@ -64,9 +64,9 @@ class DefaultLazyPluginCollection extends LazyPluginCollection {
 
     if (!empty($configurations)) {
       $instance_ids = array_keys($configurations);
-      $this->instanceIDs = array_combine($instance_ids, $instance_ids);
+      $this->instanceIds = array_combine($instance_ids, $instance_ids);
       // Store the original order of the instance IDs for export.
-      $this->originalOrder = $this->instanceIDs;
+      $this->originalOrder = $this->instanceIds;
     }
   }
 
@@ -74,7 +74,7 @@ class DefaultLazyPluginCollection extends LazyPluginCollection {
    * {@inheritdoc}
    */
   protected function initializePlugin($instance_id) {
-    $configuration = isset($this->configurations[$instance_id]) ? $this->configurations[$instance_id] : [];
+    $configuration = $this->configurations[$instance_id] ?? [];
     if (!isset($configuration[$this->pluginKey])) {
       throw new PluginNotFoundException($instance_id);
     }
@@ -87,7 +87,7 @@ class DefaultLazyPluginCollection extends LazyPluginCollection {
    * @return $this
    */
   public function sort() {
-    uasort($this->instanceIDs, [$this, 'sortHelper']);
+    uasort($this->instanceIds, [$this, 'sortHelper']);
     return $this;
   }
 
@@ -106,13 +106,13 @@ class DefaultLazyPluginCollection extends LazyPluginCollection {
   public function getConfiguration() {
     $instances = [];
     // Store the current order of the instances.
-    $current_order = $this->instanceIDs;
+    $current_order = $this->instanceIds;
     // Reorder the instances to match the original order, adding new instances
     // to the end.
-    $this->instanceIDs = $this->originalOrder + $current_order;
+    $this->instanceIds = $this->originalOrder + $current_order;
 
     foreach ($this as $instance_id => $instance) {
-      if ($instance instanceof ConfigurablePluginInterface) {
+      if ($instance instanceof ConfigurableInterface) {
         $instances[$instance_id] = $instance->getConfiguration();
       }
       else {
@@ -120,7 +120,7 @@ class DefaultLazyPluginCollection extends LazyPluginCollection {
       }
     }
     // Restore the current order.
-    $this->instanceIDs = $current_order;
+    $this->instanceIds = $current_order;
     return $instances;
   }
 
@@ -128,6 +128,11 @@ class DefaultLazyPluginCollection extends LazyPluginCollection {
    * {@inheritdoc}
    */
   public function setConfiguration($configuration) {
+    if (!is_array($configuration)) {
+      @trigger_error('Calling ' . __METHOD__ . '() with a non-array argument is deprecated in drupal:10.3.0 and will fail in drupal:11.0.0. See https://www.drupal.org/node/3406191', E_USER_DEPRECATED);
+      $configuration = [];
+    }
+
     // Track each instance ID as it is updated.
     $unprocessed_instance_ids = $this->getInstanceIds();
 
@@ -156,9 +161,20 @@ class DefaultLazyPluginCollection extends LazyPluginCollection {
    *   The plugin configuration to set.
    */
   public function setInstanceConfiguration($instance_id, array $configuration) {
+    if (
+      isset($this->pluginInstances[$instance_id]) &&
+      isset($configuration[$this->pluginKey]) &&
+      isset($this->configurations[$instance_id][$this->pluginKey]) &&
+      $configuration[$this->pluginKey] !== $this->configurations[$instance_id][$this->pluginKey]
+    ) {
+      // If the plugin has already been instantiated by the configuration was
+      // for a different plugin then we need to unset the instantiated plugin.
+      unset($this->pluginInstances[$instance_id]);
+    }
+
     $this->configurations[$instance_id] = $configuration;
     $instance = $this->get($instance_id);
-    if ($instance instanceof ConfigurablePluginInterface) {
+    if ($instance instanceof ConfigurableInterface) {
       $instance->setConfiguration($configuration);
     }
   }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\comment\Kernel\Migrate\d6;
 
 use Drupal\field\Entity\FieldStorageConfig;
@@ -16,12 +18,12 @@ class MigrateCommentFieldTest extends MigrateDrupal6TestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['comment', 'menu_ui'];
+  protected static $modules = ['comment', 'menu_ui'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installConfig(['comment']);
     $this->executeMigrations([
@@ -35,8 +37,10 @@ class MigrateCommentFieldTest extends MigrateDrupal6TestBase {
    *
    * @param string $comment_type
    *   The comment type.
+   *
+   * @internal
    */
-  protected function assertEntity($comment_type) {
+  protected function assertEntity(string $comment_type): void {
     $entity = FieldStorageConfig::load('node.' . $comment_type);
     $this->assertInstanceOf(FieldStorageConfig::class, $entity);
     $this->assertSame('node', $entity->getTargetEntityTypeId());
@@ -47,7 +51,7 @@ class MigrateCommentFieldTest extends MigrateDrupal6TestBase {
   /**
    * Tests the migrated comment fields.
    */
-  public function testMigration() {
+  public function testMigration(): void {
     $this->assertEntity('comment_node_article');
     $this->assertEntity('comment_node_company');
     $this->assertEntity('comment_node_employee');

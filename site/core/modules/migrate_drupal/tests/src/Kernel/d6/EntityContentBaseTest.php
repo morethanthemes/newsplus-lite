@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\migrate_drupal\Kernel\d6;
 
 use Drupal\field\Entity\FieldConfig;
@@ -17,12 +19,12 @@ class EntityContentBaseTest extends MigrateDrupal6TestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['migrate_overwrite_test'];
+  protected static $modules = ['migrate_overwrite_test'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     // Create a field on the user entity so that we can test nested property
@@ -57,41 +59,43 @@ class EntityContentBaseTest extends MigrateDrupal6TestBase {
   }
 
   /**
-   * Tests overwriting all mapped properties in the destination entity (default
-   * behavior).
+   * Tests overwriting all mapped properties in the destination entity.
+   *
+   * This is the default behavior.
    */
-  public function testOverwriteAllMappedProperties() {
+  public function testOverwriteAllMappedProperties(): void {
     $this->executeMigration('d6_user');
     /** @var \Drupal\user\UserInterface $account */
     $account = User::load(2);
-    $this->assertIdentical('john.doe', $account->label());
-    $this->assertIdentical('john.doe@example.com', $account->getEmail());
-    $this->assertIdentical('doe@example.com', $account->getInitialEmail());
+    $this->assertSame('john.doe', $account->label());
+    $this->assertSame('john.doe@example.com', $account->getEmail());
+    $this->assertSame('doe@example.com', $account->getInitialEmail());
   }
 
   /**
-   * Tests overwriting selected properties in the destination entity, specified
-   * in the destination configuration.
+   * Tests overwriting selected properties in the destination entity.
+   *
+   * The selected properties are specified in the destination configuration.
    */
-  public function testOverwriteProperties() {
+  public function testOverwriteProperties(): void {
     // Execute the migration in migrate_overwrite_test, which documents how
     // property overwrites work.
     $this->executeMigration('users');
 
     /** @var \Drupal\user\UserInterface $account */
     $account = User::load(2);
-    $this->assertIdentical('john.doe', $account->label());
-    $this->assertIdentical('john.doe@example.com', $account->getEmail());
-    $this->assertIdentical('The answer is 42.', $account->signature->value);
+    $this->assertSame('john.doe', $account->label());
+    $this->assertSame('john.doe@example.com', $account->getEmail());
+    $this->assertSame('The answer is 42.', $account->signature->value);
     // This value is not overwritten because it's not listed in
     // overwrite_properties.
-    $this->assertIdentical('proto@zo.an', $account->getInitialEmail());
+    $this->assertSame('proto@zo.an', $account->getInitialEmail());
   }
 
   /**
-   * Test that translation destination fails for untranslatable entities.
+   * Tests that translation destination fails for untranslatable entities.
    */
-  public function testUntranslatable() {
+  public function testUntranslatable(): void {
     $this->enableModules(['language_test']);
     $this->installEntitySchema('no_language_entity_test');
 
@@ -115,7 +119,7 @@ class EntityContentBaseTest extends MigrateDrupal6TestBase {
     // Match the expected message. Can't use default argument types, because
     // we need to convert to string from TranslatableMarkup.
     $argument = Argument::that(function ($msg) {
-      return strpos((string) $msg, "This entity type does not support translation") !== FALSE;
+      return str_contains((string) $msg, htmlentities('The "no_language_entity_test" entity type does not support translations.'));
     });
     $message->display($argument, Argument::any())
       ->shouldBeCalled();

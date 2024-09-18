@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\system\Functional\Form;
 
 use Drupal\Core\Form\FormBase;
@@ -43,7 +45,7 @@ class StubForm extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    $this->formId;
+    return $this->formId;
   }
 
   /**

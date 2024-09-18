@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\language\Kernel\Views;
 
 use Drupal\views\Views;
@@ -22,7 +24,7 @@ class FilterLanguageTest extends LanguageTestBase {
   /**
    * Tests the language filter.
    */
-  public function testFilter() {
+  public function testFilter(): void {
     $view = Views::getView('test_view');
     foreach (['en' => 'John', 'xx-lolspeak' => 'George'] as $langcode => $name) {
       $view->setDisplay();
@@ -31,7 +33,7 @@ class FilterLanguageTest extends LanguageTestBase {
           'id' => 'langcode',
           'table' => 'views_test_data',
           'field' => 'langcode',
-          'value' => [$langcode],
+          'value' => [$langcode => $langcode],
         ],
       ]);
       $this->executeView($view);
@@ -44,13 +46,12 @@ class FilterLanguageTest extends LanguageTestBase {
       $expected = [
         '***LANGUAGE_site_default***',
         '***LANGUAGE_language_interface***',
-        '***LANGUAGE_language_content***',
         'en',
         'xx-lolspeak',
         'und',
-        'zxx'
+        'zxx',
       ];
-      $this->assertIdentical(array_keys($view->filter['langcode']->getValueOptions()), $expected);
+      $this->assertSame($expected, array_keys($view->filter['langcode']->getValueOptions()));
 
       $view->destroy();
     }

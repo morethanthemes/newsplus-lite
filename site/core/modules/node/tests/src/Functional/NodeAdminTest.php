@@ -1,7 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\node\Functional;
 
+use Drupal\Core\Database\Database;
+use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\user\RoleInterface;
 
 /**
@@ -10,6 +14,12 @@ use Drupal\user\RoleInterface;
  * @group node
  */
 class NodeAdminTest extends NodeTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
   /**
    * A user with permission to bypass access content.
    *
@@ -39,13 +49,14 @@ class NodeAdminTest extends NodeTestBase {
   protected $baseUser3;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['views'];
+  protected static $modules = ['views'];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     // Remove the "view own unpublished content" permission which is set
@@ -53,30 +64,42 @@ class NodeAdminTest extends NodeTestBase {
     // correctly.
     user_role_revoke_permissions(RoleInterface::AUTHENTICATED_ID, ['view own unpublished content']);
 
-    $this->adminUser = $this->drupalCreateUser(['access administration pages', 'access content overview', 'administer nodes', 'bypass node access']);
+    $this->adminUser = $this->drupalCreateUser([
+      'access administration pages',
+      'access content overview',
+      'administer nodes',
+      'bypass node access',
+    ]);
     $this->baseUser1 = $this->drupalCreateUser(['access content overview']);
-    $this->baseUser2 = $this->drupalCreateUser(['access content overview', 'view own unpublished content']);
-    $this->baseUser3 = $this->drupalCreateUser(['access content overview', 'bypass node access']);
+    $this->baseUser2 = $this->drupalCreateUser([
+      'access content overview',
+      'view own unpublished content',
+    ]);
+    $this->baseUser3 = $this->drupalCreateUser([
+      'access content overview',
+      'bypass node access',
+    ]);
   }
 
   /**
    * Tests that the table sorting works on the content admin pages.
    */
-  public function testContentAdminSort() {
+  public function testContentAdminSort(): void {
     $this->drupalLogin($this->adminUser);
 
-    $changed = REQUEST_TIME;
+    $changed = \Drupal::time()->getRequestTime();
+    $connection = Database::getConnection();
     foreach (['dd', 'aa', 'DD', 'bb', 'cc', 'CC', 'AA', 'BB'] as $prefix) {
       $changed += 1000;
       $node = $this->drupalCreateNode(['title' => $prefix . $this->randomMachineName(6)]);
-      db_update('node_field_data')
+      $connection->update('node_field_data')
         ->fields(['changed' => $changed])
         ->condition('nid', $node->id())
         ->execute();
     }
 
     // Test that the default sort by node.changed DESC actually fires properly.
-    $nodes_query = db_select('node_field_data', 'n')
+    $nodes_query = $connection->select('node_field_data', 'n')
       ->fields('n', ['title'])
       ->orderBy('changed', 'DESC')
       ->execute()
@@ -84,13 +107,15 @@ class NodeAdminTest extends NodeTestBase {
 
     $this->drupalGet('admin/content');
     foreach ($nodes_query as $delta => $string) {
-      $elements = $this->xpath('//table[contains(@class, :class)]/tbody/tr[' . ($delta + 1) . ']/td[2]/a[normalize-space(text())=:label]', [':class' => 'views-table', ':label' => $string]);
-      $this->assertTrue(!empty($elements), 'The node was found in the correct order.');
+      // Verify that the node was found in the correct order.
+      $this->assertSession()->elementExists('xpath', $this->assertSession()->buildXPathQuery('//table/tbody/tr[' . ($delta + 1) . ']/td[2]/a[normalize-space(text())=:label]', [
+        ':label' => $string,
+      ]));
     }
 
     // Compare the rendered HTML node list to a query for the nodes ordered by
     // title to account for possible database-dependent sort order.
-    $nodes_query = db_select('node_field_data', 'n')
+    $nodes_query = $connection->select('node_field_data', 'n')
       ->fields('n', ['title'])
       ->orderBy('title')
       ->execute()
@@ -98,9 +123,13 @@ class NodeAdminTest extends NodeTestBase {
 
     $this->drupalGet('admin/content', ['query' => ['sort' => 'asc', 'order' => 'title']]);
     foreach ($nodes_query as $delta => $string) {
-      $elements = $this->xpath('//table[contains(@class, :class)]/tbody/tr[' . ($delta + 1) . ']/td[2]/a[normalize-space(text())=:label]', [':class' => 'views-table', ':label' => $string]);
-      $this->assertTrue(!empty($elements), 'The node was found in the correct order.');
+      // Verify that the node was found in the correct order.
+      $this->assertSession()->elementExists('xpath', $this->assertSession()->buildXPathQuery('//table/tbody/tr[' . ($delta + 1) . ']/td[2]/a[normalize-space(text())=:label]', [
+        ':label' => $string,
+      ]));
     }
+    // Verify aria-sort is present and its value matches the sort order.
+    $this->assertSession()->elementAttributeContains('css', 'table thead tr th.views-field-title', 'aria-sort', 'ascending');
   }
 
   /**
@@ -110,7 +139,7 @@ class NodeAdminTest extends NodeTestBase {
    *
    * @see TaxonomyNodeFilterTestCase
    */
-  public function testContentAdminPages() {
+  public function testContentAdminPages(): void {
     $this->drupalLogin($this->adminUser);
 
     // Use an explicit changed time to ensure the expected order in the content
@@ -125,80 +154,138 @@ class NodeAdminTest extends NodeTestBase {
 
     // Verify view, edit, and delete links for any content.
     $this->drupalGet('admin/content');
-    $this->assertResponse(200);
+    $this->assertSession()->statusCodeEquals(200);
 
     $node_type_labels = $this->xpath('//td[contains(@class, "views-field-type")]');
     $delta = 0;
     foreach ($nodes as $node) {
-      $this->assertLinkByHref('node/' . $node->id());
-      $this->assertLinkByHref('node/' . $node->id() . '/edit');
-      $this->assertLinkByHref('node/' . $node->id() . '/delete');
+      $this->assertSession()->linkByHrefExists('node/' . $node->id());
+      $this->assertSession()->linkByHrefExists('node/' . $node->id() . '/edit');
+      $this->assertSession()->linkByHrefExists('node/' . $node->id() . '/delete');
       // Verify that we can see the content type label.
-      $this->assertEqual(trim($node_type_labels[$delta]->getText()), $node->type->entity->label());
+      $this->assertEquals(trim($node_type_labels[$delta]->getText()), $node->type->entity->label());
       $delta++;
     }
 
     // Verify filtering by publishing status.
     $this->drupalGet('admin/content', ['query' => ['status' => TRUE]]);
 
-    $this->assertLinkByHref('node/' . $nodes['published_page']->id() . '/edit');
-    $this->assertLinkByHref('node/' . $nodes['published_article']->id() . '/edit');
-    $this->assertNoLinkByHref('node/' . $nodes['unpublished_page_1']->id() . '/edit');
+    $this->assertSession()->linkByHrefExists('node/' . $nodes['published_page']->id() . '/edit');
+    $this->assertSession()->linkByHrefExists('node/' . $nodes['published_article']->id() . '/edit');
+    $this->assertSession()->linkByHrefNotExists('node/' . $nodes['unpublished_page_1']->id() . '/edit');
 
     // Verify filtering by status and content type.
     $this->drupalGet('admin/content', ['query' => ['status' => TRUE, 'type' => 'page']]);
 
-    $this->assertLinkByHref('node/' . $nodes['published_page']->id() . '/edit');
-    $this->assertNoLinkByHref('node/' . $nodes['published_article']->id() . '/edit');
+    $this->assertSession()->linkByHrefExists('node/' . $nodes['published_page']->id() . '/edit');
+    $this->assertSession()->linkByHrefNotExists('node/' . $nodes['published_article']->id() . '/edit');
 
     // Verify no operation links are displayed for regular users.
     $this->drupalLogout();
     $this->drupalLogin($this->baseUser1);
     $this->drupalGet('admin/content');
-    $this->assertResponse(200);
-    $this->assertLinkByHref('node/' . $nodes['published_page']->id());
-    $this->assertLinkByHref('node/' . $nodes['published_article']->id());
-    $this->assertNoLinkByHref('node/' . $nodes['published_page']->id() . '/edit');
-    $this->assertNoLinkByHref('node/' . $nodes['published_page']->id() . '/delete');
-    $this->assertNoLinkByHref('node/' . $nodes['published_article']->id() . '/edit');
-    $this->assertNoLinkByHref('node/' . $nodes['published_article']->id() . '/delete');
+    $this->assertSession()->statusCodeEquals(200);
+    $this->assertSession()->linkByHrefExists('node/' . $nodes['published_page']->id());
+    $this->assertSession()->linkByHrefExists('node/' . $nodes['published_article']->id());
+    $this->assertSession()->linkByHrefNotExists('node/' . $nodes['published_page']->id() . '/edit');
+    $this->assertSession()->linkByHrefNotExists('node/' . $nodes['published_page']->id() . '/delete');
+    $this->assertSession()->linkByHrefNotExists('node/' . $nodes['published_article']->id() . '/edit');
+    $this->assertSession()->linkByHrefNotExists('node/' . $nodes['published_article']->id() . '/delete');
 
     // Verify no unpublished content is displayed without permission.
-    $this->assertNoLinkByHref('node/' . $nodes['unpublished_page_1']->id());
-    $this->assertNoLinkByHref('node/' . $nodes['unpublished_page_1']->id() . '/edit');
-    $this->assertNoLinkByHref('node/' . $nodes['unpublished_page_1']->id() . '/delete');
+    $this->assertSession()->linkByHrefNotExists('node/' . $nodes['unpublished_page_1']->id());
+    $this->assertSession()->linkByHrefNotExists('node/' . $nodes['unpublished_page_1']->id() . '/edit');
+    $this->assertSession()->linkByHrefNotExists('node/' . $nodes['unpublished_page_1']->id() . '/delete');
 
     // Verify no tableselect.
-    $this->assertNoFieldByName('nodes[' . $nodes['published_page']->id() . ']', '', 'No tableselect found.');
+    $this->assertSession()->fieldNotExists('nodes[' . $nodes['published_page']->id() . ']');
 
     // Verify unpublished content is displayed with permission.
     $this->drupalLogout();
     $this->drupalLogin($this->baseUser2);
     $this->drupalGet('admin/content');
-    $this->assertResponse(200);
-    $this->assertLinkByHref('node/' . $nodes['unpublished_page_2']->id());
+    $this->assertSession()->statusCodeEquals(200);
+    $this->assertSession()->linkByHrefExists('node/' . $nodes['unpublished_page_2']->id());
     // Verify no operation links are displayed.
-    $this->assertNoLinkByHref('node/' . $nodes['unpublished_page_2']->id() . '/edit');
-    $this->assertNoLinkByHref('node/' . $nodes['unpublished_page_2']->id() . '/delete');
+    $this->assertSession()->linkByHrefNotExists('node/' . $nodes['unpublished_page_2']->id() . '/edit');
+    $this->assertSession()->linkByHrefNotExists('node/' . $nodes['unpublished_page_2']->id() . '/delete');
 
     // Verify user cannot see unpublished content of other users.
-    $this->assertNoLinkByHref('node/' . $nodes['unpublished_page_1']->id());
-    $this->assertNoLinkByHref('node/' . $nodes['unpublished_page_1']->id() . '/edit');
-    $this->assertNoLinkByHref('node/' . $nodes['unpublished_page_1']->id() . '/delete');
+    $this->assertSession()->linkByHrefNotExists('node/' . $nodes['unpublished_page_1']->id());
+    $this->assertSession()->linkByHrefNotExists('node/' . $nodes['unpublished_page_1']->id() . '/edit');
+    $this->assertSession()->linkByHrefNotExists('node/' . $nodes['unpublished_page_1']->id() . '/delete');
 
     // Verify no tableselect.
-    $this->assertNoFieldByName('nodes[' . $nodes['unpublished_page_2']->id() . ']', '', 'No tableselect found.');
+    $this->assertSession()->fieldNotExists('nodes[' . $nodes['unpublished_page_2']->id() . ']');
 
     // Verify node access can be bypassed.
     $this->drupalLogout();
     $this->drupalLogin($this->baseUser3);
     $this->drupalGet('admin/content');
-    $this->assertResponse(200);
+    $this->assertSession()->statusCodeEquals(200);
     foreach ($nodes as $node) {
-      $this->assertLinkByHref('node/' . $node->id());
-      $this->assertLinkByHref('node/' . $node->id() . '/edit');
-      $this->assertLinkByHref('node/' . $node->id() . '/delete');
+      $this->assertSession()->linkByHrefExists('node/' . $node->id());
+      $this->assertSession()->linkByHrefExists('node/' . $node->id() . '/edit');
+      $this->assertSession()->linkByHrefExists('node/' . $node->id() . '/delete');
     }
+    // Ensure that the language table column and the language exposed filter are
+    // not visible on monolingual sites.
+    $this->assertSession()->fieldNotExists('langcode');
+    $this->assertEquals(0, count($this->cssSelect('td.views-field-langcode')));
+    $this->assertEquals(0, count($this->cssSelect('td.views-field-langcode')));
+  }
+
+  /**
+   * Tests content overview for a multilingual site.
+   */
+  public function testContentAdminPageMultilingual(): void {
+    $this->drupalLogin($this->adminUser);
+
+    \Drupal::service('module_installer')->install(['language']);
+    ConfigurableLanguage::create([
+      'id' => 'es',
+      'label' => 'Spanish',
+    ])->save();
+
+    $this->drupalCreateNode(['type' => 'page', 'title' => 'English title'])
+      ->addTranslation('es')
+      ->setTitle('Spanish title')
+      ->save();
+
+    $this->drupalGet('admin/content');
+
+    // Ensure that both the language table column as well as the language
+    // exposed filter are visible on multilingual sites.
+    $this->assertSession()->fieldExists('langcode');
+    $this->assertEquals(2, count($this->cssSelect('td.views-field-langcode')));
+    $this->assertEquals(2, count($this->cssSelect('td.views-field-langcode')));
+
+    $this->assertSession()->pageTextContains('English title');
+    $this->assertSession()->pageTextContains('Spanish title');
+
+    $this->drupalGet('admin/content', ['query' => ['langcode' => '***LANGUAGE_site_default***']]);
+    $this->assertSession()->pageTextContains('English title');
+    $this->assertSession()->pageTextNotContains('Spanish title');
+
+    $this->drupalGet('admin/content', ['query' => ['langcode' => 'en']]);
+    $this->assertSession()->pageTextContains('English title');
+    $this->assertSession()->pageTextNotContains('Spanish title');
+
+    $this->drupalGet('admin/content', ['query' => ['langcode' => 'und']]);
+    $this->assertSession()->pageTextNotContains('English title');
+    $this->assertSession()->pageTextNotContains('Spanish title');
+
+    $this->drupalGet('admin/content', ['query' => ['langcode' => 'zxx']]);
+    $this->assertSession()->pageTextNotContains('English title');
+    $this->assertSession()->pageTextNotContains('Spanish title');
+
+    $this->drupalGet('admin/content', ['query' => ['langcode' => html_entity_decode('***LANGUAGE_language_interface***')]]);
+    $this->assertSession()->pageTextContains('English title');
+    $this->assertSession()->pageTextNotContains('Spanish title');
+
+    $this->drupalGet('es/admin/content', ['query' => ['langcode' => html_entity_decode('***LANGUAGE_language_interface***')]]);
+    $this->assertSession()->pageTextNotContains('English title');
+    $this->assertSession()->pageTextContains('Spanish title');
   }
 
 }

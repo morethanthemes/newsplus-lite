@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\tracker\Functional;
 
 use Drupal\comment\CommentInterface;
 use Drupal\comment\Tests\CommentTestTrait;
 use Drupal\Core\Cache\Cache;
+use Drupal\Core\Database\Database;
 use Drupal\Core\EventSubscriber\MainContentViewSubscriber;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -16,6 +19,7 @@ use Drupal\Tests\system\Functional\Cache\AssertPageCacheContextsAndTagsTrait;
  * Create and delete nodes and check for their display in the tracker listings.
  *
  * @group tracker
+ * @group legacy
  */
 class TrackerTest extends BrowserTestBase {
 
@@ -27,7 +31,18 @@ class TrackerTest extends BrowserTestBase {
    *
    * @var array
    */
-  public static $modules = ['block', 'comment', 'tracker', 'history', 'node_test'];
+  protected static $modules = [
+    'block',
+    'comment',
+    'tracker',
+    'history',
+    'node_test',
+  ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * The main user for testing.
@@ -43,7 +58,10 @@ class TrackerTest extends BrowserTestBase {
    */
   protected $otherUser;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->drupalCreateContentType(['type' => 'page', 'name' => 'Basic page']);
@@ -63,7 +81,7 @@ class TrackerTest extends BrowserTestBase {
   /**
    * Tests for the presence of nodes on the global tracker listing.
    */
-  public function testTrackerAll() {
+  public function testTrackerAll(): void {
     $this->drupalLogin($this->user);
 
     $unpublished = $this->drupalCreateNode([
@@ -76,23 +94,18 @@ class TrackerTest extends BrowserTestBase {
     ]);
 
     $this->drupalGet('activity');
-    $this->assertNoText($unpublished->label(), 'Unpublished node does not show up in the tracker listing.');
-    $this->assertText($published->label(), 'Published node shows up in the tracker listing.');
-    $this->assertLink(t('My recent content'), 0, 'User tab shows up on the global tracker page.');
+    $this->assertSession()->pageTextNotContains($unpublished->label());
+    $this->assertSession()->pageTextContains($published->label());
+    $this->assertSession()->linkExists('My recent content', 0, 'User tab shows up on the global tracker page.');
 
     // Assert cache contexts, specifically the pager and node access contexts.
     $this->assertCacheContexts(['languages:language_interface', 'route', 'theme', 'url.query_args:' . MainContentViewSubscriber::WRAPPER_FORMAT, 'url.query_args.pagers:0', 'user.node_grants:view', 'user']);
     // Assert cache tags for the action/tabs blocks, visible node, and node list
     // cache tag.
     $expected_tags = Cache::mergeTags($published->getCacheTags(), $published->getOwner()->getCacheTags());
-    // Because the 'user.permissions' cache context is being optimized away.
-    $role_tags = [];
-    foreach ($this->user->getRoles() as $rid) {
-      $role_tags[] = "config:user.role.$rid";
-    }
-    $expected_tags = Cache::mergeTags($expected_tags, $role_tags);
     $block_tags = [
       'block_view',
+      'local_task',
       'config:block.block.page_actions_block',
       'config:block.block.page_tabs_block',
       'config:block_list',
@@ -108,7 +121,7 @@ class TrackerTest extends BrowserTestBase {
     // Delete a node and ensure it no longer appears on the tracker.
     $published->delete();
     $this->drupalGet('activity');
-    $this->assertNoText($published->label(), 'Deleted node does not show up in the tracker listing.');
+    $this->assertSession()->pageTextNotContains($published->label());
 
     // Test proper display of time on activity page when comments are disabled.
     // Disable comments.
@@ -122,14 +135,14 @@ class TrackerTest extends BrowserTestBase {
     ]);
 
     $this->drupalGet('activity');
-    $this->assertText($node->label(), 'Published node shows up in the tracker listing.');
-    $this->assertText(\Drupal::service('date.formatter')->formatTimeDiffSince($node->getChangedTime()), 'The changed time was displayed on the tracker listing.');
+    $this->assertSession()->pageTextContains($node->label());
+    $this->assertSession()->pageTextContains(\Drupal::service('date.formatter')->formatTimeDiffSince($node->getChangedTime()));
   }
 
   /**
    * Tests for the presence of nodes on a user's tracker listing.
    */
-  public function testTrackerUser() {
+  public function testTrackerUser(): void {
     $this->drupalLogin($this->user);
 
     $unpublished = $this->drupalCreateNode([
@@ -156,13 +169,14 @@ class TrackerTest extends BrowserTestBase {
       'subject[0][value]' => $this->randomMachineName(),
       'comment_body[0][value]' => $this->randomMachineName(20),
     ];
-    $this->drupalPostForm('comment/reply/node/' . $other_published_my_comment->id() . '/comment', $comment, t('Save'));
+    $this->drupalGet('comment/reply/node/' . $other_published_my_comment->id() . '/comment');
+    $this->submitForm($comment, 'Save');
 
     $this->drupalGet('user/' . $this->user->id() . '/activity');
-    $this->assertNoText($unpublished->label(), "Unpublished nodes do not show up in the user's tracker listing.");
-    $this->assertText($my_published->label(), "Published nodes show up in the user's tracker listing.");
-    $this->assertNoText($other_published_no_comment->label(), "Another user's nodes do not show up in the user's tracker listing.");
-    $this->assertText($other_published_my_comment->label(), "Nodes that the user has commented on appear in the user's tracker listing.");
+    $this->assertSession()->pageTextNotContains($unpublished->label());
+    $this->assertSession()->pageTextContains($my_published->label());
+    $this->assertSession()->pageTextNotContains($other_published_no_comment->label());
+    $this->assertSession()->pageTextContains($other_published_my_comment->label());
 
     // Assert cache contexts.
     $this->assertCacheContexts(['languages:language_interface', 'route', 'theme', 'url.query_args:' . MainContentViewSubscriber::WRAPPER_FORMAT, 'url.query_args.pagers:0', 'user', 'user.node_grants:view']);
@@ -171,14 +185,9 @@ class TrackerTest extends BrowserTestBase {
     $expected_tags = Cache::mergeTags($my_published->getCacheTags(), $my_published->getOwner()->getCacheTags());
     $expected_tags = Cache::mergeTags($expected_tags, $other_published_my_comment->getCacheTags());
     $expected_tags = Cache::mergeTags($expected_tags, $other_published_my_comment->getOwner()->getCacheTags());
-    // Because the 'user.permissions' cache context is being optimized away.
-    $role_tags = [];
-    foreach ($this->user->getRoles() as $rid) {
-      $role_tags[] = "config:user.role.$rid";
-    }
-    $expected_tags = Cache::mergeTags($expected_tags, $role_tags);
     $block_tags = [
       'block_view',
+      'local_task',
       'config:block.block.page_actions_block',
       'config:block.block.page_tabs_block',
       'config:block_list',
@@ -193,37 +202,42 @@ class TrackerTest extends BrowserTestBase {
     $this->assertCacheTags($expected_tags);
     $this->assertCacheContexts(['languages:language_interface', 'route', 'theme', 'url.query_args:' . MainContentViewSubscriber::WRAPPER_FORMAT, 'url.query_args.pagers:0', 'user', 'user.node_grants:view']);
 
-    $this->assertLink($my_published->label());
-    $this->assertNoLink($unpublished->label());
+    $this->assertSession()->linkExists($my_published->label());
+    $this->assertSession()->linkNotExists($unpublished->label());
     // Verify that title and tab title have been set correctly.
-    $this->assertText('Activity', 'The user activity tab has the name "Activity".');
-    $this->assertTitle(t('@name | @site', ['@name' => $this->user->getUsername(), '@site' => $this->config('system.site')->get('name')]), 'The user tracker page has the correct page title.');
+    $this->assertSession()->pageTextContains('Activity');
+    $this->assertSession()->titleEquals($this->user->getAccountName() . ' | Drupal');
 
     // Verify that unpublished comments are removed from the tracker.
-    $admin_user = $this->drupalCreateUser(['post comments', 'administer comments', 'access user profiles']);
+    $admin_user = $this->drupalCreateUser([
+      'post comments',
+      'administer comments',
+      'access user profiles',
+    ]);
     $this->drupalLogin($admin_user);
-    $this->drupalPostForm('comment/1/edit', ['status' => CommentInterface::NOT_PUBLISHED], t('Save'));
+    $this->drupalGet('comment/1/edit');
+    $this->submitForm(['status' => CommentInterface::NOT_PUBLISHED], 'Save');
     $this->drupalGet('user/' . $this->user->id() . '/activity');
-    $this->assertNoText($other_published_my_comment->label(), 'Unpublished comments are not counted on the tracker listing.');
+    $this->assertSession()->pageTextNotContains($other_published_my_comment->label());
 
     // Test escaping of title on user's tracker tab.
     \Drupal::service('module_installer')->install(['user_hooks_test']);
     Cache::invalidateTags(['rendered']);
     \Drupal::state()->set('user_hooks_test_user_format_name_alter', TRUE);
     $this->drupalGet('user/' . $this->user->id() . '/activity');
-    $this->assertEscaped('<em>' . $this->user->id() . '</em>');
+    $this->assertSession()->assertEscaped('<em>' . $this->user->id() . '</em>');
 
     \Drupal::state()->set('user_hooks_test_user_format_name_alter_safe', TRUE);
     Cache::invalidateTags(['rendered']);
     $this->drupalGet('user/' . $this->user->id() . '/activity');
-    $this->assertNoEscaped('<em>' . $this->user->id() . '</em>');
-    $this->assertRaw('<em>' . $this->user->id() . '</em>');
+    $this->assertSession()->assertNoEscaped('<em>' . $this->user->id() . '</em>');
+    $this->assertSession()->responseContains('<em>' . $this->user->id() . '</em>');
   }
 
   /**
    * Tests the metadata for the "new"/"updated" indicators.
    */
-  public function testTrackerHistoryMetadata() {
+  public function testTrackerHistoryMetadata(): void {
     $this->drupalLogin($this->user);
 
     // Create a page node.
@@ -248,7 +262,8 @@ class TrackerTest extends BrowserTestBase {
       'comment_body[0][value]' => $this->randomMachineName(20),
     ];
     sleep(1);
-    $this->drupalPostForm('comment/reply/node/' . $node->id() . '/comment', $comment, t('Save'));
+    $this->drupalGet('comment/reply/node/' . $node->id() . '/comment');
+    $this->submitForm($comment, 'Save');
     // Reload the node so that comment.module's hook_node_load()
     // implementation can set $node->last_comment_timestamp for the freshly
     // posted comment.
@@ -256,25 +271,25 @@ class TrackerTest extends BrowserTestBase {
 
     // Verify that the history metadata is updated.
     $this->drupalGet('activity');
-    $this->assertHistoryMetadata($node->id(), $node->getChangedTime(), $node->get('comment')->last_comment_timestamp);
+    $this->assertHistoryMetadata($node->id(), $node->getChangedTime(), (int) $node->get('comment')->last_comment_timestamp);
     $this->drupalGet('activity/' . $this->user->id());
-    $this->assertHistoryMetadata($node->id(), $node->getChangedTime(), $node->get('comment')->last_comment_timestamp);
+    $this->assertHistoryMetadata($node->id(), $node->getChangedTime(), (int) $node->get('comment')->last_comment_timestamp);
     $this->drupalGet('user/' . $this->user->id() . '/activity');
-    $this->assertHistoryMetadata($node->id(), $node->getChangedTime(), $node->get('comment')->last_comment_timestamp);
+    $this->assertHistoryMetadata($node->id(), $node->getChangedTime(), (int) $node->get('comment')->last_comment_timestamp);
 
     // Log out, now verify that the metadata is still there, but the library is
     // not.
     $this->drupalLogout();
     $this->drupalGet('activity');
-    $this->assertHistoryMetadata($node->id(), $node->getChangedTime(), $node->get('comment')->last_comment_timestamp, FALSE);
+    $this->assertHistoryMetadata($node->id(), $node->getChangedTime(), (int) $node->get('comment')->last_comment_timestamp, FALSE);
     $this->drupalGet('user/' . $this->user->id() . '/activity');
-    $this->assertHistoryMetadata($node->id(), $node->getChangedTime(), $node->get('comment')->last_comment_timestamp, FALSE);
+    $this->assertHistoryMetadata($node->id(), $node->getChangedTime(), (int) $node->get('comment')->last_comment_timestamp, FALSE);
   }
 
   /**
    * Tests for ordering on a users tracker listing when comments are posted.
    */
-  public function testTrackerOrderingNewComments() {
+  public function testTrackerOrderingNewComments(): void {
     $this->drupalLogin($this->user);
 
     $node_one = $this->drupalCreateNode([
@@ -293,7 +308,8 @@ class TrackerTest extends BrowserTestBase {
       'subject[0][value]' => $this->randomMachineName(),
       'comment_body[0][value]' => $this->randomMachineName(20),
     ];
-    $this->drupalPostForm('comment/reply/node/' . $node_one->id() . '/comment', $comment, t('Save'));
+    $this->drupalGet('comment/reply/node/' . $node_one->id() . '/comment');
+    $this->submitForm($comment, 'Save');
 
     // If the comment is posted in the same second as the last one then Drupal
     // can't tell the difference, so we wait one second here.
@@ -304,7 +320,8 @@ class TrackerTest extends BrowserTestBase {
       'subject[0][value]' => $this->randomMachineName(),
       'comment_body[0][value]' => $this->randomMachineName(20),
     ];
-    $this->drupalPostForm('comment/reply/node/' . $node_two->id() . '/comment', $comment, t('Save'));
+    $this->drupalGet('comment/reply/node/' . $node_two->id() . '/comment');
+    $this->submitForm($comment, 'Save');
 
     // We should at this point have in our tracker for otherUser:
     // 1. node_two
@@ -324,7 +341,8 @@ class TrackerTest extends BrowserTestBase {
       'subject[0][value]' => $this->randomMachineName(),
       'comment_body[0][value]' => $this->randomMachineName(20),
     ];
-    $this->drupalPostForm('comment/reply/node/' . $node_one->id() . '/comment', $comment, t('Save'));
+    $this->drupalGet('comment/reply/node/' . $node_one->id() . '/comment');
+    $this->submitForm($comment, 'Save');
 
     // Switch back to the otherUser and assert that the order has swapped.
     $this->drupalLogin($this->otherUser);
@@ -333,14 +351,15 @@ class TrackerTest extends BrowserTestBase {
     // on the tracker page.
     // It's almost certainly too brittle.
     $pattern = '/' . preg_quote($node_one->getTitle()) . '.+' . preg_quote($node_two->getTitle()) . '/s';
-    $this->verbose($pattern);
-    $this->assertPattern($pattern, 'Most recently commented on node appears at the top of tracker');
+    // Verify that the most recent comment on node appears at the top of
+    // tracker.
+    $this->assertSession()->responseMatches($pattern);
   }
 
   /**
    * Tests that existing nodes are indexed by cron.
    */
-  public function testTrackerCronIndexing() {
+  public function testTrackerCronIndexing(): void {
     $this->drupalLogin($this->user);
 
     // Create 3 nodes.
@@ -359,15 +378,26 @@ class TrackerTest extends BrowserTestBase {
       'subject[0][value]' => $this->randomMachineName(),
       'comment_body[0][value]' => $this->randomMachineName(20),
     ];
-    $this->drupalPostForm('comment/reply/node/' . $nodes[3]->id() . '/comment', $comment, t('Save'));
+    $this->drupalGet('comment/reply/node/' . $nodes[3]->id() . '/comment');
+    $this->submitForm($comment, 'Save');
 
-    // Start indexing backwards from node 3.
-    \Drupal::state()->set('tracker.index_nid', 3);
+    // Create an unpublished node.
+    $unpublished = $this->drupalCreateNode([
+      'title' => $this->randomMachineName(8),
+      'status' => 0,
+    ]);
+
+    $this->drupalGet('activity');
+    $this->assertSession()->responseNotContains($unpublished->label());
+
+    // Start indexing backwards from node 4.
+    \Drupal::state()->set('tracker.index_nid', 4);
 
     // Clear the current tracker tables and rebuild them.
-    db_delete('tracker_node')
+    $connection = Database::getConnection();
+    $connection->delete('tracker_node')
       ->execute();
-    db_delete('tracker_user')
+    $connection->delete('tracker_user')
       ->execute();
     tracker_cron();
 
@@ -378,7 +408,7 @@ class TrackerTest extends BrowserTestBase {
 
     // Assert that all node titles are displayed.
     foreach ($nodes as $i => $node) {
-      $this->assertText($node->label(), format_string('Node @i is displayed on the tracker listing pages.', ['@i' => $i]));
+      $this->assertSession()->pageTextContains($node->label());
     }
 
     // Fetch the site-wide tracker.
@@ -386,17 +416,20 @@ class TrackerTest extends BrowserTestBase {
 
     // Assert that all node titles are displayed.
     foreach ($nodes as $i => $node) {
-      $this->assertText($node->label(), format_string('Node @i is displayed on the tracker listing pages.', ['@i' => $i]));
+      $this->assertSession()->pageTextContains($node->label());
     }
   }
 
   /**
    * Tests that publish/unpublish works at admin/content/node.
    */
-  public function testTrackerAdminUnpublish() {
+  public function testTrackerAdminUnpublish(): void {
     \Drupal::service('module_installer')->install(['views']);
-    \Drupal::service('router.builder')->rebuild();
-    $admin_user = $this->drupalCreateUser(['access content overview', 'administer nodes', 'bypass node access']);
+    $admin_user = $this->drupalCreateUser([
+      'access content overview',
+      'administer nodes',
+      'bypass node access',
+    ]);
     $this->drupalLogin($admin_user);
 
     $node = $this->drupalCreateNode([
@@ -405,17 +438,18 @@ class TrackerTest extends BrowserTestBase {
 
     // Assert that the node is displayed.
     $this->drupalGet('activity');
-    $this->assertText($node->label(), 'A node is displayed on the tracker listing pages.');
+    $this->assertSession()->pageTextContains($node->label());
 
     // Unpublish the node and ensure that it's no longer displayed.
     $edit = [
       'action' => 'node_unpublish_action',
       'node_bulk_form[0]' => $node->id(),
     ];
-    $this->drupalPostForm('admin/content', $edit, t('Apply to selected items'));
+    $this->drupalGet('admin/content');
+    $this->submitForm($edit, 'Apply to selected items');
 
     $this->drupalGet('activity');
-    $this->assertText(t('No content available.'), 'A node is displayed on the tracker listing pages.');
+    $this->assertSession()->pageTextContains('No content available.');
   }
 
   /**
@@ -427,7 +461,7 @@ class TrackerTest extends BrowserTestBase {
    * indicators, as well as the "x new" replies link to the tracker.
    * We do this in JavaScript to prevent breaking the render cache.
    *
-   * @param int $node_id
+   * @param string|int $node_id
    *   A node ID, that must exist as a data-history-node-id attribute
    * @param int $node_timestamp
    *   A node timestamp, that must exist as a data-history-node-timestamp
@@ -437,12 +471,14 @@ class TrackerTest extends BrowserTestBase {
    *   data-history-node-last-comment-timestamp attribute.
    * @param bool $library_is_present
    *   Whether the drupal.tracker-history library should be present or not.
+   *
+   * @internal
    */
-  public function assertHistoryMetadata($node_id, $node_timestamp, $node_last_comment_timestamp, $library_is_present = TRUE) {
+  public function assertHistoryMetadata(string|int $node_id, int $node_timestamp, int $node_last_comment_timestamp, bool $library_is_present = TRUE): void {
     $settings = $this->getDrupalSettings();
-    $this->assertIdentical($library_is_present, isset($settings['ajaxPageState']) && in_array('tracker/history', explode(',', $settings['ajaxPageState']['libraries'])), 'drupal.tracker-history library is present.');
-    $this->assertIdentical(1, count($this->xpath('//table/tbody/tr/td[@data-history-node-id="' . $node_id . '" and @data-history-node-timestamp="' . $node_timestamp . '"]')), 'Tracker table cell contains the data-history-node-id and data-history-node-timestamp attributes for the node.');
-    $this->assertIdentical(1, count($this->xpath('//table/tbody/tr/td[@data-history-node-last-comment-timestamp="' . $node_last_comment_timestamp . '"]')), 'Tracker table cell contains the data-history-node-last-comment-timestamp attribute for the node.');
+    $this->assertSame($library_is_present, isset($settings['ajaxPageState']) && in_array('tracker/history', explode(',', $settings['ajaxPageState']['libraries'])), 'drupal.tracker-history library is present.');
+    $this->assertSession()->elementsCount('xpath', '//table/tbody/tr/td[@data-history-node-id="' . $node_id . '" and @data-history-node-timestamp="' . $node_timestamp . '"]', 1);
+    $this->assertSession()->elementsCount('xpath', '//table/tbody/tr/td[@data-history-node-last-comment-timestamp="' . $node_last_comment_timestamp . '"]', 1);
   }
 
 }

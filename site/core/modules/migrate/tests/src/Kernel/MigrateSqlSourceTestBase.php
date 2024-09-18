@@ -1,13 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\migrate\Kernel;
 
-use Drupal\Core\Database\Driver\sqlite\Connection;
+use Drupal\Core\Cache\MemoryCounterBackendFactory;
+use Drupal\sqlite\Driver\Database\sqlite\Connection;
+use Drupal\Core\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Reference;
 
 /**
  * Base class for tests of Migrate source plugins that use a database.
  */
 abstract class MigrateSqlSourceTestBase extends MigrateSourceTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  public function register(ContainerBuilder $container) {
+    parent::register($container);
+    $container
+      ->register('cache_factory', MemoryCounterBackendFactory::class)
+      ->addArgument(new Reference('datetime.time'));
+  }
 
   /**
    * Builds an in-memory SQLite database from a set of source data.
@@ -16,7 +31,7 @@ abstract class MigrateSqlSourceTestBase extends MigrateSourceTestBase {
    *   The source data, keyed by table name. Each table is an array containing
    *   the rows in that table.
    *
-   * @return \Drupal\Core\Database\Driver\sqlite\Connection
+   * @return \Drupal\sqlite\Driver\Database\sqlite\Connection
    *   The SQLite database connection.
    */
   protected function getDatabase(array $source_data) {
@@ -32,8 +47,7 @@ abstract class MigrateSqlSourceTestBase extends MigrateSourceTestBase {
       // Use the biggest row to build the table schema.
       $counts = array_map('count', $rows);
       asort($counts);
-      end($counts);
-      $pilot = $rows[key($counts)];
+      $pilot = $rows[array_key_last($counts)];
 
       $connection->schema()
         ->createTable($table, [
@@ -67,20 +81,47 @@ abstract class MigrateSqlSourceTestBase extends MigrateSourceTestBase {
    *   (optional) Configuration for the source plugin.
    * @param mixed $high_water
    *   (optional) The value of the high water field.
+   * @param string|null $expected_cache_key
+   *   (optional) The expected cache key.
    *
    * @dataProvider providerSource
    *
    * @requires extension pdo_sqlite
    */
-  public function testSource(array $source_data, array $expected_data, $expected_count = NULL, array $configuration = [], $high_water = NULL) {
+  public function testSource(array $source_data, array $expected_data, $expected_count = NULL, array $configuration = [], $high_water = NULL, $expected_cache_key = NULL): void {
     $plugin = $this->getPlugin($configuration);
 
     // Since we don't yet inject the database connection, we need to use a
     // reflection hack to set it in the plugin instance.
     $reflector = new \ReflectionObject($plugin);
     $property = $reflector->getProperty('database');
-    $property->setAccessible(TRUE);
     $property->setValue($plugin, $this->getDatabase($source_data));
+
+    /** @var MemoryCounterBackend $cache **/
+    $cache = \Drupal::cache('migrate');
+    if ($expected_cache_key) {
+      // Verify the computed cache key.
+      $property = $reflector->getProperty('cacheKey');
+      $this->assertSame($expected_cache_key, $property->getValue($plugin));
+
+      // Cache miss prior to calling ::count().
+      $this->assertFalse($cache->get($expected_cache_key, 'cache'));
+
+      $this->assertSame([], $cache->getCounter('set'));
+      $count = $plugin->count();
+      $this->assertSame($expected_count, $count);
+      $this->assertSame([$expected_cache_key => 1], $cache->getCounter('set'));
+
+      // Cache hit afterwards.
+      $cache_item = $cache->get($expected_cache_key, 'cache');
+      $this->assertNotSame(FALSE, $cache_item, 'This is not a cache hit.');
+      $this->assertSame($expected_count, $cache_item->data);
+    }
+    else {
+      $this->assertSame([], $cache->getCounter('set'));
+      $plugin->count();
+      $this->assertSame([], $cache->getCounter('set'));
+    }
 
     parent::testSource($source_data, $expected_data, $expected_count, $configuration, $high_water);
   }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Kernel\Handler;
 
 use Drupal\entity_test\Entity\EntityTestComputedField;
@@ -22,26 +24,23 @@ class ComputedFieldTest extends ViewsKernelTestBase {
   public static $testViews = ['computed_field_view'];
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['entity_test'];
-
+  protected static $modules = ['entity_test'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
+  protected function setUp($import_test_views = TRUE): void {
     parent::setUp($import_test_views);
 
     $this->installEntitySchema('entity_test_computed_field');
   }
 
   /**
-   * Test the computed field handler.
+   * Tests the computed field handler.
    */
-  public function testComputedFieldHandler() {
+  public function testComputedFieldHandler(): void {
     \Drupal::state()->set('entity_test_computed_field_item_list_value', ['computed string']);
 
     $entity = EntityTestComputedField::create([]);
@@ -51,7 +50,7 @@ class ComputedFieldTest extends ViewsKernelTestBase {
 
     $rendered_view = $view->preview();
     $output = $this->container->get('renderer')->renderRoot($rendered_view);
-    $this->assertContains('computed string', (string) $output);
+    $this->assertStringContainsString('computed string', (string) $output);
   }
 
 }

@@ -2,7 +2,7 @@ name: News+ Lite
 type: theme
 base theme: classy
 description: 'A flexible, recolorable theme with many regions and a responsive, mobile-first layout.'
-core: 8.x
+core_version_requirement: ^8 || ^9 || ^10
 libraries:
   - newsplus_lite/fontawesome
   - newsplus_lite/fonts-roboto

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\content_moderation\Unit;
 
 use Drupal\block_content\Entity\BlockContent;
@@ -27,7 +29,7 @@ class LatestRevisionCheckTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     // Initialize Drupal container since the cache context manager is needed.
@@ -39,7 +41,7 @@ class LatestRevisionCheckTest extends UnitTestCase {
   }
 
   /**
-   * Test the access check of the LatestRevisionCheck service.
+   * Tests the access check of the LatestRevisionCheck service.
    *
    * @param string $entity_class
    *   The class of the entity to mock.
@@ -57,7 +59,7 @@ class LatestRevisionCheckTest extends UnitTestCase {
    *
    * @dataProvider accessSituationProvider
    */
-  public function testLatestAccessPermissions($entity_class, $entity_type, $has_pending_revision, array $account_permissions, $is_owner, $result_class) {
+  public function testLatestAccessPermissions($entity_class, $entity_type, $has_pending_revision, array $account_permissions, $is_owner, $result_class): void {
 
     /** @var \Drupal\Core\Session\AccountInterface $account */
     $account = $this->prophesize(AccountInterface::class);
@@ -103,7 +105,7 @@ class LatestRevisionCheckTest extends UnitTestCase {
   /**
    * Data provider for testLastAccessPermissions().
    */
-  public function accessSituationProvider() {
+  public static function accessSituationProvider() {
     return [
       // Node with global permissions and latest version.
       [Node::class, 'node', TRUE, ['view latest version', 'view any unpublished content'], FALSE, AccessResultAllowed::class],

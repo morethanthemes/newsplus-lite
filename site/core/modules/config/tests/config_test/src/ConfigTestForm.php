@@ -2,6 +2,7 @@
 
 namespace Drupal\config_test;
 
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
@@ -82,7 +83,7 @@ class ConfigTestForm extends EntityForm {
       '#attributes' => [
         'class' => ['js-hide'],
       ],
-      '#submit' => [[get_class($this), 'changeSize']],
+      '#submit' => [[static::class, 'changeSize']],
     ];
     $form['size_wrapper']['size_value'] = [
       '#type' => 'select',
@@ -138,13 +139,14 @@ class ConfigTestForm extends EntityForm {
     $status = $entity->save();
 
     if ($status === SAVED_UPDATED) {
-      drupal_set_message(format_string('%label configuration has been updated.', ['%label' => $entity->label()]));
+      $this->messenger()->addStatus(new FormattableMarkup('%label configuration has been updated.', ['%label' => $entity->label()]));
     }
     else {
-      drupal_set_message(format_string('%label configuration has been created.', ['%label' => $entity->label()]));
+      $this->messenger()->addStatus(new FormattableMarkup('%label configuration has been created.', ['%label' => $entity->label()]));
     }
 
-    $form_state->setRedirectUrl($this->entity->urlInfo('collection'));
+    $form_state->setRedirectUrl($this->entity->toUrl('collection'));
+    return $status;
   }
 
   /**
@@ -163,7 +165,9 @@ class ConfigTestForm extends EntityForm {
   public function exists($entity_id, array $element, FormStateInterface $form_state) {
     /** @var \Drupal\Core\Config\Entity\ConfigEntityInterface $entity */
     $entity = $form_state->getFormObject()->getEntity();
-    return (bool) $this->entityTypeManager->getStorage($entity->getEntityTypeId())
+    /** @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface $storage */
+    $storage = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
+    return (bool) $storage
       ->getQuery()
       ->condition($entity->getEntityType()->getKey('id'), $entity_id)
       ->execute();

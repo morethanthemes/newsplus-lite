@@ -2,6 +2,7 @@
 
 namespace Drupal\Core\KeyValueStore;
 
+use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Component\Serialization\SerializationInterface;
 use Drupal\Core\Database\Connection;
 
@@ -38,10 +39,20 @@ class KeyValueDatabaseExpirableFactory implements KeyValueExpirableFactoryInterf
    *   The serialization class to use.
    * @param \Drupal\Core\Database\Connection $connection
    *   The Connection object containing the key-value tables.
+   * @param \Drupal\Component\Datetime\TimeInterface|null $time
+   *   The time service.
    */
-  public function __construct(SerializationInterface $serializer, Connection $connection) {
+  public function __construct(
+    SerializationInterface $serializer,
+    Connection $connection,
+    protected ?TimeInterface $time = NULL,
+  ) {
     $this->serializer = $serializer;
     $this->connection = $connection;
+    if (!$time) {
+      @trigger_error('Calling ' . __METHOD__ . '() without the $time argument is deprecated in drupal:10.3.0 and it will be required in drupal:11.0.0. See https://www.drupal.org/node/3387233', E_USER_DEPRECATED);
+      $this->time = \Drupal::service(TimeInterface::class);
+    }
   }
 
   /**
@@ -49,7 +60,7 @@ class KeyValueDatabaseExpirableFactory implements KeyValueExpirableFactoryInterf
    */
   public function get($collection) {
     if (!isset($this->storages[$collection])) {
-      $this->storages[$collection] = new DatabaseStorageExpirable($collection, $this->serializer, $this->connection);
+      $this->storages[$collection] = new DatabaseStorageExpirable($collection, $this->serializer, $this->connection, $this->time);
     }
     return $this->storages[$collection];
   }
@@ -58,9 +69,31 @@ class KeyValueDatabaseExpirableFactory implements KeyValueExpirableFactoryInterf
    * Deletes expired items.
    */
   public function garbageCollection() {
-    $this->connection->delete('key_value_expire')
-      ->condition('expire', REQUEST_TIME, '<')
-      ->execute();
+    try {
+      $this->connection->delete('key_value_expire')
+        ->condition('expire', $this->time->getRequestTime(), '<')
+        ->execute();
+    }
+    catch (\Exception $e) {
+      $this->catchException($e);
+    }
+  }
+
+  /**
+   * Act on an exception when the table might not have been created.
+   *
+   * If the table does not yet exist, that's fine, but if the table exists and
+   * yet the query failed, then the exception needs to propagate.
+   *
+   * @param \Exception $e
+   *   The exception.
+   *
+   * @throws \Exception
+   */
+  protected function catchException(\Exception $e) {
+    if ($this->connection->schema()->tableExists('key_value_expire')) {
+      throw $e;
+    }
   }
 
 }

@@ -3,11 +3,31 @@
 namespace Drupal\Core\Asset;
 
 use Drupal\Component\Utility\Crypt;
+use Drupal\Core\File\Exception\FileException;
+use Drupal\Core\File\FileExists;
+use Drupal\Core\File\FileSystemInterface;
 
 /**
  * Dumps a CSS or JavaScript asset.
  */
-class AssetDumper implements AssetDumperInterface {
+class AssetDumper implements AssetDumperUriInterface {
+
+  /**
+   * The file system service.
+   *
+   * @var \Drupal\Core\File\FileSystemInterface
+   */
+  protected $fileSystem;
+
+  /**
+   * AssetDumper constructor.
+   *
+   * @param \Drupal\Core\File\FileSystemInterface $file_system
+   *   The file handler.
+   */
+  public function __construct(FileSystemInterface $file_system) {
+    $this->fileSystem = $file_system;
+  }
 
   /**
    * {@inheritdoc}
@@ -17,15 +37,27 @@ class AssetDumper implements AssetDumperInterface {
    * browsers to download new CSS when the CSS changes.
    */
   public function dump($data, $file_extension) {
+    $path = 'assets://' . $file_extension;
     // Prefix filename to prevent blocking by firewalls which reject files
     // starting with "ad*".
     $filename = $file_extension . '_' . Crypt::hashBase64($data) . '.' . $file_extension;
-    // Create the css/ or js/ path within the files folder.
-    $path = 'public://' . $file_extension;
     $uri = $path . '/' . $filename;
+    return $this->dumpToUri($data, $file_extension, $uri);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function dumpToUri(string $data, string $file_extension, string $uri): string {
+    $path = 'assets://' . $file_extension;
     // Create the CSS or JS file.
-    file_prepare_directory($path, FILE_CREATE_DIRECTORY);
-    if (!file_exists($uri) && !file_unmanaged_save_data($data, $uri, FILE_EXISTS_REPLACE)) {
+    $this->fileSystem->prepareDirectory($path, FileSystemInterface::CREATE_DIRECTORY);
+    try {
+      if (!file_exists($uri) && !$this->fileSystem->saveData($data, $uri, FileExists::Replace)) {
+        return FALSE;
+      }
+    }
+    catch (FileException $e) {
       return FALSE;
     }
     // If CSS/JS gzip compression is enabled and the zlib extension is available
@@ -37,7 +69,12 @@ class AssetDumper implements AssetDumperInterface {
     // aren't working can set css.gzip to FALSE in order to skip
     // generating a file that won't be used.
     if (extension_loaded('zlib') && \Drupal::config('system.performance')->get($file_extension . '.gzip')) {
-      if (!file_exists($uri . '.gz') && !file_unmanaged_save_data(gzencode($data, 9, FORCE_GZIP), $uri . '.gz', FILE_EXISTS_REPLACE)) {
+      try {
+        if (!file_exists($uri . '.gz') && !$this->fileSystem->saveData(gzencode($data, 9, FORCE_GZIP), $uri . '.gz', FileExists::Replace)) {
+          return FALSE;
+        }
+      }
+      catch (FileException $e) {
         return FALSE;
       }
     }

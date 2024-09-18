@@ -21,15 +21,15 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 abstract class ConstraintValidator implements ConstraintValidatorInterface
 {
     /**
-     * Whether to format {@link \DateTime} objects as RFC-3339 dates
-     * ("Y-m-d H:i:s").
+     * Whether to format {@link \DateTime} objects, either with the {@link \IntlDateFormatter}
+     * (if it is available) or as RFC-3339 dates ("Y-m-d H:i:s").
      */
-    const PRETTY_DATE = 1;
+    public const PRETTY_DATE = 1;
 
     /**
      * Whether to cast objects with a "__toString()" method to strings.
      */
-    const OBJECT_TO_STRING = 2;
+    public const OBJECT_TO_STRING = 2;
 
     /**
      * @var ExecutionContextInterface
@@ -37,7 +37,7 @@ abstract class ConstraintValidator implements ConstraintValidatorInterface
     protected $context;
 
     /**
-     * {@inheritdoc}
+     * @return void
      */
     public function initialize(ExecutionContextInterface $context)
     {
@@ -51,14 +51,10 @@ abstract class ConstraintValidator implements ConstraintValidatorInterface
      * message parameter to a constraint violation. Note that such
      * parameters should usually not be included in messages aimed at
      * non-technical people.
-     *
-     * @param mixed $value The value to return the type of
-     *
-     * @return string The type of the value
      */
-    protected function formatTypeOf($value)
+    protected function formatTypeOf(mixed $value): string
     {
-        return is_object($value) ? get_class($value) : gettype($value);
+        return get_debug_type($value);
     }
 
     /**
@@ -69,7 +65,8 @@ abstract class ConstraintValidator implements ConstraintValidatorInterface
      * in double quotes ("). Objects, arrays and resources are formatted as
      * "object", "array" and "resource". If the $format bitmask contains
      * the PRETTY_DATE bit, then {@link \DateTime} objects will be formatted
-     * as RFC-3339 dates ("Y-m-d H:i:s").
+     * with the {@link \IntlDateFormatter}. If it is not available, they will be
+     * formatted as RFC-3339 dates ("Y-m-d H:i:s").
      *
      * Be careful when passing message parameters to a constraint violation
      * that (may) contain objects, arrays or resources. These parameters
@@ -77,53 +74,44 @@ abstract class ConstraintValidator implements ConstraintValidatorInterface
      * won't know what an "object", "array" or "resource" is and will be
      * confused by the violation message.
      *
-     * @param mixed $value  The value to format as string
-     * @param int   $format A bitwise combination of the format
-     *                      constants in this class
-     *
-     * @return string The string representation of the passed value
+     * @param int $format A bitwise combination of the format constants in this class
      */
-    protected function formatValue($value, $format = 0)
+    protected function formatValue(mixed $value, int $format = 0): string
     {
-        $isDateTime = $value instanceof \DateTimeInterface;
+        if (($format & self::PRETTY_DATE) && $value instanceof \DateTimeInterface) {
+            if (class_exists(\IntlDateFormatter::class)) {
+                $formatter = new \IntlDateFormatter(\Locale::getDefault(), \IntlDateFormatter::MEDIUM, \IntlDateFormatter::SHORT, 'UTC');
 
-        if (($format & self::PRETTY_DATE) && $isDateTime) {
-            if (class_exists('IntlDateFormatter')) {
-                $locale = \Locale::getDefault();
-                $formatter = new \IntlDateFormatter($locale, \IntlDateFormatter::MEDIUM, \IntlDateFormatter::SHORT);
-
-                // neither the native nor the stub IntlDateFormatter support
-                // DateTimeImmutable as of yet
-                if (!$value instanceof \DateTime) {
-                    $value = new \DateTime(
-                        $value->format('Y-m-d H:i:s.u e'),
-                        $value->getTimezone()
-                    );
-                }
-
-                return $formatter->format($value);
+                return $formatter->format(new \DateTimeImmutable(
+                    $value->format('Y-m-d H:i:s.u'),
+                    new \DateTimeZone('UTC')
+                ));
             }
 
             return $value->format('Y-m-d H:i:s');
         }
 
-        if (is_object($value)) {
-            if (($format & self::OBJECT_TO_STRING) && method_exists($value, '__toString')) {
+        if ($value instanceof \UnitEnum) {
+            return $value->name;
+        }
+
+        if (\is_object($value)) {
+            if (($format & self::OBJECT_TO_STRING) && $value instanceof \Stringable) {
                 return $value->__toString();
             }
 
             return 'object';
         }
 
-        if (is_array($value)) {
+        if (\is_array($value)) {
             return 'array';
         }
 
-        if (is_string($value)) {
+        if (\is_string($value)) {
             return '"'.$value.'"';
         }
 
-        if (is_resource($value)) {
+        if (\is_resource($value)) {
             return 'resource';
         }
 
@@ -152,11 +140,9 @@ abstract class ConstraintValidator implements ConstraintValidatorInterface
      * @param int   $format A bitwise combination of the format
      *                      constants in this class
      *
-     * @return string The string representation of the value list
-     *
      * @see formatValue()
      */
-    protected function formatValues(array $values, $format = 0)
+    protected function formatValues(array $values, int $format = 0): string
     {
         foreach ($values as $key => $value) {
             $values[$key] = $this->formatValue($value, $format);

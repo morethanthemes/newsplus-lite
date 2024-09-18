@@ -3,6 +3,7 @@
 namespace Drupal\Core\Render\Element;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Attribute\FormElement;
 use Drupal\Core\Render\Element;
 
 /**
@@ -17,16 +18,15 @@ use Drupal\Core\Render\Element;
  *
  * Usage example:
  * @code
- * $form['quantity'] = array(
+ * $form['quantity'] = [
  *   '#type' => 'range',
  *   '#title' => $this->t('Quantity'),
- * );
+ * ];
  * @endcode
  *
  * @see \Drupal\Core\Render\Element\Number
- *
- * @FormElement("range")
  */
+#[FormElement('range')]
 class Range extends Number {
 
   /**
@@ -34,7 +34,7 @@ class Range extends Number {
    */
   public function getInfo() {
     $info = parent::getInfo();
-    $class = get_class($this);
+    $class = static::class;
     return [
       '#min' => 0,
       '#max' => 100,

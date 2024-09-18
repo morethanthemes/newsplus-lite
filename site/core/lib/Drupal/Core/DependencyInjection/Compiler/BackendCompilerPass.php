@@ -9,7 +9,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 /**
  * Defines a compiler pass to allow automatic override per backend.
  *
- * A module developer has to tag his backend service with "backend_overridable":
+ * A module developer has to tag a backend service with "backend_overridable":
  * @code
  * custom_service:
  *   class: ...
@@ -24,7 +24,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
  * @endcode
  *
  * As a developer for alternative storage engines you register a service with
- * $yourbackend.$original_service:
+ * $your_backend.$original_service:
  *
  * @code
  * sqlite.custom_service:
@@ -35,8 +35,12 @@ class BackendCompilerPass implements CompilerPassInterface {
 
   /**
    * {@inheritdoc}
+   *
+   * phpcs:ignore Drupal.Commenting.FunctionComment.VoidReturn
+   * @return void
    */
   public function process(ContainerBuilder $container) {
+    $driver_backend = NULL;
     if ($container->hasParameter('default_backend')) {
       $default_backend = $container->getParameter('default_backend');
       // Opt out from the default backend.
@@ -46,7 +50,8 @@ class BackendCompilerPass implements CompilerPassInterface {
     }
     else {
       try {
-        $default_backend = $container->get('database')->driver();
+        $driver_backend = $container->get('database')->driver();
+        $default_backend = $container->get('database')->databaseType();
         $container->set('database', NULL);
       }
       catch (\Exception $e) {
@@ -62,7 +67,10 @@ class BackendCompilerPass implements CompilerPassInterface {
       if ($container->hasAlias($id)) {
         continue;
       }
-      if ($container->hasDefinition("$default_backend.$id") || $container->hasAlias("$default_backend.$id")) {
+      if ($container->hasDefinition("$driver_backend.$id") || $container->hasAlias("$driver_backend.$id")) {
+        $container->setAlias($id, new Alias("$driver_backend.$id"));
+      }
+      elseif ($container->hasDefinition("$default_backend.$id") || $container->hasAlias("$default_backend.$id")) {
         $container->setAlias($id, new Alias("$default_backend.$id"));
       }
     }

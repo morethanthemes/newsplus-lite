@@ -10,7 +10,7 @@ use Drupal\Core\Session\AccountInterface;
  * While possible values specify which values existing data might have, settable
  * values define the values that are allowed to be set by a user.
  *
- * For example, in an workflow scenario, the settable values for a state field
+ * For example, in a workflow scenario, the settable values for a state field
  * might depend on the currently set state, while possible values are all
  * states. Thus settable values would be used in an editing context, while
  * possible values would be used for presenting filtering options in a search.
@@ -24,7 +24,7 @@ use Drupal\Core\Session\AccountInterface;
  * specified. In that case, the allowed values and options apply to the main
  * property only.
  *
- * @see \Drupal\options\Plugin\Field\FieldWidget\OptionsWidgetBase
+ * @see \Drupal\Core\Field\Plugin\Field\FieldWidget\OptionsWidgetBase
  */
 interface OptionsProviderInterface {
 
@@ -41,7 +41,7 @@ interface OptionsProviderInterface {
    * @return array
    *   An array of possible values.
    */
-  public function getPossibleValues(AccountInterface $account = NULL);
+  public function getPossibleValues(?AccountInterface $account = NULL);
 
   /**
    * Returns an array of possible values with labels for display.
@@ -60,7 +60,7 @@ interface OptionsProviderInterface {
    *   two-dimensional array of option groups (array of flat option arrays,
    *   keyed by option group label). Note that labels should NOT be sanitized.
    */
-  public function getPossibleOptions(AccountInterface $account = NULL);
+  public function getPossibleOptions(?AccountInterface $account = NULL);
 
   /**
    * Returns an array of settable values.
@@ -75,7 +75,7 @@ interface OptionsProviderInterface {
    * @return array
    *   An array of settable values.
    */
-  public function getSettableValues(AccountInterface $account = NULL);
+  public function getSettableValues(?AccountInterface $account = NULL);
 
   /**
    * Returns an array of settable values with labels for display.
@@ -94,6 +94,6 @@ interface OptionsProviderInterface {
    *   of option groups (array of flat option arrays, keyed by option group
    *   label). Note that labels should NOT be sanitized.
    */
-  public function getSettableOptions(AccountInterface $account = NULL);
+  public function getSettableOptions(?AccountInterface $account = NULL);
 
 }

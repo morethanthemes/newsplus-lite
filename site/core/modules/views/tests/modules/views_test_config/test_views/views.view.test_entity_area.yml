@@ -4,13 +4,12 @@ dependencies:
   content:
     - entity_test:entity_test:aa0c61cb-b7bb-4795-972a-493dabcf529c
 id: test_entity_area
-label: ''
+label: test_entity_area
 module: views
 description: ''
 tag: ''
 base_table: views_test_data
 base_field: nid
-core: '8'
 display:
   default:
     display_options:
@@ -59,6 +58,6 @@ display:
           offset: 0
         type: none
     display_plugin: default
-    display_title: Master
+    display_title: Default
     id: default
     position: 0

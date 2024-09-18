@@ -6,7 +6,12 @@ use Drupal\migrate_drupal\Plugin\migrate\source\DrupalSqlBase;
 use Drupal\migrate\Plugin\migrate\source\DummyQueryTrait;
 
 /**
- * User picture field instance source.
+ * Drupal 6/7 user picture field instance source from database.
+ *
+ * For available configuration keys, refer to the parent classes.
+ *
+ * @see \Drupal\migrate\Plugin\migrate\source\SqlBase
+ * @see \Drupal\migrate\Plugin\migrate\source\SourcePluginBase
  *
  * @todo Support default picture?
  *
@@ -40,7 +45,7 @@ class UserPictureInstance extends DrupalSqlBase {
     return [
       'file_directory' => 'The directory to store images..',
       'max_filesize' => 'The maximum allowed file size in KBs.',
-      'max_resolution' => "The maximum resolution.",
+      'max_resolution' => "The maximum dimensions.",
     ];
   }
 

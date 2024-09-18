@@ -1,38 +1,65 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\file\Kernel;
 
+use Drupal\Core\Entity\EntityStorageException;
+use Drupal\Core\Entity\EntityTypeManager;
+use Drupal\Core\File\Exception\FileExistsException;
+use Drupal\Core\File\Exception\InvalidStreamWrapperException;
+use Drupal\Core\File\FileExists;
 use Drupal\file\Entity\File;
+use Drupal\file\FileRepository;
 
 /**
  * Tests the file copy function.
  *
+ * @coversDefaultClass \Drupal\file\FileRepository
  * @group file
  */
 class CopyTest extends FileManagedUnitTestBase {
+
   /**
-   * Test file copying in the normal, base case.
+   * The file repository service under test.
+   *
+   * @var \Drupal\file\FileRepository
    */
-  public function testNormal() {
+  protected $fileRepository;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
+    parent::setUp();
+    $this->fileRepository = $this->container->get('file.repository');
+  }
+
+  /**
+   * Tests file copying in the normal, base case.
+   *
+   * @covers ::copy
+   */
+  public function testNormal(): void {
     $contents = $this->randomMachineName(10);
     $source = $this->createFile(NULL, $contents);
     $desired_uri = 'public://' . $this->randomMachineName();
 
     // Clone the object so we don't have to worry about the function changing
     // our reference copy.
-    $result = file_copy(clone $source, $desired_uri, FILE_EXISTS_ERROR);
+    $result = $this->fileRepository->copy(clone $source, $desired_uri, FileExists::Error);
 
     // Check the return status and that the contents changed.
-    $this->assertTrue($result, 'File copied successfully.');
-    $this->assertEqual($contents, file_get_contents($result->getFileUri()), 'Contents of file were copied correctly.');
+    $this->assertNotFalse($result, 'File copied successfully.');
+    $this->assertEquals($contents, file_get_contents($result->getFileUri()), 'Contents of file were copied correctly.');
 
     // Check that the correct hooks were called.
     $this->assertFileHooksCalled(['copy', 'insert']);
 
     $this->assertDifferentFile($source, $result);
-    $this->assertEqual($result->getFileUri(), $desired_uri, 'The copied file entity has the desired filepath.');
-    $this->assertTrue(file_exists($source->getFileUri()), 'The original file still exists.');
-    $this->assertTrue(file_exists($result->getFileUri()), 'The copied file exists.');
+    $this->assertEquals($result->getFileUri(), $desired_uri, 'The copied file entity has the desired filepath.');
+    $this->assertFileExists($source->getFileUri());
+    $this->assertFileExists($result->getFileUri());
 
     // Reload the file from the database and check that the changes were
     // actually saved.
@@ -40,9 +67,11 @@ class CopyTest extends FileManagedUnitTestBase {
   }
 
   /**
-   * Test renaming when copying over a file that already exists.
+   * Tests renaming when copying over a file that already exists.
+   *
+   * @covers ::copy
    */
-  public function testExistingRename() {
+  public function testExistingRename(): void {
     // Setup a file to overwrite.
     $contents = $this->randomMachineName(10);
     $source = $this->createFile(NULL, $contents);
@@ -51,12 +80,12 @@ class CopyTest extends FileManagedUnitTestBase {
 
     // Clone the object so we don't have to worry about the function changing
     // our reference copy.
-    $result = file_copy(clone $source, $target->getFileUri(), FILE_EXISTS_RENAME);
+    $result = $this->fileRepository->copy(clone $source, $target->getFileUri(), FileExists::Rename);
 
     // Check the return status and that the contents changed.
-    $this->assertTrue($result, 'File copied successfully.');
-    $this->assertEqual($contents, file_get_contents($result->getFileUri()), 'Contents of file were copied correctly.');
-    $this->assertNotEqual($result->getFileUri(), $source->getFileUri(), 'Returned file path has changed from the original.');
+    $this->assertNotFalse($result, 'File copied successfully.');
+    $this->assertEquals($contents, file_get_contents($result->getFileUri()), 'Contents of file were copied correctly.');
+    $this->assertNotEquals($source->getFileUri(), $result->getFileUri(), 'Returned file path has changed from the original.');
 
     // Check that the correct hooks were called.
     $this->assertFileHooksCalled(['copy', 'insert']);
@@ -80,9 +109,11 @@ class CopyTest extends FileManagedUnitTestBase {
   }
 
   /**
-   * Test replacement when copying over a file that already exists.
+   * Tests replacement when copying over a file that already exists.
+   *
+   * @covers ::copy
    */
-  public function testExistingReplace() {
+  public function testExistingReplace(): void {
     // Setup a file to overwrite.
     $contents = $this->randomMachineName(10);
     $source = $this->createFile(NULL, $contents);
@@ -91,11 +122,11 @@ class CopyTest extends FileManagedUnitTestBase {
 
     // Clone the object so we don't have to worry about the function changing
     // our reference copy.
-    $result = file_copy(clone $source, $target->getFileUri(), FILE_EXISTS_REPLACE);
+    $result = $this->fileRepository->copy(clone $source, $target->getFileUri(), FileExists::Replace);
 
     // Check the return status and that the contents changed.
-    $this->assertTrue($result, 'File copied successfully.');
-    $this->assertEqual($contents, file_get_contents($result->getFileUri()), 'Contents of file were overwritten.');
+    $this->assertNotFalse($result, 'File copied successfully.');
+    $this->assertEquals($contents, file_get_contents($result->getFileUri()), 'Contents of file were overwritten.');
     $this->assertDifferentFile($source, $result);
 
     // Check that the correct hooks were called.
@@ -118,10 +149,11 @@ class CopyTest extends FileManagedUnitTestBase {
   }
 
   /**
-   * Test that copying over an existing file fails when FILE_EXISTS_ERROR is
-   * specified.
+   * Tests that copying over an existing file fails when instructed to do so.
+   *
+   * @covers ::copy
    */
-  public function testExistingError() {
+  public function testExistingError(): void {
     $contents = $this->randomMachineName(10);
     $source = $this->createFile();
     $target = $this->createFile(NULL, $contents);
@@ -129,17 +161,60 @@ class CopyTest extends FileManagedUnitTestBase {
 
     // Clone the object so we don't have to worry about the function changing
     // our reference copy.
-    $result = file_copy(clone $source, $target->getFileUri(), FILE_EXISTS_ERROR);
-
-    // Check the return status and that the contents were not changed.
-    $this->assertFalse($result, 'File copy failed.');
-    $this->assertEqual($contents, file_get_contents($target->getFileUri()), 'Contents of file were not altered.');
+    try {
+      $result = $this->fileRepository->copy(clone $source, $target->getFileUri(), FileExists::Error);
+      $this->fail('expected FileExistsException');
+    }
+    // FileExistsException is a subclass of FileException.
+    catch (FileExistsException $e) {
+      $this->assertStringContainsString("could not be copied because a file by that name already exists in the destination directory", $e->getMessage());
+    }
+    // Check the contents were not changed.
+    $this->assertEquals($contents, file_get_contents($target->getFileUri()), 'Contents of file were not altered.');
 
     // Check that the correct hooks were called.
     $this->assertFileHooksCalled([]);
 
     $this->assertFileUnchanged($source, File::load($source->id()));
     $this->assertFileUnchanged($target, File::load($target->id()));
+  }
+
+  /**
+   * Tests for an invalid stream wrapper.
+   *
+   * @covers ::copy
+   */
+  public function testInvalidStreamWrapper(): void {
+    $this->expectException(InvalidStreamWrapperException::class);
+    $this->expectExceptionMessage('Invalid stream wrapper: foo://');
+    $source = $this->createFile();
+    $this->fileRepository->copy($source, 'foo://');
+  }
+
+  /**
+   * Tests for entity storage exception.
+   *
+   * @covers ::copy
+   */
+  public function testEntityStorageException(): void {
+    /** @var \Drupal\Core\Entity\EntityTypeManager $entityTypeManager */
+    $entityTypeManager = $this->prophesize(EntityTypeManager::class);
+    $entityTypeManager->getStorage('file')
+      ->willThrow(EntityStorageException::class);
+
+    $fileRepository = new FileRepository(
+      $this->container->get('file_system'),
+      $this->container->get('stream_wrapper_manager'),
+      $entityTypeManager->reveal(),
+      $this->container->get('module_handler'),
+      $this->container->get('file.usage'),
+      $this->container->get('current_user')
+    );
+
+    $this->expectException(EntityStorageException::class);
+    $source = $this->createFile();
+    $target = $this->createFile();
+    $fileRepository->copy($source, $target->getFileUri(), FileExists::Replace);
   }
 
 }

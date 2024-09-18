@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\node\Kernel\Migrate\d7;
 
 use Drupal\Tests\SchemaCheckTestTrait;
@@ -15,16 +17,14 @@ class MigrateNodeSettingsTest extends MigrateDrupal7TestBase {
   use SchemaCheckTestTrait;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['node'];
+  protected static $modules = ['node'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->executeMigration('d7_node_settings');
   }
@@ -32,9 +32,9 @@ class MigrateNodeSettingsTest extends MigrateDrupal7TestBase {
   /**
    * Tests migration of node variables to node.settings config object.
    */
-  public function testAggregatorSettings() {
+  public function testAggregatorSettings(): void {
     $config = $this->config('node.settings');
-    $this->assertEqual(1, $config->get('use_admin_theme'));
+    $this->assertEquals(1, $config->get('use_admin_theme'));
   }
 
 }

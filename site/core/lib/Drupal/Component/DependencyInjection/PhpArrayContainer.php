@@ -2,6 +2,7 @@
 
 namespace Drupal\Component\DependencyInjection;
 
+use Symfony\Component\DependencyInjection\Argument\RewindableGenerator;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
 use Symfony\Component\DependencyInjection\Exception\RuntimeException;
@@ -34,13 +35,10 @@ class PhpArrayContainer extends Container {
 
     // Do not call the parent's constructor as it would bail on the
     // machine-optimized format.
-    $this->aliases = isset($container_definition['aliases']) ? $container_definition['aliases'] : [];
-    $this->parameters = isset($container_definition['parameters']) ? $container_definition['parameters'] : [];
-    $this->serviceDefinitions = isset($container_definition['services']) ? $container_definition['services'] : [];
-    $this->frozen = isset($container_definition['frozen']) ? $container_definition['frozen'] : FALSE;
-
-    // Register the service_container with itself.
-    $this->services['service_container'] = $this;
+    $this->aliases = $container_definition['aliases'] ?? [];
+    $this->parameters = $container_definition['parameters'] ?? [];
+    $this->serviceDefinitions = $container_definition['services'] ?? [];
+    $this->frozen = $container_definition['frozen'] ?? FALSE;
   }
 
   /**
@@ -80,60 +78,7 @@ class PhpArrayContainer extends Container {
     }
     else {
       $class = $this->frozen ? $definition['class'] : current($this->resolveServicesAndParameters([$definition['class']]));
-      $length = isset($definition['arguments_count']) ? $definition['arguments_count'] : count($arguments);
-
-      // Optimize class instantiation for services with up to 10 parameters as
-      // reflection is noticeably slow.
-      switch ($length) {
-        case 0:
-          $service = new $class();
-          break;
-
-        case 1:
-          $service = new $class($arguments[0]);
-          break;
-
-        case 2:
-          $service = new $class($arguments[0], $arguments[1]);
-          break;
-
-        case 3:
-          $service = new $class($arguments[0], $arguments[1], $arguments[2]);
-          break;
-
-        case 4:
-          $service = new $class($arguments[0], $arguments[1], $arguments[2], $arguments[3]);
-          break;
-
-        case 5:
-          $service = new $class($arguments[0], $arguments[1], $arguments[2], $arguments[3], $arguments[4]);
-          break;
-
-        case 6:
-          $service = new $class($arguments[0], $arguments[1], $arguments[2], $arguments[3], $arguments[4], $arguments[5]);
-          break;
-
-        case 7:
-          $service = new $class($arguments[0], $arguments[1], $arguments[2], $arguments[3], $arguments[4], $arguments[5], $arguments[6]);
-          break;
-
-        case 8:
-          $service = new $class($arguments[0], $arguments[1], $arguments[2], $arguments[3], $arguments[4], $arguments[5], $arguments[6], $arguments[7]);
-          break;
-
-        case 9:
-          $service = new $class($arguments[0], $arguments[1], $arguments[2], $arguments[3], $arguments[4], $arguments[5], $arguments[6], $arguments[7], $arguments[8]);
-          break;
-
-        case 10:
-          $service = new $class($arguments[0], $arguments[1], $arguments[2], $arguments[3], $arguments[4], $arguments[5], $arguments[6], $arguments[7], $arguments[8], $arguments[9]);
-          break;
-
-        default:
-          $r = new \ReflectionClass($class);
-          $service = $r->newInstanceArgs($arguments);
-          break;
-      }
+      $service = new $class(...$arguments);
     }
 
     if (!isset($definition['shared']) || $definition['shared'] !== FALSE) {
@@ -200,7 +145,7 @@ class PhpArrayContainer extends Container {
         // The PhpArrayDumper just uses the hash of the private service
         // definition to generate a unique ID.
         //
-        // @see \Drupal\Component\DependecyInjection\Dumper\OptimizedPhpArrayDumper::getPrivateServiceCall
+        // @see \Drupal\Component\DependencyInjection\Dumper\OptimizedPhpArrayDumper::getPrivateServiceCall
         if ($type == 'private_service') {
           $id = $argument->id;
 
@@ -216,6 +161,27 @@ class PhpArrayContainer extends Container {
             $this->privateServices[$id] = $arguments[$key];
           }
 
+          continue;
+        }
+        elseif ($type == 'service_closure') {
+          $arguments[$key] = function () use ($argument) {
+            return $this->get($argument->id, $argument->invalidBehavior);
+          };
+
+          continue;
+        }
+        elseif ($type == 'raw') {
+          $arguments[$key] = $argument->value;
+
+          continue;
+        }
+        elseif ($type == 'iterator') {
+          $services = $argument->value;
+          $arguments[$key] = new RewindableGenerator(function () use ($services) {
+            foreach ($services as $key => $service) {
+              yield $key => $this->resolveServicesAndParameters([$service])[0];
+            }
+          }, count($services));
           continue;
         }
 

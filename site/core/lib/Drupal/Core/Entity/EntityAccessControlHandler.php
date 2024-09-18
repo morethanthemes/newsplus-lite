@@ -58,7 +58,7 @@ class EntityAccessControlHandler extends EntityHandlerBase implements EntityAcce
   /**
    * {@inheritdoc}
    */
-  public function access(EntityInterface $entity, $operation, AccountInterface $account = NULL, $return_as_object = FALSE) {
+  public function access(EntityInterface $entity, $operation, ?AccountInterface $account = NULL, $return_as_object = FALSE) {
     $account = $this->prepareUser($account);
     $langcode = $entity->language()->getId();
 
@@ -74,8 +74,12 @@ class EntityAccessControlHandler extends EntityHandlerBase implements EntityAcce
     // individual revisions to have specific access control and be cached
     // separately.
     if ($entity instanceof RevisionableInterface) {
-      /** @var $entity \Drupal\Core\Entity\RevisionableInterface */
+      /** @var \Drupal\Core\Entity\RevisionableInterface $entity */
       $cid .= ':' . $entity->getRevisionId();
+      // It is not possible to delete or revert the default revision.
+      if ($entity->isDefaultRevision() && ($operation === 'revert' || $operation === 'delete revision')) {
+        return $return_as_object ? AccessResult::forbidden() : FALSE;
+      }
     }
 
     if (($return = $this->getCache($cid, $operation, $langcode, $account)) !== NULL) {
@@ -109,6 +113,8 @@ class EntityAccessControlHandler extends EntityHandlerBase implements EntityAcce
   }
 
   /**
+   * Determines entity access.
+   *
    * We grant access to the entity if both of these conditions are met:
    * - No modules say to deny access.
    * - At least one module says to grant access.
@@ -225,7 +231,7 @@ class EntityAccessControlHandler extends EntityHandlerBase implements EntityAcce
   /**
    * {@inheritdoc}
    */
-  public function createAccess($entity_bundle = NULL, AccountInterface $account = NULL, array $context = [], $return_as_object = FALSE) {
+  public function createAccess($entity_bundle = NULL, ?AccountInterface $account = NULL, array $context = [], $return_as_object = FALSE) {
     $account = $this->prepareUser($account);
     $context += [
       'entity_type_id' => $this->entityTypeId,
@@ -299,7 +305,7 @@ class EntityAccessControlHandler extends EntityHandlerBase implements EntityAcce
    * @return \Drupal\Core\Session\AccountInterface
    *   Returns the current account object.
    */
-  protected function prepareUser(AccountInterface $account = NULL) {
+  protected function prepareUser(?AccountInterface $account = NULL) {
     if (!$account) {
       $account = \Drupal::currentUser();
     }
@@ -309,7 +315,7 @@ class EntityAccessControlHandler extends EntityHandlerBase implements EntityAcce
   /**
    * {@inheritdoc}
    */
-  public function fieldAccess($operation, FieldDefinitionInterface $field_definition, AccountInterface $account = NULL, FieldItemListInterface $items = NULL, $return_as_object = FALSE) {
+  public function fieldAccess($operation, FieldDefinitionInterface $field_definition, ?AccountInterface $account = NULL, ?FieldItemListInterface $items = NULL, $return_as_object = FALSE) {
     $account = $this->prepareUser($account);
 
     // Get the default access restriction that lives within this field.
@@ -321,13 +327,13 @@ class EntityAccessControlHandler extends EntityHandlerBase implements EntityAcce
       if ($field_definition->getName() === $this->entityType->getKey('id')) {
         // String IDs can be set when creating the entity.
         if (!($entity->isNew() && $field_definition->getType() === 'string')) {
-          return $return_as_object ? AccessResult::forbidden('The entity ID cannot be changed')->addCacheableDependency($entity) : FALSE;
+          return $return_as_object ? AccessResult::forbidden('The entity ID cannot be changed.')->addCacheableDependency($entity) : FALSE;
         }
       }
       elseif ($field_definition->getName() === $this->entityType->getKey('uuid')) {
         // UUIDs can be set when creating an entity.
         if (!$entity->isNew()) {
-          return $return_as_object ? AccessResult::forbidden('The entity UUID cannot be changed')->addCacheableDependency($entity) : FALSE;
+          return $return_as_object ? AccessResult::forbidden('The entity UUID cannot be changed.')->addCacheableDependency($entity) : FALSE;
         }
       }
     }
@@ -340,12 +346,16 @@ class EntityAccessControlHandler extends EntityHandlerBase implements EntityAcce
     $default = $default->andIf($entity_default);
 
     // Invoke hook and collect grants/denies for field access from other
-    // modules. Our default access flag is masked under the ':default' key.
-    $grants = [':default' => $default];
-    $hook_implementations = $this->moduleHandler()->getImplementations('entity_field_access');
-    foreach ($hook_implementations as $module) {
-      $grants = array_merge($grants, [$module => $this->moduleHandler()->invoke($module, 'entity_field_access', [$operation, $field_definition, $account, $items])]);
-    }
+    // modules.
+    $grants = [];
+    $this->moduleHandler()->invokeAllWith(
+      'entity_field_access',
+      function (callable $hook, string $module) use ($operation, $field_definition, $account, $items, &$grants) {
+        $grants[] = [$module => $hook($operation, $field_definition, $account, $items)];
+      }
+    );
+    // Our default access flag is masked under the ':default' key.
+    $grants = array_merge([':default' => $default], ...$grants);
 
     // Also allow modules to alter the returned grants/denies.
     $context = [
@@ -378,7 +388,18 @@ class EntityAccessControlHandler extends EntityHandlerBase implements EntityAcce
    * @return \Drupal\Core\Access\AccessResultInterface
    *   The access result.
    */
-  protected function checkFieldAccess($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, FieldItemListInterface $items = NULL) {
+  protected function checkFieldAccess($operation, FieldDefinitionInterface $field_definition, AccountInterface $account, ?FieldItemListInterface $items = NULL) {
+    if (!$items instanceof FieldItemListInterface || $operation !== 'view') {
+      return AccessResult::allowed();
+    }
+    $entity = $items->getEntity();
+    $isRevisionLogField = $this->entityType instanceof ContentEntityTypeInterface && $field_definition->getName() === $this->entityType->getRevisionMetadataKey('revision_log_message');
+    if ($entity && $isRevisionLogField) {
+      // The revision log should only be visible to those who can view the
+      // revisions OR edit the entity.
+      return $entity->access('view revision', $account, TRUE)
+        ->orIf($entity->access('update', $account, TRUE));
+    }
     return AccessResult::allowed();
   }
 

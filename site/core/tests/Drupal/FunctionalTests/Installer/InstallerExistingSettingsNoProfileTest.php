@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Installer;
 
 use Drupal\Core\DrupalKernel;
@@ -12,6 +14,11 @@ use Symfony\Component\HttpFoundation\Request;
  * @group Installer
  */
 class InstallerExistingSettingsNoProfileTest extends InstallerTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
@@ -40,13 +47,11 @@ class InstallerExistingSettingsNoProfileTest extends InstallerTestBase {
     ];
 
     // Pre-configure config directories.
-    $this->settings['config_directories'] = [
-      CONFIG_SYNC_DIRECTORY => (object) [
-        'value' => DrupalKernel::findSitePath(Request::createFromGlobals()) . '/files/config_sync',
-        'required' => TRUE,
-      ],
+    $this->settings['settings']['config_sync_directory'] = (object) [
+      'value' => DrupalKernel::findSitePath(Request::createFromGlobals()) . '/files/config_sync',
+      'required' => TRUE,
     ];
-    mkdir($this->settings['config_directories'][CONFIG_SYNC_DIRECTORY]->value, 0777, TRUE);
+    mkdir($this->settings['settings']['config_sync_directory']->value, 0777, TRUE);
   }
 
   /**
@@ -60,10 +65,10 @@ class InstallerExistingSettingsNoProfileTest extends InstallerTestBase {
   /**
    * Verifies that installation succeeded.
    */
-  public function testInstaller() {
-    $this->assertUrl('user/1');
-    $this->assertResponse(200);
-    $this->assertEqual('testing', \Drupal::installProfile());
+  public function testInstaller(): void {
+    $this->assertSession()->addressEquals('user/1');
+    $this->assertSession()->statusCodeEquals(200);
+    $this->assertEquals('testing', \Drupal::installProfile());
   }
 
 }

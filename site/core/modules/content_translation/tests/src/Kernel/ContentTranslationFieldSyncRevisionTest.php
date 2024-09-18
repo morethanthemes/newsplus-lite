@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\content_translation\Kernel;
 
 use Drupal\Core\Entity\ContentEntityInterface;
@@ -26,7 +28,13 @@ class ContentTranslationFieldSyncRevisionTest extends EntityKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['file', 'image', 'language', 'content_translation', 'simpletest', 'content_translation_test'];
+  protected static $modules = [
+    'file',
+    'image',
+    'language',
+    'content_translation',
+    'content_translation_test',
+  ];
 
   /**
    * The synchronized field name.
@@ -52,7 +60,7 @@ class ContentTranslationFieldSyncRevisionTest extends EntityKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $entity_type_id = 'entity_test_mulrev';
@@ -90,12 +98,10 @@ class ContentTranslationFieldSyncRevisionTest extends EntityKernelTestBase {
     $field_config->setThirdPartySetting('content_translation', 'translation_sync', $property_settings);
     $field_config->save();
 
-    $this->entityManager->clearCachedDefinitions();
-
     $this->contentTranslationManager = $this->container->get('content_translation.manager');
     $this->contentTranslationManager->setEnabled($entity_type_id, $entity_type_id, TRUE);
 
-    $this->storage = $this->entityManager->getStorage($entity_type_id);
+    $this->storage = $this->entityTypeManager->getStorage($entity_type_id);
 
     foreach ($this->getTestFiles('image') as $file) {
       $entity = File::create((array) $file + ['status' => 1]);
@@ -121,7 +127,7 @@ class ContentTranslationFieldSyncRevisionTest extends EntityKernelTestBase {
    * @covers \Drupal\content_translation\FieldTranslationSynchronizer::synchronizeFields
    * @covers \Drupal\content_translation\FieldTranslationSynchronizer::synchronizeItems
    */
-  public function testFieldSynchronizationAndValidation() {
+  public function testFieldSynchronizationAndValidation(): void {
     // Test that when untranslatable field widgets are displayed, synchronized
     // field properties can be changed only in default revisions.
     $this->setUntranslatableFieldWidgetsDisplay(TRUE);
@@ -370,6 +376,94 @@ class ContentTranslationFieldSyncRevisionTest extends EntityKernelTestBase {
   }
 
   /**
+   * Checks that file field synchronization works as expected.
+   */
+  public function testFileFieldSynchronization(): void {
+    $entity_type_id = 'entity_test_mulrev';
+    $file_field_name = 'file_field';
+
+    foreach ($this->getTestFiles('text') as $file) {
+      $entity = File::create((array) $file + ['status' => 1]);
+      $entity->save();
+    }
+
+    /** @var \Drupal\field\Entity\FieldStorageConfig $field_storage */
+    $field_storage_config = FieldStorageConfig::create([
+      'field_name' => $file_field_name,
+      'type' => 'file',
+      'entity_type' => $entity_type_id,
+      'cardinality' => 1,
+      'translatable' => 1,
+    ]);
+    $field_storage_config->save();
+
+    $field_config = FieldConfig::create([
+      'entity_type' => $entity_type_id,
+      'field_name' => $file_field_name,
+      'bundle' => $entity_type_id,
+      'label' => 'Synchronized file field',
+      'translatable' => 1,
+    ]);
+    $field_config->save();
+
+    $property_settings = [
+      'display' => 'display',
+      'description' => 'description',
+      'target_id' => 0,
+    ];
+    $field_config->setThirdPartySetting('content_translation', 'translation_sync', $property_settings);
+    $field_config->save();
+
+    /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
+    $entity = EntityTestMulRev::create([
+      'uid' => 1,
+      'langcode' => 'en',
+      $file_field_name => [
+        'target_id' => 1,
+        'description' => 'Description EN',
+        'display' => 1,
+      ],
+    ]);
+    $entity->save();
+
+    $this->assertEquals(1, $entity->get($file_field_name)->target_id);
+    $this->assertEquals('Description EN', $entity->get($file_field_name)->description);
+    $this->assertEquals(1, $entity->get($file_field_name)->display);
+
+    // Create a translation with a different file, description and display
+    // values.
+    $it_translation = $entity->addTranslation('it', $entity->toArray());
+    $it_translation->get($file_field_name)->target_id = 2;
+    $it_translation->get($file_field_name)->description = 'Description IT';
+    $it_translation->get($file_field_name)->display = 0;
+    $metadata = $this->contentTranslationManager->getTranslationMetadata($it_translation);
+    $metadata->setSource('en');
+    $it_translation->save();
+
+    $it_entity = $entity->getTranslation('it');
+    $this->assertEquals(2, $it_entity->get($file_field_name)->target_id);
+    $this->assertEquals('Description IT', $it_entity->get($file_field_name)->description);
+    $this->assertEquals(0, $it_entity->get($file_field_name)->display);
+
+    // In the english entity the file should have changed, but the description
+    // and display should have remained the same.
+    $en_entity = $entity->getTranslation('en');
+    $this->assertEquals(2, $en_entity->get($file_field_name)->target_id);
+    $this->assertEquals('Description EN', $en_entity->get($file_field_name)->description);
+    $this->assertEquals(1, $en_entity->get($file_field_name)->display);
+  }
+
+  /**
+   * Tests changing the default language of an entity.
+   */
+  public function testChangeDefaultLanguageNonTranslatableFieldsHidden(): void {
+    $this->setUntranslatableFieldWidgetsDisplay(FALSE);
+    $entity = $this->saveNewEntity();
+    $entity->langcode = 'it';
+    $this->assertCount(0, $entity->validate());
+  }
+
+  /**
    * Sets untranslatable field widgets' display status.
    *
    * @param bool $display
@@ -435,8 +529,10 @@ class ContentTranslationFieldSyncRevisionTest extends EntityKernelTestBase {
    *
    * @param \Drupal\Core\Entity\EntityConstraintViolationListInterface $violations
    *   A list of violations.
+   *
+   * @internal
    */
-  protected function assertViolations(EntityConstraintViolationListInterface $violations) {
+  protected function assertViolations(EntityConstraintViolationListInterface $violations): void {
     $entity_type_id = $this->storage->getEntityTypeId();
     $settings = $this->contentTranslationManager->getBundleTranslationSettings($entity_type_id, $entity_type_id);
     $message = !empty($settings['untranslatable_fields_hide']) ?
@@ -464,11 +560,13 @@ class ContentTranslationFieldSyncRevisionTest extends EntityKernelTestBase {
    *   - target ID (it)
    *   - alt (en)
    *   - alt (it)
+   *
+   * @internal
    */
-  protected function assertLatestRevisionFieldValues($entity_id, array $expected_values) {
+  protected function assertLatestRevisionFieldValues(string $entity_id, array $expected_values): void {
     /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
     $entity = $this->storage->loadRevision($this->storage->getLatestRevisionId($entity_id));
-    @list($revision_id, $target_id_en, $target_id_it, $alt_en, $alt_it) = $expected_values;
+    @[$revision_id, $target_id_en, $target_id_it, $alt_en, $alt_it] = $expected_values;
     $this->assertEquals($revision_id, $entity->getRevisionId());
     $this->assertEquals($target_id_en, $entity->get($this->fieldName)->target_id);
     $this->assertEquals($alt_en, $entity->get($this->fieldName)->alt);

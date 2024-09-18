@@ -2,15 +2,12 @@
 
 namespace Drupal\field\Plugin\migrate\process\d7;
 
+use Drupal\migrate\Attribute\MigrateProcess;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\ProcessPluginBase;
 use Drupal\migrate\Row;
 
-/**
- * @MigrateProcessPlugin(
- *   id = "d7_field_settings"
- * )
- */
+#[MigrateProcess('d7_field_settings')]
 class FieldSettings extends ProcessPluginBase {
 
   /**
@@ -29,15 +26,20 @@ class FieldSettings extends ProcessPluginBase {
       case 'date':
       case 'datetime':
       case 'datestamp':
-        if ($value['granularity']['hour'] === 0
-            && $value['granularity']['minute'] === 0
-            && $value['granularity']['second'] === 0) {
+        $collected_date_attributes = is_numeric(array_keys($value['granularity'])[0])
+          ? $value['granularity']
+          : array_keys(array_filter($value['granularity']));
+        if (empty(array_intersect($collected_date_attributes, ['hour', 'minute', 'second']))) {
           $value['datetime_type'] = 'date';
         }
         break;
 
       case 'taxonomy_term_reference':
         $value['target_type'] = 'taxonomy_term';
+        break;
+
+      case 'user_reference':
+        $value['target_type'] = 'user';
         break;
 
       default:

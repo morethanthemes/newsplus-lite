@@ -4,9 +4,11 @@ namespace Drupal\migrate\Plugin\migrate\destination;
 
 use Drupal\Component\Plugin\DependentPluginInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Config\TypedConfigManagerInterface;
 use Drupal\Core\Entity\DependencyTrait;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\migrate\Attribute\MigrateDestination;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\Row;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -46,7 +48,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @code
  * source:
- *   plugin: i18n_variable
+ *   plugin: d6_variable_translation
  *   variables:
  *     - site_offline_message
  * process:
@@ -60,15 +62,12 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * This will add the value of the variable "site_offline_message" to the config
  * with the machine name "system.maintenance" as "system.maintenance.message",
- * coupled with the relevant langcode as obtained from the "i18n_variable"
- * source plugin.
+ * coupled with the relevant langcode as obtained from the
+ * "d6_variable_translation" source plugin.
  *
- * @see \Drupal\migrate_drupal\Plugin\migrate\source\d6\i18nVariable
- *
- * @MigrateDestination(
- *   id = "config"
- * )
+ * @see \Drupal\migrate_drupal\Plugin\migrate\source\d6\VariableTranslation
  */
+#[MigrateDestination('config')]
 class Config extends DestinationBase implements ContainerFactoryPluginInterface, DependentPluginInterface {
 
   use DependencyTrait;
@@ -85,7 +84,15 @@ class Config extends DestinationBase implements ContainerFactoryPluginInterface,
    *
    * @var \Drupal\Core\Language\LanguageManagerInterface
    */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
   protected $language_manager;
+
+  /**
+   * The typed config manager service.
+   *
+   * @var \Drupal\Core\Config\TypedConfigManagerInterface
+   */
+  protected TypedConfigManagerInterface $typedConfigManager;
 
   /**
    * Constructs a Config destination object.
@@ -102,27 +109,35 @@ class Config extends DestinationBase implements ContainerFactoryPluginInterface,
    *   The configuration factory.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The language manager.
+   * @param \Drupal\Core\Config\TypedConfigManagerInterface $typed_config_manager
+   *   The typed config manager.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration, ConfigFactoryInterface $config_factory, LanguageManagerInterface $language_manager) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration, ConfigFactoryInterface $config_factory, LanguageManagerInterface $language_manager, ?TypedConfigManagerInterface $typed_config_manager = NULL) {
     parent::__construct($configuration, $plugin_id, $plugin_definition, $migration);
     $this->config = $config_factory->getEditable($configuration['config_name']);
     $this->language_manager = $language_manager;
     if ($this->isTranslationDestination()) {
       $this->supportsRollback = TRUE;
     }
+    if ($typed_config_manager === NULL) {
+      @trigger_error('Calling ' . __METHOD__ . '() without the $typed_config_manager argument is deprecated in drupal:10.3.0 and is removed in drupal:11.0.0. See https://www.drupal.org/node/3440502', E_USER_DEPRECATED);
+      $typed_config_manager = \Drupal::service(TypedConfigManagerInterface::class);
+    }
+    $this->typedConfigManager = $typed_config_manager;
   }
 
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, ?MigrationInterface $migration = NULL) {
     return new static(
       $configuration,
       $plugin_id,
       $plugin_definition,
       $migration,
       $container->get('config.factory'),
-      $container->get('language_manager')
+      $container->get('language_manager'),
+      $container->get(TypedConfigManagerInterface::class)
     );
   }
 
@@ -139,6 +154,16 @@ class Config extends DestinationBase implements ContainerFactoryPluginInterface,
         $this->config->set(str_replace(Row::PROPERTY_SEPARATOR, '.', $key), $value);
       }
     }
+
+    $name = $this->config->getName();
+    // Ensure that translatable config has `langcode` specified.
+    // @see \Drupal\Core\Config\Plugin\Validation\Constraint\LangcodeRequiredIfTranslatableValuesConstraint
+    if ($this->typedConfigManager->hasConfigSchema($name)
+      && $this->typedConfigManager->createFromNameAndData($name, $this->config->getRawData())->hasTranslatableElements()
+      && !$this->config->get('langcode')
+    ) {
+      $this->config->set('langcode', $this->language_manager->getDefaultLanguage()->getId());
+    }
     $this->config->save();
     $ids[] = $this->config->getName();
     if ($this->isTranslationDestination()) {
@@ -150,7 +175,7 @@ class Config extends DestinationBase implements ContainerFactoryPluginInterface,
   /**
    * {@inheritdoc}
    */
-  public function fields(MigrationInterface $migration = NULL) {
+  public function fields() {
     // @todo Dynamically fetch fields using Config Schema API.
   }
 

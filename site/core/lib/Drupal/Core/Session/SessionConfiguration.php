@@ -22,9 +22,17 @@ class SessionConfiguration implements SessionConfigurationInterface {
    *
    * @see \Symfony\Component\HttpFoundation\Session\Storage\NativeSessionStorage::__construct()
    * @see http://php.net/manual/session.configuration.php
+   * @see https://www.php.net/manual/session.security.ini.php
    */
   public function __construct($options = []) {
-    $this->options = $options;
+    // Provide sensible defaults for sid_length, sid_bits_per_character and
+    // name_suffix.
+    // @see core/assets/scaffold/files/default.services.yml
+    $this->options = $options + [
+      'sid_length' => 48,
+      'sid_bits_per_character' => 6,
+      'name_suffix' => '',
+    ];
   }
 
   /**
@@ -79,7 +87,7 @@ class SessionConfiguration implements SessionConfigurationInterface {
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The request.
    *
-   * @returns string
+   * @return string
    *   The session name without the prefix (SESS/SSESS).
    */
   protected function getUnprefixedName(Request $request) {
@@ -93,7 +101,7 @@ class SessionConfiguration implements SessionConfigurationInterface {
     else {
       // Otherwise use $base_url as session name, without the protocol
       // to use the same session identifiers across HTTP and HTTPS.
-      $session_name = $request->getHost() . $request->getBasePath();
+      $session_name = $request->getHost() . $request->getBasePath() . $this->options['name_suffix'];
       // Replace "core" out of session_name so core scripts redirect properly,
       // specifically install.php.
       $session_name = preg_replace('#/core$#', '', $session_name);
@@ -106,7 +114,7 @@ class SessionConfiguration implements SessionConfigurationInterface {
    * Return the session cookie domain.
    *
    * The Set-Cookie response header and its domain attribute are defined in RFC
-   * 2109, RFC 2965 and RFC 6265 each one superseeding the previous version.
+   * 2109, RFC 2965 and RFC 6265 each one superseding the previous version.
    *
    * @see http://tools.ietf.org/html/rfc2109
    * @see http://tools.ietf.org/html/rfc2965
@@ -115,8 +123,8 @@ class SessionConfiguration implements SessionConfigurationInterface {
    * @param \Symfony\Component\HttpFoundation\Request $request
    *   The request.
    *
-   * @returns string
-   *   The session cookie domain.
+   * @return string|null
+   *   The session cookie domain, or NULL if the calculated value is invalid.
    */
   protected function getCookieDomain(Request $request) {
     if (isset($this->options['cookie_domain'])) {
@@ -132,7 +140,8 @@ class SessionConfiguration implements SessionConfigurationInterface {
     // Cookies for domains without an embedded dot will be rejected by user
     // agents in order to defeat malicious websites attempting to set cookies
     // for top-level domains. Also IP addresses may not be used in the domain
-    // attribute of a Set-Cookie header.
+    // attribute of a Set-Cookie header. IPv6 addresses will not pass the first
+    // test, so it's acceptable to bias the second test to IPv4.
     if (count(explode('.', $cookie_domain)) > 2 && !is_numeric(str_replace('.', '', $cookie_domain))) {
       return $cookie_domain;
     }

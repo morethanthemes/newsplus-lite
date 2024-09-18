@@ -2,24 +2,25 @@
 
 namespace Drupal\views\Plugin\views\filter;
 
+use Drupal\Component\Render\MarkupInterface;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\views\Attribute\ViewsFilter;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\ViewExecutable;
 use Drupal\Core\Form\OptGroup;
 
 /**
- * Simple filter to handle matching of multiple options selectable via checkboxes
+ * Simple filter to handle matching of multiple options selectable via checkboxes.
  *
  * Definition items:
  * - options callback: The function to call in order to generate the value options. If omitted, the options 'Yes' and 'No' will be used.
  * - options arguments: An array of arguments to pass to the options callback.
  *
  * @ingroup views_filter_handlers
- *
- * @ViewsFilter("in_operator")
  */
-class InOperator extends FilterPluginBase {
+#[ViewsFilter("in_operator")]
+class InOperator extends FilterPluginBase implements FilterOperatorsInterface {
 
   protected $valueFormType = 'checkboxes';
 
@@ -39,7 +40,7 @@ class InOperator extends FilterPluginBase {
   /**
    * {@inheritdoc}
    */
-  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+  public function init(ViewExecutable $view, DisplayPluginBase $display, ?array &$options = NULL) {
     parent::init($view, $display, $options);
 
     $this->valueTitle = $this->t('Options');
@@ -47,6 +48,8 @@ class InOperator extends FilterPluginBase {
   }
 
   /**
+   * Gets the value options.
+   *
    * Child classes should be used to override this function and set the
    * 'value options', unless 'options callback' is defined as a valid function
    * or static public method to generate these values.
@@ -71,7 +74,7 @@ class InOperator extends FilterPluginBase {
       }
     }
     else {
-      $this->valueOptions = [t('Yes'), $this->t('No')];
+      $this->valueOptions = [$this->t('Yes'), $this->t('No')];
     }
 
     return $this->valueOptions;
@@ -104,9 +107,7 @@ class InOperator extends FilterPluginBase {
   }
 
   /**
-   * This kind of construct makes it relatively easy for a child class
-   * to add or remove functionality by overriding this function and
-   * adding/removing items from this array.
+   * {@inheritdoc}
    */
   public function operators() {
     $operators = [
@@ -125,7 +126,7 @@ class InOperator extends FilterPluginBase {
         'values' => 1,
       ],
     ];
-    // if the definition allows for the empty operator, add it.
+    // If the definition allows for the empty operator, add it.
     if (!empty($this->definition['allow empty'])) {
       $operators += [
         'empty' => [
@@ -147,7 +148,7 @@ class InOperator extends FilterPluginBase {
   }
 
   /**
-   * Build strings from the operators() for 'select' options
+   * Build strings from the operators() for 'select' options.
    */
   public function operatorOptions($which = 'title') {
     $options = [];
@@ -191,7 +192,7 @@ class InOperator extends FilterPluginBase {
       $identifier = $this->options['expose']['identifier'];
 
       if (empty($this->options['expose']['use_operator']) || empty($this->options['expose']['operator_id'])) {
-        // exposed and locked.
+        // Exposed and locked.
         $which = in_array($this->operator, $this->operatorValues(1)) ? 'value' : 'none';
       }
       else {
@@ -263,15 +264,15 @@ class InOperator extends FilterPluginBase {
     }
 
     // Because options may be an array of strings, or an array of mixed arrays
-    // and strings (optgroups) or an array of objects, we have to
-    // step through and handle each one individually.
+    // and strings (optgroups), or an array of objects, or a form of Markup, we
+    // have to step through and handle each one individually.
     $options = [];
     foreach ($input as $id => $option) {
       if (is_array($option)) {
         $options[$id] = $this->reduceValueOptions($option);
         continue;
       }
-      elseif (is_object($option)) {
+      elseif (is_object($option) && !$option instanceof MarkupInterface) {
         $keys = array_keys($option->option);
         $key = array_shift($keys);
         if (isset($this->options['value'][$key])) {
@@ -369,7 +370,7 @@ class InOperator extends FilterPluginBase {
           if ($values !== '') {
             $values .= ', ';
           }
-          if (Unicode::strlen($values) > 8) {
+          if (mb_strlen($values) > 8) {
             $values = Unicode::truncate($values, 8, FALSE, TRUE);
             break;
           }
@@ -451,7 +452,7 @@ class InOperator extends FilterPluginBase {
       }
     }
     elseif (!empty($this->value) && ($this->operator == 'in' || $this->operator == 'not in')) {
-      $errors[] = $this->t('The value @value is not an array for @operator on filter: @filter', ['@value' => var_export($this->value), '@operator' => $this->operator, '@filter' => $this->adminLabel(TRUE)]);
+      $errors[] = $this->t('The value @value is not an array for @operator on filter: @filter', ['@value' => var_export($this->value, TRUE), '@operator' => $this->operator, '@filter' => $this->adminLabel(TRUE)]);
     }
     return $errors;
   }

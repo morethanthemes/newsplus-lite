@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Unit;
 
 use Drupal\views\ViewExecutable;
@@ -15,7 +17,7 @@ class PluginTypeListTest extends UnitTestCase {
   /**
    * Tests the plugins list is correct.
    */
-  public function testPluginList() {
+  public function testPluginList(): void {
     $plugin_list = [
       'access',
       'area',
@@ -39,7 +41,7 @@ class PluginTypeListTest extends UnitTestCase {
     ];
 
     $diff = array_diff($plugin_list, ViewExecutable::getPluginTypes());
-    $this->assertTrue(empty($diff), 'The plugin list is correct');
+    $this->assertEmpty($diff);
   }
 
 }

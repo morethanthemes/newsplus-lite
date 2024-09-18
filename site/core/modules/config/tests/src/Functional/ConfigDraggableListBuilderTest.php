@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\config\Functional;
 
+use Drupal\Component\Utility\Html;
 use Drupal\Tests\BrowserTestBase;
 use Drupal\user\Entity\Role;
 
@@ -15,12 +18,17 @@ class ConfigDraggableListBuilderTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['config_test'];
+  protected static $modules = ['config_test'];
 
   /**
-   * Test draggable lists.
+   * {@inheritdoc}
    */
-  public function testDraggableList() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * Tests draggable lists.
+   */
+  public function testDraggableList(): void {
     $this->drupalLogin($this->drupalCreateUser(['administer permissions']));
 
     // Create more than 50 roles.
@@ -36,7 +44,7 @@ class ConfigDraggableListBuilderTest extends BrowserTestBase {
     $this->drupalGet('admin/people/roles');
 
     // Test for the page title.
-    $this->assertSession()->titleEquals(t('Roles') . ' | Drupal');
+    $this->assertSession()->titleEquals('Roles | Drupal');
 
     // Count the number of rows in table.
     $rows = $this->xpath('//form[@class="user-admin-roles-form"]/table/tbody/tr');
@@ -44,6 +52,23 @@ class ConfigDraggableListBuilderTest extends BrowserTestBase {
     for ($i = 0; $i < 51; $i++) {
       $this->assertSession()->pageTextContains("Role $i");
     }
+
+    $role = Role::load('role_0');
+    $role_name = 'Role <b>0</b>';
+    $role->set('label', $role_name)->save();
+
+    $this->drupalGet('admin/people/roles');
+    $this->assertSession()->responseContains('<td>' . Html::escape($role_name));
+
+    // Make sure that NULL weights do not break the list builder. Use the
+    // configuration API so that the value does not get type-casted according to
+    // the configuration schema.
+    \Drupal::configFactory()
+      ->getEditable('user.role.role_0')
+      ->set('weight', NULL)
+      ->save(TRUE);
+    $this->drupalGet('admin/people/roles');
+    $this->assertSession()->statusCodeEquals(200);
   }
 
 }

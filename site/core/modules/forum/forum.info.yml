@@ -2,18 +2,18 @@ name: Forum
 type: module
 description: 'Provides discussion forums.'
 dependencies:
-  - node
-  - history
-  - taxonomy
-  - comment
-  - options
+  - drupal:node
+  - drupal:history
+  - drupal:taxonomy
+  - drupal:comment
+  - drupal:options
 package: Core
 # version: VERSION
-# core: 8.x
 configure: forum.overview
+lifecycle: deprecated
+lifecycle_link: "https://www.drupal.org/node/3223395#s-forum"
 
-# Information added by Drupal.org packaging script on 2018-06-06
-version: '8.5.4'
-core: '8.x'
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
 project: 'drupal'
-datestamp: 1528319624
+datestamp: 1726135113

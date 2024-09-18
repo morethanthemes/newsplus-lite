@@ -3,12 +3,16 @@
 namespace Drupal\Core\Plugin;
 
 use Drupal\Component\Assertion\Inspector;
+use Drupal\Component\Plugin\Attribute\AttributeInterface;
 use Drupal\Component\Plugin\Definition\PluginDefinitionInterface;
 use Drupal\Component\Plugin\Discovery\CachedDiscoveryInterface;
+use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Cache\UseCacheBackendTrait;
 use Drupal\Component\Plugin\Discovery\DiscoveryCachedTrait;
+use Drupal\Core\Plugin\Discovery\AttributeClassDiscovery;
+use Drupal\Core\Plugin\Discovery\AttributeDiscoveryWithAnnotations;
 use Drupal\Core\Plugin\Discovery\ContainerDerivativeDiscoveryDecorator;
 use Drupal\Component\Plugin\PluginManagerBase;
 use Drupal\Component\Plugin\PluginManagerInterface;
@@ -50,8 +54,9 @@ class DefaultPluginManager extends PluginManagerBase implements PluginManagerInt
   protected $alterHook;
 
   /**
-   * The subdirectory within a namespace to look for plugins, or FALSE if the
-   * plugins are in the top level of the namespace.
+   * The subdirectory within a namespace to look for plugins.
+   *
+   * Set to FALSE if the plugins are in the top level of the namespace.
    *
    * @var string|bool
    */
@@ -65,9 +70,17 @@ class DefaultPluginManager extends PluginManagerBase implements PluginManagerInt
   protected $moduleHandler;
 
   /**
-   * A set of defaults to be referenced by $this->processDefinition() if
-   * additional processing of plugins is necessary or helpful for development
-   * purposes.
+   * The module extension list.
+   *
+   * @var \Drupal\Core\Extension\ModuleExtensionList
+   */
+  protected ?ModuleExtensionList $moduleExtensionList;
+
+  /**
+   * A set of defaults to be referenced by $this->processDefinition().
+   *
+   * Allows for additional processing of plugins when necessary or helpful for
+   * development purposes.
    *
    * @var array
    */
@@ -81,6 +94,13 @@ class DefaultPluginManager extends PluginManagerBase implements PluginManagerInt
   protected $pluginDefinitionAnnotationName;
 
   /**
+   * The name of the attribute that contains the plugin definition.
+   *
+   * @var string
+   */
+  protected $pluginDefinitionAttributeName;
+
+  /**
    * The interface each plugin should implement.
    *
    * @var string|null
@@ -88,23 +108,27 @@ class DefaultPluginManager extends PluginManagerBase implements PluginManagerInt
   protected $pluginInterface;
 
   /**
-   * An object that implements \Traversable which contains the root paths
-   * keyed by the corresponding namespace to look for plugin implementations.
+   * An object of root paths that are traversable.
+   *
+   * The root paths are keyed by the corresponding namespace to look for plugin
+   * implementations.
    *
    * @var \Traversable
    */
   protected $namespaces;
 
   /**
-   * Additional namespaces the annotation discovery mechanism should scan for
-   * annotation definitions.
+   * Additional annotation namespaces.
+   *
+   * The annotation discovery mechanism should scan these for annotation
+   * definitions.
    *
    * @var string[]
    */
   protected $additionalAnnotationNamespaces = [];
 
   /**
-   * Creates the discovery object.
+   * Constructs a new \Drupal\Core\Plugin\DefaultPluginManager object.
    *
    * @param string|bool $subdir
    *   The plugin's subdirectory, for example Plugin/views/filter.
@@ -115,19 +139,33 @@ class DefaultPluginManager extends PluginManagerBase implements PluginManagerInt
    *   The module handler.
    * @param string|null $plugin_interface
    *   (optional) The interface each plugin should implement.
-   * @param string $plugin_definition_annotation_name
+   * @param string|null $plugin_definition_attribute_name
+   *   (optional) The name of the attribute that contains the plugin definition.
+   * @param string|array|null $plugin_definition_annotation_name
    *   (optional) The name of the annotation that contains the plugin definition.
    *   Defaults to 'Drupal\Component\Annotation\Plugin'.
    * @param string[] $additional_annotation_namespaces
    *   (optional) Additional namespaces to scan for annotation definitions.
+   *
+   * @todo $plugin_definition_attribute_name should default to
+   * 'Drupal\Component\Plugin\Attribute\Plugin' once annotations are no longer
+   * supported.
    */
-  public function __construct($subdir, \Traversable $namespaces, ModuleHandlerInterface $module_handler, $plugin_interface = NULL, $plugin_definition_annotation_name = 'Drupal\Component\Annotation\Plugin', array $additional_annotation_namespaces = []) {
+  public function __construct($subdir, \Traversable $namespaces, ModuleHandlerInterface $module_handler, $plugin_interface = NULL, ?string $plugin_definition_attribute_name = NULL, string|array|null $plugin_definition_annotation_name = NULL, array $additional_annotation_namespaces = []) {
     $this->subdir = $subdir;
     $this->namespaces = $namespaces;
-    $this->pluginDefinitionAnnotationName = $plugin_definition_annotation_name;
-    $this->pluginInterface = $plugin_interface;
     $this->moduleHandler = $module_handler;
-    $this->additionalAnnotationNamespaces = $additional_annotation_namespaces;
+    $this->pluginInterface = $plugin_interface;
+    if (is_subclass_of($plugin_definition_attribute_name, AttributeInterface::class)) {
+      $this->pluginDefinitionAttributeName = $plugin_definition_attribute_name;
+      $this->pluginDefinitionAnnotationName = $plugin_definition_annotation_name;
+      $this->additionalAnnotationNamespaces = $additional_annotation_namespaces;
+    }
+    else {
+      // Backward compatibility.
+      $this->pluginDefinitionAnnotationName = $plugin_definition_attribute_name ?? 'Drupal\Component\Annotation\Plugin';
+      $this->additionalAnnotationNamespaces = $plugin_definition_annotation_name ?? [];
+    }
   }
 
   /**
@@ -160,7 +198,7 @@ class DefaultPluginManager extends PluginManagerBase implements PluginManagerInt
    *
    * @param string $alter_hook
    *   Name of the alter hook; for example, to invoke
-   *   hook_mymodule_data_alter() pass in "mymodule_data".
+   *   hook_my_module_data_alter() pass in "my_module_data".
    */
   protected function alterInfo($alter_hook) {
     $this->alterHook = $alter_hook;
@@ -190,6 +228,9 @@ class DefaultPluginManager extends PluginManagerBase implements PluginManagerInt
       else {
         $this->cacheBackend->delete($this->cacheKey);
       }
+    }
+    if ($this->discovery instanceof CachedDiscoveryInterface) {
+      $this->discovery->clearCachedDefinitions();
     }
     $this->definitions = NULL;
   }
@@ -225,6 +266,9 @@ class DefaultPluginManager extends PluginManagerBase implements PluginManagerInt
    * {@inheritdoc}
    */
   public function useCaches($use_caches = FALSE) {
+    if ($this->discovery instanceof CachedDiscoveryInterface) {
+      $this->discovery->useCaches($use_caches);
+    }
     $this->useCaches = $use_caches;
     if (!$use_caches) {
       $this->definitions = NULL;
@@ -246,6 +290,7 @@ class DefaultPluginManager extends PluginManagerBase implements PluginManagerInt
 
     // Keep class definitions standard with no leading slash.
     if ($definition instanceof PluginDefinitionInterface) {
+      assert(is_string($definition->getClass()), 'Plugin definitions must have a class');
       $definition->setClass(ltrim($definition->getClass(), '\\'));
     }
     elseif (is_array($definition) && isset($definition['class'])) {
@@ -258,7 +303,15 @@ class DefaultPluginManager extends PluginManagerBase implements PluginManagerInt
    */
   protected function getDiscovery() {
     if (!$this->discovery) {
-      $discovery = new AnnotatedClassDiscovery($this->subdir, $this->namespaces, $this->pluginDefinitionAnnotationName, $this->additionalAnnotationNamespaces);
+      if (isset($this->pluginDefinitionAttributeName) && isset($this->pluginDefinitionAnnotationName)) {
+        $discovery = new AttributeDiscoveryWithAnnotations($this->subdir, $this->namespaces, $this->pluginDefinitionAttributeName, $this->pluginDefinitionAnnotationName, $this->additionalAnnotationNamespaces);
+      }
+      elseif (isset($this->pluginDefinitionAttributeName)) {
+        $discovery = new AttributeClassDiscovery($this->subdir, $this->namespaces, $this->pluginDefinitionAttributeName);
+      }
+      else {
+        $discovery = new AnnotatedClassDiscovery($this->subdir, $this->namespaces, $this->pluginDefinitionAnnotationName, $this->additionalAnnotationNamespaces);
+      }
       $this->discovery = new ContainerDerivativeDiscoveryDecorator($discovery);
     }
     return $this->discovery;

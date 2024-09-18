@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\node\Functional;
 
 use Drupal\comment\CommentInterface;
 use Drupal\comment\Tests\CommentTestTrait;
 use Drupal\comment\Entity\Comment;
 use Drupal\Tests\BrowserTestBase;
+use Drupal\user\Entity\User;
 
 /**
  * Tests access controlled node views have the right amount of comment pages.
@@ -17,25 +20,42 @@ class NodeAccessPagerTest extends BrowserTestBase {
   use CommentTestTrait;
 
   /**
-   * Modules to enable.
+   * An user.
    *
-   * @var array
+   * @var \Drupal\user\Entity\User
    */
-  public static $modules = ['node_access_test', 'comment', 'forum'];
+  protected User $webUser;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected static $modules = ['node', 'node_access_test', 'comment'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     node_access_rebuild();
-    $this->drupalCreateContentType(['type' => 'page', 'name' => t('Basic page')]);
+    $this->drupalCreateContentType(['type' => 'page', 'name' => 'Basic page']);
     $this->addDefaultCommentField('node', 'page');
-    $this->webUser = $this->drupalCreateUser(['access content', 'access comments', 'node test view']);
+    $this->webUser = $this->drupalCreateUser([
+      'access content',
+      'access comments',
+      'node test view',
+    ]);
   }
 
   /**
    * Tests the comment pager for nodes with multiple grants per realm.
    */
-  public function testCommentPager() {
+  public function testCommentPager(): void {
     // Create a node.
     $node = $this->drupalCreateNode();
 
@@ -59,42 +79,10 @@ class NodeAccessPagerTest extends BrowserTestBase {
     // View the node page. With the default 50 comments per page there should
     // be two pages (0, 1) but no third (2) page.
     $this->drupalGet('node/' . $node->id());
-    $this->assertText($node->label());
-    $this->assertText(t('Comments'));
-    $this->assertRaw('page=1');
-    $this->assertNoRaw('page=2');
-  }
-
-  /**
-   * Tests the forum node pager for nodes with multiple grants per realm.
-   */
-  public function testForumPager() {
-    // Look up the forums vocabulary ID.
-    $vid = $this->config('forum.settings')->get('vocabulary');
-    $this->assertTrue($vid, 'Forum navigation vocabulary ID is set.');
-
-    // Look up the general discussion term.
-    $tree = \Drupal::entityManager()->getStorage('taxonomy_term')->loadTree($vid, 0, 1);
-    $tid = reset($tree)->tid;
-    $this->assertTrue($tid, 'General discussion term is found in the forum vocabulary.');
-
-    // Create 30 nodes.
-    for ($i = 0; $i < 30; $i++) {
-      $this->drupalCreateNode([
-        'nid' => NULL,
-        'type' => 'forum',
-        'taxonomy_forums' => [
-          ['target_id' => $tid],
-        ],
-      ]);
-    }
-
-    // View the general discussion forum page. With the default 25 nodes per
-    // page there should be two pages for 30 nodes, no more.
-    $this->drupalLogin($this->webUser);
-    $this->drupalGet('forum/' . $tid);
-    $this->assertRaw('page=1');
-    $this->assertNoRaw('page=2');
+    $this->assertSession()->pageTextContains($node->label());
+    $this->assertSession()->pageTextContains('Comments');
+    $this->assertSession()->responseContains('page=1');
+    $this->assertSession()->responseNotContains('page=2');
   }
 
 }

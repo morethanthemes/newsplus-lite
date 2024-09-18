@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\inline_form_errors\Functional;
 
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
@@ -19,12 +21,22 @@ class FormErrorHandlerFileUploadTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['node', 'file', 'field_ui', 'inline_form_errors'];
+  protected static $modules = [
+    'node',
+    'file',
+    'field_ui',
+    'inline_form_errors',
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     // Create a node type for testing.
@@ -44,7 +56,7 @@ class FormErrorHandlerFileUploadTest extends BrowserTestBase {
       'entity_type' => 'node',
       'bundle' => 'page',
       'required' => TRUE,
-      'settings' => ['file_extensions' => 'png gif jpg jpeg'],
+      'settings' => ['file_extensions' => 'png gif jpg jpeg webp'],
     ])->save();
 
     EntityFormDisplay::create([
@@ -79,12 +91,12 @@ class FormErrorHandlerFileUploadTest extends BrowserTestBase {
   /**
    * Tests that the required field error is displayed as inline error message.
    */
-  public function testFileUploadErrors() {
+  public function testFileUploadErrors(): void {
     $this->drupalGet('node/add/page');
     $edit = [
       'edit-title-0-value' => $this->randomString(),
     ];
-    $this->submitForm($edit, t('Save'));
+    $this->submitForm($edit, 'Save');
 
     $error_text = $this->getSession()->getPage()->find('css', '.field--name-field-ief-file .form-item--error-message')->getText();
 

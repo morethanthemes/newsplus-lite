@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\block_content\Kernel\Migrate;
 
 use Drupal\block_content\BlockContentTypeInterface;
@@ -13,26 +15,26 @@ use Drupal\Tests\migrate_drupal\Kernel\d7\MigrateDrupal7TestBase;
  */
 class MigrateBlockContentTypeTest extends MigrateDrupal7TestBase {
 
-  public static $modules = ['block', 'block_content', 'filter', 'text'];
+  protected static $modules = ['block', 'block_content', 'filter', 'text'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
-    $this->installConfig(['block_content']);
     $this->installEntitySchema('block_content');
+    $this->installConfig(['block_content']);
     $this->executeMigration('block_content_type');
   }
 
   /**
    * Tests the block content type migration.
    */
-  public function testBlockContentTypeMigration() {
+  public function testBlockContentTypeMigration(): void {
     /** @var \Drupal\block_content\BlockContentTypeInterface $entity */
     $entity = BlockContentType::load('basic');
-    $this->assertTrue($entity instanceof BlockContentTypeInterface);
-    $this->assertIdentical('Basic', $entity->label());
+    $this->assertInstanceOf(BlockContentTypeInterface::class, $entity);
+    $this->assertSame('Basic', $entity->label());
   }
 
 }

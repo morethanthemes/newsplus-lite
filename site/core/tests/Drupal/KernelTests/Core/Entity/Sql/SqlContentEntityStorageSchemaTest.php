@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Entity\Sql;
 
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -27,10 +29,10 @@ class SqlContentEntityStorageSchemaTest extends EntityKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
-    /* @var \Drupal\Core\KeyValueStore\KeyValueFactoryInterface $key_value_factory */
+    /** @var \Drupal\Core\KeyValueStore\KeyValueFactoryInterface $key_value_factory */
     $key_value_factory = $this->container->get('keyvalue');
     $this->installedStorageSchema = $key_value_factory->get('entity.storage_schema.sql');
     $this->entityDefinitionUpdateManager = $this->container->get('entity.definition_update_manager');
@@ -39,7 +41,7 @@ class SqlContentEntityStorageSchemaTest extends EntityKernelTestBase {
   /**
    * Tests updating a shared table field definition.
    */
-  public function testOnFieldStorageDefinitionUpdateShared() {
+  public function testOnFieldStorageDefinitionUpdateShared(): void {
     // Install the test entity type with an additional field. Use a multi-column
     // field so that field name and column name(s) do not match.
     $field = BaseFieldDefinition::create('shape')
@@ -101,7 +103,7 @@ class SqlContentEntityStorageSchemaTest extends EntityKernelTestBase {
     $this->assertSame($expected, $actual);
 
     // Now add an entity and repeat the process.
-    $entity_storage = $this->entityManager->getStorage('entity_test');
+    $entity_storage = $this->entityTypeManager->getStorage('entity_test');
     $entity_storage->create([
       'shape' => [
         'shape' => 'rectangle',

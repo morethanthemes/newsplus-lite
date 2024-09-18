@@ -2,12 +2,14 @@
 
 namespace Drupal\language\Plugin\LanguageNegotiation;
 
+use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\language\Attribute\LanguageNegotiation;
 use Drupal\language\LanguageNegotiationMethodBase;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * Class that determines the language to be assigned to URLs when none is
- * detected.
+ * Determines the language to be assigned to URLs when none is detected.
  *
  * The language negotiation process has a fallback chain that ends with the
  * default language negotiation method. Each built-in language type has a
@@ -26,15 +28,14 @@ use Symfony\Component\HttpFoundation\Request;
  *     requested URL having an empty prefix or domain is an anomaly that must be
  *     fixed. This is done by introducing a prefix or domain in the rendered
  *     page matching the detected interface language.
- *
- * @LanguageNegotiation(
- *   id = Drupal\language\Plugin\LanguageNegotiation\LanguageNegotiationUrlFallback::METHOD_ID,
- *   types = {Drupal\Core\Language\LanguageInterface::TYPE_URL},
- *   weight = 8,
- *   name = @Translation("URL fallback"),
- *   description = @Translation("Use an already detected language for URLs if none is found.")
- * )
  */
+#[LanguageNegotiation(
+  id: LanguageNegotiationUrlFallback::METHOD_ID,
+  name: new TranslatableMarkup('URL fallback'),
+  types: [LanguageInterface::TYPE_URL],
+  weight: 8,
+  description: new TranslatableMarkup('Use an already detected language for URLs if none is found.'),
+)]
 class LanguageNegotiationUrlFallback extends LanguageNegotiationMethodBase {
 
   /**
@@ -45,7 +46,7 @@ class LanguageNegotiationUrlFallback extends LanguageNegotiationMethodBase {
   /**
    * {@inheritdoc}
    */
-  public function getLangcode(Request $request = NULL) {
+  public function getLangcode(?Request $request = NULL) {
     $langcode = NULL;
 
     if ($this->languageManager) {

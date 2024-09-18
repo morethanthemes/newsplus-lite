@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\options\Kernel\Views;
 
 use Drupal\views\Views;
@@ -22,7 +24,7 @@ class OptionsListFilterTest extends OptionsTestBase {
   /**
    * Tests options list field filter.
    */
-  public function testViewsTestOptionsListFilter() {
+  public function testViewsTestOptionsListFilter(): void {
     $view = Views::getView('test_options_list_filter');
     $this->executeView($view);
 
@@ -38,7 +40,7 @@ class OptionsListFilterTest extends OptionsTestBase {
   /**
    * Tests options list field filter when grouped.
    */
-  public function testViewsTestOptionsListGroupedFilter() {
+  public function testViewsTestOptionsListGroupedFilter(): void {
     $view = Views::getView('test_options_list_filter');
 
     $filters = [
@@ -78,20 +80,20 @@ class OptionsListFilterTest extends OptionsTestBase {
               'operator' => 'or',
               'value' => [
                 $this->fieldValues[0] => $this->fieldValues[0],
-              ]
+              ],
             ],
             2 => [
               'title' => 'Second',
               'operator' => 'or',
               'value' => [
                 $this->fieldValues[1] => $this->fieldValues[1],
-              ]
+              ],
             ],
           ],
         ],
         'reduce_duplicates' => '',
         'plugin_id' => 'list_field',
-      ]
+      ],
     ];
     $view->setDisplay();
     $view->displayHandlers->get('default')->overrideOption('filters', $filters);

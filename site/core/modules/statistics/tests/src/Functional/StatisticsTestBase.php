@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\statistics\Functional;
 
 use Drupal\Tests\BrowserTestBase;
@@ -14,16 +16,19 @@ abstract class StatisticsTestBase extends BrowserTestBase {
    *
    * @var array
    */
-  public static $modules = ['node', 'block', 'ban', 'statistics'];
+  protected static $modules = ['node', 'block', 'ban', 'statistics'];
 
   /**
-   * User with permissions to ban IP's.
+   * User with permissions to ban IPs.
    *
    * @var \Drupal\user\UserInterface
    */
   protected $blockingUser;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     // Create Basic page node type.

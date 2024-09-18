@@ -1,8 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Unit\Controller;
 
 use Drupal\Core\Render\RenderContext;
+use Drupal\Core\Render\Renderer;
+use Drupal\Core\Utility\CallableResolver;
 use Drupal\Tests\UnitTestCase;
 use Drupal\views\Ajax\ViewAjaxResponse;
 use Drupal\views\Controller\ViewAjaxController;
@@ -24,14 +28,14 @@ class ViewAjaxControllerTest extends UnitTestCase {
   /**
    * The mocked view entity storage.
    *
-   * @var \Drupal\Core\Entity\EntityStorageInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Entity\EntityStorageInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $viewStorage;
 
   /**
    * The mocked executable factory.
    *
-   * @var \Drupal\views\ViewExecutableFactory|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\views\ViewExecutableFactory|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $executableFactory;
 
@@ -45,39 +49,42 @@ class ViewAjaxControllerTest extends UnitTestCase {
   /**
    * The mocked current path.
    *
-   * @var \Drupal\Core\Path\CurrentPathStack|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Path\CurrentPathStack|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $currentPath;
 
   /**
    * The redirect destination.
    *
-   * @var \Drupal\Core\Routing\RedirectDestinationInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Routing\RedirectDestinationInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $redirectDestination;
 
   /**
    * The renderer.
    *
-   * @var \Drupal\Core\Render\RendererInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Render\RendererInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $renderer;
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
-    $this->viewStorage = $this->getMock('Drupal\Core\Entity\EntityStorageInterface');
+  protected function setUp(): void {
+    parent::setUp();
+
+    $this->viewStorage = $this->createMock('Drupal\Core\Entity\EntityStorageInterface');
     $this->executableFactory = $this->getMockBuilder('Drupal\views\ViewExecutableFactory')
       ->disableOriginalConstructor()
       ->getMock();
-    $this->renderer = $this->getMock('\Drupal\Core\Render\RendererInterface');
+    $this->renderer = $this->createMock('\Drupal\Core\Render\RendererInterface');
     $this->renderer->expects($this->any())
-      ->method('render')
-      ->will($this->returnCallback(function (array &$elements) {
+      ->method('renderRoot')
+      ->willReturnCallback(function (array &$elements) {
         $elements['#attached'] = [];
-        return isset($elements['#markup']) ? $elements['#markup'] : '';
-      }));
+
+        return $elements['#markup'] ?? '';
+      });
     $this->renderer->expects($this->any())
       ->method('executeInRenderContext')
       ->willReturnCallback(function (RenderContext $context, callable $callable) {
@@ -86,49 +93,49 @@ class ViewAjaxControllerTest extends UnitTestCase {
     $this->currentPath = $this->getMockBuilder('Drupal\Core\Path\CurrentPathStack')
       ->disableOriginalConstructor()
       ->getMock();
-    $this->redirectDestination = $this->getMock('\Drupal\Core\Routing\RedirectDestinationInterface');
+    $this->redirectDestination = $this->createMock('\Drupal\Core\Routing\RedirectDestinationInterface');
 
     $this->viewAjaxController = new ViewAjaxController($this->viewStorage, $this->executableFactory, $this->renderer, $this->currentPath, $this->redirectDestination);
 
-    $element_info_manager = $this->getMock('\Drupal\Core\Render\ElementInfoManagerInterface');
+    $element_info_manager = $this->createMock('\Drupal\Core\Render\ElementInfoManagerInterface');
+    $element_info_manager->expects($this->any())
+      ->method('getInfo')
+      ->with('status_messages')
+      ->willReturn([]);
     $request_stack = new RequestStack();
     $request_stack->push(new Request());
-    $args = [
-      $this->getMock('\Drupal\Core\Controller\ControllerResolverInterface'),
-      $this->getMock('\Drupal\Core\Theme\ThemeManagerInterface'),
+    $this->renderer = new Renderer(
+      $this->createMock(CallableResolver::class),
+      $this->createMock('\Drupal\Core\Theme\ThemeManagerInterface'),
       $element_info_manager,
-      $this->getMock('\Drupal\Core\Render\PlaceholderGeneratorInterface'),
-      $this->getMock('\Drupal\Core\Render\RenderCacheInterface'),
+      $this->createMock('\Drupal\Core\Render\PlaceholderGeneratorInterface'),
+      $this->createMock('\Drupal\Core\Render\RenderCacheInterface'),
       $request_stack,
       [
         'required_cache_contexts' => [
           'languages:language_interface',
           'theme',
         ],
-      ],
-    ];
-    $this->renderer = $this->getMockBuilder('Drupal\Core\Render\Renderer')
-      ->setConstructorArgs($args)
-      ->setMethods(NULL)
-      ->getMock();
+      ]
+    );
     $container = new ContainerBuilder();
     $container->set('renderer', $this->renderer);
     \Drupal::setContainer($container);
   }
 
   /**
-   * Tests missing view_name and view_display_id
+   * Tests missing view_name and view_display_id.
    */
-  public function testMissingViewName() {
+  public function testMissingViewName(): void {
     $request = new Request();
-    $this->setExpectedException(NotFoundHttpException::class);
+    $this->expectException(NotFoundHttpException::class);
     $this->viewAjaxController->ajaxView($request);
   }
 
   /**
-   * Tests with view_name and view_display_id but not existing view.
+   * Tests non-existent view with view_name and view_display_id.
    */
-  public function testMissingView() {
+  public function testMissingView(): void {
     $request = new Request();
     $request->request->set('view_name', 'test_view');
     $request->request->set('view_display_id', 'page_1');
@@ -136,16 +143,16 @@ class ViewAjaxControllerTest extends UnitTestCase {
     $this->viewStorage->expects($this->once())
       ->method('load')
       ->with('test_view')
-      ->will($this->returnValue(FALSE));
+      ->willReturn(FALSE);
 
-    $this->setExpectedException(NotFoundHttpException::class);
+    $this->expectException(NotFoundHttpException::class);
     $this->viewAjaxController->ajaxView($request);
   }
 
   /**
    * Tests a view without having access to it.
    */
-  public function testAccessDeniedView() {
+  public function testAccessDeniedView(): void {
     $request = new Request();
     $request->request->set('view_name', 'test_view');
     $request->request->set('view_display_id', 'page_1');
@@ -157,44 +164,84 @@ class ViewAjaxControllerTest extends UnitTestCase {
     $this->viewStorage->expects($this->once())
       ->method('load')
       ->with('test_view')
-      ->will($this->returnValue($view));
+      ->willReturn($view);
 
     $executable = $this->getMockBuilder('Drupal\views\ViewExecutable')
       ->disableOriginalConstructor()
       ->getMock();
     $executable->expects($this->once())
       ->method('access')
-      ->will($this->returnValue(FALSE));
+      ->willReturn(FALSE);
 
     $this->executableFactory->expects($this->once())
       ->method('get')
       ->with($view)
-      ->will($this->returnValue($executable));
+      ->willReturn($executable);
 
-    $this->setExpectedException(AccessDeniedHttpException::class);
+    $this->expectException(AccessDeniedHttpException::class);
     $this->viewAjaxController->ajaxView($request);
   }
 
   /**
    * Tests a valid view without arguments pagers etc.
    */
-  public function testAjaxView() {
+  public function testAjaxView(): void {
     $request = new Request();
-    $request->request->set('view_name', 'test_view');
-    $request->request->set('view_display_id', 'page_1');
-    $request->request->set('view_path', '/test-page');
-    $request->request->set('_wrapper_format', 'ajax');
-    $request->request->set('ajax_page_state', 'drupal.settings[]');
-    $request->request->set('type', 'article');
+    $request->query->set('view_name', 'test_view');
+    $request->query->set('view_display_id', 'page_1');
+    $request->query->set('view_path', '/test-page');
+    $request->query->set('_wrapper_format', 'ajax');
+    $request->query->set('ajax_page_state', 'drupal.settings[]');
+    $request->query->set('type', 'article');
 
-    list($view, $executable) = $this->setupValidMocks();
+    [$view, $executable] = $this->setupValidMocks();
 
     $this->redirectDestination->expects($this->atLeastOnce())
       ->method('set')
       ->with('/test-page?type=article');
+    $this->currentPath->expects($this->once())
+      ->method('setPath')
+      ->with('/test-page', $request);
 
     $response = $this->viewAjaxController->ajaxView($request);
     $this->assertTrue($response instanceof ViewAjaxResponse);
+
+    $this->assertSame($response->getView(), $executable);
+
+    $this->assertViewResultCommand($response);
+
+    // Test that the ajax controller for Views contains the
+    // Drupal Settings.
+    $this->assertEquals([
+      'drupalSettings' => [
+        'testSetting' => ['Setting'],
+      ],
+    ], $response->getAttachments());
+  }
+
+  /**
+   * Tests a valid view with a view_path with no slash.
+   */
+  public function testAjaxViewViewPathNoSlash(): void {
+    $request = new Request();
+    $request->query->set('view_name', 'test_view');
+    $request->query->set('view_display_id', 'page_1');
+    $request->query->set('view_path', 'test-page');
+    $request->query->set('_wrapper_format', 'ajax');
+    $request->query->set('ajax_page_state', 'drupal.settings[]');
+    $request->query->set('type', 'article');
+
+    [$view, $executable] = $this->setupValidMocks();
+
+    $this->redirectDestination->expects($this->atLeastOnce())
+      ->method('set')
+      ->with('/test-page?type=article');
+    $this->currentPath->expects($this->once())
+      ->method('setPath')
+      ->with('/test-page');
+
+    $response = $this->viewAjaxController->ajaxView($request);
+    $this->assertInstanceOf(ViewAjaxResponse::class, $response);
 
     $this->assertSame($response->getView(), $executable);
 
@@ -204,7 +251,7 @@ class ViewAjaxControllerTest extends UnitTestCase {
   /**
    * Tests a valid view without ajax enabled.
    */
-  public function testAjaxViewWithoutAjax() {
+  public function testAjaxViewWithoutAjax(): void {
     $request = new Request();
     $request->request->set('view_name', 'test_view');
     $request->request->set('view_display_id', 'page_1');
@@ -215,26 +262,26 @@ class ViewAjaxControllerTest extends UnitTestCase {
 
     $this->setupValidMocks(static::USE_NO_AJAX);
 
-    $this->setExpectedException(AccessDeniedHttpException::class);
+    $this->expectException(AccessDeniedHttpException::class);
     $this->viewAjaxController->ajaxView($request);
   }
 
   /**
    * Tests a valid view with arguments.
    */
-  public function testAjaxViewWithArguments() {
+  public function testAjaxViewWithArguments(): void {
     $request = new Request();
     $request->request->set('view_name', 'test_view');
     $request->request->set('view_display_id', 'page_1');
     $request->request->set('view_args', 'arg1/arg2');
 
-    list($view, $executable) = $this->setupValidMocks();
+    [$view, $executable] = $this->setupValidMocks();
     $executable->expects($this->once())
       ->method('preview')
       ->with('page_1', ['arg1', 'arg2']);
 
     $response = $this->viewAjaxController->ajaxView($request);
-    $this->assertTrue($response instanceof ViewAjaxResponse);
+    $this->assertInstanceOf(ViewAjaxResponse::class, $response);
 
     $this->assertViewResultCommand($response);
   }
@@ -242,20 +289,40 @@ class ViewAjaxControllerTest extends UnitTestCase {
   /**
    * Tests a valid view with arguments.
    */
-  public function testAjaxViewWithEmptyArguments() {
+  public function testAjaxViewWithEmptyArguments(): void {
     $request = new Request();
     $request->request->set('view_name', 'test_view');
     $request->request->set('view_display_id', 'page_1');
     // Simulate a request that has a second, empty argument.
     $request->request->set('view_args', 'arg1/');
 
-    list($view, $executable) = $this->setupValidMocks();
+    [$view, $executable] = $this->setupValidMocks();
     $executable->expects($this->once())
       ->method('preview')
       ->with('page_1', $this->identicalTo(['arg1', NULL]));
 
     $response = $this->viewAjaxController->ajaxView($request);
-    $this->assertTrue($response instanceof ViewAjaxResponse);
+    $this->assertInstanceOf(ViewAjaxResponse::class, $response);
+
+    $this->assertViewResultCommand($response);
+  }
+
+  /**
+   * Tests a valid view with arguments.
+   */
+  public function testAjaxViewWithHtmlEntityArguments(): void {
+    $request = new Request();
+    $request->request->set('view_name', 'test_view');
+    $request->request->set('view_display_id', 'page_1');
+    $request->request->set('view_args', 'arg1 &amp; arg2/arg3');
+
+    [$view, $executable] = $this->setupValidMocks();
+    $executable->expects($this->once())
+      ->method('preview')
+      ->with('page_1', ['arg1 & arg2', 'arg3']);
+
+    $response = $this->viewAjaxController->ajaxView($request);
+    $this->assertInstanceOf(ViewAjaxResponse::class, $response);
 
     $this->assertViewResultCommand($response);
   }
@@ -263,7 +330,7 @@ class ViewAjaxControllerTest extends UnitTestCase {
   /**
    * Tests a valid view with a pager.
    */
-  public function testAjaxViewWithPager() {
+  public function testAjaxViewWithPager(): void {
     $request = new Request();
     $request->request->set('view_name', 'test_view');
     $request->request->set('view_display_id', 'page_1');
@@ -271,13 +338,13 @@ class ViewAjaxControllerTest extends UnitTestCase {
     $request->request->set('view_dom_id', $dom_id);
     $request->request->set('pager_element', '0');
 
-    list($view, $executable) = $this->setupValidMocks();
+    [$view, $executable] = $this->setupValidMocks();
 
     $display_handler = $this->getMockBuilder('Drupal\views\Plugin\views\display\DisplayPluginBase')
       ->disableOriginalConstructor()
       ->getMock();
     $display_handler->expects($this->once())
-      ->method('setOption', '0')
+      ->method('setOption')
       ->with($this->equalTo('pager_element'));
 
     $display_collection = $this->getMockBuilder('Drupal\views\DisplayPluginCollection')
@@ -286,14 +353,14 @@ class ViewAjaxControllerTest extends UnitTestCase {
     $display_collection->expects($this->any())
       ->method('get')
       ->with('page_1')
-      ->will($this->returnValue($display_handler));
+      ->willReturn($display_handler);
     $executable->displayHandlers = $display_collection;
 
     $response = $this->viewAjaxController->ajaxView($request);
-    $this->assertTrue($response instanceof ViewAjaxResponse);
+    $this->assertInstanceOf(ViewAjaxResponse::class, $response);
 
     $commands = $this->getCommands($response);
-    $this->assertEquals('viewsScrollTop', $commands[0]['command']);
+    $this->assertEquals('scrollTop', $commands[0]['command']);
     $this->assertEquals('.js-view-dom-id-' . $dom_id, $commands[0]['selector']);
 
     $this->assertViewResultCommand($response, 1);
@@ -317,25 +384,32 @@ class ViewAjaxControllerTest extends UnitTestCase {
     $this->viewStorage->expects($this->once())
       ->method('load')
       ->with('test_view')
-      ->will($this->returnValue($view));
+      ->willReturn($view);
 
     $executable = $this->getMockBuilder('Drupal\views\ViewExecutable')
       ->disableOriginalConstructor()
       ->getMock();
     $executable->expects($this->once())
       ->method('access')
-      ->will($this->returnValue(TRUE));
+      ->willReturn(TRUE);
     $executable->expects($this->any())
       ->method('setDisplay')
       ->willReturn(TRUE);
     $executable->expects($this->atMost(1))
       ->method('preview')
-      ->will($this->returnValue(['#markup' => 'View result']));
+      ->willReturn([
+        '#markup' => 'View result',
+        '#attached' => [
+          'drupalSettings' => [
+            'testSetting' => ['Setting'],
+          ],
+        ],
+      ]);
 
     $this->executableFactory->expects($this->once())
       ->method('get')
       ->with($view)
-      ->will($this->returnValue($executable));
+      ->willReturn($executable);
 
     $display_handler = $this->getMockBuilder('Drupal\views\Plugin\views\display\DisplayPluginBase')
       ->disableOriginalConstructor()
@@ -353,7 +427,7 @@ class ViewAjaxControllerTest extends UnitTestCase {
     $display_collection->expects($this->any())
       ->method('get')
       ->with('page_1')
-      ->will($this->returnValue($display_handler));
+      ->willReturn($display_handler);
 
     $executable->display_handler = $display_handler;
     $executable->displayHandlers = $display_collection;
@@ -372,7 +446,6 @@ class ViewAjaxControllerTest extends UnitTestCase {
    */
   protected function getCommands(ViewAjaxResponse $response) {
     $reflection_property = new \ReflectionProperty('Drupal\views\Ajax\ViewAjaxResponse', 'commands');
-    $reflection_property->setAccessible(TRUE);
     $commands = $reflection_property->getValue($response);
     return $commands;
   }
@@ -384,8 +457,10 @@ class ViewAjaxControllerTest extends UnitTestCase {
    *   The response object.
    * @param int $position
    *   The position where the view content command is expected.
+   *
+   * @internal
    */
-  protected function assertViewResultCommand(ViewAjaxResponse $response, $position = 0) {
+  protected function assertViewResultCommand(ViewAjaxResponse $response, int $position = 0): void {
     $commands = $this->getCommands($response);
     $this->assertEquals('insert', $commands[$position]['command']);
     $this->assertEquals('View result', $commands[$position]['data']);

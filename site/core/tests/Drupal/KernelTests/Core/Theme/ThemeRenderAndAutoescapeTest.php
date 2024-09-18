@@ -1,9 +1,6 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\KernelTests\Core\Theme\ThemeRenderAndAutoescapeTest.
- */
+declare(strict_types=1);
 
 namespace Drupal\KernelTests\Core\Theme;
 
@@ -19,27 +16,28 @@ use Drupal\KernelTests\KernelTestBase;
  * Tests the theme_render_and_autoescape() function.
  *
  * @group Theme
+ * @group legacy
+ * @group #slow
  */
 class ThemeRenderAndAutoescapeTest extends KernelTestBase {
 
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['system'];
+  protected static $modules = ['system'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
-
-    \Drupal::service('router.builder')->rebuild();
+    $this->expectDeprecation('theme_render_and_autoescape() is deprecated in drupal:10.1.0 and is removed from drupal:11.0.0. There is no replacement. Theme engines must handle escaping by themselves. See https://www.drupal.org/node/3336253');
   }
 
   /**
    * @dataProvider providerTestThemeRenderAndAutoescape
    */
-  public function testThemeRenderAndAutoescape($arg, $expected) {
+  public function testThemeRenderAndAutoescape($arg, $expected): void {
     if (is_array($arg) && isset($arg['#type']) && $arg['#type'] === 'link') {
       $arg = Link::createFromRoute($arg['#title'], $arg['#url']);
     }
@@ -53,18 +51,18 @@ class ThemeRenderAndAutoescapeTest extends KernelTestBase {
     $renderer = \Drupal::service('renderer');
     $output = $renderer->executeInRenderContext($context, $theme_render_and_autoescape);
     $this->assertEquals($expected, $output);
-    $this->assertInternalType('string', $output);
+    $this->assertIsString($output);
   }
 
   /**
    * Provide test examples.
    */
-  public function providerTestThemeRenderAndAutoescape() {
+  public static function providerTestThemeRenderAndAutoescape() {
     return [
       'empty string unchanged' => ['', ''],
       'simple string unchanged' => ['ab', 'ab'],
       'int (scalar) cast to string' => [111, '111'],
-      'float (scalar) cast to string' => [2.10, '2.10'],
+      'float (scalar) cast to string' => [2.10, '2.1'],
       '> is escaped' => ['>', '&gt;'],
       'Markup EM tag is unchanged' => [Markup::create('<em>hi</em>'), '<em>hi</em>'],
       'Markup SCRIPT tag is unchanged' => [Markup::create('<script>alert("hi");</script>'), '<script>alert("hi");</script>'],
@@ -73,7 +71,7 @@ class ThemeRenderAndAutoescapeTest extends KernelTestBase {
       'type markup with EM tags is rendered' => [['#markup' => '<em>hi</em>'], '<em>hi</em>'],
       'SCRIPT tag in string is escaped' => [
         '<script>alert(123)</script>',
-        Html::escape('<script>alert(123)</script>')
+        Html::escape('<script>alert(123)</script>'),
       ],
       'type plain_text render array EM tag is escaped' => [['#plain_text' => '<em>hi</em>'], Html::escape('<em>hi</em>')],
       'type hidden render array is rendered' => [['#type' => 'hidden', '#name' => 'foo', '#value' => 'bar'], "<input type=\"hidden\" name=\"foo\" value=\"bar\" />\n"],
@@ -83,15 +81,15 @@ class ThemeRenderAndAutoescapeTest extends KernelTestBase {
   /**
    * Ensures invalid content is handled correctly.
    */
-  public function testThemeEscapeAndRenderNotPrintable() {
-    $this->setExpectedException(\Exception::class);
+  public function testThemeEscapeAndRenderNotPrintable(): void {
+    $this->expectException(\Exception::class);
     theme_render_and_autoescape(new NonPrintable());
   }
 
   /**
    * Ensure cache metadata is bubbled when using theme_render_and_autoescape().
    */
-  public function testBubblingMetadata() {
+  public function testBubblingMetadata(): void {
     $link = new GeneratedLink();
     $link->setGeneratedLink('<a href="http://example.com"></a>');
     $link->addCacheTags(['foo']);
@@ -115,7 +113,7 @@ class ThemeRenderAndAutoescapeTest extends KernelTestBase {
   /**
    * Ensure cache metadata is bubbled when using theme_render_and_autoescape().
    */
-  public function testBubblingMetadataWithRenderable() {
+  public function testBubblingMetadataWithRenderable(): void {
     $link = new Link('', Url::fromRoute('<current>'));
 
     $context = new RenderContext();

@@ -1,11 +1,6 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\Component\Plugin\Factory\ReflectionFactoryTest.
- *
- * Also contains Argument* classes used as data for testing.
- */
+declare(strict_types=1);
 
 namespace Drupal\Tests\Component\Plugin\Factory;
 
@@ -30,7 +25,7 @@ class ReflectionFactoryTest extends TestCase {
    *   - $plugin_definition parameter to getInstanceArguments().
    *   - $configuration parameter to getInstanceArguments().
    */
-  public function providerGetInstanceArguments() {
+  public static function providerGetInstanceArguments() {
     return [
       [
         ['arguments_plugin_id'],
@@ -85,10 +80,10 @@ class ReflectionFactoryTest extends TestCase {
    * @covers ::createInstance
    * @dataProvider providerGetInstanceArguments
    */
-  public function testCreateInstance($expected, $reflector_name, $plugin_id, $plugin_definition, $configuration) {
+  public function testCreateInstance($expected, $reflector_name, $plugin_id, $plugin_definition, $configuration): void {
     // Create a mock DiscoveryInterface which can return our plugin definition.
     $mock_discovery = $this->getMockBuilder('Drupal\Component\Plugin\Discovery\DiscoveryInterface')
-      ->setMethods(['getDefinition', 'getDefinitions', 'hasDefinition'])
+      ->onlyMethods(['getDefinition', 'getDefinitions', 'hasDefinition'])
       ->getMock();
     $mock_discovery->expects($this->never())->method('getDefinitions');
     $mock_discovery->expects($this->never())->method('hasDefinition');
@@ -110,12 +105,11 @@ class ReflectionFactoryTest extends TestCase {
    * @covers ::getInstanceArguments
    * @dataProvider providerGetInstanceArguments
    */
-  public function testGetInstanceArguments($expected, $reflector_name, $plugin_id, $plugin_definition, $configuration) {
+  public function testGetInstanceArguments($expected, $reflector_name, $plugin_id, $plugin_definition, $configuration): void {
     $reflection_factory = $this->getMockBuilder('Drupal\Component\Plugin\Factory\ReflectionFactory')
       ->disableOriginalConstructor()
       ->getMock();
     $get_instance_arguments_ref = new \ReflectionMethod($reflection_factory, 'getInstanceArguments');
-    $get_instance_arguments_ref->setAccessible(TRUE);
 
     // Special case for plugin class without a constructor.
     // getInstanceArguments() throws an exception if there's no constructor.
@@ -123,12 +117,7 @@ class ReflectionFactoryTest extends TestCase {
     // us to use one data set for this test method as well as
     // testCreateInstance().
     if ($plugin_id == 'arguments_no_constructor') {
-      if (method_exists($this, 'expectException')) {
-        $this->expectException('\ReflectionException');
-      }
-      else {
-        $this->setExpectedException('\ReflectionException');
-      }
+      $this->expectException('\ReflectionException');
     }
 
     // Finally invoke getInstanceArguments() on our mocked factory.

@@ -84,13 +84,14 @@ class EventSubscriber implements EventSubscriberInterface {
    * Reacts to a config save and records information in state for testing.
    *
    * @param \Drupal\Core\Config\ConfigCrudEvent $event
+   *   The event.
    */
   public function onConfigSave(ConfigCrudEvent $event) {
     $config = $event->getConfig();
-    if ($config->getName() == 'action.settings') {
-      $values = $this->state->get('ConfigImportUITest.action.settings.recursion_limit', []);
-      $values[] = $config->get('recursion_limit');
-      $this->state->set('ConfigImportUITest.action.settings.recursion_limit', $values);
+    if ($config->getName() == 'automated_cron.settings') {
+      $values = $this->state->get('ConfigImportUITest.automated_cron.settings.interval', []);
+      $values[] = $config->get('interval');
+      $this->state->set('ConfigImportUITest.automated_cron.settings.interval', $values);
     }
 
     if ($config->getName() == 'core.extension') {
@@ -116,12 +117,13 @@ class EventSubscriber implements EventSubscriberInterface {
    * Reacts to a config delete and records information in state for testing.
    *
    * @param \Drupal\Core\Config\ConfigCrudEvent $event
+   *   The event.
    */
   public function onConfigDelete(ConfigCrudEvent $event) {
     $config = $event->getConfig();
-    if ($config->getName() == 'action.settings') {
-      $value = $this->state->get('ConfigImportUITest.action.settings.delete', 0);
-      $this->state->set('ConfigImportUITest.action.settings.delete', $value + 1);
+    if ($config->getName() == 'automated_cron.settings') {
+      $value = $this->state->get('ConfigImportUITest.automated_cron.settings.delete', 0);
+      $this->state->set('ConfigImportUITest.automated_cron.settings.delete', $value + 1);
     }
   }
 
@@ -131,7 +133,7 @@ class EventSubscriber implements EventSubscriberInterface {
    * @return array
    *   An array of event listener definitions.
    */
-  public static function getSubscribedEvents() {
+  public static function getSubscribedEvents(): array {
     $events[ConfigEvents::SAVE][] = ['onConfigSave', 40];
     $events[ConfigEvents::DELETE][] = ['onConfigDelete', 40];
     $events[ConfigEvents::IMPORT_VALIDATE] = ['onConfigImporterValidate'];

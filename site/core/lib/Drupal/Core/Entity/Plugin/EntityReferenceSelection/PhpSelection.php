@@ -3,7 +3,6 @@
 namespace Drupal\Core\Entity\Plugin\EntityReferenceSelection;
 
 use Drupal\Component\Utility\Html;
-use Drupal\Component\Utility\Unicode;
 
 /**
  * Defines an alternative to the default Entity Reference Selection plugin.
@@ -35,11 +34,11 @@ class PhpSelection extends DefaultSelection {
     // possible.
     // @see \Drupal\Core\Entity\EntityReferenceSelection\SelectionInterface::getReferenceableEntities()
     if (is_string($match)) {
-      $match = Html::escape(Unicode::strtolower($match));
+      $match = Html::escape(mb_strtolower($match));
     }
     elseif (is_array($match)) {
       array_walk($match, function (&$item) {
-        $item = Html::escape(Unicode::strtolower($item));
+        $item = Html::escape(mb_strtolower($item));
       });
     }
 
@@ -89,35 +88,48 @@ class PhpSelection extends DefaultSelection {
    */
   protected function matchLabel($match, $match_operator, $label) {
     // Always use a case-insensitive value.
-    $label = Unicode::strtolower($label);
+    $label = mb_strtolower($label);
 
     switch ($match_operator) {
       case '=':
         return $label == $match;
+
       case '>':
         return $label > $match;
+
       case '<':
         return $label < $match;
+
       case '>=':
         return $label >= $match;
+
       case '<=':
         return $label <= $match;
+
       case '<>':
         return $label != $match;
+
       case 'IN':
         return array_search($label, $match) !== FALSE;
+
       case 'NOT IN':
         return array_search($label, $match) === FALSE;
+
       case 'STARTS_WITH':
-        return strpos($label, $match) === 0;
+        return str_starts_with($label, $match);
+
       case 'CONTAINS':
-        return strpos($label, $match) !== FALSE;
+        return str_contains($label, $match);
+
       case 'ENDS_WITH':
-        return Unicode::substr($label, -Unicode::strlen($match)) === (string) $match;
+        return str_ends_with($label, $match);
+
       case 'IS NOT NULL':
         return TRUE;
+
       case 'IS NULL':
         return FALSE;
+
       default:
         // Invalid match operator.
         return FALSE;

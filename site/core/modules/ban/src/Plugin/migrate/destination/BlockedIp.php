@@ -4,6 +4,7 @@ namespace Drupal\ban\Plugin\migrate\destination;
 
 use Drupal\ban\BanIpManagerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\migrate\Attribute\MigrateDestination;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\Plugin\migrate\destination\DestinationBase;
 use Drupal\migrate\Row;
@@ -11,12 +12,9 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Destination for blocked IP addresses.
- *
- * @MigrateDestination(
- *   id = "blocked_ip"
- * )
  */
-class BlockedIP extends DestinationBase implements ContainerFactoryPluginInterface {
+#[MigrateDestination('blocked_ip')]
+class BlockedIp extends DestinationBase implements ContainerFactoryPluginInterface {
 
   /**
    * The IP ban manager.
@@ -26,14 +24,14 @@ class BlockedIP extends DestinationBase implements ContainerFactoryPluginInterfa
   protected $banManager;
 
   /**
-   * Constructs a BlockedIP object.
+   * Constructs a BlockedIp object.
    *
    * @param array $configuration
    *   Plugin configuration.
    * @param string $plugin_id
    *   The plugin ID.
    * @param mixed $plugin_definition
-   *   The plugin definiiton.
+   *   The plugin definition.
    * @param \Drupal\migrate\Plugin\MigrationInterface $migration
    *   The current migration.
    * @param \Drupal\ban\BanIpManagerInterface $ban_manager
@@ -47,7 +45,7 @@ class BlockedIP extends DestinationBase implements ContainerFactoryPluginInterfa
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, ?MigrationInterface $migration = NULL) {
     return new static(
       $configuration,
       $plugin_id,
@@ -67,7 +65,7 @@ class BlockedIP extends DestinationBase implements ContainerFactoryPluginInterfa
   /**
    * {@inheritdoc}
    */
-  public function fields(MigrationInterface $migration = NULL) {
+  public function fields() {
     return [
       'ip' => $this->t('The blocked IP address.'),
     ];
@@ -78,6 +76,8 @@ class BlockedIP extends DestinationBase implements ContainerFactoryPluginInterfa
    */
   public function import(Row $row, array $old_destination_id_values = []) {
     $this->banManager->banIp($row->getDestinationProperty('ip'));
+
+    return ['ip' => $row->getDestinationProperty('ip')];
   }
 
 }

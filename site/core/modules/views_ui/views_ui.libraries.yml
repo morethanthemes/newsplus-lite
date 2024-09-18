@@ -8,13 +8,14 @@ views_ui.admin:
     - core/jquery
     - core/drupal
     - core/drupalSettings
-    - core/jquery.once
-    - core/jquery.form
+    - core/once
+    - core/internal.jquery.form
     - core/drupal.form
     - core/drupal.ajax
     - core/drupal.dropbutton
     - views/views.ajax
     - views_ui/admin.styling
+    - core/drupal.dialog
 
 views_ui.listing:
   version: VERSION
@@ -23,7 +24,7 @@ views_ui.listing:
   dependencies:
     - core/jquery
     - core/drupal
-    - core/jquery.once
+    - core/once
     - views_ui/admin.styling
 
 admin.styling:

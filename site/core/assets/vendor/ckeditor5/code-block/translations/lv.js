@@ -1,0 +1,1 @@
+!function(o){const t=o.lv=o.lv||{};t.dictionary=Object.assign(t.dictionary||{},{"Code block":"Koda bloks","Insert code block":"Ievietot koda bloku","Plain text":"Vienkāršs teksts"})}(window.CKEDITOR_TRANSLATIONS||(window.CKEDITOR_TRANSLATIONS={}));

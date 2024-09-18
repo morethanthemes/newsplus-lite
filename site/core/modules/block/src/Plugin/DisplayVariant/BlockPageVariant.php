@@ -7,10 +7,12 @@ use Drupal\Core\Block\MainContentBlockPluginInterface;
 use Drupal\Core\Block\TitleBlockPluginInterface;
 use Drupal\Core\Block\MessagesBlockPluginInterface;
 use Drupal\Core\Cache\CacheableMetadata;
+use Drupal\Core\Display\Attribute\PageDisplayVariant;
 use Drupal\Core\Display\PageVariantInterface;
 use Drupal\Core\Entity\EntityViewBuilderInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Display\VariantBase;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -23,12 +25,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @see \Drupal\Core\Block\MainContentBlockPluginInterface
  * @see \Drupal\Core\Block\MessagesBlockPluginInterface
- *
- * @PageDisplayVariant(
- *   id = "block_page",
- *   admin_label = @Translation("Page with blocks")
- * )
  */
+#[PageDisplayVariant(
+  id: 'block_page',
+  admin_label: new TranslatableMarkup('Page with blocks')
+)]
 class BlockPageVariant extends VariantBase implements PageVariantInterface, ContainerFactoryPluginInterface {
 
   /**
@@ -98,8 +99,8 @@ class BlockPageVariant extends VariantBase implements PageVariantInterface, Cont
       $plugin_id,
       $plugin_definition,
       $container->get('block.repository'),
-      $container->get('entity.manager')->getViewBuilder('block'),
-      $container->get('entity.manager')->getDefinition('block')->getListCacheTags()
+      $container->get('entity_type.manager')->getViewBuilder('block'),
+      $container->get('entity_type.manager')->getDefinition('block')->getListCacheTags()
     );
   }
 
@@ -135,7 +136,7 @@ class BlockPageVariant extends VariantBase implements PageVariantInterface, Cont
     // Load all region content assigned via blocks.
     $cacheable_metadata_list = [];
     foreach ($this->blockRepository->getVisibleBlocksPerRegion($cacheable_metadata_list) as $region => $blocks) {
-      /** @var $blocks \Drupal\block\BlockInterface[] */
+      /** @var \Drupal\block\BlockInterface[] $blocks */
       foreach ($blocks as $key => $block) {
         $block_plugin = $block->getPlugin();
         if ($block_plugin instanceof MainContentBlockPluginInterface) {
@@ -177,6 +178,7 @@ class BlockPageVariant extends VariantBase implements PageVariantInterface, Cont
       $build['content']['messages'] = [
         '#weight' => -1000,
         '#type' => 'status_messages',
+        '#include_fallback' => TRUE,
       ];
     }
 

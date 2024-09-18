@@ -1,8 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\contact\Functional;
 
 use Drupal\Tests\BrowserTestBase;
+use Drupal\Tests\language\Traits\LanguageTestTrait;
 
 /**
  * Tests contact messages with language module.
@@ -15,12 +18,12 @@ use Drupal\Tests\BrowserTestBase;
  */
 class ContactLanguageTest extends BrowserTestBase {
 
+  use LanguageTestTrait;
+
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'contact',
     'language',
     'contact_test',
@@ -29,7 +32,12 @@ class ContactLanguageTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     // Create and log in administrative user.
@@ -43,22 +51,19 @@ class ContactLanguageTest extends BrowserTestBase {
   /**
    * Tests configuration options with language enabled.
    */
-  public function testContactLanguage() {
+  public function testContactLanguage(): void {
     // Ensure that contact form by default does not show the language select.
     $this->drupalGet('contact');
-    $this->assertResponse(200, 'The page exists');
-    $this->assertNoField('edit-langcode-0-value');
+    $this->assertSession()->statusCodeEquals(200);
+    $this->assertSession()->fieldNotExists('edit-langcode-0-value');
 
-    // Enable language select from content language settings page.
-    $settings_path = 'admin/config/regional/content-language';
-    $edit['entity_types[contact_message]'] = TRUE;
-    $edit['settings[contact_message][feedback][settings][language][language_alterable]'] = TRUE;
-    $this->drupalPostForm($settings_path, $edit, t('Save configuration'));
+    // Enable translations for feedback contact messages.
+    static::enableBundleTranslation('contact_message', 'feedback');
 
     // Ensure that contact form now shows the language select.
     $this->drupalGet('contact');
-    $this->assertResponse(200, 'The page exists');
-    $this->assertField('edit-langcode-0-value');
+    $this->assertSession()->statusCodeEquals(200);
+    $this->assertSession()->fieldExists('edit-langcode-0-value');
   }
 
 }

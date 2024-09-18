@@ -5,6 +5,8 @@ namespace Drupal\views\Form;
 use Drupal\Component\Utility\Html;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Form\WorkspaceSafeFormInterface;
+use Drupal\Core\Path\CurrentPathStack;
 use Drupal\Core\Render\Element\Checkboxes;
 use Drupal\Core\Url;
 use Drupal\views\ExposedFormCache;
@@ -15,7 +17,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @internal
  */
-class ViewsExposedForm extends FormBase {
+class ViewsExposedForm extends FormBase implements WorkspaceSafeFormInterface {
 
   /**
    * The exposed form cache.
@@ -24,21 +26,35 @@ class ViewsExposedForm extends FormBase {
    */
   protected $exposedFormCache;
 
+
   /**
-   * Constructs a new ViewsExposedForm
+   * The current path stack.
+   *
+   * @var \Drupal\Core\Path\CurrentPathStack
+   */
+  protected $currentPathStack;
+
+  /**
+   * Constructs a new ViewsExposedForm.
    *
    * @param \Drupal\views\ExposedFormCache $exposed_form_cache
    *   The exposed form cache.
+   * @param \Drupal\Core\Path\CurrentPathStack $current_path_stack
+   *   The current path stack.
    */
-  public function __construct(ExposedFormCache $exposed_form_cache) {
+  public function __construct(ExposedFormCache $exposed_form_cache, CurrentPathStack $current_path_stack) {
     $this->exposedFormCache = $exposed_form_cache;
+    $this->currentPathStack = $current_path_stack;
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    return new static($container->get('views.exposed_form_cache'));
+    return new static(
+      $container->get('views.exposed_form_cache'),
+      $container->get('path.current')
+    );
   }
 
   /**
@@ -52,14 +68,6 @@ class ViewsExposedForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    // Don't show the form when batch operations are in progress.
-    if ($batch = batch_get() && isset($batch['current_set'])) {
-      return [
-        // Set the theme callback to be nothing to avoid errors in template_preprocess_views_exposed_form().
-        '#theme' => '',
-      ];
-    }
-
     // Make sure that we validate because this form might be submitted
     // multiple times per page.
     $form_state->setValidationEnforced();
@@ -86,7 +94,7 @@ class ViewsExposedForm extends FormBase {
           // Grouped exposed filters have their own forms.
           // Instead of render the standard exposed form, a new Select or
           // Radio form field is rendered with the available groups.
-          // When an user choose an option the selected value is split
+          // When a user chooses an option the selected value is split
           // into the operator and value that the item represents.
           if ($handler->isAGroup()) {
             $handler->groupForm($form, $form_state);
@@ -103,7 +111,7 @@ class ViewsExposedForm extends FormBase {
     }
 
     $form['actions'] = [
-      '#type' => 'actions'
+      '#type' => 'actions',
     ];
     $form['actions']['submit'] = [
       // Prevent from showing up in \Drupal::request()->query.
@@ -113,9 +121,26 @@ class ViewsExposedForm extends FormBase {
       '#id' => Html::getUniqueId('edit-submit-' . $view->storage->id()),
     ];
 
-    $form['#action'] = $view->hasUrl() ? $view->getUrl()->toString() : Url::fromRoute('<current>')->toString();
+    if (!$view->hasUrl()) {
+      // On any non views.ajax route, use the current route for the form action.
+      if ($this->getRouteMatch()->getRouteName() !== 'views.ajax') {
+        $form_action = Url::fromRoute('<current>')->toString();
+      }
+      else {
+        // On the views.ajax route, set the action to the page we were on.
+        $form_action = Url::fromUserInput($this->currentPathStack->getPath())->toString();
+      }
+    }
+    else {
+      $form_action = $view->getUrl()->toString();
+    }
+
+    $form['#action'] = $form_action;
     $form['#theme'] = $view->buildThemeFunctions('views_exposed_form');
     $form['#id'] = Html::cleanCssIdentifier('views_exposed_form-' . $view->storage->id() . '-' . $display['id']);
+    // Labels are built too late for inline form errors to work, resulting
+    // in duplicated messages.
+    $form['#disable_inline_form_errors'] = TRUE;
 
     /** @var \Drupal\views\Plugin\views\exposed_form\ExposedFormPluginInterface $exposed_form_plugin */
     $exposed_form_plugin = $view->display_handler->getPlugin('exposed_form');
@@ -179,11 +204,11 @@ class ViewsExposedForm extends FormBase {
       if (!empty($key) && !in_array($key, $exclude)) {
         if (is_array($value)) {
           // Handle checkboxes, we only want to include the checked options.
-          // @todo: revisit the need for this when
+          // @todo revisit the need for this when
           //   https://www.drupal.org/node/342316 is resolved.
           $checked = Checkboxes::getCheckedCheckboxes($value);
           foreach ($checked as $option_id) {
-            $view->exposed_raw_input[$key][] = $value[$option_id];
+            $view->exposed_raw_input[$key][$option_id] = $value[$option_id];
           }
         }
         else {

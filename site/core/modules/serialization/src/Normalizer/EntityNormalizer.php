@@ -2,8 +2,10 @@
 
 namespace Drupal\serialization\Normalizer;
 
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\EntityTypeRepositoryInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
 
@@ -15,32 +17,31 @@ class EntityNormalizer extends ComplexDataNormalizer implements DenormalizerInte
   use FieldableEntityNormalizerTrait;
 
   /**
-   * The interface or class that this Normalizer supports.
-   *
-   * @var array
-   */
-  protected $supportedInterfaceOrClass = [EntityInterface::class];
-
-  /**
    * Constructs an EntityNormalizer object.
    *
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
+   * @param \Drupal\Core\Entity\EntityTypeRepositoryInterface $entity_type_repository
+   *   The entity type repository.
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
+   *   The entity field manager.
    */
-  public function __construct(EntityManagerInterface $entity_manager) {
-    $this->entityManager = $entity_manager;
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityTypeRepositoryInterface $entity_type_repository, EntityFieldManagerInterface $entity_field_manager) {
+    $this->entityTypeManager = $entity_type_manager;
+    $this->entityTypeRepository = $entity_type_repository;
+    $this->entityFieldManager = $entity_field_manager;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function denormalize($data, $class, $format = NULL, array $context = []) {
+  public function denormalize($data, $class, $format = NULL, array $context = []): mixed {
     $entity_type_id = $this->determineEntityTypeId($class, $context);
     $entity_type_definition = $this->getEntityTypeDefinition($entity_type_id);
 
     // The bundle property will be required to denormalize a bundleable
     // fieldable entity.
-    if ($entity_type_definition->isSubclassOf(FieldableEntityInterface::class)) {
+    if ($entity_type_definition->entityClassImplements(FieldableEntityInterface::class)) {
       // Extract bundle data to pass into entity creation if the entity type uses
       // bundles.
       if ($entity_type_definition->hasKey('bundle')) {
@@ -53,13 +54,13 @@ class EntityNormalizer extends ComplexDataNormalizer implements DenormalizerInte
       }
 
       // Create the entity from bundle data only, then apply field values after.
-      $entity = $this->entityManager->getStorage($entity_type_id)->create($create_params);
+      $entity = $this->entityTypeManager->getStorage($entity_type_id)->create($create_params);
 
       $this->denormalizeFieldData($data, $entity, $format, $context);
     }
     else {
       // Create the entity from all data.
-      $entity = $this->entityManager->getStorage($entity_type_id)->create($data);
+      $entity = $this->entityTypeManager->getStorage($entity_type_id)->create($data);
     }
 
     // Pass the names of the fields whose values can be merged.
@@ -67,6 +68,15 @@ class EntityNormalizer extends ComplexDataNormalizer implements DenormalizerInte
     $entity->_restSubmittedFields = array_keys($data);
 
     return $entity;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getSupportedTypes(?string $format): array {
+    return [
+      EntityInterface::class => TRUE,
+    ];
   }
 
 }

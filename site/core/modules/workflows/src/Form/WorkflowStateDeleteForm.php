@@ -71,7 +71,7 @@ class WorkflowStateDeleteForm extends ConfirmFormBase {
    * @return array
    *   The form structure.
    */
-  public function buildForm(array $form, FormStateInterface $form_state, WorkflowInterface $workflow = NULL, $workflow_state = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, ?WorkflowInterface $workflow = NULL, $workflow_state = NULL) {
     if (!$workflow->getTypePlugin()->hasState($workflow_state)) {
       throw new NotFoundHttpException();
     }
@@ -98,7 +98,7 @@ class WorkflowStateDeleteForm extends ConfirmFormBase {
       ->deleteState($this->stateId);
     $this->workflow->save();
 
-    drupal_set_message($this->t(
+    $this->messenger()->addStatus($this->t(
       'State %label deleted.',
       ['%label' => $workflow_label]
     ));

@@ -1,3 +1,4 @@
+{% extends "block.html.twig" %}
 {#
 /**
  * @file
@@ -11,6 +12,7 @@
  *   - label_display: The display settings for the label.
  *   - provider: The module or other provider that provided this block plugin.
  *   - Block plugin specific settings will also be stored here.
+ * - in_preview: Whether the plugin is being rendered in preview mode.
  * - content: The content of this block.
  * - attributes: array of HTML attributes populated by modules, intended to
  *   be added to the main container tag of this template.
@@ -25,29 +27,19 @@
  * @see template_preprocess_block()
  */
 #}
-{%
-  set classes = [
-    'block',
-    'block-' ~ configuration.provider|clean_class,
-    'block-' ~ plugin_id|clean_class,
-    'cover-image',
-  ]
-%}
-
-{% set background_image = file_url(content.field_banner_image.0['#item'].entity.uri.value) %}
-
-<div{{ attributes.addClass(classes) }} style="background-image: url({{ background_image }})">
-  <div class="block-inner">
-    {{ title_prefix }}
-    {% if label %}
-      <h2{{ title_attributes }}>{{ label }}</h2>
-    {% endif %}
-    {{ title_suffix }}
-    {% block content %}
-      {{ content.field_banner_image }}
-      <div class="summary">
-        {{ content|without('field_banner_image') }}
-      </div>
+{% block content %}
+  {% embed 'umami:banner' with {
+    attributes: create_attribute(),
+  } %}
+    {% block image %}
+      {{ content.field_media_image }}
     {% endblock %}
-  </div>
-</div>
+    {% block content %}
+      {% include "umami:title" with {
+        attributes: create_attribute({'class': ['banner__title']}),
+        label: content.field_title,
+      } only %}
+      {{ content|without(['field_media_image', 'field_title']) }}
+    {% endblock %}
+  {% endembed %}
+{% endblock %}

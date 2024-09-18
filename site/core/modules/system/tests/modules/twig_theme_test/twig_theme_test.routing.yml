@@ -69,3 +69,17 @@ twig_theme_test_renderable:
     _controller: '\Drupal\twig_theme_test\TwigThemeTestController::renderable'
   requirements:
     _access: 'TRUE'
+
+twig_theme_test_embed_tag:
+  path: '/twig-theme-test/embed-tag'
+  defaults:
+    _controller: '\Drupal\twig_theme_test\TwigThemeTestController::embedTagRender'
+  requirements:
+    _access: 'TRUE'
+
+twig_theme_test_dump:
+  path: '/twig-theme-test/dump'
+  defaults:
+    _controller: '\Drupal\twig_theme_test\TwigThemeTestController::dump'
+  requirements:
+    _access: 'TRUE'

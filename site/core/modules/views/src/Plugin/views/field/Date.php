@@ -2,8 +2,11 @@
 
 namespace Drupal\views\Plugin\views\field;
 
+use Drupal\Core\Datetime\TimeZoneFormHelper;
+use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\views\Attribute\ViewsField;
 use Drupal\views\ResultRow;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Datetime\DateFormatterInterface;
@@ -12,9 +15,8 @@ use Drupal\Core\Datetime\DateFormatterInterface;
  * A handler to provide proper displays for dates.
  *
  * @ingroup views_field_handlers
- *
- * @ViewsField("date")
  */
+#[ViewsField("date")]
 class Date extends FieldPluginBase {
 
   /**
@@ -44,12 +46,25 @@ class Date extends FieldPluginBase {
    *   The date formatter service.
    * @param \Drupal\Core\Entity\EntityStorageInterface $date_format_storage
    *   The date format storage.
+   * @param \Drupal\Component\Datetime\TimeInterface|null $time
+   *   The time service.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, DateFormatterInterface $date_formatter, EntityStorageInterface $date_format_storage) {
+  public function __construct(
+    array $configuration,
+    $plugin_id,
+    $plugin_definition,
+    DateFormatterInterface $date_formatter,
+    EntityStorageInterface $date_format_storage,
+    protected ?TimeInterface $time = NULL,
+  ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
     $this->dateFormatter = $date_formatter;
     $this->dateFormatStorage = $date_format_storage;
+    if (!$time) {
+      @trigger_error('Calling ' . __METHOD__ . ' without the $time argument is deprecated in drupal:10.3.0 and it will be required in drupal:11.0.0. See https://www.drupal.org/node/3395991', E_USER_DEPRECATED);
+      $this->time = \Drupal::service('datetime.time');
+    }
   }
 
   /**
@@ -61,7 +76,8 @@ class Date extends FieldPluginBase {
       $plugin_id,
       $plugin_definition,
       $container->get('date.formatter'),
-      $container->get('entity.manager')->getStorage('date_format')
+      $container->get('entity_type.manager')->getStorage('date_format'),
+      $container->get('datetime.time'),
     );
   }
 
@@ -85,7 +101,7 @@ class Date extends FieldPluginBase {
 
     $date_formats = [];
     foreach ($this->dateFormatStorage->loadMultiple() as $machine_name => $value) {
-      $date_formats[$machine_name] = $this->t('@name format: @date', ['@name' => $value->label(), '@date' => $this->dateFormatter->format(REQUEST_TIME, $machine_name)]);
+      $date_formats[$machine_name] = $this->t('@name format: @date', ['@name' => $value->label(), '@date' => $this->dateFormatter->format($this->time->getRequestTime(), $machine_name)]);
     }
 
     $form['date_format'] = [
@@ -101,13 +117,13 @@ class Date extends FieldPluginBase {
         'inverse time span' => $this->t('Time span (past dates have "-" prepended)'),
         'time span' => $this->t('Time span (with "ago/hence" appended)'),
       ],
-      '#default_value' => isset($this->options['date_format']) ? $this->options['date_format'] : 'small',
+      '#default_value' => $this->options['date_format'] ?? 'small',
     ];
     $form['custom_date_format'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Custom date format'),
-      '#description' => $this->t('If "Custom", see <a href="http://us.php.net/manual/en/function.date.php" target="_blank">the PHP docs</a> for date formats. Otherwise, enter the number of different time units to display, which defaults to 2.'),
-      '#default_value' => isset($this->options['custom_date_format']) ? $this->options['custom_date_format'] : '',
+      '#description' => $this->t('If "Custom", see <a href="https://www.php.net/manual/datetime.format.php#refsect1-datetime.format-parameters" target="_blank">the PHP docs</a> for date formats. Otherwise, enter the number of different time units to display, which defaults to 2.'),
+      '#default_value' => $this->options['custom_date_format'] ?? '',
     ];
     // Setup #states for all possible date_formats on the custom_date_format form element.
     foreach (['custom', 'raw time ago', 'time ago', 'raw time hence', 'time hence', 'raw time span', 'time span', 'raw time span', 'inverse time span', 'time span'] as $custom_date_possible) {
@@ -119,7 +135,7 @@ class Date extends FieldPluginBase {
       '#type' => 'select',
       '#title' => $this->t('Timezone'),
       '#description' => $this->t('Timezone to be used for date output.'),
-      '#options' => ['' => $this->t('- Default site/user timezone -')] + system_time_zones(FALSE, TRUE),
+      '#options' => ['' => $this->t('- Default site/user timezone -')] + TimeZoneFormHelper::getOptionsListByRegion(),
       '#default_value' => $this->options['timezone'],
     ];
     foreach (array_merge(['custom'], array_keys($date_formats)) as $timezone_date_formats) {
@@ -145,7 +161,7 @@ class Date extends FieldPluginBase {
       $timezone = !empty($this->options['timezone']) ? $this->options['timezone'] : NULL;
       // Will be positive for a datetime in the past (ago), and negative for a
       // datetime in the future (hence).
-      $time_diff = REQUEST_TIME - $value;
+      $time_diff = $this->time->getRequestTime() - $value;
       switch ($format) {
         case 'raw time ago':
           return $this->dateFormatter->formatTimeDiffSince($value, ['granularity' => is_numeric($custom_format) ? $custom_format : 2]);
@@ -171,12 +187,12 @@ class Date extends FieldPluginBase {
 
         case 'custom':
           if ($custom_format == 'r') {
-            return format_date($value, $format, $custom_format, $timezone, 'en');
+            return $this->dateFormatter->format($value, $format, $custom_format, $timezone, 'en');
           }
-          return format_date($value, $format, $custom_format, $timezone);
+          return $this->dateFormatter->format($value, $format, $custom_format, $timezone);
 
         default:
-          return format_date($value, $format, '', $timezone);
+          return $this->dateFormatter->format($value, $format, '', $timezone);
       }
     }
   }

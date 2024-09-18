@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Component\Utility;
 
 use Drupal\Component\Utility\Environment;
@@ -30,7 +32,7 @@ class EnvironmentTest extends TestCase {
    *   The expected return value from
    *   \Drupal\Component\Utility\Environment::checkMemoryLimit().
    */
-  public function testCheckMemoryLimit($required, $custom_memory_limit, $expected) {
+  public function testCheckMemoryLimit($required, $custom_memory_limit, $expected): void {
     $actual = Environment::checkMemoryLimit($required, $custom_memory_limit);
     $this->assertEquals($expected, $actual);
   }
@@ -43,15 +45,12 @@ class EnvironmentTest extends TestCase {
    *   \Drupal\Component\Utility\Environment::checkMemoryLimit():
    *   required and memory_limit, and the expected return value.
    */
-  public function providerTestCheckMemoryLimit() {
-    $memory_limit = ini_get('memory_limit');
-    $twice_avail_memory = ($memory_limit * 2) . 'MB';
-
+  public static function providerTestCheckMemoryLimit() {
     return [
       // Minimal amount of memory should be available.
       ['30MB', NULL, TRUE],
-      // Exceed a custom (unlimited) memory limit.
-      [$twice_avail_memory, -1, TRUE],
+      // Test an unlimited memory limit.
+      ['9999999999YB', -1, TRUE],
       // Exceed a custom memory limit.
       ['30MB', '16MB', FALSE],
       // Available = required.

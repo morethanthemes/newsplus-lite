@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Listeners;
 
 /**
@@ -15,6 +17,15 @@ trait HtmlOutputPrinterTrait {
    * @var string
    */
   protected $browserOutputFile;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct($out = NULL, $verbose = FALSE, $colors = self::COLOR_DEFAULT, $debug = FALSE, $numberOfColumns = 80, $reverse = FALSE) {
+    parent::__construct($out, $verbose, $colors, $debug, $numberOfColumns, $reverse);
+
+    $this->setUpHtmlOutput();
+  }
 
   /**
    * Creates the file to list the HTML output created during the test.

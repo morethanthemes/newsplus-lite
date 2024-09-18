@@ -1,13 +1,11 @@
 name: 'Locale Test Development Release'
 type: module
-description: 'Helper module to test the behaviour when the core verison is a development release.'
+description: 'Helper module to test the behavior when the core version is a development release.'
 package: Testing
 # version: VERSION
-# core: 8.x
 hidden: true
 
-# Information added by Drupal.org packaging script on 2018-06-06
-version: '8.5.4'
-core: '8.x'
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
 project: 'drupal'
-datestamp: 1528319624
+datestamp: 1726135113

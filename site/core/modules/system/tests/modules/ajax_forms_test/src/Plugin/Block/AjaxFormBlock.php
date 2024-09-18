@@ -2,22 +2,24 @@
 
 namespace Drupal\ajax_forms_test\Plugin\Block;
 
+use Drupal\Core\Block\Attribute\Block;
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Form\FormBuilderInterface;
 use Drupal\Core\Form\FormInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides an AJAX form block.
- *
- * @Block(
- *   id = "ajax_forms_test_block",
- *   admin_label = @Translation("AJAX test form"),
- *   category = @Translation("Forms")
- * )
  */
+#[Block(
+  id: "ajax_forms_test_block",
+  admin_label: new TranslatableMarkup("AJAX test form"),
+  category: new TranslatableMarkup("Forms")
+)]
 class AjaxFormBlock extends BlockBase implements FormInterface, ContainerFactoryPluginInterface {
 
   /**
@@ -26,6 +28,13 @@ class AjaxFormBlock extends BlockBase implements FormInterface, ContainerFactory
    * @var \Drupal\Core\Form\FormBuilderInterface
    */
   protected $formBuilder;
+
+  /**
+   * The messenger.
+   *
+   * @var \Drupal\Core\Messenger\MessengerInterface
+   */
+  protected $messenger;
 
   /**
    * Constructs a new AjaxFormBlock.
@@ -38,10 +47,13 @@ class AjaxFormBlock extends BlockBase implements FormInterface, ContainerFactory
    *   The plugin implementation definition.
    * @param \Drupal\Core\Form\FormBuilderInterface $form_builder
    *   The form builder.
+   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
+   *   The messenger.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, FormBuilderInterface $form_builder) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, FormBuilderInterface $form_builder, MessengerInterface $messenger) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->formBuilder = $form_builder;
+    $this->messenger = $messenger;
   }
 
   /**
@@ -52,7 +64,8 @@ class AjaxFormBlock extends BlockBase implements FormInterface, ContainerFactory
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('form_builder')
+      $container->get('form_builder'),
+      $container->get('messenger')
     );
   }
 
@@ -129,7 +142,7 @@ class AjaxFormBlock extends BlockBase implements FormInterface, ContainerFactory
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    drupal_set_message('Submission successful.');
+    $this->messenger->addStatus('Submission successful.');
   }
 
 }

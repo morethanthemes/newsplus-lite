@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Config;
 
 use Drupal\KernelTests\KernelTestBase;
@@ -12,23 +14,21 @@ use Drupal\KernelTests\KernelTestBase;
 class ConfigDiffTest extends KernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['config_test', 'system'];
+  protected static $modules = ['config_test', 'system'];
 
   /**
    * Tests calculating the difference between two sets of configuration.
    */
-  public function testDiff() {
+  public function testDiff(): void {
     $active = $this->container->get('config.storage');
     $sync = $this->container->get('config.storage.sync');
     $config_name = 'config_test.system';
     $change_key = 'foo';
     $remove_key = '404';
     $add_key = 'biff';
-    $add_data = 'bangpow';
+    $add_data = 'bangPow';
     $change_data = 'foobar';
 
     // Install the default config.
@@ -86,8 +86,8 @@ class ConfigDiffTest extends KernelTestBase {
     $diff = \Drupal::service('config.manager')->diff($active, $sync, $config_name, $config_name);
     // Prove the fields match.
     $edits = $diff->getEdits();
-    $this->assertEqual($edits[0]->type, 'copy', 'The first item in the diff is a copy.');
-    $this->assertEqual(count($edits), 1, 'There is one item in the diff');
+    $this->assertEquals('copy', $edits[0]->type, 'The first item in the diff is a copy.');
+    $this->assertCount(1, $edits, 'There is one item in the diff');
 
     // Rename the entity.
     $new_test_entity_id = $this->randomMachineName();
@@ -101,14 +101,14 @@ class ConfigDiffTest extends KernelTestBase {
       ['id: ' . $new_test_entity_id],
       ['id: ' . $test_entity_id]);
     $this->assertYamlEdit($edits, 'label', 'copy');
-    $this->assertEqual($edits[2]->type, 'copy', 'The third item in the diff is a copy.');
-    $this->assertEqual(count($edits), 3, 'There are three items in the diff.');
+    $this->assertEquals('copy', $edits[2]->type, 'The third item in the diff is a copy.');
+    $this->assertCount(3, $edits, 'There are three items in the diff.');
   }
 
   /**
    * Tests calculating the difference between two sets of config collections.
    */
-  public function testCollectionDiff() {
+  public function testCollectionDiff(): void {
     /** @var \Drupal\Core\Config\StorageInterface $active */
     $active = $this->container->get('config.storage');
     /** @var \Drupal\Core\Config\StorageInterface $sync */
@@ -127,8 +127,8 @@ class ConfigDiffTest extends KernelTestBase {
     // Test the fields match in the default collection diff.
     $diff = \Drupal::service('config.manager')->diff($active, $sync, $config_name);
     $edits = $diff->getEdits();
-    $this->assertEqual($edits[0]->type, 'copy', 'The first item in the diff is a copy.');
-    $this->assertEqual(count($edits), 1, 'There is one item in the diff');
+    $this->assertEquals('copy', $edits[0]->type, 'The first item in the diff is a copy.');
+    $this->assertCount(1, $edits, 'There is one item in the diff');
 
     // Test that the differences are detected when diffing the collection.
     $diff = \Drupal::service('config.manager')->diff($active, $sync, $config_name, NULL, 'test');
@@ -137,7 +137,7 @@ class ConfigDiffTest extends KernelTestBase {
   }
 
   /**
-   * Helper method to test that an edit is found in a diff'd YAML file.
+   * Helper method to test that an edit is found in the diff of two storages.
    *
    * @param array $edits
    *   A list of edits.
@@ -146,13 +146,15 @@ class ConfigDiffTest extends KernelTestBase {
    * @param string $type
    *   The type of edit that is being asserted.
    * @param mixed $orig
-   *   (optional) The original value of of the edit. If not supplied, assertion
+   *   (optional) The original value of the edit. If not supplied, assertion
    *   is skipped.
    * @param mixed $closing
-   *   (optional) The closing value of of the edit. If not supplied, assertion
+   *   (optional) The closing value of the edit. If not supplied, assertion
    *   is skipped.
+   *
+   * @internal
    */
-  protected function assertYamlEdit(array $edits, $field, $type, $orig = NULL, $closing = NULL) {
+  protected function assertYamlEdit(array $edits, string $field, string $type, $orig = NULL, $closing = NULL): void {
     $match = FALSE;
     foreach ($edits as $edit) {
       // Choose which section to search for the field.
@@ -160,17 +162,17 @@ class ConfigDiffTest extends KernelTestBase {
       // Look through each line and try and find the key.
       if (is_array($haystack)) {
         foreach ($haystack as $item) {
-          if (strpos($item, $field . ':') === 0) {
+          if (str_starts_with($item, $field . ':')) {
             $match = TRUE;
             // Assert that the edit is of the type specified.
-            $this->assertEqual($edit->type, $type, "The $field item in the diff is a $type");
+            $this->assertEquals($type, $edit->type, "The {$field} item in the diff is a {$type}");
             // If an original value was given, assert that it matches.
             if (isset($orig)) {
-              $this->assertIdentical($edit->orig, $orig, "The original value for key '$field' is correct.");
+              $this->assertSame($orig, $edit->orig, "The original value for key '{$field}' is correct.");
             }
             // If a closing value was given, assert that it matches.
             if (isset($closing)) {
-              $this->assertIdentical($edit->closing, $closing, "The closing value for key '$field' is correct.");
+              $this->assertSame($closing, $edit->closing, "The closing value for key '{$field}' is correct.");
             }
             // Break out of the search entirely.
             break 2;

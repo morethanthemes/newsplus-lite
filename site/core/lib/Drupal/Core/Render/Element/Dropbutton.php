@@ -2,6 +2,8 @@
 
 namespace Drupal\Core\Render\Element;
 
+use Drupal\Core\Render\Attribute\RenderElement;
+
 /**
  * Provides a render element for a set of links rendered as a drop-down button.
  *
@@ -17,35 +19,37 @@ namespace Drupal\Core\Render\Element;
  * Properties:
  * - #links: An array of links to actions. See template_preprocess_links() for
  *   documentation the properties of links in this array.
+ * - #dropbutton_type: A string defining a type of dropbutton variant for
+ *   styling proposes. Renders as class `dropbutton--#dropbutton_type`.
  *
  * Usage Example:
  * @code
- * $form['actions']['extra_actions'] = array(
+ * $form['actions']['extra_actions'] = [
  *   '#type' => 'dropbutton',
- *   '#links' => array(
- *     'simple_form' => array(
+ *   '#dropbutton_type' => 'small',
+ *   '#links' => [
+ *     'simple_form' => [
  *       'title' => $this->t('Simple Form'),
  *       'url' => Url::fromRoute('fapi_example.simple_form'),
- *     ),
- *     'demo' => array(
+ *     ],
+ *     'demo' => [
  *       'title' => $this->t('Build Demo'),
  *       'url' => Url::fromRoute('fapi_example.build_demo'),
- *     ),
- *   ),
- * );
+ *     ],
+ *   ],
+ * ];
  * @endcode
  *
  * @see \Drupal\Core\Render\Element\Operations
- *
- * @RenderElement("dropbutton")
  */
-class Dropbutton extends RenderElement {
+#[RenderElement('dropbutton')]
+class Dropbutton extends RenderElementBase {
 
   /**
    * {@inheritdoc}
    */
   public function getInfo() {
-    $class = get_class($this);
+    $class = static::class;
     return [
       '#pre_render' => [
         [$class, 'preRenderDropbutton'],
@@ -60,6 +64,11 @@ class Dropbutton extends RenderElement {
   public static function preRenderDropbutton($element) {
     $element['#attached']['library'][] = 'core/drupal.dropbutton';
     $element['#attributes']['class'][] = 'dropbutton';
+
+    if (!empty($element['#dropbutton_type'])) {
+      $element['#attributes']['class'][] = 'dropbutton--' . $element['#dropbutton_type'];
+    }
+
     if (!isset($element['#theme_wrappers'])) {
       $element['#theme_wrappers'] = [];
     }

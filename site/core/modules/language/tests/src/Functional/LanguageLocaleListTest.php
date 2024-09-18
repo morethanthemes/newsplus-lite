@@ -1,8 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\language\Functional;
 
+use Drupal\Core\Url;
+use Drupal\locale\StringStorageInterface;
 use Drupal\Tests\BrowserTestBase;
+
+// cspell:ignore espagnol
 
 /**
  * Adds a new language with translations and tests language list order.
@@ -12,16 +18,24 @@ use Drupal\Tests\BrowserTestBase;
 class LanguageLocaleListTest extends BrowserTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['language', 'locale'];
+  protected static $modules = ['language', 'locale'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * @var \Drupal\locale\StringStorageInterface
+   */
+  protected StringStorageInterface $storage;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
     // Add a default locale storage for all these tests.
     $this->storage = $this->container->get('locale.storage');
@@ -30,18 +44,22 @@ class LanguageLocaleListTest extends BrowserTestBase {
   /**
    * Tests adding, editing, and deleting languages.
    */
-  public function testLanguageLocaleList() {
+  public function testLanguageLocaleList(): void {
     // User to add and remove language.
-    $admin_user = $this->drupalCreateUser(['administer languages', 'access administration pages']);
+    $admin_user = $this->drupalCreateUser([
+      'administer languages',
+      'access administration pages',
+    ]);
     $this->drupalLogin($admin_user);
 
     // Add predefined language.
     $edit = [
       'predefined_langcode' => 'fr',
     ];
-    $this->drupalPostForm('admin/config/regional/language/add', $edit, t('Add language'));
-    $this->assertText('The language French has been created and can now be used');
-    $this->assertUrl(\Drupal::url('entity.configurable_language.collection', [], ['absolute' => TRUE]));
+    $this->drupalGet('admin/config/regional/language/add');
+    $this->submitForm($edit, 'Add language');
+    $this->assertSession()->statusMessageContains('The language French has been created and can now be used', 'status');
+    $this->assertSession()->addressEquals(Url::fromRoute('entity.configurable_language.collection'));
     $this->rebuildContainer();
 
     // Translate Spanish language to French (Espagnol).
@@ -57,11 +75,10 @@ class LanguageLocaleListTest extends BrowserTestBase {
 
     // Get language list displayed in select list.
     $this->drupalGet('fr/admin/config/regional/language/add');
-    $option_elements = $this->xpath('//select[@id="edit-predefined-langcode/option"]');
-    $options = [];
-    foreach ($option_elements as $option_element) {
-      $options[] = $option_element->getText();
-    }
+    $options = $this->assertSession()->selectExists('edit-predefined-langcode')->findAll('css', 'option');
+    $options = array_map(function ($item) {
+      return $item->getText();
+    }, $options);
     // Remove the 'Custom language...' option form the end.
     array_pop($options);
     // Order language list.
@@ -69,7 +86,7 @@ class LanguageLocaleListTest extends BrowserTestBase {
     natcasesort($options_ordered);
 
     // Check the language list displayed is ordered.
-    $this->assertTrue($options === $options_ordered, 'Language list is ordered.');
+    $this->assertSame($options, $options_ordered, 'Language list is ordered.');
   }
 
 }

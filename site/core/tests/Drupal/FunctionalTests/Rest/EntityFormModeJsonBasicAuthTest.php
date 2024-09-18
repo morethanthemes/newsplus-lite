@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Rest;
 
 use Drupal\Tests\rest\Functional\BasicAuthResourceTestTrait;
@@ -14,7 +16,7 @@ class EntityFormModeJsonBasicAuthTest extends EntityFormModeResourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['basic_auth'];
+  protected static $modules = ['basic_auth'];
 
   /**
    * {@inheritdoc}
@@ -25,6 +27,11 @@ class EntityFormModeJsonBasicAuthTest extends EntityFormModeResourceTestBase {
    * {@inheritdoc}
    */
   protected static $mimeType = 'application/json';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}

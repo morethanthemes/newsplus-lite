@@ -3,6 +3,7 @@
 namespace Drupal\Core\Render\Element;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Attribute\FormElement;
 
 /**
  * Provides a form element for double-input of passwords.
@@ -15,24 +16,23 @@ use Drupal\Core\Form\FormStateInterface;
  *
  * Usage example:
  * @code
- * $form['pass'] = array(
+ * $form['pass'] = [
  *   '#type' => 'password_confirm',
  *   '#title' => $this->t('Password'),
  *   '#size' => 25,
- * );
+ * ];
  * @endcode
  *
  * @see \Drupal\Core\Render\Element\Password
- *
- * @FormElement("password_confirm")
  */
-class PasswordConfirm extends FormElement {
+#[FormElement('password_confirm')]
+class PasswordConfirm extends FormElementBase {
 
   /**
    * {@inheritdoc}
    */
   public function getInfo() {
-    $class = get_class($this);
+    $class = static::class;
     return [
       '#input' => TRUE,
       '#markup' => '',
@@ -73,7 +73,10 @@ class PasswordConfirm extends FormElement {
       '#title' => t('Password'),
       '#value' => empty($element['#value']) ? NULL : $element['#value']['pass1'],
       '#required' => $element['#required'],
-      '#attributes' => ['class' => ['password-field', 'js-password-field']],
+      '#attributes' => [
+        'class' => ['password-field', 'js-password-field'],
+        'autocomplete' => ['new-password'],
+      ],
       '#error_no_message' => TRUE,
     ];
     $element['pass2'] = [
@@ -81,10 +84,13 @@ class PasswordConfirm extends FormElement {
       '#title' => t('Confirm password'),
       '#value' => empty($element['#value']) ? NULL : $element['#value']['pass2'],
       '#required' => $element['#required'],
-      '#attributes' => ['class' => ['password-confirm', 'js-password-confirm']],
+      '#attributes' => [
+        'class' => ['password-confirm', 'js-password-confirm'],
+        'autocomplete' => ['new-password'],
+      ],
       '#error_no_message' => TRUE,
     ];
-    $element['#element_validate'] = [[get_called_class(), 'validatePasswordConfirm']];
+    $element['#element_validate'] = [[static::class, 'validatePasswordConfirm']];
     $element['#tree'] = TRUE;
 
     if (isset($element['#size'])) {

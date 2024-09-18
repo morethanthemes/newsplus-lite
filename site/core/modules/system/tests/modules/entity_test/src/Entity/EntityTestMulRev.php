@@ -10,7 +10,7 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *
  * @ContentEntityType(
  *   id = "entity_test_mulrev",
- *   label = @Translation("Test entity - revisions and data table"),
+ *   label = @Translation("Test entity - mul revisions and data table"),
  *   handlers = {
  *     "view_builder" = "Drupal\entity_test\EntityTestViewBuilder",
  *     "access" = "Drupal\entity_test\EntityTestAccessControlHandler",
@@ -18,7 +18,6 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *       "default" = "Drupal\entity_test\EntityTestForm",
  *       "delete" = "Drupal\entity_test\EntityTestDeleteForm"
  *     },
- *     "translation" = "Drupal\content_translation\ContentTranslationHandler",
  *     "views_data" = "Drupal\views\EntityViewsData",
  *     "route_provider" = {
  *       "html" = "Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider",
@@ -54,7 +53,7 @@ class EntityTestMulRev extends EntityTestRev {
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
-    $fields = parent::baseFieldDefinitions($entity_type) + \Drupal::state()->get($entity_type->id() . '.additional_base_field_definitions', []);
+    $fields = parent::baseFieldDefinitions($entity_type);
 
     $fields['non_mul_field'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Non translatable'))

@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\content_translation\Functional;
 
 use Drupal\field\Entity\FieldConfig;
-use Drupal\language\Entity\ConfigurableLanguage;
 use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Tests\BrowserTestBase;
+use Drupal\Tests\content_translation\Traits\ContentTranslationTestTrait;
 
 /**
  * Tests that contextual links are available for content translation.
@@ -14,12 +16,19 @@ use Drupal\Tests\BrowserTestBase;
  */
 class ContentTranslationContextualLinksTest extends BrowserTestBase {
 
+  use ContentTranslationTestTrait;
+
   /**
    * The bundle being tested.
    *
    * @var string
    */
   protected $bundle;
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * The content type being tested.
@@ -43,11 +52,9 @@ class ContentTranslationContextualLinksTest extends BrowserTestBase {
   protected $langcodes;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['content_translation', 'contextual', 'node'];
+  protected static $modules = ['content_translation', 'contextual', 'node'];
 
   /**
    * The profile to install as a basis for testing.
@@ -56,11 +63,14 @@ class ContentTranslationContextualLinksTest extends BrowserTestBase {
    */
   protected $profile = 'testing';
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
     // Set up an additional language.
     $this->langcodes = [\Drupal::languageManager()->getDefaultLanguage()->getId(), 'es'];
-    ConfigurableLanguage::createFromLangcode('es')->save();
+    static::createLanguageFromLangcode('es');
 
     // Create a content type.
     $this->bundle = $this->randomMachineName();
@@ -79,7 +89,8 @@ class ContentTranslationContextualLinksTest extends BrowserTestBase {
       'bundle' => $this->bundle,
       'label' => 'Test text-field',
     ])->save();
-    entity_get_form_display('node', $this->bundle, 'default')
+    $this->container->get('entity_display.repository')
+      ->getFormDisplay('node', $this->bundle)
       ->setComponent('field_test_text', [
         'type' => 'text_textfield',
         'weight' => 0,
@@ -99,29 +110,19 @@ class ContentTranslationContextualLinksTest extends BrowserTestBase {
   /**
    * Tests that a contextual link is available for translating a node.
    */
-  public function testContentTranslationContextualLinks() {
+  public function testContentTranslationContextualLinks(): void {
     // Create a node.
     $title = $this->randomString();
     $this->drupalCreateNode(['type' => $this->bundle, 'title' => $title, 'langcode' => 'en']);
     $node = $this->drupalGetNodeByTitle($title);
 
-    // Use a UI form submission to make the node type and field translatable.
-    // This tests that caches are properly invalidated.
-    $this->drupalLogin($this->rootUser);
-    $edit = [
-      'entity_types[node]' => TRUE,
-      'settings[node][' . $this->bundle . '][settings][language][language_alterable]' => TRUE,
-      'settings[node][' . $this->bundle . '][translatable]' => TRUE,
-      'settings[node][' . $this->bundle . '][fields][field_test_text]' => TRUE,
-    ];
-    $this->drupalPostForm('admin/config/regional/content-language', $edit, t('Save configuration'));
-    $this->drupalLogout();
+    static::enableContentTranslation('node', $this->bundle);
 
     // Check that the link leads to the translate page.
     $this->drupalLogin($this->translator);
     $translate_link = 'node/' . $node->id() . '/translations';
     $this->drupalGet($translate_link);
-    $this->assertRaw(t('Translations of %label', ['%label' => $node->label()]), 'The contextual link leads to the translate page.');
+    $this->assertSession()->pageTextContains('Translations of ' . $node->label());
   }
 
 }

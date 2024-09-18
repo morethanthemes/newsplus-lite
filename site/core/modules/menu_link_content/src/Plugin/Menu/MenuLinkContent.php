@@ -3,10 +3,12 @@
 namespace Drupal\menu_link_content\Plugin\Menu;
 
 use Drupal\Component\Plugin\Exception\PluginException;
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityRepositoryInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\Core\Menu\MenuLinkBase;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\menu_link_content\MenuLinkContentInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -48,11 +50,25 @@ class MenuLinkContent extends MenuLinkBase implements ContainerFactoryPluginInte
   protected $entity;
 
   /**
-   * The entity manager.
+   * An array of entity operations links.
    *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
+   * @var array
    */
-  protected $entityManager;
+  protected $listBuilderOperations;
+
+  /**
+   * The entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
+   * The entity repository.
+   *
+   * @var \Drupal\Core\Entity\EntityRepositoryInterface
+   */
+  protected $entityRepository;
 
   /**
    * The language manager.
@@ -70,12 +86,14 @@ class MenuLinkContent extends MenuLinkBase implements ContainerFactoryPluginInte
    *   The plugin_id for the plugin instance.
    * @param mixed $plugin_definition
    *   The plugin implementation definition.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The language manager.
+   * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
+   *   The entity repository.
    */
-  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityManagerInterface $entity_manager, LanguageManagerInterface $language_manager) {
+  public function __construct(array $configuration, $plugin_id, $plugin_definition, EntityTypeManagerInterface $entity_type_manager, LanguageManagerInterface $language_manager, EntityRepositoryInterface $entity_repository) {
     parent::__construct($configuration, $plugin_id, $plugin_definition);
 
     if (!empty($this->pluginDefinition['metadata']['entity_id'])) {
@@ -85,8 +103,9 @@ class MenuLinkContent extends MenuLinkBase implements ContainerFactoryPluginInte
       static::$entityIdsToLoad[$entity_id] = $entity_id;
     }
 
-    $this->entityManager = $entity_manager;
+    $this->entityTypeManager = $entity_type_manager;
     $this->languageManager = $language_manager;
+    $this->entityRepository = $entity_repository;
   }
 
   /**
@@ -97,8 +116,9 @@ class MenuLinkContent extends MenuLinkBase implements ContainerFactoryPluginInte
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $container->get('entity.manager'),
-      $container->get('language_manager')
+      $container->get('entity_type.manager'),
+      $container->get('language_manager'),
+      $container->get('entity.repository')
     );
   }
 
@@ -111,10 +131,10 @@ class MenuLinkContent extends MenuLinkBase implements ContainerFactoryPluginInte
    * @throws \Drupal\Component\Plugin\Exception\PluginException
    *   If the entity ID and UUID are both invalid or missing.
    */
-  protected function getEntity() {
+  public function getEntity(): MenuLinkContentInterface {
     if (empty($this->entity)) {
       $entity = NULL;
-      $storage = $this->entityManager->getStorage('menu_link_content');
+      $storage = $this->entityTypeManager->getStorage('menu_link_content');
       if (!empty($this->pluginDefinition['metadata']['entity_id'])) {
         $entity_id = $this->pluginDefinition['metadata']['entity_id'];
         // Make sure the current ID is in the list, since each plugin empties
@@ -122,21 +142,20 @@ class MenuLinkContent extends MenuLinkBase implements ContainerFactoryPluginInte
         // multiple IDs added earlier in each plugin's constructor.
         static::$entityIdsToLoad[$entity_id] = $entity_id;
         $entities = $storage->loadMultiple(array_values(static::$entityIdsToLoad));
-        $entity = isset($entities[$entity_id]) ? $entities[$entity_id] : NULL;
+        $entity = $entities[$entity_id] ?? NULL;
         static::$entityIdsToLoad = [];
       }
       if (!$entity) {
         // Fallback to the loading by the UUID.
         $uuid = $this->getUuid();
-        $loaded_entities = $storage->loadByProperties(['uuid' => $uuid]);
-        $entity = reset($loaded_entities);
+        $entity = $this->entityRepository->loadEntityByUuid('menu_link_content', $uuid);
       }
       if (!$entity) {
         throw new PluginException("Entity not found through the menu link plugin definition and could not fallback on UUID '$uuid'");
       }
       // Clone the entity object to avoid tampering with the static cache.
       $this->entity = clone $entity;
-      $the_entity = $this->entityManager->getTranslationFromContext($this->entity);
+      $the_entity = $this->entityRepository->getTranslationFromContext($this->entity);
       /** @var \Drupal\menu_link_content\MenuLinkContentInterface $the_entity */
       $this->entity = $the_entity;
       $this->entity->setInsidePlugin();
@@ -174,21 +193,48 @@ class MenuLinkContent extends MenuLinkBase implements ContainerFactoryPluginInte
    * {@inheritdoc}
    */
   public function getDeleteRoute() {
-    return $this->getEntity()->urlInfo('delete-form');
+    $operations = $this->getListBuilderOperations();
+    return isset($operations['delete']) ? $operations['delete']['url'] : NULL;
   }
 
   /**
    * {@inheritdoc}
    */
   public function getEditRoute() {
-    return $this->getEntity()->urlInfo();
+    $operations = $this->getListBuilderOperations();
+    return isset($operations['edit']) ? $operations['edit']['url'] : NULL;
   }
 
   /**
    * {@inheritdoc}
    */
   public function getTranslateRoute() {
-    return $this->getEntity()->urlInfo('drupal:content-translation-overview');
+    $operations = $this->getListBuilderOperations();
+    return isset($operations['translate']) ? $operations['translate']['url'] : NULL;
+  }
+
+  /**
+   * Load entity operations from the list builder.
+   *
+   * @return array
+   *   An array of operations.
+   */
+  protected function getListBuilderOperations() {
+
+    if (is_null($this->listBuilderOperations)) {
+      $this->listBuilderOperations = $this->entityTypeManager
+        ->getListBuilder($this->getEntity()->getEntityTypeId())
+        ->getOperations($this->getEntity());
+    }
+
+    return $this->listBuilderOperations;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getOperations(): array {
+    return $this->getListBuilderOperations();
   }
 
   /**
@@ -198,7 +244,7 @@ class MenuLinkContent extends MenuLinkBase implements ContainerFactoryPluginInte
    *   The menu link ID.
    */
   protected function getUuid() {
-    $this->getDerivativeId();
+    return $this->getDerivativeId();
   }
 
   /**
@@ -214,7 +260,7 @@ class MenuLinkContent extends MenuLinkBase implements ContainerFactoryPluginInte
       foreach ($overrides as $key => $value) {
         $entity->{$key}->value = $value;
       }
-      $this->entityManager->getStorage('menu_link_content')->save($entity);
+      $entity->save();
     }
 
     return $this->pluginDefinition;

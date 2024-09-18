@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Kernel;
 
 use Drupal\field\Entity\FieldConfig;
@@ -20,14 +22,22 @@ class PendingRevisionTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['taxonomy', 'node', 'user', 'text', 'field', 'system'];
+  protected static $modules = [
+    'taxonomy',
+    'node',
+    'user',
+    'text',
+    'field',
+    'system',
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
+    $this->installConfig(['taxonomy']);
     $this->installEntitySchema('user');
     $this->installEntitySchema('node');
     $this->installEntitySchema('taxonomy_term');
@@ -37,7 +47,7 @@ class PendingRevisionTest extends KernelTestBase {
   /**
    * Tests that the taxonomy index work correctly with pending revisions.
    */
-  public function testTaxonomyIndexWithPendingRevision() {
+  public function testTaxonomyIndexWithPendingRevision(): void {
     \Drupal::configFactory()->getEditable('taxonomy.settings')->set('maintain_index_table', TRUE)->save();
 
     Vocabulary::create([
@@ -57,6 +67,7 @@ class PendingRevisionTest extends KernelTestBase {
 
     NodeType::create([
       'type' => 'page',
+      'name' => 'Page',
     ])->save();
 
     FieldStorageConfig::create([

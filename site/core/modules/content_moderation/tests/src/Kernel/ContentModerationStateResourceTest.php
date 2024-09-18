@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\content_moderation\Kernel;
 
 use Drupal\Component\Plugin\Exception\PluginNotFoundException;
@@ -15,13 +17,14 @@ class ContentModerationStateResourceTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['serialization', 'rest', 'content_moderation'];
+  protected static $modules = ['serialization', 'rest', 'content_moderation'];
 
   /**
    * @see \Drupal\content_moderation\Entity\ContentModerationState
    */
-  public function testCreateContentModerationStateResource() {
-    $this->setExpectedException(PluginNotFoundException::class, 'The "entity:content_moderation_state" plugin does not exist.');
+  public function testCreateContentModerationStateResource(): void {
+    $this->expectException(PluginNotFoundException::class);
+    $this->expectExceptionMessage('The "entity:content_moderation_state" plugin does not exist.');
     RestResourceConfig::create([
       'id' => 'entity.content_moderation_state',
       'granularity' => RestResourceConfigInterface::RESOURCE_GRANULARITY,

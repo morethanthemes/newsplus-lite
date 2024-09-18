@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\user\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\AnonResourceTestTrait;
@@ -26,9 +28,6 @@ class UserXmlAnonTest extends UserResourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public function testPatchDxForSecuritySensitiveBaseFields() {
-    // Deserialization of the XML format is not supported.
-    $this->markTestSkipped();
-  }
+  protected $defaultTheme = 'stark';
 
 }

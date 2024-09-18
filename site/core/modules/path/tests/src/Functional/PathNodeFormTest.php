@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\path\Functional;
 
 /**
@@ -10,40 +12,51 @@ namespace Drupal\Tests\path\Functional;
 class PathNodeFormTest extends PathTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['node', 'path'];
+  protected static $modules = ['node', 'path'];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     // Create test user and log in.
-    $web_user = $this->drupalCreateUser(['create page content', 'create url aliases']);
+    $web_user = $this->drupalCreateUser([
+      'create page content',
+      'create url aliases',
+    ]);
     $this->drupalLogin($web_user);
   }
 
   /**
    * Tests the node form ui.
    */
-  public function testNodeForm() {
+  public function testNodeForm(): void {
+    $assert_session = $this->assertSession();
+
     $this->drupalGet('node/add/page');
 
-    // Make sure we have a Path fieldset and Path fields.
-    $this->assertRaw(' id="edit-path-settings"', 'Path settings details exists');
-    $this->assertFieldByName('path[0][alias]', NULL, 'Path alias field exists');
+    // Make sure we have a vertical tab fieldset and 'Path' fields.
+    $assert_session->elementContains('css', '.js-form-type-vertical-tabs #edit-path-0 summary', 'URL alias');
+    $assert_session->fieldExists('path[0][alias]');
 
-    // Disable the Path field for this content type.
-    entity_get_form_display('node', 'page', 'default')
+    // Disable the 'Path' field for this content type.
+    \Drupal::service('entity_display.repository')->getFormDisplay('node', 'page', 'default')
       ->removeComponent('path')
       ->save();
 
     $this->drupalGet('node/add/page');
 
     // See if the whole fieldset is gone now.
-    $this->assertNoRaw(' id="edit-path-settings"', 'Path settings details does not exist');
-    $this->assertNoFieldByName('path[0][alias]', NULL, 'Path alias field does not exist');
+    $assert_session->elementNotExists('css', '.js-form-type-vertical-tabs #edit-path-0');
+    $assert_session->fieldNotExists('path[0][alias]');
   }
 
 }

@@ -1,22 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\node\Kernel\Migrate\d6;
 
 use Drupal\Tests\migrate_drupal\Kernel\d6\MigrateDrupal6TestBase;
+use Drupal\Tests\user\Traits\UserCreationTrait;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * Tests node translation redirections.
+ * Tests node translation redirects.
  *
  * @group migrate_drupal
  * @group node
  */
 class NodeTranslationRedirectTest extends MigrateDrupal6TestBase {
 
+  use UserCreationTrait;
+
   /**
    * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'content_translation',
     'language',
     'menu_ui',
@@ -25,13 +30,14 @@ class NodeTranslationRedirectTest extends MigrateDrupal6TestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
+
+    $this->setUpCurrentUser();
 
     $this->installEntitySchema('node');
     $this->installConfig(['node']);
     $this->installSchema('node', ['node_access']);
-    $this->installSchema('system', ['key_value']);
     $this->migrateUsers(FALSE);
     $this->migrateFields();
 
@@ -48,7 +54,7 @@ class NodeTranslationRedirectTest extends MigrateDrupal6TestBase {
   /**
    * Tests that not found node translations are redirected.
    */
-  public function testNodeTranslationRedirect() {
+  public function testNodeTranslationRedirect(): void {
     $kernel = $this->container->get('http_kernel');
     $request = Request::create('/node/11');
     $response = $kernel->handle($request);

@@ -7,9 +7,10 @@ use Drupal\views\Plugin\views\wizard\WizardPluginBase;
 use Drupal\views\Plugin\views\wizard\WizardException;
 use Drupal\views\Plugin\ViewsPluginManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 
 /**
- * Form controller for the Views edit form.
+ * Form controller for the Views add form.
  *
  * @internal
  */
@@ -23,13 +24,23 @@ class ViewAddForm extends ViewFormBase {
   protected $wizardManager;
 
   /**
-   * Constructs a new ViewEditForm object.
+   * The module handler service.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  /**
+   * Constructs a new ViewAddForm object.
    *
    * @param \Drupal\views\Plugin\ViewsPluginManager $wizard_manager
    *   The wizard plugin manager.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *   The module handler service.
    */
-  public function __construct(ViewsPluginManager $wizard_manager) {
+  public function __construct(ViewsPluginManager $wizard_manager, ModuleHandlerInterface $module_handler) {
     $this->wizardManager = $wizard_manager;
+    $this->moduleHandler = $module_handler;
   }
 
   /**
@@ -37,7 +48,8 @@ class ViewAddForm extends ViewFormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('plugin.manager.views.wizard')
+      $container->get('plugin.manager.views.wizard'),
+      $container->get('module_handler')
     );
   }
 
@@ -57,7 +69,7 @@ class ViewAddForm extends ViewFormBase {
 
     $form['name'] = [
       '#type' => 'fieldset',
-      '#title' => t('View basic information'),
+      '#title' => $this->t('View basic information'),
       '#attributes' => ['class' => ['fieldset-no-legend']],
     ];
 
@@ -107,7 +119,7 @@ class ViewAddForm extends ViewFormBase {
     // properties of what the view will display.
     $form['displays']['show'] = [
       '#type' => 'fieldset',
-      '#title' => t('View settings'),
+      '#title' => $this->t('View settings'),
       '#tree' => TRUE,
       '#attributes' => ['class' => ['container-inline']],
     ];
@@ -123,9 +135,10 @@ class ViewAddForm extends ViewFormBase {
       '#type' => 'select',
       '#title' => $this->t('Show'),
       '#options' => $options,
+      '#sort_options' => TRUE,
     ];
     $show_form = &$form['displays']['show'];
-    $default_value = \Drupal::moduleHandler()->moduleExists('node') ? 'node' : 'users';
+    $default_value = $this->moduleHandler->moduleExists('node') ? 'node' : 'users';
     $show_form['wizard_key']['#default_value'] = WizardPluginBase::getSelected($form_state, ['show', 'wizard_key'], $default_value, $show_form['wizard_key']);
     // Changing this dropdown updates the entire content of $form['displays'] via
     // AJAX.
@@ -164,6 +177,13 @@ class ViewAddForm extends ViewFormBase {
     $wizard_instance = $this->wizardManager->createInstance($wizard_type);
     $form_state->set('wizard', $wizard_instance->getPluginDefinition());
     $form_state->set('wizard_instance', $wizard_instance);
+
+    $path = &$form_state->getValue(['page', 'path']);
+    if (!empty($path)) {
+      // @todo https://www.drupal.org/node/2423913 Views should expect and store
+      //   a leading /.
+      $path = ltrim($path, '/ ');
+    }
     $errors = $wizard_instance->validateView($form, $form_state);
 
     foreach ($errors as $display_errors) {
@@ -178,19 +198,19 @@ class ViewAddForm extends ViewFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     try {
-      /** @var $wizard \Drupal\views\Plugin\views\wizard\WizardInterface */
+      /** @var \Drupal\views\Plugin\views\wizard\WizardInterface $wizard */
       $wizard = $form_state->get('wizard_instance');
       $this->entity = $wizard->createView($form, $form_state);
     }
     // @todo Figure out whether it really makes sense to throw and catch exceptions on the wizard.
     catch (WizardException $e) {
-      drupal_set_message($e->getMessage(), 'error');
+      $this->messenger()->addError($e->getMessage());
       $form_state->setRedirect('entity.view.collection');
       return;
     }
     $this->entity->save();
-    drupal_set_message($this->t('The view %name has been saved.', ['%name' => $form_state->getValue('label')]));
-    $form_state->setRedirectUrl($this->entity->urlInfo('edit-form'));
+    $this->messenger()->addStatus($this->t('The view %name has been saved.', ['%name' => $form_state->getValue('label')]));
+    $form_state->setRedirectUrl($this->entity->toUrl('edit-form'));
   }
 
   /**

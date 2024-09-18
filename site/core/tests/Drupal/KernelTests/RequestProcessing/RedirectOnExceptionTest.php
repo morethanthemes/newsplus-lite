@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\RequestProcessing;
 
 use Drupal\KernelTests\KernelTestBase;
@@ -16,18 +18,9 @@ class RedirectOnExceptionTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['system', 'test_page_test'];
+  protected static $modules = ['system', 'test_page_test'];
 
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp() {
-    parent::setUp();
-
-    \Drupal::service('router.builder')->rebuild();
-  }
-
-  public function testRedirectOn404() {
+  public function testRedirectOn404(): void {
     \Drupal::configFactory()->getEditable('system.site')
       ->set('page.404', '/test-http-response-exception/' . Response::HTTP_PERMANENTLY_REDIRECT)
       ->save();

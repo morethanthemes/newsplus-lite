@@ -14,6 +14,7 @@ namespace Symfony\Component\Validator\Constraints;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Exception\UnexpectedTypeException;
+use Symfony\Component\Validator\Exception\UnexpectedValueException;
 
 /**
  * @author Bernhard Schussek <bschussek@gmail.com>
@@ -21,20 +22,20 @@ use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 class CollectionValidator extends ConstraintValidator
 {
     /**
-     * {@inheritdoc}
+     * @return void
      */
-    public function validate($value, Constraint $constraint)
+    public function validate(mixed $value, Constraint $constraint)
     {
         if (!$constraint instanceof Collection) {
-            throw new UnexpectedTypeException($constraint, __NAMESPACE__.'\Collection');
+            throw new UnexpectedTypeException($constraint, Collection::class);
         }
 
         if (null === $value) {
             return;
         }
 
-        if (!is_array($value) && !($value instanceof \Traversable && $value instanceof \ArrayAccess)) {
-            throw new UnexpectedTypeException($value, 'array or Traversable and ArrayAccess');
+        if (!\is_array($value) && !($value instanceof \Traversable && $value instanceof \ArrayAccess)) {
+            throw new UnexpectedValueException($value, 'array|(Traversable&ArrayAccess)');
         }
 
         // We need to keep the initialized context when CollectionValidator
@@ -50,11 +51,11 @@ class CollectionValidator extends ConstraintValidator
 
         foreach ($constraint->fields as $field => $fieldConstraint) {
             // bug fix issue #2779
-            $existsInArray = is_array($value) && array_key_exists($field, $value);
+            $existsInArray = \is_array($value) && \array_key_exists($field, $value);
             $existsInArrayAccess = $value instanceof \ArrayAccess && $value->offsetExists($field);
 
             if ($existsInArray || $existsInArrayAccess) {
-                if (count($fieldConstraint->constraints) > 0) {
+                if (\count($fieldConstraint->constraints) > 0) {
                     $context->getValidator()
                         ->inContext($context)
                         ->atPath('['.$field.']')

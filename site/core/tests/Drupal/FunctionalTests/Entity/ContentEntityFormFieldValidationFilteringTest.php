@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Entity;
 
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
@@ -48,12 +50,17 @@ class ContentEntityFormFieldValidationFilteringTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['entity_test', 'field_test', 'file', 'image'];
+  protected static $modules = ['entity_test', 'field_test', 'file', 'image'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
     $web_user = $this->drupalCreateUser(['administer entity_test content']);
     $this->drupalLogin($web_user);
@@ -112,7 +119,8 @@ class ContentEntityFormFieldValidationFilteringTest extends BrowserTestBase {
       'translatable' => FALSE,
     ])->save();
 
-    entity_get_form_display($this->entityTypeId, $this->entityTypeId, 'default')
+    $this->container->get('entity_display.repository')
+      ->getFormDisplay($this->entityTypeId, $this->entityTypeId, 'default')
       ->setComponent($this->fieldNameSingle, ['type' => 'test_field_widget'])
       ->setComponent($this->fieldNameMultiple, ['type' => 'test_field_widget'])
       ->setComponent($this->fieldNameFile, ['type' => 'file_generic'])
@@ -122,40 +130,41 @@ class ContentEntityFormFieldValidationFilteringTest extends BrowserTestBase {
   /**
    * Tests field widgets with #limit_validation_errors.
    */
-  public function testFieldWidgetsWithLimitedValidationErrors() {
+  public function testFieldWidgetsWithLimitedValidationErrors(): void {
     $assert_session = $this->assertSession();
     $this->drupalGet($this->entityTypeId . '/add');
 
     // The 'Test multiple' field is the only multi-valued field in the form, so
     // try to add a new item for it. This tests the '#limit_validation_errors'
     // property set by \Drupal\Core\Field\WidgetBase::formMultipleElements().
-    $assert_session->elementsCount('css', 'div#edit-test-multiple-wrapper div.form-type-textfield input', 1);
-    $this->drupalPostForm(NULL, [], 'Add another item');
-    $assert_session->elementsCount('css', 'div#edit-test-multiple-wrapper div.form-type-textfield input', 2);
+    $assert_session->elementsCount('css', 'div#edit-test-multiple-wrapper div.js-form-type-textfield input', 1);
+    $this->submitForm([], 'Add another item');
+    $assert_session->elementsCount('css', 'div#edit-test-multiple-wrapper div.js-form-type-textfield input', 2);
 
     // Now try to upload a file. This tests the '#limit_validation_errors'
     // property set by
     // \Drupal\file\Plugin\Field\FieldWidget\FileWidget::process().
     $text_file = current($this->getTestFiles('text'));
     $edit = [
-      'files[test_file_0]' => \Drupal::service('file_system')->realpath($text_file->uri)
+      'files[test_file_0]' => \Drupal::service('file_system')->realpath($text_file->uri),
     ];
     $assert_session->elementNotExists('css', 'input#edit-test-file-0-remove-button');
-    $this->drupalPostForm(NULL, $edit, 'Upload');
+    $this->submitForm($edit, 'Upload');
     $assert_session->elementExists('css', 'input#edit-test-file-0-remove-button');
 
     // Make the 'Test multiple' field required and check that adding another
-    // item throws a validation error.
+    // item does not throw a validation error.
     $field_config = FieldConfig::loadByName($this->entityTypeId, $this->entityTypeId, $this->fieldNameMultiple);
     $field_config->setRequired(TRUE);
     $field_config->save();
 
-    $this->drupalPostForm($this->entityTypeId . '/add', [], 'Add another item');
-    $assert_session->pageTextContains('Test multiple (value 1) field is required.');
+    $this->drupalGet($this->entityTypeId . '/add');
+    $this->submitForm([], 'Add another item');
+    $assert_session->pageTextNotContains('Test multiple (value 1) field is required.');
 
     // Check that saving the form without entering any value for the required
     // field still throws the proper validation errors.
-    $this->drupalPostForm(NULL, [], 'Save');
+    $this->submitForm([], 'Save');
     $assert_session->pageTextContains('Test single field is required.');
     $assert_session->pageTextContains('Test multiple (value 1) field is required.');
   }

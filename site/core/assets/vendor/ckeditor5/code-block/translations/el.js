@@ -1,0 +1,1 @@
+!function(n){const o=n.el=n.el||{};o.dictionary=Object.assign(o.dictionary||{},{"Code block":"Μπλοκ κώδικα","Insert code block":"Εισαγωγή τμήματος κώδικα","Plain text":"Απλό κέιμενο"})}(window.CKEDITOR_TRANSLATIONS||(window.CKEDITOR_TRANSLATIONS={}));

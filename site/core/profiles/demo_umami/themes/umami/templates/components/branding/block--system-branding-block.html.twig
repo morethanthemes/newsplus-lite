@@ -14,17 +14,18 @@
  */
 #}
 {% block content %}
-  {% if site_logo %}
-    <a href="{{ path('<front>') }}" title="{{ 'Home'|t }}" rel="home" class="site-logo">
-      <img src="{{ site_logo }}" alt="{{ 'Home'|t }}" />
-    </a>
-  {% endif %}
-  {% if site_name %}
-    <div class="site-name visually-hidden">
-      <a href="{{ path('<front>') }}" title="{{ 'Home'|t }}" rel="home">{{ site_name }}</a>
-    </div>
-  {% endif %}
-  {% if site_slogan %}
-    <div class="site-slogan visually-hidden">{{ site_slogan }}</div>
-  {% endif %}
+  {% embed 'umami:branding' with {
+    attributes: create_attribute(),
+    site_logo,
+    site_name,
+    site_slogan,
+    url: path('<front>'),
+  } only %}
+    {% block site_name %}
+      {{ site_name }}
+    {% endblock %}
+    {% block site_slogan %}
+      {{ site_slogan }}
+    {% endblock %}
+  {% endembed %}
 {% endblock %}

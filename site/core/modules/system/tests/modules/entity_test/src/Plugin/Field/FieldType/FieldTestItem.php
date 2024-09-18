@@ -2,6 +2,7 @@
 
 namespace Drupal\entity_test\Plugin\Field\FieldType;
 
+use Drupal\Core\Field\Attribute\FieldType;
 use Drupal\Core\Field\FieldItemBase;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\StringTranslation\TranslatableMarkup;
@@ -11,14 +12,12 @@ use Drupal\Core\TypedData\TypedDataInterface;
 
 /**
  * Defines the 'field_test' entity field type.
- *
- * @FieldType(
- *   id = "field_test",
- *   label = @Translation("Test field item"),
- *   description = @Translation("A field containing a plain string value."),
- *   category = @Translation("Field"),
- * )
  */
+#[FieldType(
+  id: "field_test",
+  label: new TranslatableMarkup("Test field item"),
+  description: new TranslatableMarkup("A field containing a plain string value."),
+)]
 class FieldTestItem extends FieldItemBase {
 
   /**
@@ -32,8 +31,6 @@ class FieldTestItem extends FieldItemBase {
    * {@inheritdoc}
    */
   public static function propertyDefinitions(FieldStorageDefinitionInterface $field_definition) {
-    // This is called very early by the user entity roles field. Prevent
-    // early t() calls by using the TranslatableMarkup.
     $properties['value'] = DataDefinition::create('string')
       ->setLabel(new TranslatableMarkup('Test value'))
       ->setRequired(TRUE);
@@ -58,7 +55,7 @@ class FieldTestItem extends FieldItemBase {
   /**
    * {@inheritdoc}
    */
-  public function __construct(DataDefinitionInterface $definition, $name = NULL, TypedDataInterface $parent = NULL) {
+  public function __construct(DataDefinitionInterface $definition, $name = NULL, ?TypedDataInterface $parent = NULL) {
     parent::__construct($definition, $name, $parent);
 
     $name = $this->getFieldDefinition()->getName();
@@ -114,7 +111,7 @@ class FieldTestItem extends FieldItemBase {
    */
   public function delete() {
     parent::delete();
-    $deleted_languages = \Drupal::state()->get('entity_test.delete.' . $this->getFieldDefinition()->getName()) ?: [];
+    $deleted_languages = \Drupal::state()->get('entity_test.delete.' . $this->getFieldDefinition()->getName(), []);
     $deleted_languages[] = $this->getLangcode();
     \Drupal::state()->set('entity_test.delete.' . $this->getFieldDefinition()->getName(), $deleted_languages);
   }

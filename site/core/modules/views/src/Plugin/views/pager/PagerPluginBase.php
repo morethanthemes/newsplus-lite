@@ -15,7 +15,7 @@ use Drupal\views\Plugin\views\PluginBase;
  * and setting up the pager.
  *
  * Pager plugins extend \Drupal\views\Plugin\views\pager\PagerPluginBase. They
- * must be annotated with \Drupal\views\Annotation\ViewsPager annotation,
+ * must be attributed with \Drupal\views\Annotation\ViewsPager attribute,
  * and they must be in namespace directory Plugin\views\pager.
  *
  * @ingroup views_plugins
@@ -27,8 +27,10 @@ use Drupal\views\Plugin\views\PluginBase;
  */
 abstract class PagerPluginBase extends PluginBase {
 
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
   public $current_page = NULL;
 
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
   public $total_items = 0;
 
   /**
@@ -37,13 +39,25 @@ abstract class PagerPluginBase extends PluginBase {
   protected $usesOptions = TRUE;
 
   /**
+   * Options available for setting pagination headers.
+   */
+  protected array $headingOptions = [
+    'h1' => 'H1',
+    'h2' => 'H2',
+    'h3' => 'H3',
+    'h4' => 'H4',
+    'h5' => 'H5',
+    'h6' => 'H6',
+  ];
+
+  /**
    * Get how many items per page this pager will display.
    *
    * All but the leanest pagers should probably return a value here, so
    * most pagers will not need to override this method.
    */
   public function getItemsPerPage() {
-    return isset($this->options['items_per_page']) ? $this->options['items_per_page'] : 0;
+    return $this->options['items_per_page'] ?? 0;
   }
 
   /**
@@ -62,7 +76,7 @@ abstract class PagerPluginBase extends PluginBase {
    * so few pagers will need to override this method.
    */
   public function getOffset() {
-    return isset($this->options['offset']) ? $this->options['offset'] : 0;
+    return $this->options['offset'] ?? 0;
   }
 
   /**
@@ -70,6 +84,23 @@ abstract class PagerPluginBase extends PluginBase {
    */
   public function setOffset($offset) {
     $this->options['offset'] = $offset;
+  }
+
+  /**
+   * Get the pager heading tag.
+   *
+   * @return string
+   *   Heading level for the pager.
+   */
+  public function getHeadingLevel(): string {
+    return $this->options['pagination_heading_level'] ?? 'h4';
+  }
+
+  /**
+   * Set the pager heading.
+   */
+  public function setHeadingLevel($headingLevel): void {
+    $this->options['pagination_heading_level'] = $headingLevel;
   }
 
   /**
@@ -105,25 +136,24 @@ abstract class PagerPluginBase extends PluginBase {
   }
 
   /**
-   * Get the pager id, if it exists
+   * Get the pager id, if it exists.
    */
   public function getPagerId() {
-    return isset($this->options['id']) ? $this->options['id'] : 0;
+    return $this->options['id'] ?? 0;
   }
 
   /**
-   * Provide the default form form for validating options
+   * Provide the default form for validating options.
    */
   public function validateOptionsForm(&$form, FormStateInterface $form_state) {}
 
   /**
-   * Provide the default form form for submitting options
+   * Provide the default form for submitting options.
    */
   public function submitOptionsForm(&$form, FormStateInterface $form_state) {}
 
   /**
-   * Return a string to display as the clickable title for the
-   * pager plugin.
+   * Returns a string to display as the clickable title for the pager plugin.
    */
   public function summaryTitle() {
     return $this->t('Unknown');
@@ -148,8 +178,9 @@ abstract class PagerPluginBase extends PluginBase {
   }
 
   /**
-   * Execute the count query, which will be done just prior to the query
-   * itself being executed.
+   * Executes the count query.
+   *
+   * This will be done just prior to the query itself being executed.
    */
   public function executeCountQuery(&$count_query) {
     $this->total_items = $count_query->execute()->fetchField();
@@ -163,6 +194,8 @@ abstract class PagerPluginBase extends PluginBase {
   }
 
   /**
+   * Updates the pager information.
+   *
    * If there are pagers that need global values set, this method can
    * be used to set them. It will be called after the query is run.
    */
@@ -171,7 +204,7 @@ abstract class PagerPluginBase extends PluginBase {
   }
 
   /**
-   * Modify the query for paging
+   * Modify the query for paging.
    *
    * This is called during the build phase and can directly modify the query.
    */

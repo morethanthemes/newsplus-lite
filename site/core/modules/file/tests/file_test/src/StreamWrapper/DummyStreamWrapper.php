@@ -22,11 +22,11 @@ class DummyStreamWrapper extends LocalStream {
    * {@inheritdoc}
    */
   public function getDescription() {
-    return t('Dummy wrapper for simpletest.');
+    return t('Dummy wrapper for testing.');
   }
 
   public function getDirectoryPath() {
-    return \Drupal::service('site.path') . '/files';
+    return \Drupal::getContainer()->getParameter('site.path') . '/files';
   }
 
   /**

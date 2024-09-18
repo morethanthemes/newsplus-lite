@@ -1,0 +1,12 @@
+name: 'Test deprecated theme'
+type: theme
+description: 'Support module for testing deprecated themes.'
+# version: VERSION
+base theme: false
+lifecycle: deprecated
+lifecycle_link: 'http://example.com/deprecated_theme'
+
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
+project: 'drupal'
+datestamp: 1726135113

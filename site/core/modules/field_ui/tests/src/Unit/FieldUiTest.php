@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\field_ui\Unit;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
@@ -16,17 +18,17 @@ class FieldUiTest extends UnitTestCase {
   /**
    * The path validator.
    *
-   * @var \Drupal\Core\Path\PathValidatorInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Path\PathValidatorInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $pathValidator;
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
-    $this->pathValidator = $this->getMock('Drupal\Core\Path\PathValidatorInterface');
+    $this->pathValidator = $this->createMock('Drupal\Core\Path\PathValidatorInterface');
     $container = new ContainerBuilder();
     $container->set('path.validator', $this->pathValidator);
     \Drupal::setContainer($container);
@@ -35,7 +37,7 @@ class FieldUiTest extends UnitTestCase {
   /**
    * @covers ::getNextDestination
    */
-  public function testGetNextDestination() {
+  public function testGetNextDestination(): void {
     $destinations = ['admin', 'admin/content'];
     $expected_uri = 'base:admin';
     $expected_query = [
@@ -49,7 +51,7 @@ class FieldUiTest extends UnitTestCase {
   /**
    * @covers ::getNextDestination
    */
-  public function testGetNextDestinationEmpty() {
+  public function testGetNextDestinationEmpty(): void {
     $destinations = [];
     $actual = FieldUI::getNextDestination($destinations);
     $this->assertNull($actual);
@@ -58,7 +60,7 @@ class FieldUiTest extends UnitTestCase {
   /**
    * @covers ::getNextDestination
    */
-  public function testGetNextDestinationRouteName() {
+  public function testGetNextDestinationRouteName(): void {
     $destinations = [['route_name' => 'system.admin'], ['route_name' => 'system.admin_content']];
     $expected_route_name = 'system.admin';
     $expected_query = [

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\comment\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\AnonResourceTestTrait;
@@ -25,8 +27,13 @@ class CommentXmlAnonTest extends CommentResourceTestBase {
 
   /**
    * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
    *
-   * Anononymous users cannot edit their own comments.
+   * Anonymous users cannot edit their own comments.
    *
    * @see \Drupal\comment\CommentAccessControlHandler::checkAccess
    *
@@ -43,21 +50,5 @@ class CommentXmlAnonTest extends CommentResourceTestBase {
     'entity_type',
     'field_name',
   ];
-
-  /**
-   * {@inheritdoc}
-   */
-  public function testPostDxWithoutCriticalBaseFields() {
-    // Deserialization of the XML format is not supported.
-    $this->markTestSkipped();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function testPostSkipCommentApproval() {
-    // Deserialization of the XML format is not supported.
-    $this->markTestSkipped();
-  }
 
 }

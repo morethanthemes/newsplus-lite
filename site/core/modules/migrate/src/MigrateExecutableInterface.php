@@ -8,6 +8,13 @@ interface MigrateExecutableInterface {
 
   /**
    * Performs an import operation - migrate items from source to destination.
+   *
+   * @return int
+   *   Returns a value indicating the status of the import operation.
+   *   The possible values are the 'RESULT_' constants defined
+   *   in MigrationInterface.
+   *
+   * @see \Drupal\migrate\Plugin\MigrationInterface
    */
   public function import();
 
@@ -34,7 +41,7 @@ interface MigrateExecutableInterface {
    *
    * @throws \Drupal\migrate\MigrateException
    */
-  public function processRow(Row $row, array $process = NULL, $value = NULL);
+  public function processRow(Row $row, ?array $process = NULL, $value = NULL);
 
   /**
    * Passes messages through to the map class.

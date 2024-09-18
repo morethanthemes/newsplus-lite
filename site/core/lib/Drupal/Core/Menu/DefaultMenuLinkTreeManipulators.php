@@ -5,6 +5,7 @@ namespace Drupal\Core\Menu;
 use Drupal\Core\Access\AccessManagerInterface;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\node\NodeInterface;
 
@@ -41,6 +42,13 @@ class DefaultMenuLinkTreeManipulators {
   protected $entityTypeManager;
 
   /**
+   * The module handler.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  /**
    * Constructs a \Drupal\Core\Menu\DefaultMenuLinkTreeManipulators object.
    *
    * @param \Drupal\Core\Access\AccessManagerInterface $access_manager
@@ -49,11 +57,18 @@ class DefaultMenuLinkTreeManipulators {
    *   The current user.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface|null $module_handler
+   *   The module handler.
    */
-  public function __construct(AccessManagerInterface $access_manager, AccountInterface $account, EntityTypeManagerInterface $entity_type_manager) {
+  public function __construct(AccessManagerInterface $access_manager, AccountInterface $account, EntityTypeManagerInterface $entity_type_manager, ?ModuleHandlerInterface $module_handler = NULL) {
     $this->accessManager = $access_manager;
     $this->account = $account;
     $this->entityTypeManager = $entity_type_manager;
+    if ($module_handler === NULL) {
+      @trigger_error('Calling DefaultMenuLinkTreeManipulators::__construct() without the $module_handler argument is deprecated in drupal:10.1.0 and will be required in drupal:11.0.0. See https://www.drupal.org/node/3336973', E_USER_DEPRECATED);
+      $module_handler = \Drupal::moduleHandler();
+    }
+    $this->moduleHandler = $module_handler;
   }
 
   /**
@@ -75,7 +90,7 @@ class DefaultMenuLinkTreeManipulators {
    * This is why inaccessible subtrees are deleted, except at the top-level
    * inaccessible link: if we didn't keep the first (depth-wise) inaccessible
    * link, we wouldn't be able to know which cache contexts would cause those
-   * subtrees to become accessible again, thus forcing us to conclude that that
+   * subtrees to become accessible again, thus forcing us to conclude that the
    * subtree is unconditionally inaccessible.
    *
    * @param \Drupal\Core\Menu\MenuLinkTreeElement[] $tree
@@ -136,6 +151,7 @@ class DefaultMenuLinkTreeManipulators {
       $nids = array_keys($node_links);
 
       $query = $this->entityTypeManager->getStorage('node')->getQuery();
+      $query->accessCheck(TRUE);
       $query->condition('nid', $nids, 'IN');
 
       // Allows admins to view all nodes, by both disabling node_access
@@ -148,7 +164,9 @@ class DefaultMenuLinkTreeManipulators {
       }
       else {
         $access_result->addCacheContexts(['user.node_grants:view']);
-        $query->condition('status', NodeInterface::PUBLISHED);
+        if (!$this->moduleHandler->hasImplementations('node_grants') && !$this->account->hasPermission('view any unpublished content')) {
+          $query->condition('status', NodeInterface::PUBLISHED);
+        }
       }
 
       $nids = $query->execute();
@@ -169,9 +187,6 @@ class DefaultMenuLinkTreeManipulators {
    *   The menu link tree to manipulate.
    * @param array $node_links
    *   Stores references to menu link elements to effectively set access.
-   *
-   * @return \Drupal\Core\Menu\MenuLinkTreeElement[]
-   *   The manipulated menu link tree.
    */
   protected function collectNodeLinks(array &$tree, array &$node_links) {
     foreach ($tree as $key => &$element) {
@@ -197,22 +212,14 @@ class DefaultMenuLinkTreeManipulators {
    *   The access result.
    */
   protected function menuLinkCheckAccess(MenuLinkInterface $instance) {
-    $access_result = NULL;
-    if ($this->account->hasPermission('link to any page')) {
-      $access_result = AccessResult::allowed();
-    }
-    else {
-      $url = $instance->getUrlObject();
+    $url = $instance->getUrlObject();
 
-      // When no route name is specified, this must be an external link.
-      if (!$url->isRouted()) {
-        $access_result = AccessResult::allowed();
-      }
-      else {
-        $access_result = $this->accessManager->checkNamedRoute($url->getRouteName(), $url->getRouteParameters(), $this->account, TRUE);
-      }
+    if ($url->isRouted()) {
+      return $this->accessManager->checkNamedRoute($url->getRouteName(), $url->getRouteParameters(), $this->account, TRUE);
     }
-    return $access_result->cachePerPermissions();
+
+    // Must be an external link.
+    return AccessResult::allowed();
   }
 
   /**

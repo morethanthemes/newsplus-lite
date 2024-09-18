@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Routing;
 
 use Drupal\Core\Routing\MethodFilter;
@@ -18,7 +20,7 @@ class MethodFilterTest extends UnitTestCase {
   /**
    * @covers ::filter
    */
-  public function testWithAllowedMethod() {
+  public function testWithAllowedMethod(): void {
     $request = Request::create('/test', 'GET');
     $collection = new RouteCollection();
     $collection->add('test_route.get', new Route('/test', [], [], [], '', [], ['GET']));
@@ -33,7 +35,7 @@ class MethodFilterTest extends UnitTestCase {
   /**
    * @covers ::filter
    */
-  public function testWithAllowedMethodAndMultipleMatchingRoutes() {
+  public function testWithAllowedMethodAndMultipleMatchingRoutes(): void {
     $request = Request::create('/test', 'GET');
     $collection = new RouteCollection();
     $collection->add('test_route.get', new Route('/test', [], [], [], '', [], ['GET']));
@@ -51,12 +53,12 @@ class MethodFilterTest extends UnitTestCase {
   /**
    * @covers ::filter
    */
-  public function testMethodNotAllowedException() {
+  public function testMethodNotAllowedException(): void {
     $request = Request::create('/test', 'PATCH');
     $collection = new RouteCollection();
     $collection->add('test_route.get', new Route('/test', [], [], [], '', [], ['GET']));
 
-    $this->setExpectedException(MethodNotAllowedException::class);
+    $this->expectException(MethodNotAllowedException::class);
 
     $method_filter = new MethodFilter();
     $method_filter->filter($collection, $request);
@@ -65,14 +67,14 @@ class MethodFilterTest extends UnitTestCase {
   /**
    * @covers ::filter
    */
-  public function testMethodNotAllowedExceptionWithMultipleRoutes() {
+  public function testMethodNotAllowedExceptionWithMultipleRoutes(): void {
     $request = Request::create('/test', 'PATCH');
     $collection = new RouteCollection();
     $collection->add('test_route.get', new Route('/test', [], [], [], '', [], ['GET']));
     $collection->add('test_route2.get', new Route('/test', [], [], [], '', [], ['GET']));
     $collection->add('test_route3.get', new Route('/test', [], [], [], '', [], ['GET']));
 
-    $this->setExpectedException(MethodNotAllowedException::class);
+    $this->expectException(MethodNotAllowedException::class);
 
     $method_filter = new MethodFilter();
     $method_filter->filter($collection, $request);
@@ -81,7 +83,7 @@ class MethodFilterTest extends UnitTestCase {
   /**
    * @covers ::filter
    */
-  public function testFilteredMethods() {
+  public function testFilteredMethods(): void {
     $request = Request::create('/test', 'PATCH');
     $collection = new RouteCollection();
     $collection->add('test_route.get', new Route('/test', [], [], [], '', [], ['GET']));
@@ -102,7 +104,7 @@ class MethodFilterTest extends UnitTestCase {
    *
    * @covers ::filter
    */
-  public function testCollectionOrder() {
+  public function testCollectionOrder(): void {
     $request = Request::create('/test', 'GET');
 
     $collection = new RouteCollection();

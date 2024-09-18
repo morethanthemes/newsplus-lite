@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\Validator\Mapping\Loader;
 
+use Symfony\Component\Validator\Attribute\HasNamedArguments;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\Exception\MappingException;
 
@@ -30,9 +31,14 @@ abstract class AbstractLoader implements LoaderInterface
     /**
      * The namespace to load constraints from by default.
      */
-    const DEFAULT_NAMESPACE = '\\Symfony\\Component\\Validator\\Constraints\\';
+    public const DEFAULT_NAMESPACE = '\\Symfony\\Component\\Validator\\Constraints\\';
 
-    protected $namespaces = array();
+    protected $namespaces = [];
+
+    /**
+     * @var array<class-string, bool>
+     */
+    private array $namedArgumentsCache = [];
 
     /**
      * Adds a namespace alias.
@@ -44,10 +50,9 @@ abstract class AbstractLoader implements LoaderInterface
      *
      *     $constraint = $this->newConstraint('mynamespace:NotNull');
      *
-     * @param string $alias     The alias
-     * @param string $namespace The PHP namespace
+     * @return void
      */
-    protected function addNamespaceAlias($alias, $namespace)
+    protected function addNamespaceAlias(string $alias, string $namespace)
     {
         $this->namespaces[$alias] = $namespace;
     }
@@ -63,24 +68,38 @@ abstract class AbstractLoader implements LoaderInterface
      *                        {@link addNamespaceAlias()}.
      * @param mixed  $options The constraint options
      *
-     * @return Constraint
-     *
      * @throws MappingException If the namespace prefix is undefined
      */
-    protected function newConstraint($name, $options = null)
+    protected function newConstraint(string $name, mixed $options = null): Constraint
     {
-        if (false !== strpos($name, '\\') && class_exists($name)) {
-            $className = (string) $name;
-        } elseif (false !== strpos($name, ':')) {
-            list($prefix, $className) = explode(':', $name, 2);
+        if (str_contains($name, '\\') && class_exists($name)) {
+            $className = $name;
+        } elseif (str_contains($name, ':')) {
+            [$prefix, $className] = explode(':', $name, 2);
 
             if (!isset($this->namespaces[$prefix])) {
-                throw new MappingException(sprintf('Undefined namespace prefix "%s"', $prefix));
+                throw new MappingException(sprintf('Undefined namespace prefix "%s".', $prefix));
             }
 
             $className = $this->namespaces[$prefix].$className;
         } else {
             $className = self::DEFAULT_NAMESPACE.$name;
+        }
+
+        if ($this->namedArgumentsCache[$className] ??= (bool) (new \ReflectionMethod($className, '__construct'))->getAttributes(HasNamedArguments::class)) {
+            if (null === $options) {
+                return new $className();
+            }
+
+            if (!\is_array($options)) {
+                return new $className($options);
+            }
+
+            if (1 === \count($options) && isset($options['value'])) {
+                return new $className($options['value']);
+            }
+
+            return new $className(...$options);
         }
 
         return new $className($options);

@@ -10,7 +10,7 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *
  * @ContentEntityType(
  *   id = "entity_test_mulrev_changed",
- *   label = @Translation("Test entity - revisions and data table"),
+ *   label = @Translation("Test entity - mul changed revisions and data table"),
  *   handlers = {
  *     "view_builder" = "Drupal\entity_test\EntityTestViewBuilder",
  *     "access" = "Drupal\entity_test\EntityTestAccessControlHandler",
@@ -21,7 +21,6 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *     "route_provider" = {
  *       "html" = "Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider",
  *     },
- *     "translation" = "Drupal\content_translation\ContentTranslationHandler",
  *     "views_data" = "Drupal\views\EntityViewsData"
  *   },
  *   base_table = "entity_test_mulrev_changed",

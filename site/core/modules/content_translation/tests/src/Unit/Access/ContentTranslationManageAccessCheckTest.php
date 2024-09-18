@@ -1,12 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\content_translation\Unit\Access;
 
 use Drupal\content_translation\Access\ContentTranslationManageAccessCheck;
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\Cache\Cache;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Language\Language;
+use Drupal\Tests\Core\Entity\ContentEntityBaseMockableClass;
 use Drupal\Tests\UnitTestCase;
 use Symfony\Component\Routing\Route;
 
@@ -22,14 +26,14 @@ class ContentTranslationManageAccessCheckTest extends UnitTestCase {
   /**
    * The cache contexts manager.
    *
-   * @var \Drupal\Core\Cache\Context\CacheContextsManager|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Cache\Context\CacheContextsManager|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $cacheContextsManager;
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->cacheContextsManager = $this->getMockBuilder('Drupal\Core\Cache\Context\CacheContextsManager')
@@ -47,44 +51,38 @@ class ContentTranslationManageAccessCheckTest extends UnitTestCase {
    *
    * @covers ::access
    */
-  public function testCreateAccess() {
+  public function testCreateAccess(): void {
     // Set the mock translation handler.
-    $translation_handler = $this->getMock('\Drupal\content_translation\ContentTranslationHandlerInterface');
+    $translation_handler = $this->createMock('\Drupal\content_translation\ContentTranslationHandlerInterface');
     $translation_handler->expects($this->once())
       ->method('getTranslationAccess')
-      ->will($this->returnValue(AccessResult::allowed()));
+      ->willReturn(AccessResult::allowed());
 
-    $entity_manager = $this->getMock('Drupal\Core\Entity\EntityManagerInterface');
-    $entity_manager->expects($this->once())
+    $entity_type_manager = $this->createMock(EntityTypeManagerInterface::class);
+    $entity_type_manager->expects($this->once())
       ->method('getHandler')
       ->withAnyParameters()
-      ->will($this->returnValue($translation_handler));
+      ->willReturn($translation_handler);
 
     // Set our source and target languages.
     $source = 'en';
     $target = 'it';
 
     // Set the mock language manager.
-    $language_manager = $this->getMock('Drupal\Core\Language\LanguageManagerInterface');
-    $language_manager->expects($this->at(0))
-      ->method('getLanguage')
-      ->with($this->equalTo($source))
-      ->will($this->returnValue(new Language(['id' => 'en'])));
-    $language_manager->expects($this->at(1))
+    $language_manager = $this->createMock('Drupal\Core\Language\LanguageManagerInterface');
+    $language_manager->expects($this->once())
       ->method('getLanguages')
-      ->will($this->returnValue(['en' => [], 'it' => []]));
-    $language_manager->expects($this->at(2))
+      ->willReturn([$source => [], $target => []]);
+    $language_manager->expects($this->any())
       ->method('getLanguage')
-      ->with($this->equalTo($source))
-      ->will($this->returnValue(new Language(['id' => 'en'])));
-    $language_manager->expects($this->at(3))
-      ->method('getLanguage')
-      ->with($this->equalTo($target))
-      ->will($this->returnValue(new Language(['id' => 'it'])));
+      ->willReturnMap([
+        [$source, new Language(['id' => $source])],
+        [$target, new Language(['id' => $target])],
+      ]);
 
     // Set the mock entity. We need to use ContentEntityBase for mocking due to
     // issues with phpunit and multiple interfaces.
-    $entity = $this->getMockBuilder('Drupal\Core\Entity\ContentEntityBase')
+    $entity = $this->getMockBuilder(ContentEntityBaseMockableClass::class)
       ->disableOriginalConstructor()
       ->getMock();
     $entity->expects($this->once())
@@ -92,7 +90,7 @@ class ContentTranslationManageAccessCheckTest extends UnitTestCase {
     $entity->expects($this->once())
       ->method('getTranslationLanguages')
       ->with()
-      ->will($this->returnValue([]));
+      ->willReturn([]);
     $entity->expects($this->once())
       ->method('getCacheContexts')
       ->willReturn([]);
@@ -101,7 +99,7 @@ class ContentTranslationManageAccessCheckTest extends UnitTestCase {
       ->willReturn(Cache::PERMANENT);
     $entity->expects($this->once())
       ->method('getCacheTags')
-      ->will($this->returnValue(['node:1337']));
+      ->willReturn(['node:1337']);
     $entity->expects($this->once())
       ->method('getCacheContexts')
       ->willReturn([]);
@@ -111,17 +109,17 @@ class ContentTranslationManageAccessCheckTest extends UnitTestCase {
     $route->setRequirement('_access_content_translation_manage', 'create');
 
     // Set up the route match.
-    $route_match = $this->getMock('Drupal\Core\Routing\RouteMatchInterface');
+    $route_match = $this->createMock('Drupal\Core\Routing\RouteMatchInterface');
     $route_match->expects($this->once())
       ->method('getParameter')
       ->with('node')
-      ->will($this->returnValue($entity));
+      ->willReturn($entity);
 
     // Set the mock account.
-    $account = $this->getMock('Drupal\Core\Session\AccountInterface');
+    $account = $this->createMock('Drupal\Core\Session\AccountInterface');
 
     // The access check under test.
-    $check = new ContentTranslationManageAccessCheck($entity_manager, $language_manager);
+    $check = new ContentTranslationManageAccessCheck($entity_type_manager, $language_manager);
 
     // The request params.
     $language = 'en';

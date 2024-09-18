@@ -2,14 +2,14 @@
 
 namespace Drupal\Core\Controller;
 
+use Drupal\Core\DependencyInjection\AutowireTrait;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Logger\LoggerChannelTrait;
-use Drupal\Core\Routing\LinkGeneratorTrait;
 use Drupal\Core\Routing\RedirectDestinationTrait;
-use Drupal\Core\Routing\UrlGeneratorTrait;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Url;
 use Drupal\Core\Messenger\MessengerTrait;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
  * Utility base class for thin controllers.
@@ -34,19 +34,11 @@ use Drupal\Core\Messenger\MessengerTrait;
  */
 abstract class ControllerBase implements ContainerInjectionInterface {
 
-  use LinkGeneratorTrait;
+  use AutowireTrait;
   use LoggerChannelTrait;
   use MessengerTrait;
   use RedirectDestinationTrait;
   use StringTranslationTrait;
-  use UrlGeneratorTrait;
-
-  /**
-   * The entity manager.
-   *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
-   */
-  protected $entityManager;
 
   /**
    * The entity type manager.
@@ -112,30 +104,6 @@ abstract class ControllerBase implements ContainerInjectionInterface {
   protected $formBuilder;
 
   /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static();
-  }
-
-  /**
-   * Retrieves the entity manager service.
-   *
-   * @return \Drupal\Core\Entity\EntityManagerInterface
-   *   The entity manager service.
-   *
-   * @deprecated in Drupal 8.0.0, will be removed before Drupal 9.0.0.
-   *   Most of the time static::entityTypeManager() is supposed to be used
-   *   instead.
-   */
-  protected function entityManager() {
-    if (!$this->entityManager) {
-      $this->entityManager = $this->container()->get('entity.manager');
-    }
-    return $this->entityManager;
-  }
-
-  /**
    * Retrieves the entity type manager.
    *
    * @return \Drupal\Core\Entity\EntityTypeManagerInterface
@@ -179,13 +147,13 @@ abstract class ControllerBase implements ContainerInjectionInterface {
    * Retrieves a configuration object.
    *
    * This is the main entry point to the configuration API. Calling
-   * @code $this->config('book.admin') @endcode will return a configuration
-   * object in which the book module can store its administrative settings.
+   * @code $this->config('my_module.admin') @endcode will return a configuration
+   * object in which the my_module module can store its administrative settings.
    *
    * @param string $name
    *   The name of the configuration object to retrieve. The name corresponds to
-   *   a configuration file. For @code \Drupal::config('book.admin') @endcode,
-   *   the config object returned will contain the contents of book.admin
+   *   a configuration file. For @code \Drupal::config('my_module.admin') @endcode,
+   *   the config object returned will contain the contents of my_module.admin
    *   configuration file.
    *
    * @return \Drupal\Core\Config\Config
@@ -279,6 +247,27 @@ abstract class ControllerBase implements ContainerInjectionInterface {
       $this->languageManager = $this->container()->get('language_manager');
     }
     return $this->languageManager;
+  }
+
+  /**
+   * Returns a redirect response object for the specified route.
+   *
+   * @param string $route_name
+   *   The name of the route to which to redirect.
+   * @param array $route_parameters
+   *   (optional) Parameters for the route.
+   * @param array $options
+   *   (optional) An associative array of additional options.
+   * @param int $status
+   *   (optional) The HTTP redirect status code for the redirect. The default is
+   *   302 Found.
+   *
+   * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   *   A redirect response object that may be returned by the controller.
+   */
+  protected function redirect($route_name, array $route_parameters = [], array $options = [], $status = 302) {
+    $options['absolute'] = TRUE;
+    return new RedirectResponse(Url::fromRoute($route_name, $route_parameters, $options)->toString(), $status);
   }
 
   /**

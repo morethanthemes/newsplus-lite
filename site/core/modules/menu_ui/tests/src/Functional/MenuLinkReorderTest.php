@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\menu_ui\Functional;
 
 use Drupal\Tests\BrowserTestBase;
@@ -19,23 +21,26 @@ class MenuLinkReorderTest extends BrowserTestBase {
   protected $administrator;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['menu_ui', 'test_page_test', 'node', 'block'];
+  protected static $modules = ['menu_ui', 'test_page_test', 'node', 'block'];
 
   /**
-   * Test creating, editing, deleting menu links via node form widget.
+   * {@inheritdoc}
    */
-  public function testDefaultMenuLinkReorder() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * Tests creating, editing, deleting menu links via node form widget.
+   */
+  public function testDefaultMenuLinkReorder(): void {
 
     // Add the main menu block.
     $this->drupalPlaceBlock('system_menu_block:main');
 
     // Assert that the Home link is available.
     $this->drupalGet('test-page');
-    $this->assertLink('Home');
+    $this->assertSession()->linkExists('Home');
 
     // The administrator user that can re-order menu links.
     $this->administrator = $this->drupalCreateUser([
@@ -49,18 +54,20 @@ class MenuLinkReorderTest extends BrowserTestBase {
     $edit = [
       'links[menu_plugin_id:test_page_test.front_page][weight]' => -10,
     ];
-    $this->drupalPostForm('admin/structure/menu/manage/main', $edit, t('Save'));
+    $this->drupalGet('admin/structure/menu/manage/main');
+    $this->submitForm($edit, 'Save');
 
     // The link is still there.
     $this->drupalGet('test-page');
-    $this->assertLink('Home');
+    $this->assertSession()->linkExists('Home');
 
     // Clear all caches.
-    $this->drupalPostForm('admin/config/development/performance', [], t('Clear all caches'));
+    $this->drupalGet('admin/config/development/performance');
+    $this->submitForm([], 'Clear all caches');
 
     // Clearing all caches should not affect the state of the menu link.
     $this->drupalGet('test-page');
-    $this->assertLink('Home');
+    $this->assertSession()->linkExists('Home');
 
   }
 

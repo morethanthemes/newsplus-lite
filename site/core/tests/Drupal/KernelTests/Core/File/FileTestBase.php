@@ -1,22 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\File;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\KernelTests\KernelTestBase;
 
 /**
- * Base class for file tests that adds some additional file specific
- * assertions and helper functions.
+ * Provides file-specific assertions and helper functions.
  */
 abstract class FileTestBase extends KernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['system'];
+  protected static $modules = ['system'];
 
   /**
    * A stream wrapper scheme to register for the test.
@@ -35,7 +34,7 @@ abstract class FileTestBase extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     // \Drupal\KernelTests\KernelTestBase::bootKernel() sets a global override
     // for the default scheme because core relies on it in
@@ -65,18 +64,16 @@ abstract class FileTestBase extends KernelTestBase {
    */
   protected function setUpFilesystem() {
     $public_file_directory = $this->siteDirectory . '/files';
-
-    require_once 'core/includes/file.inc';
+    $private_file_directory = $this->siteDirectory . '/private';
 
     mkdir($this->siteDirectory, 0775);
     mkdir($this->siteDirectory . '/files', 0775);
-    mkdir($this->siteDirectory . '/files/config/' . CONFIG_SYNC_DIRECTORY, 0775, TRUE);
+    mkdir($this->siteDirectory . '/private', 0775);
+    mkdir($this->siteDirectory . '/files/config/sync', 0775, TRUE);
 
     $this->setSetting('file_public_path', $public_file_directory);
-
-    $GLOBALS['config_directories'] = [
-      CONFIG_SYNC_DIRECTORY => $this->siteDirectory . '/files/config/sync',
-    ];
+    $this->setSetting('file_private_path', $private_file_directory);
+    $this->setSetting('config_sync_directory', $this->siteDirectory . '/files/config/sync');
   }
 
   /**
@@ -101,7 +98,7 @@ abstract class FileTestBase extends KernelTestBase {
     // read/write/execute bits. On Windows, chmod() ignores the "group" and
     // "other" bits, and fileperms() returns the "user" bits in all three
     // positions. $expected_mode is updated to reflect this.
-    if (substr(PHP_OS, 0, 3) == 'WIN') {
+    if (str_starts_with(PHP_OS, 'WIN')) {
       // Reset the "group" and "other" bits.
       $expected_mode = $expected_mode & 0700;
       // Shift the "user" bits to the "group" and "other" positions also.
@@ -109,9 +106,9 @@ abstract class FileTestBase extends KernelTestBase {
     }
 
     if (!isset($message)) {
-      $message = t('Expected file permission to be %expected, actually were %actual.', ['%actual' => decoct($actual_mode), '%expected' => decoct($expected_mode)]);
+      $message = sprintf('Expected file permission to be %s, actually were %s.', decoct($actual_mode), decoct($expected_mode));
     }
-    $this->assertEqual($actual_mode, $expected_mode, $message);
+    $this->assertEquals($expected_mode, $actual_mode, $message);
   }
 
   /**
@@ -137,7 +134,7 @@ abstract class FileTestBase extends KernelTestBase {
     // read/write/execute bits. On Windows, chmod() ignores the "group" and
     // "other" bits, and fileperms() returns the "user" bits in all three
     // positions. $expected_mode is updated to reflect this.
-    if (substr(PHP_OS, 0, 3) == 'WIN') {
+    if (str_starts_with(PHP_OS, 'WIN')) {
       // Reset the "group" and "other" bits.
       $expected_mode = $expected_mode & 0700;
       // Shift the "user" bits to the "group" and "other" positions also.
@@ -145,26 +142,28 @@ abstract class FileTestBase extends KernelTestBase {
     }
 
     if (!isset($message)) {
-      $message = t('Expected directory permission to be %expected, actually were %actual.', ['%actual' => decoct($actual_mode), '%expected' => decoct($expected_mode)]);
+      $message = sprintf('Expected directory permission to be %s, actually were %s.', decoct($expected_mode), decoct($actual_mode));
     }
-    $this->assertEqual($actual_mode, $expected_mode, $message);
+    $this->assertEquals($expected_mode, $actual_mode, $message);
   }
 
   /**
    * Create a directory and assert it exists.
    *
-   * @param $path
+   * @param string $path
    *   Optional string with a directory path. If none is provided, a random
    *   name in the site's files directory will be used.
-   * @return
+   *
+   * @return string
    *   The path to the directory.
    */
   public function createDirectory($path = NULL) {
     // A directory to operate on.
     if (!isset($path)) {
-      $path = file_default_scheme() . '://' . $this->randomMachineName();
+      $path = 'public://' . $this->randomMachineName();
     }
-    $this->assertTrue(drupal_mkdir($path) && is_dir($path), 'Directory was created successfully.');
+    $this->assertTrue(\Drupal::service('file_system')->mkdir($path));
+    $this->assertDirectoryExists($path);
     return $path;
   }
 
@@ -180,17 +179,19 @@ abstract class FileTestBase extends KernelTestBase {
    * @param $scheme
    *   Optional string indicating the stream scheme to use. Drupal core includes
    *   public, private, and temporary. The public wrapper is the default.
-   * @return
+   *
+   * @return string
    *   File URI.
    */
   public function createUri($filepath = NULL, $contents = NULL, $scheme = NULL) {
     if (!isset($filepath)) {
       // Prefix with non-latin characters to ensure that all file-related
       // tests work with international filenames.
+      // cSpell:disable-next-line
       $filepath = 'Файл для тестирования ' . $this->randomMachineName();
     }
     if (!isset($scheme)) {
-      $scheme = file_default_scheme();
+      $scheme = 'public';
     }
     $filepath = $scheme . '://' . $filepath;
 
@@ -199,7 +200,7 @@ abstract class FileTestBase extends KernelTestBase {
     }
 
     file_put_contents($filepath, $contents);
-    $this->assertTrue(is_file($filepath), t('The test file exists on the disk.'), 'Create test file');
+    $this->assertFileExists($filepath);
     return $filepath;
   }
 

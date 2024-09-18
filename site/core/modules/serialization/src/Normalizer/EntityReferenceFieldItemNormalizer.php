@@ -4,6 +4,7 @@ namespace Drupal\serialization\Normalizer;
 
 use Drupal\Core\Entity\EntityRepositoryInterface;
 use Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem;
+use Drupal\file\FileInterface;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 
@@ -12,12 +13,7 @@ use Symfony\Component\Serializer\Exception\UnexpectedValueException;
  */
 class EntityReferenceFieldItemNormalizer extends FieldItemNormalizer {
 
-  /**
-   * The interface or class that this Normalizer supports.
-   *
-   * @var string
-   */
-  protected $supportedInterfaceOrClass = EntityReferenceItem::class;
+  use EntityReferenceFieldItemNormalizerTrait;
 
   /**
    * The entity repository.
@@ -27,7 +23,7 @@ class EntityReferenceFieldItemNormalizer extends FieldItemNormalizer {
   protected $entityRepository;
 
   /**
-   * Constructs a EntityReferenceFieldItemNormalizer object.
+   * Constructs an EntityReferenceFieldItemNormalizer object.
    *
    * @param \Drupal\Core\Entity\EntityRepositoryInterface $entity_repository
    *   The entity repository.
@@ -39,8 +35,10 @@ class EntityReferenceFieldItemNormalizer extends FieldItemNormalizer {
   /**
    * {@inheritdoc}
    */
-  public function normalize($field_item, $format = NULL, array $context = []) {
+  public function normalize($field_item, $format = NULL, array $context = []): array|string|int|float|bool|\ArrayObject|NULL {
     $values = parent::normalize($field_item, $format, $context);
+
+    $this->normalizeRootReferenceValue($values, $field_item);
 
     /** @var \Drupal\Core\Entity\EntityInterface $entity */
     if ($entity = $field_item->get('entity')->getValue()) {
@@ -51,10 +49,16 @@ class EntityReferenceFieldItemNormalizer extends FieldItemNormalizer {
       // Add a 'url' value if there is a reference and a canonical URL. Hard
       // code 'canonical' here as config entities override the default $rel
       // parameter value to 'edit-form.
-      if ($url = $entity->url('canonical')) {
-        $values['url'] = $url;
+      if ($entity->hasLinkTemplate('canonical') && !$entity->isNew() && $url = $entity->toUrl('canonical')->toString(TRUE)) {
+        $this->addCacheableDependency($context, $url);
+        $values['url'] = $url->getGeneratedUrl();
+      }
+      // @todo Remove in https://www.drupal.org/project/drupal/issues/2925520
+      elseif ($entity instanceof FileInterface) {
+        $values['url'] = $entity->createFileUrl(FALSE);
       }
     }
+
     return $values;
   }
 
@@ -66,14 +70,14 @@ class EntityReferenceFieldItemNormalizer extends FieldItemNormalizer {
       /** @var \Drupal\Core\Field\Plugin\Field\FieldType\EntityReferenceItem $field_item */
       $field_item = $context['target_instance'];
       if (empty($data['target_uuid'])) {
-        throw new InvalidArgumentException(sprintf('If provided "target_uuid" cannot be empty for field "%s".', $data['target_type'], $data['target_uuid'], $field_item->getName()));
+        throw new InvalidArgumentException(sprintf('If provided "target_uuid" cannot be empty for field "%s".', $field_item->getName()));
       }
       $target_type = $field_item->getFieldDefinition()->getSetting('target_type');
       if (!empty($data['target_type']) && $target_type !== $data['target_type']) {
         throw new UnexpectedValueException(sprintf('The field "%s" property "target_type" must be set to "%s" or omitted.', $field_item->getFieldDefinition()->getName(), $target_type));
       }
       if ($entity = $this->entityRepository->loadEntityByUuid($target_type, $data['target_uuid'])) {
-        return ['target_id' => $entity->id()];
+        return ['target_id' => $entity->id()] + array_intersect_key($data, $field_item->getProperties());
       }
       else {
         // Unable to load entity by uuid.
@@ -81,6 +85,15 @@ class EntityReferenceFieldItemNormalizer extends FieldItemNormalizer {
       }
     }
     return parent::constructValue($data, $context);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getSupportedTypes(?string $format): array {
+    return [
+      EntityReferenceItem::class => TRUE,
+    ];
   }
 
 }

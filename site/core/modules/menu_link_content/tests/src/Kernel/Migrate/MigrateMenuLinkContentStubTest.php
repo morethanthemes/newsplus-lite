@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\menu_link_content\Kernel\Migrate;
 
 use Drupal\Tests\migrate_drupal\Kernel\MigrateDrupalTestBase;
@@ -17,12 +19,12 @@ class MigrateMenuLinkContentStubTest extends MigrateDrupalTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['menu_link_content', 'link'];
+  protected static $modules = ['menu_link_content', 'link'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installEntitySchema('menu_link_content');
   }
@@ -30,7 +32,7 @@ class MigrateMenuLinkContentStubTest extends MigrateDrupalTestBase {
   /**
    * Tests creation of menu link content stubs.
    */
-  public function testStub() {
+  public function testStub(): void {
     $this->performStubTest('menu_link_content');
   }
 

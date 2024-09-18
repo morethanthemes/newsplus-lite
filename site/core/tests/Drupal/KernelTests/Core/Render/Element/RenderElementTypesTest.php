@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Render\Element;
 
 use Drupal\Component\Utility\Html;
@@ -7,23 +9,23 @@ use Drupal\Core\Url;
 use Drupal\KernelTests\KernelTestBase;
 
 /**
- * Tests the markup of core render element types passed to drupal_render().
+ * Tests the rendered markup of core render element types.
  *
  * @group Common
  */
 class RenderElementTypesTest extends KernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['system', 'router_test'];
+  protected static $modules = ['system', 'router_test'];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
     $this->installConfig(['system']);
-    \Drupal::service('router.builder')->rebuild();
   }
 
   /**
@@ -35,23 +37,18 @@ class RenderElementTypesTest extends KernelTestBase {
    *   The expected markup.
    * @param string $message
    *   Assertion message.
+   *
+   * @internal
    */
-  protected function assertElements(array $elements, $expected_html, $message) {
+  protected function assertElements(array $elements, string $expected_html, string $message): void {
     $actual_html = (string) \Drupal::service('renderer')->renderRoot($elements);
-
-    $out = '<table><tr>';
-    $out .= '<td valign="top"><pre>' . Html::escape($expected_html) . '</pre></td>';
-    $out .= '<td valign="top"><pre>' . Html::escape($actual_html) . '</pre></td>';
-    $out .= '</tr></table>';
-    $this->verbose($out);
-
-    $this->assertIdentical($actual_html, $expected_html, Html::escape($message));
+    $this->assertSame($expected_html, $actual_html, Html::escape($message));
   }
 
   /**
    * Tests system #type 'container'.
    */
-  public function testContainer() {
+  public function testContainer(): void {
     // Basic container with no attributes.
     $this->assertElements([
       '#type' => 'container',
@@ -79,7 +76,7 @@ class RenderElementTypesTest extends KernelTestBase {
   /**
    * Tests system #type 'html_tag'.
    */
-  public function testHtmlTag() {
+  public function testHtmlTag(): void {
     // Test void element.
     $this->assertElements([
       '#type' => 'html_tag',
@@ -117,7 +114,7 @@ class RenderElementTypesTest extends KernelTestBase {
   /**
    * Tests system #type 'more_link'.
    */
-  public function testMoreLink() {
+  public function testMoreLink(): void {
     $elements = [
       [
         'name' => "#type 'more_link' anchor tag generation without extra classes",
@@ -188,16 +185,16 @@ class RenderElementTypesTest extends KernelTestBase {
     ];
 
     foreach ($elements as $element) {
-      $xml = new \SimpleXMLElement(\Drupal::service('renderer')->renderRoot($element['value']));
+      $xml = new \SimpleXMLElement((string) \Drupal::service('renderer')->renderRoot($element['value']));
       $result = $xml->xpath($element['expected']);
-      $this->assertTrue($result, '"' . $element['name'] . '" input rendered correctly by drupal_render().');
+      $this->assertNotEmpty($result, '"' . $element['name'] . '" input rendered correctly.');
     }
   }
 
   /**
    * Tests system #type 'system_compact_link'.
    */
-  public function testSystemCompactLink() {
+  public function testSystemCompactLink(): void {
     $elements = [
       [
         'name' => "#type 'system_compact_link' when admin compact mode is off",
@@ -219,9 +216,9 @@ class RenderElementTypesTest extends KernelTestBase {
     ];
 
     foreach ($elements as $element) {
-      $xml = new \SimpleXMLElement(\Drupal::service('renderer')->renderRoot($element['value']));
+      $xml = new \SimpleXMLElement((string) \Drupal::service('renderer')->renderRoot($element['value']));
       $result = $xml->xpath($element['expected']);
-      $this->assertTrue($result, '"' . $element['name'] . '" is rendered correctly by drupal_render().');
+      $this->assertNotEmpty($result, '"' . $element['name'] . '" is rendered correctly.');
     }
 
     // Set admin compact mode on for additional tests.
@@ -235,9 +232,9 @@ class RenderElementTypesTest extends KernelTestBase {
       'expected' => '//div[@class="compact-link"]/a[contains(@href, "admin/compact?") and text()="Show descriptions"]',
     ];
 
-    $xml = new \SimpleXMLElement(\Drupal::service('renderer')->renderRoot($element['value']));
+    $xml = new \SimpleXMLElement((string) \Drupal::service('renderer')->renderRoot($element['value']));
     $result = $xml->xpath($element['expected']);
-    $this->assertTrue($result, '"' . $element['name'] . '" is rendered correctly by drupal_render().');
+    $this->assertNotEmpty($result, '"' . $element['name'] . '" is rendered correctly.');
   }
 
 }

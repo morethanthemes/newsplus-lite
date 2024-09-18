@@ -24,7 +24,7 @@ use Drupal\views\ViewsData;
 abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
 
   /**
-   * Where the $query object will reside:
+   * Where the $query object will reside.
    *
    * @var \Drupal\views\Plugin\views\query\QueryPluginBase
    */
@@ -45,6 +45,8 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
   public $tableAlias;
 
   /**
+   * The real field.
+   *
    * The actual field in the database table, maybe different
    * on other kind of query plugins/special handlers.
    *
@@ -81,6 +83,12 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
   protected $viewsData;
 
   /**
+   * Tracks whether the plugin is a handler.
+   */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
+  public bool $is_handler;
+
+  /**
    * Constructs a Handler object.
    *
    * @param array $configuration
@@ -98,7 +106,7 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
   /**
    * {@inheritdoc}
    */
-  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+  public function init(ViewExecutable $view, DisplayPluginBase $display, ?array &$options = NULL) {
     parent::init($view, $display, $options);
 
     // Check to see if this handler type is defaulted. Note that
@@ -193,16 +201,22 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
    * {@inheritdoc}
    */
   public function sanitizeValue($value, $type = NULL) {
+    if ($value === NULL) {
+      return '';
+    }
     switch ($type) {
       case 'xss':
         $value = Xss::filter($value);
         break;
+
       case 'xss_admin':
         $value = Xss::filterAdmin($value);
         break;
+
       case 'url':
         $value = Html::escape(UrlHelper::stripDangerousProtocols($value));
         break;
+
       default:
         $value = Html::escape($value);
         break;
@@ -230,11 +244,14 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
       default:
         return $string;
       case 'upper':
-        return Unicode::strtoupper($string);
+        return mb_strtoupper($string);
+
       case 'lower':
-        return Unicode::strtolower($string);
+        return mb_strtolower($string);
+
       case 'ucfirst':
         return Unicode::ucfirst($string);
+
       case 'ucwords':
         return Unicode::ucwords($string);
     }
@@ -248,7 +265,7 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
     // be moved into one because of the $form_state->getValues() hierarchy. Those
     // elements can add a #fieldset => 'fieldset_name' property, and they'll
     // be moved to their fieldset during pre_render.
-    $form['#pre_render'][] = [get_class($this), 'preRenderAddFieldsetMarkup'];
+    $form['#pre_render'][] = [static::class, 'preRenderAddFieldsetMarkup'];
 
     parent::buildOptionsForm($form, $form_state);
 
@@ -313,6 +330,7 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
   public function usesGroupBy() {
     return TRUE;
   }
+
   /**
    * Provide a form for aggregation settings.
    */
@@ -340,6 +358,7 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
 
   /**
    * Perform any necessary changes to the form values prior to storage.
+   *
    * There is no need for this function to actually store the data.
    */
   public function submitGroupByForm(&$form, FormStateInterface $form_state) {
@@ -347,6 +366,8 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
   }
 
   /**
+   * Determines if the handler has extra options.
+   *
    * If a handler has 'extra options' it will get a little settings widget and
    * another form called extra_options.
    */
@@ -371,6 +392,7 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
 
   /**
    * Perform any necessary changes to the form values prior to storage.
+   *
    * There is no need for this function to actually store the data.
    */
   public function submitExtraOptionsForm($form, FormStateInterface $form_state) {}
@@ -383,8 +405,7 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
   }
 
   /**
-   * Set new exposed option defaults when exposed setting is flipped
-   * on.
+   * Set new exposed option defaults when exposed setting is flipped on.
    */
   public function defaultExposeOptions() {}
 
@@ -394,17 +415,17 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
   public function exposedInfo() {}
 
   /**
-   * Render our chunk of the exposed handler form when selecting
+   * Render our chunk of the exposed handler form when selecting.
    */
   public function buildExposedForm(&$form, FormStateInterface $form_state) {}
 
   /**
-   * Validate the exposed handler form
+   * Validate the exposed handler form.
    */
   public function validateExposed(&$form, FormStateInterface $form_state) {}
 
   /**
-   * Submit the exposed handler form
+   * Submit the exposed handler form.
    */
   public function submitExposed(&$form, FormStateInterface $form_state) {}
 
@@ -420,6 +441,7 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
 
   /**
    * Perform any necessary changes to the form exposes prior to storage.
+   *
    * There is no need for this function to actually store the data.
    */
   public function submitExposeForm($form, FormStateInterface $form_state) {}
@@ -538,8 +560,9 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
   public function adminSummary() {}
 
   /**
-   * Determine if this item is 'exposed', meaning it provides form elements
-   * to let users modify the view.
+   * Determine if this item is 'exposed'.
+   *
+   * Exposed means it provides form elements to let users modify the view.
    *
    * @return bool
    */
@@ -556,6 +579,7 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
 
   /**
    * Define if the exposed input has to be submitted multiple times.
+   *
    * This is TRUE when exposed filters grouped are using checkboxes as
    * widgets.
    */
@@ -581,7 +605,7 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
    * {@inheritdoc}
    */
   public function getJoin() {
-    // get the join from this table that links back to the base table.
+    // Get the join from this table that links back to the base table.
     // Determine the primary table to seek
     if (empty($this->query->relationships[$this->relationship])) {
       $base_table = $this->view->storage->get('base_table');
@@ -748,7 +772,7 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
    */
   public function displayExposedForm($form, FormStateInterface $form_state) {
     $item = &$this->options;
-    // flip
+    // Flip
     $item['exposed'] = empty($item['exposed']);
 
     // If necessary, set new defaults:
@@ -771,6 +795,8 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
   }
 
   /**
+   * Submits a temporary form.
+   *
    * A submit handler that is used for storing temporary items when using
    * multi-step changes, such as ajax requests.
    */
@@ -831,7 +857,7 @@ abstract class HandlerBase extends PluginBase implements ViewsHandlerInterface {
   }
 
   /**
-   * Calculates options stored on the handler
+   * Calculates options stored on the handler.
    *
    * @param array $options
    *   The options stored in the handler

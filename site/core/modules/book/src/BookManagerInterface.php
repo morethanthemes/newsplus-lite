@@ -15,7 +15,7 @@ interface BookManagerInterface {
    * Gets the data structure representing a named menu tree.
    *
    * Since this can be the full tree including hidden items, the data returned
-   * may be used for generating an an admin interface or a select.
+   * may be used for generating an admin interface or a select.
    *
    * Note: based on menu_tree_all_data().
    *
@@ -31,7 +31,7 @@ interface BookManagerInterface {
    *   $link, in which case $max_depth should be greater than $link['depth'].
    *
    * @return array
-   *   An tree of menu links in an array, in the order they should be rendered.
+   *   A tree of menu links in an array, in the order they should be rendered.
    */
   public function bookTreeAllData($bid, $link = NULL, $max_depth = NULL);
 
@@ -44,7 +44,7 @@ interface BookManagerInterface {
    *   A fully loaded menu link.
    *
    * @return array
-   *   An array containing the active trail: a list of mlids.
+   *   An array containing the active trail: a list of menu link IDs.
    */
   public function getActiveTrailIds($bid, $link);
 
@@ -133,9 +133,6 @@ interface BookManagerInterface {
   /**
    * Provides book loading, access control and translation.
    *
-   * Note: copied from _menu_link_translate() in menu.inc, but reduced to the
-   * minimal code that's used.
-   *
    * @param array $link
    *   A book link.
    */
@@ -183,15 +180,23 @@ interface BookManagerInterface {
   public function updateOutline(NodeInterface $node);
 
   /**
-   * Saves a single book entry.
+   * Saves a link for a single book entry to the book.
    *
    * @param array $link
-   *   The link data to save.
+   *   The link data to save. $link['nid'] must be set. Other keys in this array
+   *   get default values from
+   *   \Drupal\book\BookManagerInterface::getLinkDefaults(). The array keys
+   *   available to be set are documented in
+   *   \Drupal\book\BookOutlineStorageInterface::loadMultiple().
    * @param bool $new
-   *   Is this a new book.
+   *   Whether this is a link to a new book entry.
    *
    * @return array
-   *   The book data of that node.
+   *   The book entry link information. This is $link with values added or
+   *   updated.
+   *
+   * @see \Drupal\book\BookManagerInterface::getLinkDefaults()
+   * @see \Drupal\book\BookOutlineStorageInterface::loadMultiple()
    */
   public function saveBookLink(array $link, $new);
 
@@ -274,7 +279,7 @@ interface BookManagerInterface {
    * @param array $link
    *   A fully loaded book link.
    *
-   * @return
+   * @return array
    *   A subtree of book links in an array, in the order they should be rendered.
    */
   public function bookSubtreeData($link);

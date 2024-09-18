@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\field\Kernel\Migrate\d7;
 
 use Drupal\Core\Entity\Entity\EntityViewMode;
@@ -13,9 +15,14 @@ use Drupal\migrate\MigrateExecutable;
 class RollbackViewModesTest extends MigrateViewModesTest {
 
   /**
+   * {@inheritdoc}
+   */
+  protected static $modules = ['text'];
+
+  /**
    * Tests migrating D7 view modes, then rolling back.
    */
-  public function testMigration() {
+  public function testMigration(): void {
     // Test that the view modes have migrated (prior to rollback).
     parent::testMigration();
 

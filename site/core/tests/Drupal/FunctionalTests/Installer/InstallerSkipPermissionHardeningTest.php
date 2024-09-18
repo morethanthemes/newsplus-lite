@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Installer;
 
 /**
@@ -8,6 +10,11 @@ namespace Drupal\FunctionalTests\Installer;
  * @group Installer
  */
 class InstallerSkipPermissionHardeningTest extends InstallerTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
@@ -21,9 +28,9 @@ class InstallerSkipPermissionHardeningTest extends InstallerTestBase {
    * {@inheritdoc}
    */
   protected function setUpSite() {
-    $site_directory = $this->container->get('app.root') . '/' . $this->siteDirectory;
-    $this->assertTrue(is_writable($site_directory));
-    $this->assertTrue(is_writable($site_directory . '/settings.php'));
+    $site_directory = $this->container->getParameter('app.root') . '/' . $this->siteDirectory;
+    $this->assertDirectoryIsWritable($site_directory);
+    $this->assertFileIsWritable($site_directory . '/settings.php');
 
     $this->assertSession()->responseContains('All necessary changes to <em class="placeholder">' . $this->siteDirectory . '</em> and <em class="placeholder">' . $this->siteDirectory . '/settings.php</em> have been made, so you should remove write permissions to them now in order to avoid security risks. If you are unsure how to do so, consult the <a href="https://www.drupal.org/server-permissions">online handbook</a>.');
 
@@ -33,7 +40,7 @@ class InstallerSkipPermissionHardeningTest extends InstallerTestBase {
   /**
    * Verifies the expected behaviors of the installation result.
    */
-  public function testInstalled() {
+  public function testInstalled(): void {
     $this->assertSession()->addressEquals('user/1');
     $this->assertSession()->statusCodeEquals(200);
   }

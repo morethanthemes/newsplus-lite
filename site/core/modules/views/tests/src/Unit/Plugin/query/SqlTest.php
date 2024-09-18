@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Unit\Plugin\query;
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityType;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Tests\UnitTestCase;
 use Drupal\views\Plugin\views\query\DateSqlInterface;
 use Drupal\views\Plugin\views\query\Sql;
@@ -27,12 +30,13 @@ class SqlTest extends UnitTestCase {
    * @covers ::getCacheTags
    * @covers ::getAllEntities
    */
-  public function testGetCacheTags() {
+  public function testGetCacheTags(): void {
     $view = $this->prophesize('Drupal\views\ViewExecutable')->reveal();
     $entity_type_manager = $this->prophesize(EntityTypeManagerInterface::class);
     $date_sql = $this->prophesize(DateSqlInterface::class);
+    $messenger = $this->prophesize(MessengerInterface::class);
 
-    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal());
+    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal(), $messenger->reveal());
     $query->view = $view;
 
     $result = [];
@@ -67,19 +71,20 @@ class SqlTest extends UnitTestCase {
     $result[] = $row;
     $view->result = $result;
 
-    $this->assertEquals(['entity_test:123', 'entity_test:124', 'entity_test:125', 'entity_test:126'], $query->getCacheTags());
+    $this->assertEqualsCanonicalizing(['entity_test:123', 'entity_test:124', 'entity_test:125', 'entity_test:126'], $query->getCacheTags());
   }
 
   /**
    * @covers ::getCacheTags
    * @covers ::getAllEntities
    */
-  public function testGetCacheMaxAge() {
+  public function testGetCacheMaxAge(): void {
     $view = $this->prophesize('Drupal\views\ViewExecutable')->reveal();
     $entity_type_manager = $this->prophesize(EntityTypeManagerInterface::class);
     $date_sql = $this->prophesize(DateSqlInterface::class);
+    $messenger = $this->prophesize(MessengerInterface::class);
 
-    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal());
+    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal(), $messenger->reveal());
     $query->view = $view;
 
     $view->result = [];
@@ -133,7 +138,6 @@ class SqlTest extends UnitTestCase {
   protected function setupEntityTypeManager(EntityTypeManagerInterface $entity_type_manager) {
     $container = \Drupal::hasContainer() ? \Drupal::getContainer() : new ContainerBuilder();
     $container->set('entity_type.manager', $entity_type_manager);
-    $container->set('entity.manager', $entity_type_manager);
     \Drupal::setContainer($container);
   }
 
@@ -244,7 +248,7 @@ class SqlTest extends UnitTestCase {
    * @covers ::loadEntities
    * @covers ::assignEntitiesToResult
    */
-  public function testLoadEntitiesWithEmptyResult() {
+  public function testLoadEntitiesWithEmptyResult(): void {
     $view = $this->prophesize('Drupal\views\ViewExecutable')->reveal();
     $view_entity = $this->prophesize(ViewEntityInterface::class);
     $view_entity->get('base_table')->willReturn('entity_first');
@@ -253,8 +257,9 @@ class SqlTest extends UnitTestCase {
 
     $entity_type_manager = $this->setupEntityTypes();
     $date_sql = $this->prophesize(DateSqlInterface::class);
+    $messenger = $this->prophesize(MessengerInterface::class);
 
-    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal());
+    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal(), $messenger->reveal());
     $query->view = $view;
 
     $result = [];
@@ -267,7 +272,7 @@ class SqlTest extends UnitTestCase {
    * @covers ::loadEntities
    * @covers ::assignEntitiesToResult
    */
-  public function testLoadEntitiesWithNoRelationshipAndNoRevision() {
+  public function testLoadEntitiesWithNoRelationshipAndNoRevision(): void {
     $view = $this->prophesize('Drupal\views\ViewExecutable')->reveal();
     $view_entity = $this->prophesize(ViewEntityInterface::class);
     $view_entity->get('base_table')->willReturn('entity_first');
@@ -282,8 +287,9 @@ class SqlTest extends UnitTestCase {
     ];
     $entity_type_manager = $this->setupEntityTypes($entities);
     $date_sql = $this->prophesize(DateSqlInterface::class);
+    $messenger = $this->prophesize(MessengerInterface::class);
 
-    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal());
+    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal(), $messenger->reveal());
     $query->view = $view;
 
     $result = [];
@@ -291,7 +297,7 @@ class SqlTest extends UnitTestCase {
       'id' => 1,
     ]);
     // Note: Let the same entity be returned multiple times, for example to
-    // support the translation usecase.
+    // support the translation use case.
     $result[] = new ResultRow([
       'id' => 2,
     ]);
@@ -324,7 +330,7 @@ class SqlTest extends UnitTestCase {
    * @covers ::loadEntities
    * @covers ::assignEntitiesToResult
    */
-  public function testLoadEntitiesWithRelationship() {
+  public function testLoadEntitiesWithRelationship(): void {
     // We don't use prophecy, because prophecy enforces methods.
     $view = $this->getMockBuilder(ViewExecutable::class)->disableOriginalConstructor()->getMock();
     $this->setupViewWithRelationships($view);
@@ -346,8 +352,9 @@ class SqlTest extends UnitTestCase {
     ];
     $entity_type_manager = $this->setupEntityTypes($entities);
     $date_sql = $this->prophesize(DateSqlInterface::class);
+    $messenger = $this->prophesize(MessengerInterface::class);
 
-    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal());
+    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal(), $messenger->reveal());
     $query->view = $view;
 
     $result = [];
@@ -383,7 +390,7 @@ class SqlTest extends UnitTestCase {
    * @covers ::loadEntities
    * @covers ::assignEntitiesToResult
    */
-  public function testLoadEntitiesWithNonEntityRelationship() {
+  public function testLoadEntitiesWithNonEntityRelationship(): void {
     // We don't use prophecy, because prophecy enforces methods.
     $view = $this->getMockBuilder(ViewExecutable::class)->disableOriginalConstructor()->getMock();
     $this->setupViewWithRelationships($view, 'entity_first_field_data');
@@ -401,8 +408,9 @@ class SqlTest extends UnitTestCase {
     ];
     $entity_type_manager = $this->setupEntityTypes($entities);
     $date_sql = $this->prophesize(DateSqlInterface::class);
+    $messenger = $this->prophesize(MessengerInterface::class);
 
-    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal());
+    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal(), $messenger->reveal());
     $query->view = $view;
 
     $result = [];
@@ -433,7 +441,7 @@ class SqlTest extends UnitTestCase {
    * @covers ::loadEntities
    * @covers ::assignEntitiesToResult
    */
-  public function testLoadEntitiesWithRevision() {
+  public function testLoadEntitiesWithRevision(): void {
     // We don't use prophecy, because prophecy enforces methods.
     $view = $this->getMockBuilder(ViewExecutable::class)
       ->disableOriginalConstructor()
@@ -452,8 +460,9 @@ class SqlTest extends UnitTestCase {
     ];
     $entity_type_manager = $this->setupEntityTypes([], $entity_revisions);
     $date_sql = $this->prophesize(DateSqlInterface::class);
+    $messenger = $this->prophesize(MessengerInterface::class);
 
-    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal());
+    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal(), $messenger->reveal());
     $query->view = $view;
 
     $result = [];
@@ -479,7 +488,7 @@ class SqlTest extends UnitTestCase {
    * @covers ::loadEntities
    * @covers ::assignEntitiesToResult
    */
-  public function testLoadEntitiesWithRevisionOfSameEntityType() {
+  public function testLoadEntitiesWithRevisionOfSameEntityType(): void {
     // We don't use prophecy, because prophecy enforces methods.
     $view = $this->getMockBuilder(ViewExecutable::class)
       ->disableOriginalConstructor()
@@ -506,8 +515,9 @@ class SqlTest extends UnitTestCase {
     ];
     $entity_type_manager = $this->setupEntityTypes($entity, $entity_revisions);
     $date_sql = $this->prophesize(DateSqlInterface::class);
+    $messenger = $this->prophesize(MessengerInterface::class);
 
-    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal());
+    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal(), $messenger->reveal());
     $query->view = $view;
 
     $result = [];
@@ -540,7 +550,7 @@ class SqlTest extends UnitTestCase {
    * @covers ::loadEntities
    * @covers ::assignEntitiesToResult
    */
-  public function testLoadEntitiesWithRelationshipAndRevision() {
+  public function testLoadEntitiesWithRelationshipAndRevision(): void {
     // We don't use prophecy, because prophecy enforces methods.
     $view = $this->getMockBuilder(ViewExecutable::class)->disableOriginalConstructor()->getMock();
     $this->setupViewWithRelationships($view);
@@ -564,8 +574,9 @@ class SqlTest extends UnitTestCase {
     ];
     $entity_type_manager = $this->setupEntityTypes($entities, $entity_revisions);
     $date_sql = $this->prophesize(DateSqlInterface::class);
+    $messenger = $this->prophesize(MessengerInterface::class);
 
-    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal());
+    $query = new Sql([], 'sql', [], $entity_type_manager->reveal(), $date_sql->reveal(), $messenger->reveal());
     $query->view = $view;
 
     $result = [];

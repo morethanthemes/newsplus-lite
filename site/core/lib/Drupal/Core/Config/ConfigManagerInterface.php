@@ -30,18 +30,18 @@ interface ConfigManagerInterface {
   public function loadConfigEntityByName($name);
 
   /**
-   * Gets the entity manager.
+   * Gets the entity type manager.
    *
-   * @return \Drupal\Core\Entity\EntityManagerInterface
-   *   The entity manager.
+   * @return \Drupal\Core\Entity\EntityTypeManagerInterface
+   *   The entity type manager.
    */
-  public function getEntityManager();
+  public function getEntityTypeManager();
 
   /**
    * Gets the config factory.
    *
    * @return \Drupal\Core\Config\ConfigFactoryInterface
-   *   The entity manager.
+   *   The config factory.
    */
   public function getConfigFactory();
 
@@ -114,7 +114,7 @@ interface ConfigManagerInterface {
    * @return \Drupal\Core\Config\Entity\ConfigEntityDependency[]
    *   An array of configuration entity dependency objects.
    */
-  public function findConfigEntityDependents($type, array $names);
+  public function findConfigEntityDependencies($type, array $names);
 
   /**
    * Finds config entities that are dependent on extensions or entities.
@@ -130,7 +130,7 @@ interface ConfigManagerInterface {
    * @return \Drupal\Core\Config\Entity\ConfigEntityInterface[]
    *   An array of dependencies as configuration entities.
    */
-  public function findConfigEntityDependentsAsEntities($type, array $names);
+  public function findConfigEntityDependenciesAsEntities($type, array $names);
 
   /**
    * Lists which config entities to update and delete on removal of a dependency.

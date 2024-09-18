@@ -3,7 +3,6 @@
 namespace Drupal\Core\Config\Entity;
 
 use Drupal\Component\Graph\Graph;
-use Drupal\Component\Utility\SortArray;
 
 /**
  * Provides a class to discover configuration entity dependencies.
@@ -16,30 +15,30 @@ use Drupal\Component\Utility\SortArray;
  *
  * The configuration dependency value is structured like this:
  * @code
- * array(
- *   'config' => array(
+ * [
+ *   'config' => [
  *     // An array of configuration entity object names. Recalculated on save.
- *   ),
- *   'content' => array(
+ *   ],
+ *   'content' => [
  *     // An array of content entity configuration dependency names. The default
  *     // format is "ENTITY_TYPE_ID:BUNDLE:UUID". Recalculated on save.
- *   ),
- *   'module' => array(
+ *   ],
+ *   'module' => [
  *     // An array of module names. Recalculated on save.
- *   ),
- *   'theme' => array(
+ *   ],
+ *   'theme' => [
  *     // An array of theme names. Recalculated on save.
- *   ),
- *   'enforced' => array(
+ *   ],
+ *   'enforced' => [
  *     // An array of configuration dependencies that the config entity is
  *     // ensured to have regardless of the details of the configuration. These
  *     // dependencies are not recalculated on save.
- *     'config' => array(),
- *     'content' => array(),
- *     'module' => array(),
- *     'theme' => array(),
+ *     'config' => [],
+ *     'content' => [],
+ *     'module' => [],
+ *     'theme' => [],
  *   ),
- * );
+ * ];
  * @endcode
  *
  * Configuration entity dependencies are recalculated on save based on the
@@ -62,18 +61,28 @@ use Drupal\Component\Utility\SortArray;
  * dependencies. Implementations should call the base class implementation to
  * inherit the generic functionality.
  *
- * Classes for configurable plugins are a special case. They can either declare
- * their configuration dependencies using the calculateDependencies() method
- * described in the paragraph above, or if they have only static dependencies,
- * these can be declared using the 'config_dependencies' annotation key.
+ * Some configuration entities have dependencies from plugins and third-party
+ * settings; these dependencies can be collected by
+ * \Drupal\Core\Config\Entity\ConfigEntityBase::calculateDependencies().
+ * Entities with third-party settings need to implement
+ * \Drupal\Core\Config\Entity\ThirdPartySettingsInterface in order to trigger
+ * this generic dependency collection. Entities with plugin dependencies need to
+ * implement \Drupal\Core\Entity\EntityWithPluginCollectionInterface; this
+ * causes the base calculateDependencies() method to add the plugins' providers
+ * as dependencies, as well as dependencies declared in the
+ * "config_dependencies" key from the plugins' definitions. In addition, plugins
+ * that implement \Drupal\Component\Plugin\ConfigurablePluginInterface can
+ * declare additional dependencies using
+ * \Drupal\Component\Plugin\DependentPluginInterface::calculateDependencies(),
+ * and these will also be collected by the base method.
  *
  * If an extension author wants a configuration entity to depend on something
  * that is not calculable then they can add these dependencies to the enforced
- * dependencies key. For example, the Forum module provides the forum node type
- * and in order for it to be deleted when the forum module is uninstalled it has
- * an enforced dependency on the module. The dependency on the Forum module can
- * not be calculated since there is nothing inherent in the state of the node
- * type configuration entity that depends on functionality provided by the Forum
+ * dependencies key. For example, a custom module that provides a node type can
+ * have that type deleted when the module is uninstalled, if it has an enforced
+ * dependency on the module. The dependency on the custom module can not be
+ * calculated since there is nothing inherent in the state of the node type
+ * configuration entity that depends on functionality provided by the custom
  * module.
  *
  * Once declared properly, dependencies are saved to the configuration entity's
@@ -113,6 +122,7 @@ use Drupal\Component\Utility\SortArray;
  * @see \Drupal\Core\Config\Entity\ConfigEntityInterface::getDependencies()
  * @see \Drupal\Core\Config\Entity\ConfigEntityInterface::onDependencyRemoval()
  * @see \Drupal\Core\Config\Entity\ConfigEntityBase::addDependency()
+ * @see \Drupal\Core\Config\Entity\ConfigEntityBase::calculateDependencies()
  * @see \Drupal\Core\Config\ConfigInstallerInterface::installDefaultConfig()
  * @see \Drupal\Core\Config\ConfigManagerInterface::uninstall()
  * @see \Drupal\Core\Config\Entity\ConfigEntityDependency
@@ -187,7 +197,7 @@ class ConfigDependencyManager {
    * @param array $keys
    *   The keys whose values to extract.
    *
-   * @return
+   * @return array
    *   An array keyed by the $keys passed in. The values are arrays keyed by the
    *   row from the graph and the value is the corresponding value for the key
    *   from the graph.
@@ -217,56 +227,6 @@ class ConfigDependencyManager {
     array_multisort($sorts['weight'], SORT_ASC, SORT_NUMERIC, $sorts['name'], SORT_ASC, SORT_NATURAL | SORT_FLAG_CASE, $graph);
     // Use array_intersect_key() to exclude modules and themes from the list.
     return array_keys(array_intersect_key($graph, $this->data));
-  }
-
-  /**
-   * Sorts the dependency graph by weight and alphabetically.
-   *
-   * @deprecated in Drupal 8.2.0, will be removed before Drupal 9.0.0. Use
-   * \Drupal\Core\Config\Entity\ConfigDependencyManager::prepareMultisort() and
-   * array_multisort() instead.
-   *
-   * @param array $a
-   *   First item for comparison. The compared items should be associative
-   *   arrays that include a 'weight' and a 'name' key.
-   * @param array $b
-   *   Second item for comparison.
-   *
-   * @return int
-   *   The comparison result for uasort().
-   */
-  protected static function sortGraphByWeight(array $a, array $b) {
-    $weight_cmp = SortArray::sortByKeyInt($a, $b, 'weight');
-
-    if ($weight_cmp === 0) {
-      return SortArray::sortByKeyString($a, $b, 'name');
-    }
-    return $weight_cmp;
-  }
-
-  /**
-   * Sorts the dependency graph by reverse weight and alphabetically.
-   *
-   * @deprecated in Drupal 8.2.0, will be removed before Drupal 9.0.0. Use
-   * \Drupal\Core\Config\Entity\ConfigDependencyManager::prepareMultisort() and
-   * array_multisort() instead.
-   *
-   * @param array $a
-   *   First item for comparison. The compared items should be associative
-   *   arrays that include a 'weight' and a 'name' key.
-   * @param array $b
-   *   Second item for comparison.
-   *
-   * @return int
-   *   The comparison result for uasort().
-   */
-  public static function sortGraph(array $a, array $b) {
-    $weight_cmp = SortArray::sortByKeyInt($a, $b, 'weight') * -1;
-
-    if ($weight_cmp === 0) {
-      return SortArray::sortByKeyString($a, $b, 'name');
-    }
-    return $weight_cmp;
   }
 
   /**
@@ -356,21 +316,21 @@ class ConfigDependencyManager {
    * @param array $dependencies
    *   The configuration dependencies. The array is structured like this:
    *   @code
-   *   array(
-   *     'config' => array(
+   *   [
+   *     'config' => [
    *       // An array of configuration entity object names.
-   *     ),
-   *     'content' => array(
+   *     ],
+   *     'content' => [
    *       // An array of content entity configuration dependency names. The default
    *       // format is "ENTITY_TYPE_ID:BUNDLE:UUID".
-   *     ),
-   *     'module' => array(
+   *     ],
+   *     'module' => [
    *       // An array of module names.
-   *     ),
-   *     'theme' => array(
+   *     ],
+   *     'theme' => [
    *       // An array of theme names.
-   *     ),
-   *   );
+   *     ],
+   *   ];
    *   @endcode
    *
    * @return $this

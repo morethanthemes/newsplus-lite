@@ -2,11 +2,11 @@
 
 namespace Drupal\book\Cache;
 
+use Drupal\book\BookManagerInterface;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Cache\Context\CacheContextInterface;
-use Symfony\Component\DependencyInjection\ContainerAwareInterface;
-use Symfony\Component\DependencyInjection\ContainerAwareTrait;
-use Symfony\Component\HttpFoundation\RequestStack;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\node\NodeInterface;
 
 /**
  * Defines the book navigation cache context service.
@@ -16,29 +16,30 @@ use Symfony\Component\HttpFoundation\RequestStack;
  * This allows for book navigation location-aware caching. It depends on:
  * - whether the current route represents a book node at all
  * - and if so, where in the book hierarchy we are
- *
- * This class is container-aware to avoid initializing the 'book.manager'
- * service when it is not necessary.
  */
-class BookNavigationCacheContext implements CacheContextInterface, ContainerAwareInterface {
-
-  use ContainerAwareTrait;
+class BookNavigationCacheContext implements CacheContextInterface {
 
   /**
-   * The request stack.
+   * The current route match.
    *
-   * @var \Symfony\Component\HttpFoundation\RequestStack
+   * @var \Drupal\Core\Routing\RouteMatchInterface
    */
-  protected $requestStack;
+  protected $routeMatch;
 
   /**
    * Constructs a new BookNavigationCacheContext service.
    *
-   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
-   *   The request stack.
+   * @param \Drupal\Core\Routing\RouteMatchInterface $route_match
+   *   The current route match.
+   * @param \Drupal\book\BookManagerInterface|null $bookManagerService
+   *   The book manager service.
    */
-  public function __construct(RequestStack $request_stack) {
-    $this->requestStack = $request_stack;
+  public function __construct(RouteMatchInterface $route_match, public ?BookManagerInterface $bookManagerService = NULL) {
+    $this->routeMatch = $route_match;
+    if ($this->bookManagerService === NULL) {
+      @trigger_error('Calling ' . __METHOD__ . ' without the $bookManagerService argument is deprecated in drupal:10.2.0 and it will be required in drupal:11.0.0. See https://www.drupal.org/node/3397515', E_USER_DEPRECATED);
+      $this->bookManagerService = \Drupal::service('book.manager');
+    }
   }
 
   /**
@@ -54,8 +55,9 @@ class BookNavigationCacheContext implements CacheContextInterface, ContainerAwar
   public function getContext() {
     // Find the current book's ID.
     $current_bid = 0;
-    if ($node = $this->requestStack->getCurrentRequest()->get('node')) {
-      $current_bid = empty($node->book['bid']) ? 0 : $node->book['bid'];
+    $node = $this->routeMatch->getParameter('node');
+    if ($node instanceof NodeInterface && !empty($node->book['bid'])) {
+      $current_bid = $node->book['bid'];
     }
 
     // If we're not looking at a book node, then we're not navigating a book.
@@ -64,7 +66,7 @@ class BookNavigationCacheContext implements CacheContextInterface, ContainerAwar
     }
 
     // If we're looking at a book node, get the trail for that node.
-    $active_trail = $this->container->get('book.manager')
+    $active_trail = $this->bookManagerService
       ->getActiveTrailIds($node->book['bid'], $node->book);
     return implode('|', $active_trail);
   }
@@ -76,7 +78,8 @@ class BookNavigationCacheContext implements CacheContextInterface, ContainerAwar
     // The book active trail depends on the node and data attached to it.
     // That information is however not stored as part of the node.
     $cacheable_metadata = new CacheableMetadata();
-    if ($node = $this->requestStack->getCurrentRequest()->get('node')) {
+    $node = $this->routeMatch->getParameter('node');
+    if ($node instanceof NodeInterface) {
       // If the node is part of a book then we can use the cache tag for that
       // book. If not, then it can't be optimized away.
       if (!empty($node->book['bid'])) {

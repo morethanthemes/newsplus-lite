@@ -2,9 +2,12 @@
 
 namespace Drupal\Core\Entity;
 
+use Drupal\Core\Messenger\MessengerTrait;
 use Drupal\Core\Routing\RedirectDestinationTrait;
 use Drupal\Core\Url;
+use Drupal\Component\Serialization\Json;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Entity\Query\QueryInterface;
 
 /**
  * Defines a generic implementation to build a listing of entities.
@@ -13,6 +16,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class EntityListBuilder extends EntityHandlerBase implements EntityListBuilderInterface, EntityHandlerInterface {
 
+  use MessengerTrait;
   use RedirectDestinationTrait;
 
   /**
@@ -52,7 +56,7 @@ class EntityListBuilder extends EntityHandlerBase implements EntityListBuilderIn
   public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
     return new static(
       $entity_type,
-      $container->get('entity.manager')->getStorage($entity_type->id())
+      $container->get('entity_type.manager')->getStorage($entity_type->id())
     );
   }
 
@@ -92,31 +96,25 @@ class EntityListBuilder extends EntityHandlerBase implements EntityListBuilderIn
    *   An array of entity IDs.
    */
   protected function getEntityIds() {
+    return $this->getEntityListQuery()->execute();
+  }
+
+  /**
+   * Returns a query object for loading entity IDs from the storage.
+   *
+   * @return \Drupal\Core\Entity\Query\QueryInterface
+   *   A query object used to load entity IDs.
+   */
+  protected function getEntityListQuery(): QueryInterface {
     $query = $this->getStorage()->getQuery()
+      ->accessCheck(TRUE)
       ->sort($this->entityType->getKey('id'));
 
     // Only add the pager if a limit is specified.
     if ($this->limit) {
       $query->pager($this->limit);
     }
-    return $query->execute();
-  }
-
-  /**
-   * Gets the label of an entity.
-   *
-   * @param \Drupal\Core\Entity\EntityInterface $entity
-   *   The entity being listed.
-   *
-   * @return string
-   *   The entity label.
-   *
-   * @deprecated in Drupal 8.0.x, will be removed before Drupal 9.0.0
-   *   Use $entity->label() instead. This method used to escape the entity
-   *   label. The render system's autoescape is now relied upon.
-   */
-  protected function getLabel(EntityInterface $entity) {
-    return $entity->label();
+    return $query;
   }
 
   /**
@@ -144,17 +142,46 @@ class EntityListBuilder extends EntityHandlerBase implements EntityListBuilderIn
   protected function getDefaultOperations(EntityInterface $entity) {
     $operations = [];
     if ($entity->access('update') && $entity->hasLinkTemplate('edit-form')) {
+      $edit_url = $this->ensureDestination($entity->toUrl('edit-form'));
+      if (!empty($entity->label())) {
+        $label = $this->t('Edit @entity_label', ['@entity_label' => $entity->label()]);
+      }
+      else {
+        $label = $this->t('Edit @entity_bundle @entity_id', ['@entity_bundle' => $entity->bundle(), '@entity_id' => $entity->id()]);
+      }
+      $attributes = $edit_url->getOption('attributes') ?: [];
+      $attributes += ['aria-label' => $label];
+      $edit_url->setOption('attributes', $attributes);
+
       $operations['edit'] = [
         'title' => $this->t('Edit'),
         'weight' => 10,
-        'url' => $this->ensureDestination($entity->toUrl('edit-form')),
+        'url' => $edit_url,
       ];
     }
     if ($entity->access('delete') && $entity->hasLinkTemplate('delete-form')) {
+      $delete_url = $this->ensureDestination($entity->toUrl('delete-form'));
+      if (!empty($entity->label())) {
+        $label = $this->t('Delete @entity_label', ['@entity_label' => $entity->label()]);
+      }
+      else {
+        $label = $this->t('Delete @entity_bundle @entity_id', ['@entity_bundle' => $entity->bundle(), '@entity_id' => $entity->id()]);
+      }
+      $attributes = $delete_url->getOption('attributes') ?: [];
+      $attributes += ['aria-label' => $label];
+      $delete_url->setOption('attributes', $attributes);
+
       $operations['delete'] = [
         'title' => $this->t('Delete'),
         'weight' => 100,
-        'url' => $this->ensureDestination($entity->toUrl('delete-form')),
+        'attributes' => [
+          'class' => ['use-ajax'],
+          'data-dialog-type' => 'modal',
+          'data-dialog-options' => Json::encode([
+            'width' => 880,
+          ]),
+        ],
+        'url' => $delete_url,
       ];
     }
 
@@ -205,6 +232,10 @@ class EntityListBuilder extends EntityHandlerBase implements EntityListBuilderIn
     $build = [
       '#type' => 'operations',
       '#links' => $this->getOperations($entity),
+      // Allow links to use modals.
+      '#attached' => [
+        'library' => ['core/drupal.dialog.ajax'],
+      ],
     ];
 
     return $build;
@@ -223,7 +254,7 @@ class EntityListBuilder extends EntityHandlerBase implements EntityListBuilderIn
       '#header' => $this->buildHeader(),
       '#title' => $this->getTitle(),
       '#rows' => [],
-      '#empty' => $this->t('There is no @label yet.', ['@label' => $this->entityType->getLabel()]),
+      '#empty' => $this->t('There are no @label yet.', ['@label' => $this->entityType->getPluralLabel()]),
       '#cache' => [
         'contexts' => $this->entityType->getListCacheContexts(),
         'tags' => $this->entityType->getListCacheTags(),
@@ -247,9 +278,7 @@ class EntityListBuilder extends EntityHandlerBase implements EntityListBuilderIn
   /**
    * Gets the title of the page.
    */
-  protected function getTitle() {
-    return;
-  }
+  protected function getTitle() {}
 
   /**
    * Ensures that a destination is present on the given URL.

@@ -2,7 +2,9 @@
 
 namespace Drupal\media\Plugin\media\Source;
 
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Drupal\file\FileInterface;
+use Drupal\media\Attribute\MediaSource;
 use Drupal\media\MediaInterface;
 use Drupal\media\MediaTypeInterface;
 use Drupal\media\MediaSourceBase;
@@ -11,16 +13,21 @@ use Drupal\media\MediaSourceBase;
  * File entity media source.
  *
  * @see \Drupal\file\FileInterface
- *
- * @MediaSource(
- *   id = "file",
- *   label = @Translation("File"),
- *   description = @Translation("Use local files for reusable media."),
- *   allowed_field_types = {"file"},
- *   default_thumbnail_filename = "generic.png"
- * )
  */
+#[MediaSource(
+  id: "file",
+  label: new TranslatableMarkup("File"),
+  description: new TranslatableMarkup("Use local files for reusable media."),
+  allowed_field_types: ["file"],
+)]
 class File extends MediaSourceBase {
+
+  /**
+   * Key for "Name" metadata attribute.
+   *
+   * @var string
+   */
+  const METADATA_ATTRIBUTE_NAME = 'name';
 
   /**
    * Key for "MIME type" metadata attribute.
@@ -36,12 +43,12 @@ class File extends MediaSourceBase {
    */
   const METADATA_ATTRIBUTE_SIZE = 'filesize';
 
-
   /**
    * {@inheritdoc}
    */
   public function getMetadataAttributes() {
     return [
+      static::METADATA_ATTRIBUTE_NAME => $this->t('Name'),
       static::METADATA_ATTRIBUTE_MIME => $this->t('MIME type'),
       static::METADATA_ATTRIBUTE_SIZE => $this->t('File size'),
     ];
@@ -58,14 +65,15 @@ class File extends MediaSourceBase {
       return parent::getMetadata($media, $attribute_name);
     }
     switch ($attribute_name) {
-      case 'mimetype':
-        return $file->getMimeType();
-
-      case 'filesize':
-        return $file->getSize();
-
+      case static::METADATA_ATTRIBUTE_NAME:
       case 'default_name':
         return $file->getFilename();
+
+      case static::METADATA_ATTRIBUTE_MIME:
+        return $file->getMimeType();
+
+      case static::METADATA_ATTRIBUTE_SIZE:
+        return $file->getSize();
 
       case 'thumbnail_uri':
         return $this->getThumbnail($file) ?: parent::getMetadata($media, $attribute_name);

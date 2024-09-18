@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Block;
 
 use Drupal\block_test\PluginForm\EmptyBlockForm;
@@ -15,12 +17,12 @@ class MultipleBlockFormTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['system', 'block', 'block_test'];
+  protected static $modules = ['system', 'block', 'block_test'];
 
   /**
    * Tests that blocks can have multiple forms.
    */
-  public function testMultipleForms() {
+  public function testMultipleForms(): void {
     $configuration = ['label' => 'A very cool block'];
     $block = \Drupal::service('plugin.manager.block')->createInstance('test_multiple_forms_block', $configuration);
 
@@ -32,7 +34,7 @@ class MultipleBlockFormTest extends KernelTestBase {
 
     // Ensure that EmptyBlockForm is used and the plugin is set.
     $this->assertInstanceOf(EmptyBlockForm::class, $form_object2);
-    $this->assertAttributeEquals($block, 'plugin', $form_object2);
+    $this->assertEquals($block, $form_object2->plugin);
   }
 
 }

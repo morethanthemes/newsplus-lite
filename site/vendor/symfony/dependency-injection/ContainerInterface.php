@@ -12,7 +12,7 @@
 namespace Symfony\Component\DependencyInjection;
 
 use Psr\Container\ContainerInterface as PsrContainerInterface;
-use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
+use Symfony\Component\DependencyInjection\Exception\ParameterNotFoundException;
 use Symfony\Component\DependencyInjection\Exception\ServiceCircularReferenceException;
 use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
 
@@ -24,77 +24,49 @@ use Symfony\Component\DependencyInjection\Exception\ServiceNotFoundException;
  */
 interface ContainerInterface extends PsrContainerInterface
 {
-    const EXCEPTION_ON_INVALID_REFERENCE = 1;
-    const NULL_ON_INVALID_REFERENCE = 2;
-    const IGNORE_ON_INVALID_REFERENCE = 3;
-    const IGNORE_ON_UNINITIALIZED_REFERENCE = 4;
+    public const RUNTIME_EXCEPTION_ON_INVALID_REFERENCE = 0;
+    public const EXCEPTION_ON_INVALID_REFERENCE = 1;
+    public const NULL_ON_INVALID_REFERENCE = 2;
+    public const IGNORE_ON_INVALID_REFERENCE = 3;
+    public const IGNORE_ON_UNINITIALIZED_REFERENCE = 4;
 
     /**
-     * Sets a service.
-     *
-     * @param string $id      The service identifier
-     * @param object $service The service instance
+     * @return void
      */
-    public function set($id, $service);
+    public function set(string $id, ?object $service);
 
     /**
-     * Gets a service.
+     * @template B of self::*_REFERENCE
      *
-     * @param string $id              The service identifier
-     * @param int    $invalidBehavior The behavior when the service does not exist
+     * @param B $invalidBehavior
      *
-     * @return object The associated service
+     * @psalm-return (B is self::EXCEPTION_ON_INVALID_REFERENCE|self::RUNTIME_EXCEPTION_ON_INVALID_REFERENCE ? object : object|null)
      *
      * @throws ServiceCircularReferenceException When a circular reference is detected
      * @throws ServiceNotFoundException          When the service is not defined
      *
      * @see Reference
      */
-    public function get($id, $invalidBehavior = self::EXCEPTION_ON_INVALID_REFERENCE);
+    public function get(string $id, int $invalidBehavior = self::EXCEPTION_ON_INVALID_REFERENCE): ?object;
 
-    /**
-     * Returns true if the given service is defined.
-     *
-     * @param string $id The service identifier
-     *
-     * @return bool true if the service is defined, false otherwise
-     */
-    public function has($id);
+    public function has(string $id): bool;
 
     /**
      * Check for whether or not a service has been initialized.
-     *
-     * @param string $id
-     *
-     * @return bool true if the service has been initialized, false otherwise
      */
-    public function initialized($id);
+    public function initialized(string $id): bool;
 
     /**
-     * Gets a parameter.
+     * @return array|bool|string|int|float|\UnitEnum|null
      *
-     * @param string $name The parameter name
-     *
-     * @return mixed The parameter value
-     *
-     * @throws InvalidArgumentException if the parameter is not defined
+     * @throws ParameterNotFoundException if the parameter is not defined
      */
-    public function getParameter($name);
+    public function getParameter(string $name);
+
+    public function hasParameter(string $name): bool;
 
     /**
-     * Checks if a parameter exists.
-     *
-     * @param string $name The parameter name
-     *
-     * @return bool The presence of parameter in container
+     * @return void
      */
-    public function hasParameter($name);
-
-    /**
-     * Sets a parameter.
-     *
-     * @param string $name  The parameter name
-     * @param mixed  $value The parameter value
-     */
-    public function setParameter($name, $value);
+    public function setParameter(string $name, array|bool|string|int|float|\UnitEnum|null $value);
 }

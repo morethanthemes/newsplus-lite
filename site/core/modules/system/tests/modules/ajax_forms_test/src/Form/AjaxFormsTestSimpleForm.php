@@ -65,7 +65,7 @@ class AjaxFormsTestSimpleForm extends FormBase {
       $form['select_' . $key . '_callback'] = [
         '#type' => 'select',
         '#title' => $this->t('Test %key callbacks', ['%key' => $key]),
-        '#options' => ['red' => 'red'],
+        '#options' => ['red' => 'red', 'green' => 'green'],
         '#ajax' => ['callback' => $value],
       ];
     }
@@ -111,6 +111,40 @@ class AjaxFormsTestSimpleForm extends FormBase {
       '#title' => $this->t('Another AJAX checkbox in a nested group'),
     ];
 
+    $form['textfield_focus_tests'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Test group 2'),
+      '#open' => TRUE,
+    ];
+    $form['textfield_focus_tests']['textfield'] = [
+      '#type' => 'textfield',
+      '#title' => 'Textfield 1',
+      '#ajax' => [
+        'callback' => [static::class, 'textfieldCallback'],
+      ],
+    ];
+    $form['textfield_focus_tests']['textfield_2'] = [
+      '#type' => 'textfield',
+      '#title' => 'Textfield 2',
+      '#ajax' => [
+        'callback' => [static::class, 'textfieldCallback'],
+        'event' => 'change',
+        'refocus-blur' => FALSE,
+      ],
+    ];
+    $form['textfield_focus_tests']['textfield_3'] = [
+      '#type' => 'textfield',
+      '#title' => 'Textfield 3',
+      '#ajax' => [
+        'callback' => [static::class, 'textfieldCallback'],
+        'event' => 'change',
+      ],
+    ];
+
+    return $form;
+  }
+
+  public static function textfieldCallback($form) {
     return $form;
   }
 

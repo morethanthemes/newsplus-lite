@@ -1,23 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\media\Kernel;
 
-use Drupal\Component\Render\FormattableMarkup;
 use Drupal\language\Entity\ConfigurableLanguage;
+use Drupal\content_translation\ContentTranslationHandler;
 
 /**
- * Tests multilanguage fields logic.
+ * Tests multilingual fields logic.
  *
  * @group media
  */
 class MediaTranslationTest extends MediaKernelTestBase {
 
   /**
-   * Modules to install.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['language'];
+  protected static $modules = ['language' , 'content_translation'];
 
   /**
    * The test media translation type.
@@ -29,7 +29,7 @@ class MediaTranslationTest extends MediaKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installConfig(['language']);
@@ -48,12 +48,16 @@ class MediaTranslationTest extends MediaKernelTestBase {
   }
 
   /**
-   * Test translatable fields storage/retrieval.
+   * Tests translatable fields storage/retrieval.
    */
-  public function testTranslatableFieldSaveLoad() {
+  public function testTranslatableFieldSaveLoad(): void {
     /** @var \Drupal\Core\Entity\EntityTypeInterface $entity_type */
     $entity_type = $this->container->get('entity_type.manager')->getDefinition('media');
     $this->assertTrue($entity_type->isTranslatable(), 'Media is translatable.');
+
+    // Check if the translation handler uses the content_translation handler.
+    $translation_handler_class = $entity_type->getHandlerClass('translation');
+    $this->assertEquals(ContentTranslationHandler::class, $translation_handler_class, 'Translation handler is set to use the content_translation handler.');
 
     // Prepare the field translations.
     $source_field_definition = $this->testTranslationMediaType->getSource()->getSourceFieldDefinition($this->testTranslationMediaType);
@@ -92,11 +96,11 @@ class MediaTranslationTest extends MediaKernelTestBase {
       foreach ($items as $delta => $item) {
         $result = $result && $item['value'] == $media_translation->{$source_field_definition->getName()}[$delta]->value;
       }
-      $this->assertTrue($result, new FormattableMarkup('%language translation field value not correct.', ['%language' => $langcode]));
-      $this->assertEquals('public://' . $langcode . '.png', $media_translation->getSource()->getMetadata($media_translation, 'thumbnail_uri'), new FormattableMarkup('%language translation thumbnail metadata attribute is not correct.', ['%language' => $langcode]));
-      $this->assertEquals('public://' . $langcode . '.png', $media_translation->get('thumbnail')->entity->getFileUri(), new FormattableMarkup('%language translation thumbnail value is not correct.', ['%language' => $langcode]));
-      $this->assertEquals('Test Thumbnail ' . $langcode, $media_translation->getSource()->getMetadata($media_translation, 'test_thumbnail_alt'), new FormattableMarkup('%language translation thumbnail alt metadata attribute is not correct.', ['%language' => $langcode]));
-      $this->assertEquals('Test Thumbnail ' . $langcode, $media_translation->get('thumbnail')->alt, new FormattableMarkup('%language translation thumbnail alt value is not correct.', ['%language' => $langcode]));
+      $this->assertTrue($result, "$langcode translation field value not correct.");
+      $this->assertSame('public://' . $langcode . '.png', $media_translation->getSource()->getMetadata($media_translation, 'thumbnail_uri'), "$langcode translation thumbnail metadata attribute is not correct.");
+      $this->assertSame('public://' . $langcode . '.png', $media_translation->get('thumbnail')->entity->getFileUri(), "$langcode translation thumbnail value is not correct.");
+      $this->assertEquals('Test Thumbnail ' . $langcode, $media_translation->getSource()->getMetadata($media_translation, 'test_thumbnail_alt'), "$langcode translation thumbnail alt metadata attribute is not correct.");
+      $this->assertSame('Test Thumbnail ' . $langcode, $media_translation->get('thumbnail')->alt, "$langcode translation thumbnail alt value is not correct.");
     }
   }
 

@@ -3,8 +3,10 @@
 namespace Drupal\Core\Cache;
 
 use Drupal\Component\Assertion\Inspector;
-use Drupal\Core\PhpStorage\PhpStorageFactory;
+use Drupal\Component\Datetime\TimeInterface;
+use Drupal\Component\PhpStorage\PhpStorageInterface;
 use Drupal\Component\Utility\Crypt;
+use Drupal\Core\PhpStorage\PhpStorageFactory;
 
 /**
  * Defines a PHP cache implementation.
@@ -27,6 +29,11 @@ class PhpBackend implements CacheBackendInterface {
   protected $bin;
 
   /**
+   * The PHP storage.
+   */
+  protected PhpStorageInterface $storage;
+
+  /**
    * Array to store cache objects.
    */
   protected $cache = [];
@@ -45,10 +52,16 @@ class PhpBackend implements CacheBackendInterface {
    *   The cache bin for which the object is created.
    * @param \Drupal\Core\Cache\CacheTagsChecksumInterface $checksum_provider
    *   The cache tags checksum provider.
+   * @param \Drupal\Component\Datetime\TimeInterface|null $time
+   *   The time service.
    */
-  public function __construct($bin, CacheTagsChecksumInterface $checksum_provider) {
+  public function __construct($bin, CacheTagsChecksumInterface $checksum_provider, protected ?TimeInterface $time = NULL) {
     $this->bin = 'cache_' . $bin;
     $this->checksumProvider = $checksum_provider;
+    if (!$time) {
+      @trigger_error('Calling ' . __METHOD__ . '() without the $time argument is deprecated in drupal:10.3.0 and it will be required in drupal:11.0.0. See https://www.drupal.org/node/3387233', E_USER_DEPRECATED);
+      $this->time = \Drupal::service(TimeInterface::class);
+    }
   }
 
   /**
@@ -84,7 +97,7 @@ class PhpBackend implements CacheBackendInterface {
    */
   public function setMultiple(array $items) {
     foreach ($items as $cid => $item) {
-      $this->set($cid, $item['data'], isset($item['expire']) ? $item['expire'] : CacheBackendInterface::CACHE_PERMANENT, isset($item['tags']) ? $item['tags'] : []);
+      $this->set($cid, $item['data'], $item['expire'] ?? CacheBackendInterface::CACHE_PERMANENT, $item['tags'] ?? []);
     }
   }
 
@@ -112,7 +125,7 @@ class PhpBackend implements CacheBackendInterface {
    * as appropriate.
    *
    * @param object $cache
-   *   An item loaded from cache_get() or cache_get_multiple().
+   *   An item loaded from self::get() or self::getMultiple().
    * @param bool $allow_invalid
    *   If FALSE, the method returns FALSE if the cache item is not valid.
    *
@@ -126,7 +139,7 @@ class PhpBackend implements CacheBackendInterface {
     }
 
     // Check expire time.
-    $cache->valid = $cache->expire == Cache::PERMANENT || $cache->expire >= REQUEST_TIME;
+    $cache->valid = $cache->expire == Cache::PERMANENT || $cache->expire >= $this->time->getRequestTime();
 
     // Check if invalidateTags() has been called with any of the item's tags.
     if (!$this->checksumProvider->isValid($cache->checksum, $cache->tags)) {
@@ -184,7 +197,7 @@ class PhpBackend implements CacheBackendInterface {
    * {@inheritdoc}
    */
   public function invalidate($cid) {
-    $this->invalidatebyHash($this->normalizeCid($cid));
+    $this->invalidateByHash($this->normalizeCid($cid));
   }
 
   /**
@@ -193,9 +206,9 @@ class PhpBackend implements CacheBackendInterface {
    * @param string $cidhash
    *   The hashed version of the original cache ID after being normalized.
    */
-  protected function invalidatebyHash($cidhash) {
+  protected function invalidateByHash($cidhash) {
     if ($item = $this->getByHash($cidhash)) {
-      $item->expire = REQUEST_TIME - 1;
+      $item->expire = $this->time->getRequestTime() - 1;
       $this->writeItem($cidhash, $item);
     }
   }
@@ -214,7 +227,7 @@ class PhpBackend implements CacheBackendInterface {
    */
   public function invalidateAll() {
     foreach ($this->storage()->listAll() as $cidhash) {
-      $this->invalidatebyHash($cidhash);
+      $this->invalidateByHash($cidhash);
     }
   }
 
@@ -237,7 +250,7 @@ class PhpBackend implements CacheBackendInterface {
    *
    * @param string $cidhash
    *   The hashed version of the original cache ID after being normalized.
-   * @param \stdClass $item
+   * @param object $item
    *   The cache item to store.
    */
   protected function writeItem($cidhash, \stdClass $item) {

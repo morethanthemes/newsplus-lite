@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Entity;
 
 use Drupal\Core\Entity\Display\EntityDisplayInterface;
@@ -17,12 +19,12 @@ class EntityDisplayFormBaseTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['entity_test'];
+  protected static $modules = ['entity_test'];
 
   /**
    * @covers ::copyFormValuesToEntity
    */
-  public function testCopyFormValuesToEntity() {
+  public function testCopyFormValuesToEntity(): void {
     $field_values = [];
     $entity = $this->prophesize(EntityDisplayInterface::class);
     $entity->getPluginCollections()->willReturn([]);
@@ -37,9 +39,9 @@ class EntityDisplayFormBaseTest extends KernelTestBase {
       'region' => 'hidden',
     ];
     $entity->removeComponent('new_field_mismatch_type_visible')
-      ->will(function ($args) {
+      ->will(function (array $args) use ($entity) {
         // On subsequent calls, getComponent() will return an empty array.
-        $this->getComponent($args[0])->willReturn([]);
+        $entity->getComponent($args[0])->willReturn([]);
       })
       ->shouldBeCalled();
 
@@ -76,9 +78,9 @@ class EntityDisplayFormBaseTest extends KernelTestBase {
       'region' => 'hidden',
     ];
     $entity->removeComponent('field_start_visible_change_region')
-      ->will(function ($args) {
+      ->will(function (array $args) use ($entity) {
         // On subsequent calls, getComponent() will return an empty array.
-        $this->getComponent($args[0])->willReturn([]);
+        $entity->getComponent($args[0])->willReturn([]);
       })
       ->shouldBeCalled();
 
@@ -105,21 +107,25 @@ class EntityDisplayFormBaseTest extends KernelTestBase {
         'type' => 'textfield',
         'region' => 'content',
       ])
-      ->will(function ($args) {
+      ->will(function (array $args) use ($entity) {
         // On subsequent calls, getComponent() will return the newly set values.
-        $this->getComponent($args[0])->willReturn($args[1]);
+        $entity->getComponent($args[0])->willReturn($args[1]);
         $args[1] += [
           'settings' => [],
           'third_party_settings' => [
             'foo' => 'bar',
           ],
         ];
-        $this->setComponent($args[0], $args[1])->shouldBeCalled();
+        $entity->setComponent($args[0], $args[1])->shouldBeCalled();
       })
       ->shouldBeCalled();
 
-    $form_object = new EntityViewDisplayEditForm($this->container->get('plugin.manager.field.field_type'), $this->container->get('plugin.manager.field.formatter'));
-    $form_object->setEntityManager($this->container->get('entity.manager'));
+    $form_object = new EntityViewDisplayEditForm(
+      $this->container->get('plugin.manager.field.field_type'),
+      $this->container->get('plugin.manager.field.formatter'),
+      $this->container->get('entity_display.repository'),
+      $this->container->get('entity_field.manager')
+    );
     $form_object->setEntity($entity->reveal());
 
     $form = [

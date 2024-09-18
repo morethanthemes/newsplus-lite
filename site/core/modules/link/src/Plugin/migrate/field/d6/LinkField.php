@@ -3,19 +3,18 @@
 namespace Drupal\link\Plugin\migrate\field\d6;
 
 use Drupal\migrate\Plugin\MigrationInterface;
+use Drupal\migrate_drupal\Attribute\MigrateField;
 use Drupal\migrate_drupal\Plugin\migrate\field\FieldPluginBase;
 
-/**
- * @MigrateField(
- *   id = "link",
- *   core = {6},
- *   type_map = {
- *     "link_field" = "link"
- *   },
- *   source_module = "link",
- *   destination_module = "link"
- * )
- */
+#[MigrateField(
+  id: 'link',
+  core: [6],
+  type_map: [
+    'link' => 'link',
+  ],
+  source_module: 'link',
+  destination_module: 'link',
+)]
 class LinkField extends FieldPluginBase {
 
   /**
@@ -23,7 +22,7 @@ class LinkField extends FieldPluginBase {
    */
   public function getFieldFormatterMap() {
     // See d6_field_formatter_settings.yml and FieldPluginBase
-    // processFieldFormatter().
+    // alterFieldFormatterMigration().
     return [
       'default' => 'link',
       'plain' => 'link',
@@ -39,7 +38,7 @@ class LinkField extends FieldPluginBase {
   /**
    * {@inheritdoc}
    */
-  public function processFieldValues(MigrationInterface $migration, $field_name, $data) {
+  public function defineValueProcessPipeline(MigrationInterface $migration, $field_name, $data) {
     $process = [
       'plugin' => 'field_link',
       'source' => $field_name,

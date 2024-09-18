@@ -2,7 +2,8 @@
 
 namespace Drupal\Core\Condition;
 
-use Drupal\Component\Plugin\ConfigurablePluginInterface;
+use Drupal\Component\Plugin\ConfigurableInterface;
+use Drupal\Component\Plugin\DependentPluginInterface;
 use Drupal\Component\Plugin\PluginInspectionInterface;
 use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Executable\ExecutableInterface;
@@ -38,11 +39,12 @@ use Drupal\Core\Plugin\PluginFormInterface;
  * @see \Drupal\Core\Executable\ExecutableInterface
  * @see \Drupal\Core\Condition\ConditionManager
  * @see \Drupal\Core\Condition\Annotation\Condition
+ * @see \Drupal\Core\Condition\Attribute\Condition
  * @see \Drupal\Core\Condition\ConditionPluginBase
  *
  * @ingroup plugin_api
  */
-interface ConditionInterface extends ExecutableInterface, PluginFormInterface, ConfigurablePluginInterface, PluginInspectionInterface, CacheableDependencyInterface {
+interface ConditionInterface extends ExecutableInterface, PluginFormInterface, ConfigurableInterface, DependentPluginInterface, PluginInspectionInterface, CacheableDependencyInterface {
 
   /**
    * Determines whether condition result will be negated.

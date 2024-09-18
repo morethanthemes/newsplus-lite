@@ -20,11 +20,11 @@ use Psr\Container\NotFoundExceptionInterface;
  */
 class ServiceNotFoundException extends InvalidArgumentException implements NotFoundExceptionInterface
 {
-    private $id;
-    private $sourceId;
-    private $alternatives;
+    private string $id;
+    private ?string $sourceId;
+    private array $alternatives;
 
-    public function __construct($id, $sourceId = null, \Exception $previous = null, array $alternatives = array(), $msg = null)
+    public function __construct(string $id, ?string $sourceId = null, ?\Throwable $previous = null, array $alternatives = [], ?string $msg = null)
     {
         if (null !== $msg) {
             // no-op
@@ -35,7 +35,7 @@ class ServiceNotFoundException extends InvalidArgumentException implements NotFo
         }
 
         if ($alternatives) {
-            if (1 == count($alternatives)) {
+            if (1 == \count($alternatives)) {
                 $msg .= ' Did you mean this: "';
             } else {
                 $msg .= ' Did you mean one of these: "';
@@ -50,16 +50,25 @@ class ServiceNotFoundException extends InvalidArgumentException implements NotFo
         $this->alternatives = $alternatives;
     }
 
+    /**
+     * @return string
+     */
     public function getId()
     {
         return $this->id;
     }
 
+    /**
+     * @return string|null
+     */
     public function getSourceId()
     {
         return $this->sourceId;
     }
 
+    /**
+     * @return array
+     */
     public function getAlternatives()
     {
         return $this->alternatives;

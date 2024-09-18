@@ -30,14 +30,16 @@ interface ViewsHandlerInterface extends ViewsPluginInterface {
   public function getEntityType();
 
   /**
-   * Determines if the handler is considered 'broken', meaning it's a
-   * a placeholder used when a handler can't be found.
+   * Determines if the handler is considered 'broken'.
+   *
+   * Broken means it's a placeholder used when a handler can't be found.
    */
   public function broken();
 
   /**
-   * Ensure the main table for this handler is in the query. This is used
-   * a lot.
+   * Ensures that the main table for this handler is in the query.
+   *
+   * This is used a lot.
    */
   public function ensureMyTable();
 
@@ -111,8 +113,9 @@ interface ViewsHandlerInterface extends ViewsPluginInterface {
   public function showExposeForm(&$form, FormStateInterface $form_state);
 
   /**
-   * Called just prior to query(), this lets a handler set up any relationship
-   * it needs.
+   * Sets up any needed relationship.
+   *
+   * This is called just prior to query().
    */
   public function setRelationship();
 
@@ -129,7 +132,7 @@ interface ViewsHandlerInterface extends ViewsPluginInterface {
    * @param bool $force_int
    *   Enforce a numeric check.
    *
-   * @return \stdClass
+   * @return object
    *   A stdClass object containing value and operator properties.
    */
   public static function breakString($str, $force_int = FALSE);

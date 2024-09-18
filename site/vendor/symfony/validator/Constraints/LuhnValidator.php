@@ -14,6 +14,7 @@ namespace Symfony\Component\Validator\Constraints;
 use Symfony\Component\Validator\Constraint;
 use Symfony\Component\Validator\ConstraintValidator;
 use Symfony\Component\Validator\Exception\UnexpectedTypeException;
+use Symfony\Component\Validator\Exception\UnexpectedValueException;
 
 /**
  * Validates a PAN using the LUHN Algorithm.
@@ -30,17 +31,12 @@ use Symfony\Component\Validator\Exception\UnexpectedTypeException;
 class LuhnValidator extends ConstraintValidator
 {
     /**
-     * Validates a credit card number with the Luhn algorithm.
-     *
-     * @param mixed      $value
-     * @param Constraint $constraint
-     *
-     * @throws UnexpectedTypeException when the given credit card number is no string
+     * @return void
      */
-    public function validate($value, Constraint $constraint)
+    public function validate(mixed $value, Constraint $constraint)
     {
         if (!$constraint instanceof Luhn) {
-            throw new UnexpectedTypeException($constraint, __NAMESPACE__.'\Luhn');
+            throw new UnexpectedTypeException($constraint, Luhn::class);
         }
 
         if (null === $value || '' === $value) {
@@ -49,8 +45,8 @@ class LuhnValidator extends ConstraintValidator
 
         // Work with strings only, because long numbers are represented as floats
         // internally and don't work with strlen()
-        if (!is_string($value) && !(is_object($value) && method_exists($value, '__toString'))) {
-            throw new UnexpectedTypeException($value, 'string');
+        if (!\is_string($value) && !$value instanceof \Stringable) {
+            throw new UnexpectedValueException($value, 'string');
         }
 
         $value = (string) $value;
@@ -65,25 +61,25 @@ class LuhnValidator extends ConstraintValidator
         }
 
         $checkSum = 0;
-        $length = strlen($value);
+        $length = \strlen($value);
 
-        // Starting with the last digit and walking left, add every second
-        // digit to the check sum
-        // e.g. 7  9  9  2  7  3  9  8  7  1  3
-        //      ^     ^     ^     ^     ^     ^
-        //    = 7  +  9  +  7  +  9  +  7  +  3
-        for ($i = $length - 1; $i >= 0; $i -= 2) {
-            $checkSum += $value[$i];
-        }
-
-        // Starting with the second last digit and walking left, double every
-        // second digit and add it to the check sum
-        // For doubles greater than 9, sum the individual digits
-        // e.g. 7  9  9  2  7  3  9  8  7  1  3
-        //         ^     ^     ^     ^     ^
-        //    =    1+8 + 4  +  6  +  1+6 + 2
-        for ($i = $length - 2; $i >= 0; $i -= 2) {
-            $checkSum += array_sum(str_split($value[$i] * 2));
+        for ($i = $length - 1; $i >= 0; --$i) {
+            if (($i % 2) ^ ($length % 2)) {
+                // Starting with the last digit and walking left, add every second
+                // digit to the check sum
+                // e.g. 7  9  9  2  7  3  9  8  7  1  3
+                //      ^     ^     ^     ^     ^     ^
+                //    = 7  +  9  +  7  +  9  +  7  +  3
+                $checkSum += (int) $value[$i];
+            } else {
+                // Starting with the second last digit and walking left, double every
+                // second digit and add it to the check sum
+                // For doubles greater than 9, sum the individual digits
+                // e.g. 7  9  9  2  7  3  9  8  7  1  3
+                //         ^     ^     ^     ^     ^
+                //    =    1+8 + 4  +  6  +  1+6 + 2
+                $checkSum += (((int) (2 * $value[$i] / 10)) + (2 * $value[$i]) % 10);
+            }
         }
 
         if (0 === $checkSum || 0 !== $checkSum % 10) {

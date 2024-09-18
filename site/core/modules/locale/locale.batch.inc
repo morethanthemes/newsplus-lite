@@ -5,7 +5,13 @@
  * Batch process to check the availability of remote or local po files.
  */
 
+use Drupal\Core\File\Exception\FileException;
+use Drupal\Core\File\Exception\InvalidStreamWrapperException;
+use Drupal\Core\File\FileExists;
+use Drupal\Core\Url;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
+use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\UriInterface;
@@ -16,6 +22,43 @@ use Psr\Http\Message\UriInterface;
 // @todo Combine functions differently in files to avoid unnecessary includes.
 // Follow-up issue: https://www.drupal.org/node/1834298.
 require_once __DIR__ . '/locale.translation.inc';
+
+/**
+ * Implements callback_batch_operation().
+ *
+ * Checks for changed project versions, and cleans-up data from the old version.
+ * For example when a module is updated. This will make the translation import
+ * system use translations that match the current version.
+ *
+ * @param string $project
+ *   Machine name of the project for which to check the translation status.
+ * @param string $langcode
+ *   Language code of the language for which to check the translation.
+ * @param array|\ArrayAccess $context
+ *   The batch context.
+ */
+function locale_translation_batch_version_check(string $project, string $langcode, array|\ArrayAccess &$context) {
+  $locale_project = \Drupal::service('locale.project')->get($project);
+
+  if (empty($locale_project)) {
+    return;
+  }
+
+  $status = \Drupal::keyValue('locale.translation_status')->get($project);
+  if (!isset($status[$langcode])) {
+    return;
+  }
+
+  if ($locale_project['version'] == $status[$langcode]->version) {
+    return;
+  }
+
+  \Drupal::moduleHandler()->loadInclude('locale', 'bulk.inc');
+  locale_translation_status_delete_projects([$project]);
+  locale_translate_delete_translation_files([$project]);
+
+  $context['message'] = t('Checked version of %project.', ['%project' => $project]);
+}
 
 /**
  * Implements callback_batch_operation().
@@ -60,7 +103,7 @@ function locale_translation_batch_status_check($project, $langcode, array $optio
       // Update the file object with the result data. In case of a redirect we
       // store the resulting uri.
       if (isset($result['last_modified'])) {
-        $remote_file->uri = isset($result['location']) ? $result['location'] : $remote_file->uri;
+        $remote_file->uri = $result['location'] ?? $remote_file->uri;
         $remote_file->timestamp = $result['last_modified'];
         locale_translation_status_save($source->name, $source->langcode, LOCALE_TRANSLATION_REMOTE, $remote_file);
       }
@@ -82,7 +125,7 @@ function locale_translation_batch_status_check($project, $langcode, array $optio
   if ($failure && !$checked) {
     $context['results']['failed_files'][] = $source->name;
   }
-  $context['message'] = t('Checked translation for %project.', ['%project' => $source->project]);
+  $context['message'] = t('Checked %langcode translation for %project.', ['%langcode' => $langcode, '%project' => $source->project]);
 }
 
 /**
@@ -99,27 +142,27 @@ function locale_translation_batch_status_finished($success, $results) {
   if ($success) {
     if (isset($results['failed_files'])) {
       if (\Drupal::moduleHandler()->moduleExists('dblog') && \Drupal::currentUser()->hasPermission('access site reports')) {
-        $message = \Drupal::translation()->formatPlural(count($results['failed_files']), 'One translation file could not be checked. <a href=":url">See the log</a> for details.', '@count translation files could not be checked. <a href=":url">See the log</a> for details.', [':url' => \Drupal::url('dblog.overview')]);
+        $message = \Drupal::translation()->formatPlural(count($results['failed_files']), 'One translation file could not be checked. <a href=":url">See the log</a> for details.', '@count translation files could not be checked. <a href=":url">See the log</a> for details.', [':url' => Url::fromRoute('dblog.overview')->toString()]);
       }
       else {
         $message = \Drupal::translation()->formatPlural(count($results['failed_files']), 'One translation files could not be checked. See the log for details.', '@count translation files could not be checked. See the log for details.');
       }
-      drupal_set_message($message, 'error');
+      \Drupal::messenger()->addError($message);
     }
     if (isset($results['files'])) {
-      drupal_set_message(\Drupal::translation()->formatPlural(
+      \Drupal::messenger()->addStatus(\Drupal::translation()->formatPlural(
         count($results['files']),
         'Checked available interface translation updates for one project.',
         'Checked available interface translation updates for @count projects.'
       ));
     }
     if (!isset($results['failed_files']) && !isset($results['files'])) {
-      drupal_set_message(t('Nothing to check.'));
+      \Drupal::messenger()->addStatus(t('Nothing to check.'));
     }
-    \Drupal::state()->set('locale.translation_last_checked', REQUEST_TIME);
+    \Drupal::state()->set('locale.translation_last_checked', \Drupal::time()->getRequestTime());
   }
   else {
-    drupal_set_message(t('An error occurred trying to check available interface translation updates.'), 'error');
+    \Drupal::messenger()->addError(t('An error occurred trying to check available interface translation updates.'));
   }
 }
 
@@ -144,7 +187,7 @@ function locale_translation_batch_fetch_download($project, $langcode, &$context)
     $source = $sources[$project][$langcode];
     if (isset($source->type) && $source->type == LOCALE_TRANSLATION_REMOTE) {
       if ($file = locale_translation_download_source($source->files[LOCALE_TRANSLATION_REMOTE], 'translations://')) {
-        $context['message'] = t('Downloaded translation for %project.', ['%project' => $source->project]);
+        $context['message'] = t('Downloaded %langcode translation for %project.', ['%langcode' => $langcode, '%project' => $source->project]);
         locale_translation_status_save($source->name, $source->langcode, LOCALE_TRANSLATION_LOCAL, $file);
       }
       else {
@@ -179,9 +222,9 @@ function locale_translation_batch_fetch_import($project, $langcode, $options, &$
     if (isset($source->type)) {
       if ($source->type == LOCALE_TRANSLATION_REMOTE || $source->type == LOCALE_TRANSLATION_LOCAL) {
         $file = $source->files[LOCALE_TRANSLATION_LOCAL];
-        module_load_include('bulk.inc', 'locale');
+        \Drupal::moduleHandler()->loadInclude('locale', 'inc', 'locale.bulk');
         $options += [
-          'message' => t('Importing translation for %project.', ['%project' => $source->project]),
+          'message' => t('Importing %langcode translation for %project.', ['%langcode' => $langcode, '%project' => $source->project]),
         ];
         // Import the translation file. For large files the batch operations is
         // progressive and will be called repeatedly until finished.
@@ -191,7 +234,7 @@ function locale_translation_batch_fetch_import($project, $langcode, $options, &$
         if (isset($context['finished']) && $context['finished'] == 1) {
           // The import is successful.
           if (isset($context['results']['files'][$file->uri])) {
-            $context['message'] = t('Imported translation for %project.', ['%project' => $source->project]);
+            $context['message'] = t('Imported %langcode translation for %project.', ['%langcode' => $langcode, '%project' => $source->project]);
 
             // Save the data of imported source into the {locale_file} table and
             // update the current translation status.
@@ -214,9 +257,9 @@ function locale_translation_batch_fetch_import($project, $langcode, $options, &$
  *   Batch results.
  */
 function locale_translation_batch_fetch_finished($success, $results) {
-  module_load_include('bulk.inc', 'locale');
+  \Drupal::moduleHandler()->loadInclude('locale', 'inc', 'locale.bulk');
   if ($success) {
-    \Drupal::state()->set('locale.translation_last_checked', REQUEST_TIME);
+    \Drupal::state()->set('locale.translation_last_checked', \Drupal::time()->getRequestTime());
   }
   return locale_translate_batch_finished($success, $results);
 }
@@ -242,7 +285,7 @@ function locale_translation_http_check($uri) {
       'allow_redirects' => [
         'on_redirect' => function (RequestInterface $request, ResponseInterface $response, UriInterface $request_uri) use (&$actual_uri) {
           $actual_uri = (string) $request_uri;
-        }
+        },
       ],
     ])->head($uri);
     $result = [];
@@ -270,6 +313,11 @@ function locale_translation_http_check($uri) {
       $logger->notice('HTTP request to @url failed with error: @error.', ['@url' => $uri, '@error' => $response->getStatusCode() . ' ' . $response->getReasonPhrase()]);
     }
   }
+  // We need to handle ConnectException separately because in Guzzle 7 it
+  // doesn't have a getResponse() method, so the above will fatal.
+  catch (ConnectException $e) {
+    $logger->notice('HTTP request to @url failed with error: @error.', ['@url' => $uri, '@error' => $e->getMessage()]);
+  }
 
   return FALSE;
 }
@@ -288,17 +336,29 @@ function locale_translation_http_check($uri) {
  *   Directory where the downloaded file will be saved. Defaults to the
  *   temporary file path.
  *
- * @return object
+ * @return object|false
  *   File object if download was successful. FALSE on failure.
  */
 function locale_translation_download_source($source_file, $directory = 'temporary://') {
-  if ($uri = system_retrieve_file($source_file->uri, $directory, FALSE, FILE_EXISTS_REPLACE)) {
-    $file = clone($source_file);
-    $file->type = LOCALE_TRANSLATION_LOCAL;
-    $file->uri = $uri;
-    $file->directory = $directory;
-    $file->timestamp = filemtime($uri);
-    return $file;
+  try {
+    $data = (string) \Drupal::httpClient()->get($source_file->uri)->getBody();
+    /** @var \Drupal\Core\File\FileSystemInterface $fileSystem */
+    $fileSystem = \Drupal::service('file_system');
+    $filename = $fileSystem->basename($source_file->uri);
+    if ($uri = $fileSystem->saveData($data, $directory . $filename, FileExists::Replace)) {
+      $file = clone($source_file);
+      $file->type = LOCALE_TRANSLATION_LOCAL;
+      $file->uri = $uri;
+      $file->directory = $directory;
+      $file->timestamp = filemtime($uri);
+      return $file;
+    }
+  }
+  catch (ClientExceptionInterface $exception) {
+    \Drupal::messenger()->addError(t('Failed to fetch file due to error "%error"', ['%error' => $exception->getMessage()]));
+  }
+  catch (FileException | InvalidStreamWrapperException $e) {
+    \Drupal::messenger()->addError(t('Failed to save file due to error "%error"', ['%error' => $e->getMessage()]));
   }
   \Drupal::logger('locale')->error('Unable to download translation file @uri.', ['@uri' => $source_file->uri]);
   return FALSE;

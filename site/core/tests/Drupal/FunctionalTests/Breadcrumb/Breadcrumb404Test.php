@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Breadcrumb;
 
-use Drupal\simpletest\BlockCreationTrait;
+use Drupal\Tests\block\Traits\BlockCreationTrait;
 use Drupal\Tests\BrowserTestBase;
 
 /**
@@ -17,12 +19,17 @@ class Breadcrumb404Test extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['system', 'block'];
+  protected static $modules = ['system', 'block'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Tests that different 404s don't create unnecessary cache entries.
    */
-  public function testBreadcrumbOn404Pages() {
+  public function testBreadcrumbOn404Pages(): void {
     $this->placeBlock('system_breadcrumb_block', ['id' => 'breadcrumb']);
 
     // Prime the cache first.

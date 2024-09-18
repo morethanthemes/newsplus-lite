@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\taxonomy\Kernel;
 
 use Drupal\taxonomy\Entity\Term;
 use Drupal\KernelTests\KernelTestBase;
-use Drupal\Tests\taxonomy\Functional\TaxonomyTestTrait;
+use Drupal\Tests\taxonomy\Traits\TaxonomyTestTrait;
+use Drupal\Tests\user\Traits\UserCreationTrait;
 
 /**
  * Kernel tests for taxonomy term functions.
@@ -14,41 +17,39 @@ use Drupal\Tests\taxonomy\Functional\TaxonomyTestTrait;
 class TermKernelTest extends KernelTestBase {
 
   use TaxonomyTestTrait;
+  use UserCreationTrait;
 
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['filter', 'taxonomy', 'text', 'user'];
+  protected static $modules = ['filter', 'taxonomy', 'text', 'user', 'system'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installConfig(['filter']);
     $this->installEntitySchema('taxonomy_term');
+    $this->installEntitySchema('user');
   }
 
   /**
-   * Deleting terms should also remove related vocabulary.
-   * Deleting an invalid term should silently fail.
+   * Tests that a deleted term is no longer in the vocabulary.
    */
-  public function testTermDelete() {
+  public function testTermDelete(): void {
     $vocabulary = $this->createVocabulary();
     $valid_term = $this->createTerm($vocabulary);
     // Delete a valid term.
     $valid_term->delete();
-    $terms = entity_load_multiple_by_properties('taxonomy_term', ['vid' => $vocabulary->id()]);
-    $this->assertTrue(empty($terms), 'Vocabulary is empty after deletion');
-
-    // Delete an invalid term. Should not throw any notices.
-    entity_delete_multiple('taxonomy_term', [42]);
+    $terms = \Drupal::entityTypeManager()->getStorage('taxonomy_term')->loadByProperties(['vid' => $vocabulary->id()]);
+    $this->assertEmpty($terms, 'Vocabulary is empty after deletion');
   }
 
   /**
    * Deleting a parent of a term with multiple parents does not delete the term.
    */
-  public function testMultipleParentDelete() {
+  public function testMultipleParentDelete(): void {
     $vocabulary = $this->createVocabulary();
     $parent_term1 = $this->createTerm($vocabulary);
     $parent_term2 = $this->createTerm($vocabulary);
@@ -58,21 +59,21 @@ class TermKernelTest extends KernelTestBase {
     $child_term_id = $child_term->id();
 
     $parent_term1->delete();
-    $term_storage = $this->container->get('entity.manager')->getStorage('taxonomy_term');
+    $term_storage = $this->container->get('entity_type.manager')->getStorage('taxonomy_term');
     $term_storage->resetCache([$child_term_id]);
     $child_term = Term::load($child_term_id);
-    $this->assertTrue(!empty($child_term), 'Child term is not deleted if only one of its parents is removed.');
+    $this->assertNotEmpty($child_term, 'Child term is not deleted if only one of its parents is removed.');
 
     $parent_term2->delete();
     $term_storage->resetCache([$child_term_id]);
     $child_term = Term::load($child_term_id);
-    $this->assertTrue(empty($child_term), 'Child term is deleted if all of its parents are removed.');
+    $this->assertEmpty($child_term, 'Child term is deleted if all of its parents are removed.');
   }
 
   /**
-   * Test a taxonomy with terms that have multiple parents of different depths.
+   * Tests a taxonomy with terms that have multiple parents of different depths.
    */
-  public function testTaxonomyVocabularyTree() {
+  public function testTaxonomyVocabularyTree(): void {
     // Create a new vocabulary with 6 terms.
     $vocabulary = $this->createVocabulary();
     $term = [];
@@ -81,7 +82,7 @@ class TermKernelTest extends KernelTestBase {
     }
 
     // Get the taxonomy storage.
-    $taxonomy_storage = $this->container->get('entity.manager')->getStorage('taxonomy_term');
+    $taxonomy_storage = $this->container->get('entity_type.manager')->getStorage('taxonomy_term');
 
     // Set the weight on $term[1] so it appears before $term[5] when fetching
     // the parents for $term[2], in order to test for a regression on
@@ -112,11 +113,11 @@ class TermKernelTest extends KernelTestBase {
      */
     // Count $term[1] parents with $max_depth = 1.
     $tree = $taxonomy_storage->loadTree($vocabulary->id(), $term[1]->id(), 1);
-    $this->assertEqual(1, count($tree), 'We have one parent with depth 1.');
+    $this->assertCount(1, $tree, 'We have one parent with depth 1.');
 
     // Count all vocabulary tree elements.
     $tree = $taxonomy_storage->loadTree($vocabulary->id());
-    $this->assertEqual(8, count($tree), 'We have all vocabulary tree elements.');
+    $this->assertCount(8, $tree, 'We have all vocabulary tree elements.');
 
     // Count elements in every tree depth.
     foreach ($tree as $element) {
@@ -125,28 +126,112 @@ class TermKernelTest extends KernelTestBase {
       }
       $depth_count[$element->depth]++;
     }
-    $this->assertEqual(3, $depth_count[0], 'Three elements in taxonomy tree depth 0.');
-    $this->assertEqual(2, $depth_count[1], 'Two elements in taxonomy tree depth 1.');
-    $this->assertEqual(2, $depth_count[2], 'Two elements in taxonomy tree depth 2.');
-    $this->assertEqual(1, $depth_count[3], 'One element in taxonomy tree depth 3.');
+    $this->assertEquals(3, $depth_count[0], 'Three elements in taxonomy tree depth 0.');
+    $this->assertEquals(2, $depth_count[1], 'Two elements in taxonomy tree depth 1.');
+    $this->assertEquals(2, $depth_count[2], 'Two elements in taxonomy tree depth 2.');
+    $this->assertEquals(1, $depth_count[3], 'One element in taxonomy tree depth 3.');
 
     /** @var \Drupal\taxonomy\TermStorageInterface $storage */
-    $storage = \Drupal::entityManager()->getStorage('taxonomy_term');
+    $storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
     // Count parents of $term[2].
     $parents = $storage->loadParents($term[2]->id());
-    $this->assertEqual(2, count($parents), 'The term has two parents.');
+    $this->assertCount(2, $parents, 'The term has two parents.');
 
     // Count parents of $term[3].
     $parents = $storage->loadParents($term[3]->id());
-    $this->assertEqual(1, count($parents), 'The term has one parent.');
+    $this->assertCount(1, $parents, 'The term has one parent.');
 
     // Identify all ancestors of $term[2].
     $ancestors = $storage->loadAllParents($term[2]->id());
-    $this->assertEqual(4, count($ancestors), 'The term has four ancestors including the term itself.');
+    $this->assertCount(4, $ancestors, 'The term has four ancestors including the term itself.');
 
     // Identify all ancestors of $term[3].
     $ancestors = $storage->loadAllParents($term[3]->id());
-    $this->assertEqual(5, count($ancestors), 'The term has five ancestors including the term itself.');
+    $this->assertCount(5, $ancestors, 'The term has five ancestors including the term itself.');
+  }
+
+  /**
+   * Tests that a Term is renderable when unsaved (preview).
+   */
+  public function testTermPreview(): void {
+    $entity_manager = \Drupal::entityTypeManager();
+    $vocabulary = $this->createVocabulary();
+
+    // Create a unsaved term.
+    $term = $entity_manager->getStorage('taxonomy_term')->create([
+      'vid' => $vocabulary->id(),
+      'name' => 'Foo',
+    ]);
+
+    // Confirm we can get the view of unsaved term.
+    $render_array = $entity_manager->getViewBuilder('taxonomy_term')
+      ->view($term);
+    $this->assertNotEmpty($render_array, 'Term view builder is built.');
+
+    // Confirm we can render said view.
+    $rendered = (string) \Drupal::service('renderer')->renderInIsolation($render_array);
+    $this->assertNotEmpty(trim($rendered), 'Term is able to be rendered.');
+  }
+
+  /**
+   * @covers \Drupal\taxonomy\TermStorage::deleteTermHierarchy
+   * @group legacy
+   */
+  public function testDeleteTermHierarchyDeprecation(): void {
+    $vocabulary = $this->createVocabulary();
+    $term = $this->createTerm($vocabulary);
+
+    /** @var \Drupal\taxonomy\TermStorageInterface $storage */
+    $storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+    $this->expectDeprecation('Drupal\taxonomy\TermStorage::deleteTermHierarchy() is deprecated in drupal:10.1.0 and is removed from drupal:11.0.0. It is a no-op since 8.6.0. Parent references are automatically cleared when deleting a taxonomy term. See https://www.drupal.org/node/2936675');
+    $storage->deleteTermHierarchy([$term->tid]);
+  }
+
+  /**
+   * @covers \Drupal\taxonomy\TermStorage::updateTermHierarchy
+   * @group legacy
+   */
+  public function testUpdateTermHierarchyDeprecation(): void {
+    $vocabulary = $this->createVocabulary();
+    $term = $this->createTerm($vocabulary);
+
+    /** @var \Drupal\taxonomy\TermStorageInterface $storage */
+    $storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+    $this->expectDeprecation('Drupal\taxonomy\TermStorage::updateTermHierarchy() is deprecated in drupal:10.1.0 and is removed from drupal:11.0.0. It is a no-op since 8.6.0. Parent references are automatically updated when updating a taxonomy term. See https://www.drupal.org/node/2936675');
+    $storage->updateTermHierarchy($term);
+  }
+
+  /**
+   * Tests revision log access.
+   */
+  public function testRevisionLogAccess(): void {
+    $vocabulary = $this->createVocabulary();
+    $entity = $this->createTerm($vocabulary, ['status' => TRUE]);
+    $admin = $this->createUser([
+      'administer taxonomy',
+      'access content',
+    ]);
+    $editor = $this->createUser([
+      'edit terms in ' . $vocabulary->id(),
+      'access content',
+    ]);
+    $viewer = $this->createUser([
+      'access content',
+    ]);
+
+    $this->assertTrue($entity->get('revision_log_message')->access('view', $admin));
+    $this->assertTrue($entity->get('revision_log_message')->access('view', $editor));
+    $this->assertFalse($entity->get('revision_log_message')->access('view', $viewer));
+  }
+
+  /**
+   * The "parent" field must restrict references to the same vocabulary.
+   */
+  public function testParentHandlerSettings(): void {
+    $vocabulary = $this->createVocabulary();
+    $vocabulary_fields = \Drupal::service('entity_field.manager')->getFieldDefinitions('taxonomy_term', $vocabulary->id());
+    $parent_target_bundles = $vocabulary_fields['parent']->getSetting('handler_settings')['target_bundles'];
+    $this->assertSame([$vocabulary->id() => $vocabulary->id()], $parent_target_bundles);
   }
 
 }

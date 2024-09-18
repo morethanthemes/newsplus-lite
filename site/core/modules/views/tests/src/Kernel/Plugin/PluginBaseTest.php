@@ -1,9 +1,6 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\views\Tests\Plugin\PluginBaseTest.
- */
+declare(strict_types=1);
 
 namespace Drupal\Tests\views\Kernel\Plugin;
 
@@ -24,15 +21,18 @@ class PluginBaseTest extends KernelTestBase {
    */
   protected $testPluginBase;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
     $this->testPluginBase = new TestPluginBase();
   }
 
   /**
-   * Test that the token replacement in views works correctly.
+   * Tests that the token replacement in views works correctly.
    */
-  public function testViewsTokenReplace() {
+  public function testViewsTokenReplace(): void {
     $text = '{{ langcode__value }} means {{ langcode }}';
     $tokens = ['{{ langcode }}' => Markup::create('English'), '{{ langcode__value }}' => 'en'];
 
@@ -40,13 +40,13 @@ class PluginBaseTest extends KernelTestBase {
       return $this->testPluginBase->viewsTokenReplace($text, $tokens);
     });
 
-    $this->assertIdentical($result, 'en means English');
+    $this->assertSame('en means English', $result);
   }
 
   /**
-   * Test that the token replacement in views works correctly with dots.
+   * Tests that the token replacement in views works correctly with dots.
    */
-  public function testViewsTokenReplaceWithDots() {
+  public function testViewsTokenReplaceWithDots(): void {
     $text = '{{ argument.first }} comes before {{ argument.second }}';
     $tokens = ['{{ argument.first }}' => 'first', '{{ argument.second }}' => 'second'];
 
@@ -54,7 +54,7 @@ class PluginBaseTest extends KernelTestBase {
       return $this->testPluginBase->viewsTokenReplace($text, $tokens);
     });
 
-    $this->assertIdentical($result, 'first comes before second');
+    $this->assertSame('first comes before second', $result);
 
     // Test tokens with numeric indexes.
     $text = '{{ argument.0.first }} comes before {{ argument.1.second }}';
@@ -64,17 +64,17 @@ class PluginBaseTest extends KernelTestBase {
       return $this->testPluginBase->viewsTokenReplace($text, $tokens);
     });
 
-    $this->assertIdentical($result, 'first comes before second');
+    $this->assertSame('first comes before second', $result);
   }
 
   /**
    * Tests viewsTokenReplace without any twig tokens.
    */
-  public function testViewsTokenReplaceWithTwigTokens() {
+  public function testViewsTokenReplaceWithTwigTokens(): void {
     $text = 'Just some text';
     $tokens = [];
     $result = $this->testPluginBase->viewsTokenReplace($text, $tokens);
-    $this->assertIdentical($result, 'Just some text');
+    $this->assertSame('Just some text', $result);
   }
 
 }

@@ -6,8 +6,6 @@ use Drupal\Core\TempStore\SharedTempStoreFactory;
 
 /**
  * Provides a mechanism for loading layouts from tempstore.
- *
- * @internal
  */
 class LayoutTempstoreRepository implements LayoutTempstoreRepositoryInterface {
 
@@ -17,6 +15,13 @@ class LayoutTempstoreRepository implements LayoutTempstoreRepositoryInterface {
    * @var \Drupal\Core\TempStore\SharedTempStoreFactory
    */
   protected $tempStoreFactory;
+
+  /**
+   * The static cache of loaded values.
+   *
+   * @var \Drupal\layout_builder\SectionStorageInterface[]
+   */
+  protected array $cache = [];
 
   /**
    * LayoutTempstoreRepository constructor.
@@ -32,15 +37,24 @@ class LayoutTempstoreRepository implements LayoutTempstoreRepositoryInterface {
    * {@inheritdoc}
    */
   public function get(SectionStorageInterface $section_storage) {
-    $id = $section_storage->getStorageId();
-    $tempstore = $this->getTempstore($section_storage)->get($id);
+    $key = $this->getKey($section_storage);
+
+    // Check if the storage is present in the static cache.
+    if (isset($this->cache[$key])) {
+      return $this->cache[$key];
+    }
+
+    $tempstore = $this->getTempstore($section_storage)->get($key);
     if (!empty($tempstore['section_storage'])) {
       $storage_type = $section_storage->getStorageType();
       $section_storage = $tempstore['section_storage'];
 
       if (!($section_storage instanceof SectionStorageInterface)) {
-        throw new \UnexpectedValueException(sprintf('The entry with storage type "%s" and ID "%s" is invalid', $storage_type, $id));
+        throw new \UnexpectedValueException(sprintf('The entry with storage type "%s" and ID "%s" is invalid', $storage_type, $key));
       }
+
+      // Set the storage in the static cache.
+      $this->cache[$key] = $section_storage;
     }
     return $section_storage;
   }
@@ -48,17 +62,36 @@ class LayoutTempstoreRepository implements LayoutTempstoreRepositoryInterface {
   /**
    * {@inheritdoc}
    */
+  public function has(SectionStorageInterface $section_storage) {
+    $key = $this->getKey($section_storage);
+
+    // Check if the storage is present in the static cache.
+    if (isset($this->cache[$key])) {
+      return TRUE;
+    }
+
+    $tempstore = $this->getTempstore($section_storage)->get($key);
+    return !empty($tempstore['section_storage']);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function set(SectionStorageInterface $section_storage) {
-    $id = $section_storage->getStorageId();
-    $this->getTempstore($section_storage)->set($id, ['section_storage' => $section_storage]);
+    $key = $this->getKey($section_storage);
+    $this->getTempstore($section_storage)->set($key, ['section_storage' => $section_storage]);
+    // Update the storage in the static cache.
+    $this->cache[$key] = $section_storage;
   }
 
   /**
    * {@inheritdoc}
    */
   public function delete(SectionStorageInterface $section_storage) {
-    $id = $section_storage->getStorageId();
-    $this->getTempstore($section_storage)->delete($id);
+    $key = $this->getKey($section_storage);
+    $this->getTempstore($section_storage)->delete($key);
+    // Remove the storage from the static cache.
+    unset($this->cache[$key]);
   }
 
   /**
@@ -73,6 +106,25 @@ class LayoutTempstoreRepository implements LayoutTempstoreRepositoryInterface {
   protected function getTempstore(SectionStorageInterface $section_storage) {
     $collection = 'layout_builder.section_storage.' . $section_storage->getStorageType();
     return $this->tempStoreFactory->get($collection);
+  }
+
+  /**
+   * Gets the string to use as the tempstore key.
+   *
+   * @param \Drupal\layout_builder\SectionStorageInterface $section_storage
+   *   The section storage.
+   *
+   * @return string
+   *   A unique string representing the section storage. This should include as
+   *   much identifying information as possible about this particular storage,
+   *   including information like the current language.
+   */
+  protected function getKey(SectionStorageInterface $section_storage) {
+    if ($section_storage instanceof TempStoreIdentifierInterface) {
+      return $section_storage->getTempstoreKey();
+    }
+
+    return $section_storage->getStorageId();
   }
 
 }

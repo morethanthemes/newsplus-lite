@@ -2,22 +2,24 @@
 
 namespace Drupal\contextual\Element;
 
+use Drupal\Component\Utility\Crypt;
+use Drupal\Core\Site\Settings;
 use Drupal\Core\Template\Attribute;
-use Drupal\Core\Render\Element\RenderElement;
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Core\Render\Attribute\RenderElement;
+use Drupal\Core\Render\Element\RenderElementBase;
+use Drupal\Component\Render\FormattableMarkup;
 
 /**
  * Provides a contextual_links_placeholder element.
- *
- * @RenderElement("contextual_links_placeholder")
  */
-class ContextualLinksPlaceholder extends RenderElement {
+#[RenderElement('contextual_links_placeholder')]
+class ContextualLinksPlaceholder extends RenderElementBase {
 
   /**
    * {@inheritdoc}
    */
   public function getInfo() {
-    $class = get_class($this);
+    $class = static::class;
     return [
       '#pre_render' => [
         [$class, 'preRenderPlaceholder'],
@@ -43,7 +45,13 @@ class ContextualLinksPlaceholder extends RenderElement {
    * @see _contextual_links_to_id()
    */
   public static function preRenderPlaceholder(array $element) {
-    $element['#markup'] = SafeMarkup::format('<div@attributes></div>', ['@attributes' => new Attribute(['data-contextual-id' => $element['#id']])]);
+    $token = Crypt::hmacBase64($element['#id'], Settings::getHashSalt() . \Drupal::service('private_key')->get());
+    $attribute = new Attribute([
+      'data-contextual-id' => $element['#id'],
+      'data-contextual-token' => $token,
+      'data-drupal-ajax-container' => '',
+    ]);
+    $element['#markup'] = new FormattableMarkup('<div@attributes></div>', ['@attributes' => $attribute]);
 
     return $element;
   }

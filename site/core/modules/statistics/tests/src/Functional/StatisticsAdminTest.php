@@ -1,14 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\statistics\Functional;
 
+use Drupal\Core\Database\Database;
 use Drupal\Tests\BrowserTestBase;
 use Drupal\Tests\Traits\Core\CronRunTrait;
+
+// cspell:ignore accesslog daycount
 
 /**
  * Tests the statistics admin.
  *
  * @group statistics
+ * @group legacy
  */
 class StatisticsAdminTest extends BrowserTestBase {
 
@@ -19,7 +25,12 @@ class StatisticsAdminTest extends BrowserTestBase {
    *
    * @var array
    */
-  public static $modules = ['node', 'statistics'];
+  protected static $modules = ['node', 'statistics'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * A user that has permission to administer statistics.
@@ -38,11 +49,14 @@ class StatisticsAdminTest extends BrowserTestBase {
   /**
    * The Guzzle HTTP client.
    *
-   * @var \GuzzleHttp\Client;
+   * @var \GuzzleHttp\Client
    */
   protected $client;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     // Set the max age to 0 to simplify testing.
@@ -52,7 +66,11 @@ class StatisticsAdminTest extends BrowserTestBase {
     if ($this->profile != 'standard') {
       $this->drupalCreateContentType(['type' => 'page', 'name' => 'Basic page']);
     }
-    $this->privilegedUser = $this->drupalCreateUser(['administer statistics', 'view post access counter', 'create page content']);
+    $this->privilegedUser = $this->drupalCreateUser([
+      'administer statistics',
+      'view post access counter',
+      'create page content',
+    ]);
     $this->drupalLogin($this->privilegedUser);
     $this->testNode = $this->drupalCreateNode(['type' => 'page', 'uid' => $this->privilegedUser->id()]);
     $this->client = \Drupal::httpClient();
@@ -61,15 +79,16 @@ class StatisticsAdminTest extends BrowserTestBase {
   /**
    * Verifies that the statistics settings page works.
    */
-  public function testStatisticsSettings() {
+  public function testStatisticsSettings(): void {
     $config = $this->config('statistics.settings');
-    $this->assertFalse($config->get('count_content_views'), 'Count content view log is disabled by default.');
+    $this->assertEmpty($config->get('count_content_views'), 'Count content view log is disabled by default.');
 
     // Enable counter on content view.
     $edit['statistics_count_content_views'] = 1;
-    $this->drupalPostForm('admin/config/system/statistics', $edit, t('Save configuration'));
+    $this->drupalGet('admin/config/system/statistics');
+    $this->submitForm($edit, 'Save configuration');
     $config = $this->config('statistics.settings');
-    $this->assertTrue($config->get('count_content_views'), 'Count content view log is enabled.');
+    $this->assertNotEmpty($config->get('count_content_views'), 'Count content view log is enabled.');
 
     // Hit the node.
     $this->drupalGet('node/' . $this->testNode->id());
@@ -77,34 +96,35 @@ class StatisticsAdminTest extends BrowserTestBase {
     $nid = $this->testNode->id();
     $post = ['nid' => $nid];
     global $base_url;
-    $stats_path = $base_url . '/' . drupal_get_path('module', 'statistics') . '/statistics.php';
+    $stats_path = $base_url . '/' . $this->getModulePath('statistics') . '/statistics.php';
     $this->client->post($stats_path, ['form_params' => $post]);
 
     // Hit the node again (the counter is incremented after the hit, so
     // "1 view" will actually be shown when the node is hit the second time).
     $this->drupalGet('node/' . $this->testNode->id());
     $this->client->post($stats_path, ['form_params' => $post]);
-    $this->assertText('1 view', 'Node is viewed once.');
+    $this->assertSession()->pageTextContains('1 view');
 
     $this->drupalGet('node/' . $this->testNode->id());
     $this->client->post($stats_path, ['form_params' => $post]);
-    $this->assertText('2 views', 'Node is viewed 2 times.');
+    $this->assertSession()->pageTextContains('2 views');
 
     // Increase the max age to test that nodes are no longer immediately
     // updated, visit the node once more to populate the cache.
     $this->config('statistics.settings')->set('display_max_age', 3600)->save();
     $this->drupalGet('node/' . $this->testNode->id());
-    $this->assertText('3 views', 'Node is viewed 3 times.');
+    $this->assertSession()->pageTextContains('3 views');
 
     $this->client->post($stats_path, ['form_params' => $post]);
     $this->drupalGet('node/' . $this->testNode->id());
-    $this->assertText('3 views', 'Views counter was not updated.');
+    // Verify that views counter was not updated.
+    $this->assertSession()->pageTextContains('3 views');
   }
 
   /**
    * Tests that when a node is deleted, the node counter is deleted too.
    */
-  public function testDeleteNode() {
+  public function testDeleteNode(): void {
     $this->config('statistics.settings')->set('count_content_views', 1)->save();
 
     $this->drupalGet('node/' . $this->testNode->id());
@@ -112,19 +132,20 @@ class StatisticsAdminTest extends BrowserTestBase {
     $nid = $this->testNode->id();
     $post = ['nid' => $nid];
     global $base_url;
-    $stats_path = $base_url . '/' . drupal_get_path('module', 'statistics') . '/statistics.php';
+    $stats_path = $base_url . '/' . $this->getModulePath('statistics') . '/statistics.php';
     $this->client->post($stats_path, ['form_params' => $post]);
 
-    $result = db_select('node_counter', 'n')
+    $connection = Database::getConnection();
+    $result = $connection->select('node_counter', 'n')
       ->fields('n', ['nid'])
       ->condition('n.nid', $this->testNode->id())
       ->execute()
       ->fetchAssoc();
-    $this->assertEqual($result['nid'], $this->testNode->id(), 'Verifying that the node counter is incremented.');
+    $this->assertEquals($result['nid'], $this->testNode->id(), 'Verifying that the node counter is incremented.');
 
     $this->testNode->delete();
 
-    $result = db_select('node_counter', 'n')
+    $result = $connection->select('node_counter', 'n')
       ->fields('n', ['nid'])
       ->condition('n.nid', $this->testNode->id())
       ->execute()
@@ -135,7 +156,7 @@ class StatisticsAdminTest extends BrowserTestBase {
   /**
    * Tests that cron clears day counts and expired access logs.
    */
-  public function testExpiredLogs() {
+  public function testExpiredLogs(): void {
     $this->config('statistics.settings')
       ->set('count_content_views', 1)
       ->save();
@@ -146,28 +167,29 @@ class StatisticsAdminTest extends BrowserTestBase {
     $nid = $this->testNode->id();
     $post = ['nid' => $nid];
     global $base_url;
-    $stats_path = $base_url . '/' . drupal_get_path('module', 'statistics') . '/statistics.php';
+    $stats_path = $base_url . '/' . $this->getModulePath('statistics') . '/statistics.php';
     $this->client->post($stats_path, ['form_params' => $post]);
     $this->drupalGet('node/' . $this->testNode->id());
     $this->client->post($stats_path, ['form_params' => $post]);
-    $this->assertText('1 view', 'Node is viewed once.');
+    $this->assertSession()->pageTextContains('1 view');
 
     // statistics_cron() will subtract
-    // statistics.settings:accesslog.max_lifetime config from REQUEST_TIME in
-    // the delete query, so wait two secs here to make sure the access log will
-    // be flushed for the node just hit.
+    // statistics.settings:accesslog.max_lifetime config from
+    // \Drupal::time()->getRequestTime() in the delete query, so wait two secs here to make
+    // sure the access log will be flushed for the node just hit.
     sleep(2);
     $this->cronRun();
 
+    // Verify that no hit URL is found.
     $this->drupalGet('admin/reports/pages');
-    $this->assertNoText('node/' . $this->testNode->id(), 'No hit URL found.');
+    $this->assertSession()->pageTextNotContains('node/' . $this->testNode->id());
 
-    $result = db_select('node_counter', 'nc')
+    $result = Database::getConnection()->select('node_counter', 'nc')
       ->fields('nc', ['daycount'])
       ->condition('nid', $this->testNode->id(), '=')
       ->execute()
       ->fetchField();
-    $this->assertFalse($result, 'Daycounter is zero.');
+    $this->assertEmpty($result, 'Daycount is zero.');
   }
 
 }

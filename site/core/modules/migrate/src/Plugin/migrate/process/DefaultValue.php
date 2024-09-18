@@ -2,6 +2,7 @@
 
 namespace Drupal\migrate\Plugin\migrate\process;
 
+use Drupal\migrate\Attribute\MigrateProcess;
 use Drupal\migrate\ProcessPluginBase;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\Row;
@@ -30,6 +31,7 @@ use Drupal\migrate\Row;
  *       plugin: migration_lookup
  *       migration: users
  *       source: author
+ *       no_stub: true
  *     -
  *       plugin: default_value
  *       default_value: 44
@@ -39,11 +41,11 @@ use Drupal\migrate\Row;
  * not found, set the destination property uid to 44.
  *
  * @see \Drupal\migrate\Plugin\MigrateProcessInterface
- *
- * @MigrateProcessPlugin(
- *   id = "default_value"
- * )
  */
+#[MigrateProcess(
+  id: "default_value",
+  handle_multiples: TRUE,
+)]
 class DefaultValue extends ProcessPluginBase {
 
   /**
@@ -51,7 +53,7 @@ class DefaultValue extends ProcessPluginBase {
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
     if (!empty($this->configuration['strict'])) {
-      return isset($value) ? $value : $this->configuration['default_value'];
+      return $value ?? $this->configuration['default_value'];
     }
     return $value ?: $this->configuration['default_value'];
   }

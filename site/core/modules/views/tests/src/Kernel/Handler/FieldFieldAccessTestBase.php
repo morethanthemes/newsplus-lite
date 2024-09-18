@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Kernel\Handler;
 
 use Drupal\user\Entity\Role;
@@ -14,14 +16,14 @@ use Drupal\views\Views;
 abstract class FieldFieldAccessTestBase extends ViewsKernelTestBase {
 
   /**
-   * Stores an user entity with access to fields.
+   * Stores a user entity with access to fields.
    *
    * @var \Drupal\user\UserInterface
    */
   protected $userWithAccess;
 
   /**
-   * Stores an user entity without access to fields.
+   * Stores a user entity without access to fields.
    *
    * @var \Drupal\user\UserInterface
    */
@@ -30,12 +32,12 @@ abstract class FieldFieldAccessTestBase extends ViewsKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['user'];
+  protected static $modules = ['user', 'language'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
+  protected function setUp($import_test_views = TRUE): void {
     parent::setUp($import_test_views);
 
     $this->installEntitySchema('user');
@@ -43,11 +45,13 @@ abstract class FieldFieldAccessTestBase extends ViewsKernelTestBase {
     $role_with_access = Role::create([
       'id' => 'with_access',
       'permissions' => ['view test entity field'],
+      'label' => 'With access',
     ]);
     $role_with_access->save();
     $role_without_access = Role::create([
       'id' => 'without_access',
       'permissions' => [],
+      'label' => 'Without access',
     ]);
     $role_without_access->save();
 
@@ -83,7 +87,7 @@ abstract class FieldFieldAccessTestBase extends ViewsKernelTestBase {
   protected function assertFieldAccess($entity_type_id, $field_name, $field_content) {
     \Drupal::state()->set('views_field_access_test-field', $field_name);
 
-    $entity_type = \Drupal::entityManager()->getDefinition($entity_type_id);
+    $entity_type = \Drupal::entityTypeManager()->getDefinition($entity_type_id);
     $view_id = $this->randomMachineName();
     $data_table = $entity_type->getDataTable();
     // Use the data table as long as the field is not 'uuid'. This is the only
@@ -91,6 +95,7 @@ abstract class FieldFieldAccessTestBase extends ViewsKernelTestBase {
     $base_table = ($data_table && ($field_name !== 'uuid')) ? $data_table : $entity_type->getBaseTable();
     $entity = View::create([
       'id' => $view_id,
+      'label' => $view_id,
       'base_table' => $base_table,
       'display' => [
         'default' => [

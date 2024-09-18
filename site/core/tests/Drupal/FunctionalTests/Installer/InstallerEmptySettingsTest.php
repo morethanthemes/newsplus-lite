@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\FunctionalTests\Installer;
 
 /**
@@ -8,6 +10,11 @@ namespace Drupal\FunctionalTests\Installer;
  * @group Installer
  */
 class InstallerEmptySettingsTest extends InstallerTestBase {
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
@@ -22,9 +29,9 @@ class InstallerEmptySettingsTest extends InstallerTestBase {
   /**
    * Verifies that installation succeeded.
    */
-  public function testInstaller() {
-    $this->assertUrl('user/1');
-    $this->assertResponse(200);
+  public function testInstaller(): void {
+    $this->assertSession()->addressEquals('user/1');
+    $this->assertSession()->statusCodeEquals(200);
   }
 
 }

@@ -2,21 +2,20 @@
 
 namespace Drupal\Core\Field\Plugin\Field\FieldWidget;
 
+use Drupal\Core\Field\Attribute\FieldWidget;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Plugin implementation of the 'string_textarea' widget.
- *
- * @FieldWidget(
- *   id = "string_textarea",
- *   label = @Translation("Text area (multiple rows)"),
- *   field_types = {
- *     "string_long"
- *   }
- * )
  */
+#[FieldWidget(
+  id: 'string_textarea',
+  label: new TranslatableMarkup('Text area (multiple rows)'),
+  field_types: ['string_long'],
+)]
 class StringTextareaWidget extends WidgetBase {
 
   /**
@@ -35,16 +34,16 @@ class StringTextareaWidget extends WidgetBase {
   public function settingsForm(array $form, FormStateInterface $form_state) {
     $element['rows'] = [
       '#type' => 'number',
-      '#title' => t('Rows'),
+      '#title' => $this->t('Rows'),
       '#default_value' => $this->getSetting('rows'),
       '#required' => TRUE,
       '#min' => 1,
     ];
     $element['placeholder'] = [
-      '#type' => 'textfield',
-      '#title' => t('Placeholder'),
+      '#type' => 'textarea',
+      '#title' => $this->t('Placeholder'),
       '#default_value' => $this->getSetting('placeholder'),
-      '#description' => t('Text that will be shown inside the field until a value is entered. This hint is usually a sample value or a brief description of the expected format.'),
+      '#description' => $this->t('Text that will be shown inside the field until a value is entered. This hint is usually a sample value or a brief description of the expected format.'),
     ];
     return $element;
   }
@@ -55,10 +54,10 @@ class StringTextareaWidget extends WidgetBase {
   public function settingsSummary() {
     $summary = [];
 
-    $summary[] = t('Number of rows: @rows', ['@rows' => $this->getSetting('rows')]);
+    $summary[] = $this->t('Number of rows: @rows', ['@rows' => $this->getSetting('rows')]);
     $placeholder = $this->getSetting('placeholder');
     if (!empty($placeholder)) {
-      $summary[] = t('Placeholder: @placeholder', ['@placeholder' => $placeholder]);
+      $summary[] = $this->t('Placeholder: @placeholder', ['@placeholder' => $placeholder]);
     }
 
     return $summary;

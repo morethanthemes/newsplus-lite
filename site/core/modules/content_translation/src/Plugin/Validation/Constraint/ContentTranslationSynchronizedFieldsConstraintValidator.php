@@ -72,7 +72,7 @@ class ContentTranslationSynchronizedFieldsConstraintValidator extends Constraint
   }
 
   /**
-   * [@inheritdoc}
+   * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
     return new static(
@@ -170,6 +170,7 @@ class ContentTranslationSynchronizedFieldsConstraintValidator extends Constraint
    */
   protected function getOriginalEntity(ContentEntityInterface $entity) {
     if (!isset($entity->original)) {
+      /** @var \Drupal\Core\Entity\RevisionableStorageInterface $storage */
       $storage = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
       $original = $entity->isDefaultRevision() ? $storage->loadUnchanged($entity->id()) : $storage->loadRevision($entity->getLoadedRevisionId());
     }
@@ -191,6 +192,12 @@ class ContentTranslationSynchronizedFieldsConstraintValidator extends Constraint
    *   The original entity translation object.
    */
   protected function getOriginalTranslation(ContentEntityInterface $entity, ContentEntityInterface $original) {
+    // If the language of the default translation is changing, the original
+    // translation will be the same as the original entity, but they won't
+    // necessarily have the same langcode.
+    if ($entity->isDefaultTranslation() && $original->language()->getId() !== $entity->language()->getId()) {
+      return $original;
+    }
     $langcode = $entity->language()->getId();
     if ($original->hasTranslation($langcode)) {
       $original_langcode = $langcode;

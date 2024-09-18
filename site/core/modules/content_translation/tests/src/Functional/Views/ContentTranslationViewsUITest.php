@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\content_translation\Functional\Views;
 
 use Drupal\Tests\views_ui\Functional\UITestBase;
@@ -19,18 +21,21 @@ class ContentTranslationViewsUITest extends UITestBase {
   public static $testViews = ['test_view'];
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['content_translation'];
+  protected static $modules = ['content_translation'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Tests the views UI.
    */
-  public function testViewsUI() {
+  public function testViewsUI(): void {
     $this->drupalGet('admin/structure/views/view/test_view/edit');
-    $this->assertTitle(t('@label (@table) | @site-name', ['@label' => 'Test view', '@table' => 'Views test data', '@site-name' => $this->config('system.site')->get('name')]));
+    $this->assertSession()->titleEquals('Test view (Views test data) | Drupal');
   }
 
 }

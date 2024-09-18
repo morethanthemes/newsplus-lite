@@ -2,21 +2,23 @@
 
 namespace Drupal\node\Plugin\views\wizard;
 
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\views\Attribute\ViewsWizard;
 use Drupal\views\Plugin\views\wizard\WizardPluginBase;
 
 /**
- * @todo: replace numbers with constants.
+ * @todo Replace numbers with constants.
  */
 
 /**
  * Tests creating node revision views with the wizard.
- *
- * @ViewsWizard(
- *   id = "node_revision",
- *   base_table = "node_field_revision",
- *   title = @Translation("Content revisions")
- * )
  */
+#[ViewsWizard(
+  id: 'node_revision',
+  title: new TranslatableMarkup('Content revisions'),
+  base_table: 'node_field_revision'
+)]
 class NodeRevision extends WizardPluginBase {
 
   /**
@@ -92,6 +94,50 @@ class NodeRevision extends WizardPluginBase {
     $display_options['fields']['title']['empty_zero'] = 0;
     $display_options['fields']['title']['settings']['link_to_entity'] = 0;
     $display_options['fields']['title']['plugin_id'] = 'field';
+    return $display_options;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function defaultDisplayFiltersUser(array $form, FormStateInterface $form_state) {
+    $filters = [];
+
+    $type = $form_state->getValue(['show', 'type']);
+    if ($type && $type != 'all') {
+      $filters['type'] = [
+        'id' => 'type',
+        'table' => 'node_field_data',
+        'field' => 'type',
+        'relationship' => 'nid',
+        'value' => [$type => $type],
+        'entity_type' => 'node',
+        'entity_field' => 'type',
+        'plugin_id' => 'bundle',
+      ];
+    }
+    return $filters;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function buildDisplayOptions($form, FormStateInterface $form_state) {
+    $display_options = parent::buildDisplayOptions($form, $form_state);
+    if (isset($display_options['default']['filters']['type'])) {
+      $display_options['default']['relationships']['nid'] = [
+        'id' => 'nid',
+        'table' => 'node_field_revision',
+        'field' => 'nid',
+        'relationship' => 'none',
+        'group_type' => 'group',
+        'admin_label' => 'Get the actual content from a content revision.',
+        'required' => 'true',
+        'entity_type' => 'node',
+        'entity_field' => 'nid',
+        'plugin_id' => 'standard',
+      ];
+    }
     return $display_options;
   }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Form;
 
 use Drupal\Core\Form\FormInterface;
@@ -7,6 +9,8 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\user\Entity\User;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 
 /**
  * Ensures that form actions can't be tricked into sending to external URLs.
@@ -18,7 +22,7 @@ class ExternalFormUrlTest extends KernelTestBase implements FormInterface {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['user', 'system'];
+  protected static $modules = ['user', 'system'];
 
   /**
    * {@inheritdoc}
@@ -51,9 +55,8 @@ class ExternalFormUrlTest extends KernelTestBase implements FormInterface {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
-    $this->installSchema('system', ['key_value_expire', 'sequences']);
     $this->installEntitySchema('user');
 
     $test_user = User::create([
@@ -65,9 +68,9 @@ class ExternalFormUrlTest extends KernelTestBase implements FormInterface {
   }
 
   /**
-   * Tests form behaviour.
+   * Tests form behavior.
    */
-  public function testActionUrlBehavior() {
+  public function testActionUrlBehavior(): void {
     // Create a new request which has a request uri with multiple leading
     // slashes and make it the master request.
     $request_stack = \Drupal::service('request_stack');
@@ -77,6 +80,7 @@ class ExternalFormUrlTest extends KernelTestBase implements FormInterface {
     $request_stack->pop();
     $request_stack->pop();
     $request = Request::create($original_request->getSchemeAndHttpHost() . '//example.org');
+    $request->setSession(new Session(new MockArraySessionStorage()));
     $request_stack->push($request);
 
     $form = \Drupal::formBuilder()->getForm($this);
@@ -85,13 +89,14 @@ class ExternalFormUrlTest extends KernelTestBase implements FormInterface {
     $this->setRawContent($markup);
     $elements = $this->xpath('//form/@action');
     $action = (string) $elements[0];
-    $this->assertEqual($original_request->getSchemeAndHttpHost() . '//example.org', $action);
+    $this->assertEquals($original_request->getSchemeAndHttpHost() . '//example.org', $action);
 
     // Create a new request which has a request uri with a single leading slash
     // and make it the master request.
     $request_stack = \Drupal::service('request_stack');
     $original_request = $request_stack->pop();
     $request = Request::create($original_request->getSchemeAndHttpHost() . '/example.org');
+    $request->setSession(new Session(new MockArraySessionStorage()));
     $request_stack->push($request);
 
     $form = \Drupal::formBuilder()->getForm($this);
@@ -100,7 +105,7 @@ class ExternalFormUrlTest extends KernelTestBase implements FormInterface {
     $this->setRawContent($markup);
     $elements = $this->xpath('//form/@action');
     $action = (string) $elements[0];
-    $this->assertEqual('/example.org', $action);
+    $this->assertEquals('/example.org', $action);
   }
 
 }

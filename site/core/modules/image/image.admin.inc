@@ -17,13 +17,17 @@ use Drupal\Core\Render\Element;
  *   - style: \Drupal\image\ImageStyleInterface image style being previewed.
  */
 function template_preprocess_image_style_preview(&$variables) {
+
+  /** @var \Drupal\Core\File\FileUrlGeneratorInterface $file_url_generator */
+  $file_url_generator = \Drupal::service('file_url_generator');
+
   // Style information.
   $style = $variables['style'];
   $variables['style_id'] = $style->id();
   $variables['style_name'] = $style->label();
 
   // Cache bypass token.
-  $variables['cache_bypass'] = REQUEST_TIME;
+  $variables['cache_bypass'] = \Drupal::time()->getRequestTime();
 
   // Sample image info.
   $sample_width = 160;
@@ -34,7 +38,7 @@ function template_preprocess_image_style_preview(&$variables) {
   $original_path = \Drupal::config('image.settings')->get('preview_image');
   $original_image = $image_factory->get($original_path);
   $variables['original'] = [
-    'url' => file_url_transform_relative(file_create_url($original_path)),
+    'url' => $file_url_generator->generateString($original_path),
     'width' => $original_image->getWidth(),
     'height' => $original_image->getHeight(),
   ];
@@ -54,8 +58,13 @@ function template_preprocess_image_style_preview(&$variables) {
     $style->createDerivative($original_path, $preview_file);
   }
   $preview_image = $image_factory->get($preview_file);
+
+  // Generate an itok.
+  $defaultScheme = \Drupal::config('system.file')->get('default_scheme');
+  $variables['itok'] = $style->getPathToken($defaultScheme . '://' . $original_path);
+
   $variables['derivative'] = [
-    'url' => file_url_transform_relative(file_create_url($preview_file)),
+    'url' => $file_url_generator->generateString($preview_file),
     'width' => $preview_image->getWidth(),
     'height' => $preview_image->getHeight(),
   ];
@@ -85,7 +94,7 @@ function template_preprocess_image_style_preview(&$variables) {
   // to prevent caching of images on the client side.
   $variables['derivative']['rendered'] = [
     '#theme' => 'image',
-    '#uri' => $variables['derivative']['url'] . '?cache_bypass=' . $variables['cache_bypass'],
+    '#uri' => $variables['derivative']['url'] . '?cache_bypass=' . $variables['cache_bypass'] . '&itok=' . $variables['itok'],
     '#alt' => t('Sample modified image'),
     '#title' => '',
     '#attributes' => [

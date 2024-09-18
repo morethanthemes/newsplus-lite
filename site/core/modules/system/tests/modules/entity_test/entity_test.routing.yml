@@ -55,23 +55,10 @@ entity.entity_test.collection:
   requirements:
     _access: 'TRUE'
 
-entity.entity_test_rev.revision:
-  path: '/entity_test_rev/{entity_test_rev}/revision/{entity_test_rev_revision}/view'
-  defaults:
-    _controller: '\Drupal\Core\Entity\Controller\EntityViewController::viewRevision'
-  options:
-    parameters:
-      entity_test_rev:
-        type: entity:entity_test_rev
-      entity_test_rev_revision:
-        type: entity_revision:entity_test_rev
-  requirements:
-    _access: 'TRUE'
-
 entity.entity_test_mulrev.revision:
   path: '/entity_test_mulrev/{entity_test_mulrev}/revision/{entity_test_mulrev_revision}/view'
   defaults:
-    _controller: '\Drupal\Core\Entity\Controller\EntityViewController::viewRevision'
+    _controller: '\Drupal\Core\Entity\Controller\EntityRevisionViewController'
   options:
     parameters:
       entity_test_mulrev:
@@ -101,6 +88,14 @@ entity.entity_test_view_builder.canonical:
     _entity_view: 'entity_test_view_builder'
   requirements:
     _access: 'TRUE'
+
+entity.entity_test_computed_field.canonical:
+  path: '/entity_test_computed_field/{entity_test_computed_field}'
+  defaults:
+    _entity_view: 'entity_test_computed_field.full'
+    _title: 'Test full view mode'
+  requirements:
+    _entity_access: 'entity_test_computed_field.view'
 
 route_callbacks:
   - '\Drupal\entity_test\Routing\EntityTestRoutes::routes'

@@ -4,28 +4,26 @@ namespace Drupal\content_moderation\Plugin\Field\FieldWidget;
 
 use Drupal\content_moderation\Plugin\Field\ModerationStateFieldItemList;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Field\Attribute\FieldWidget;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\Plugin\Field\FieldWidget\OptionsSelectWidget;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\content_moderation\ModerationInformation;
 use Drupal\content_moderation\StateTransitionValidationInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Plugin implementation of the 'moderation_state_default' widget.
- *
- * @FieldWidget(
- *   id = "moderation_state_default",
- *   label = @Translation("Moderation state"),
- *   field_types = {
- *     "string"
- *   }
- * )
  */
-class ModerationStateWidget extends OptionsSelectWidget implements ContainerFactoryPluginInterface {
+#[FieldWidget(
+  id: 'moderation_state_default',
+  label: new TranslatableMarkup('Moderation state'),
+  field_types: ['string'],
+)]
+class ModerationStateWidget extends OptionsSelectWidget {
 
   /**
    * Current user service.
@@ -118,16 +116,35 @@ class ModerationStateWidget extends OptionsSelectWidget implements ContainerFact
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
     /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
-    $entity = $items->getEntity();
+    $entity = $original_entity = $items->getEntity();
 
-    $workflow = $this->moderationInformation->getWorkflowForEntity($entity);
-    $default = $items->get($delta)->value ? $workflow->getTypePlugin()->getState($items->get($delta)->value) : $workflow->getTypePlugin()->getInitialState($entity);
+    $default = $this->moderationInformation->getOriginalState($entity);
+
+    // If the entity already exists, grab the most recent revision and load it.
+    // The moderation state of the saved revision will be used to display the
+    // current state as well determine the appropriate transitions.
+    if (!$entity->isNew()) {
+      /** @var \Drupal\Core\Entity\RevisionableStorageInterface $storage */
+      $storage = $this->entityTypeManager->getStorage($entity->getEntityTypeId());
+      /** @var \Drupal\Core\Entity\ContentEntityInterface $original_entity */
+      $original_entity = $storage->loadRevision($entity->getLoadedRevisionId());
+      if (!$entity->isDefaultTranslation() && $original_entity->hasTranslation($entity->language()->getId())) {
+        $original_entity = $original_entity->getTranslation($entity->language()->getId());
+      }
+    }
+    // For a new entity, ensure the moderation state of the original entity is
+    // always the default state. Despite the entity being unsaved, it may have
+    // previously been set to a new target state, for example previewed entities
+    // are retrieved from temporary storage with field values set.
+    else {
+      $original_entity->set('moderation_state', $default->id());
+    }
 
     /** @var \Drupal\workflows\Transition[] $transitions */
-    $transitions = $this->validator->getValidTransitions($entity, $this->currentUser);
+    $transitions = $this->validator->getValidTransitions($original_entity, $this->currentUser);
 
     $transition_labels = [];
-    $default_value = NULL;
+    $default_value = $items->value;
     foreach ($transitions as $transition) {
       $transition_to_state = $transition->to();
       $transition_labels[$transition_to_state->id()] = $transition_to_state->label();
@@ -159,7 +176,7 @@ class ModerationStateWidget extends OptionsSelectWidget implements ContainerFact
         ],
       ],
     ];
-    $element['#element_validate'][] = [get_class($this), 'validateElement'];
+    $element['#element_validate'][] = [static::class, 'validateElement'];
 
     return $element;
   }
@@ -176,6 +193,17 @@ class ModerationStateWidget extends OptionsSelectWidget implements ContainerFact
    */
   public static function isApplicable(FieldDefinitionInterface $field_definition) {
     return is_a($field_definition->getClass(), ModerationStateFieldItemList::class, TRUE);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function calculateDependencies() {
+    $dependencies = parent::calculateDependencies();
+    if ($workflow = $this->moderationInformation->getWorkflowForEntityTypeAndBundle($this->fieldDefinition->getTargetEntityTypeId(), $this->fieldDefinition->getTargetBundle())) {
+      $dependencies[$workflow->getConfigDependencyKey()][] = $workflow->getConfigDependencyName();
+    }
+    return $dependencies;
   }
 
 }

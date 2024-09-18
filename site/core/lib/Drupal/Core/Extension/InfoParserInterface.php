@@ -20,6 +20,12 @@ interface InfoParserInterface {
    * - name: The real name of the module for display purposes. (Required)
    * - description: A brief description of the module.
    * - type: whether it is for a module or theme. (Required)
+   * - core_version_requirement: Specifies the compatible version or versions of
+   *   Drupal core. For example, "9.3 || 9.4" means compatibility with Drupal
+   *   9.3 and 9.4; ">=9" means compatible with Drupal 9, 10 and later versions,
+   *   "<=9" means compatible with Drupal 8 and 9. (Required)
+   * - lifecycle: [experimental|stable|deprecated|obsolete]. A description of
+   *   the current phase in the lifecycle of the module, theme or profile.
    *
    * Information stored in a module .info.yml file:
    * - dependencies: An array of dependency strings. Each is in the form
@@ -34,7 +40,7 @@ interface InfoParserInterface {
    *     can contain "x" as a wildcard. Examples: (>=8.22, <8.28), (8.x-3.x).
    * - package: The name of the package of modules this module belongs to.
    *
-   * See forum.info.yml for an example of a module .info.yml file.
+   * See node.info.yml for an example of a module .info.yml file.
    *
    * Information stored in a theme .info.yml file:
    * - screenshot: Path to screenshot relative to the theme's .info.yml file.
@@ -45,7 +51,10 @@ interface InfoParserInterface {
    * - stylesheets: Theme stylesheets.
    * - scripts: Theme scripts.
    *
-   * See bartik.info.yml for an example of a theme .info.yml file.
+   * See olivero.info.yml for an example of a theme .info.yml file.
+   *
+   * For information stored in a profile .info.yml file see
+   * install_profile_info().
    *
    * @param string $filename
    *   The file we are parsing. Accepts file with relative or absolute path.
@@ -56,6 +65,8 @@ interface InfoParserInterface {
    * @throws \Drupal\Core\Extension\InfoParserException
    *   Exception thrown if there is a parsing error or the .info.yml file does
    *   not contain a required key.
+   *
+   * @see install_profile_info()
    */
   public function parse($filename);
 

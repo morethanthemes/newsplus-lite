@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\node\Functional;
 
 use Drupal\Core\Session\AccountInterface;
@@ -18,12 +20,17 @@ class NodePreviewAnonymousTest extends BrowserTestBase {
    *
    * @var array
    */
-  public static $modules = ['node'];
+  protected static $modules = ['node'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
     // Create Basic page node type.
     $this->drupalCreateContentType([
@@ -41,7 +48,7 @@ class NodePreviewAnonymousTest extends BrowserTestBase {
   /**
    * Checks the node preview functionality for anonymous users.
    */
-  public function testAnonymousPagePreview() {
+  public function testAnonymousPagePreview(): void {
 
     $title_key = 'title[0][value]';
     $body_key = 'body[0][value]';
@@ -49,12 +56,13 @@ class NodePreviewAnonymousTest extends BrowserTestBase {
     // Fill in node creation form and preview node.
     $edit = [
       $title_key => $this->randomMachineName(),
-      $body_key => $this->randomMachineName()
+      $body_key => $this->randomMachineName(),
     ];
-    $this->drupalPostForm('node/add/page', $edit, t('Preview'));
+    $this->drupalGet('node/add/page');
+    $this->submitForm($edit, 'Preview');
 
     // Check that the preview is displaying the title, body and term.
-    $this->assertSession()->linkExists(t('Back to content editing'));
+    $this->assertSession()->linkExists('Back to content editing');
     $this->assertSession()->responseContains($edit[$body_key]);
     $this->assertSession()->titleEquals($edit[$title_key] . ' | Drupal');
   }

@@ -2,13 +2,16 @@
 
 namespace Drupal\layout_builder\Form;
 
+use Drupal\Component\Utility\Html;
 use Drupal\Component\Uuid\UuidInterface;
+use Drupal\Core\Ajax\AjaxFormHelperTrait;
 use Drupal\Core\Block\BlockManagerInterface;
 use Drupal\Core\Block\BlockPluginInterface;
-use Drupal\Core\DependencyInjection\ClassResolverInterface;
+use Drupal\Core\Form\BaseFormIdInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\SubformState;
+use Drupal\Core\Form\WorkspaceDynamicSafeFormInterface;
 use Drupal\Core\Plugin\Context\ContextRepositoryInterface;
 use Drupal\Core\Plugin\ContextAwarePluginAssignmentTrait;
 use Drupal\Core\Plugin\ContextAwarePluginInterface;
@@ -25,13 +28,15 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Provides a base form for configuring a block.
  *
  * @internal
+ *   Form classes are internal.
  */
-abstract class ConfigureBlockFormBase extends FormBase {
+abstract class ConfigureBlockFormBase extends FormBase implements BaseFormIdInterface, WorkspaceDynamicSafeFormInterface {
 
   use AjaxFormHelperTrait;
   use ContextAwarePluginAssignmentTrait;
   use LayoutBuilderContextTrait;
   use LayoutRebuildTrait;
+  use WorkspaceSafeFormTrait;
 
   /**
    * The plugin being configured.
@@ -107,17 +112,14 @@ abstract class ConfigureBlockFormBase extends FormBase {
    *   The block manager.
    * @param \Drupal\Component\Uuid\UuidInterface $uuid
    *   The UUID generator.
-   * @param \Drupal\Core\DependencyInjection\ClassResolverInterface $class_resolver
-   *   The class resolver.
    * @param \Drupal\Core\Plugin\PluginFormFactoryInterface $plugin_form_manager
    *   The plugin form manager.
    */
-  public function __construct(LayoutTempstoreRepositoryInterface $layout_tempstore_repository, ContextRepositoryInterface $context_repository, BlockManagerInterface $block_manager, UuidInterface $uuid, ClassResolverInterface $class_resolver, PluginFormFactoryInterface $plugin_form_manager) {
+  public function __construct(LayoutTempstoreRepositoryInterface $layout_tempstore_repository, ContextRepositoryInterface $context_repository, BlockManagerInterface $block_manager, UuidInterface $uuid, PluginFormFactoryInterface $plugin_form_manager) {
     $this->layoutTempstoreRepository = $layout_tempstore_repository;
     $this->contextRepository = $context_repository;
     $this->blockManager = $block_manager;
     $this->uuidGenerator = $uuid;
-    $this->classResolver = $class_resolver;
     $this->pluginFormFactory = $plugin_form_manager;
   }
 
@@ -130,9 +132,15 @@ abstract class ConfigureBlockFormBase extends FormBase {
       $container->get('context.repository'),
       $container->get('plugin.manager.block'),
       $container->get('uuid'),
-      $container->get('class_resolver'),
       $container->get('plugin_form.factory')
     );
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getBaseFormId() {
+    return 'layout_builder_configure_block';
   }
 
   /**
@@ -152,16 +160,13 @@ abstract class ConfigureBlockFormBase extends FormBase {
    * @return array
    *   The form array.
    */
-  public function doBuildForm(array $form, FormStateInterface $form_state, SectionStorageInterface $section_storage = NULL, $delta = NULL, SectionComponent $component = NULL) {
+  public function doBuildForm(array $form, FormStateInterface $form_state, ?SectionStorageInterface $section_storage = NULL, $delta = NULL, ?SectionComponent $component = NULL) {
     $this->sectionStorage = $section_storage;
     $this->delta = $delta;
     $this->uuid = $component->getUuid();
     $this->block = $component->getPlugin();
 
-    $form_state->setTemporaryValue('gathered_contexts', $this->getAvailableContexts($section_storage));
-
-    // @todo Remove once https://www.drupal.org/node/2268787 is resolved.
-    $form_state->set('block_theme', $this->config('system.theme')->get('default'));
+    $form_state->setTemporaryValue('gathered_contexts', $this->getPopulatedContexts($section_storage));
 
     $form['#tree'] = TRUE;
     $form['settings'] = [];
@@ -175,8 +180,19 @@ abstract class ConfigureBlockFormBase extends FormBase {
     ];
     if ($this->isAjax()) {
       $form['actions']['submit']['#ajax']['callback'] = '::ajaxSubmit';
+      // @todo static::ajaxSubmit() requires data-drupal-selector to be the same
+      //   between the various Ajax requests. A bug in
+      //   \Drupal\Core\Form\FormBuilder prevents that from happening unless
+      //   $form['#id'] is also the same. Normally, #id is set to a unique HTML
+      //   ID via Html::getUniqueId(), but here we bypass that in order to work
+      //   around the data-drupal-selector bug. This is okay so long as we
+      //   assume that this form only ever occurs once on a page. Remove this
+      //   workaround in https://www.drupal.org/node/2897377.
+      $form['#id'] = Html::getId($form_state->getBuildInfo()['form_id']);
     }
 
+    // Mark this as an administrative page for JavaScript ("Back to site" link).
+    $form['#attached']['drupalSettings']['path']['currentPathIsAdmin'] = TRUE;
     return $form;
   }
 
@@ -239,6 +255,36 @@ abstract class ConfigureBlockFormBase extends FormBase {
       return $this->pluginFormFactory->createInstance($block, 'configure');
     }
     return $block;
+  }
+
+  /**
+   * Retrieves the section storage object.
+   *
+   * @return \Drupal\layout_builder\SectionStorageInterface
+   *   The section storage for the current form.
+   */
+  public function getSectionStorage() {
+    return $this->sectionStorage;
+  }
+
+  /**
+   * Retrieves the current layout section being edited by the form.
+   *
+   * @return \Drupal\layout_builder\Section
+   *   The current layout section.
+   */
+  public function getCurrentSection() {
+    return $this->sectionStorage->getSection($this->delta);
+  }
+
+  /**
+   * Retrieves the current component being edited by the form.
+   *
+   * @return \Drupal\layout_builder\SectionComponent
+   *   The current section component.
+   */
+  public function getCurrentComponent() {
+    return $this->getCurrentSection()->getComponent($this->uuid);
   }
 
 }

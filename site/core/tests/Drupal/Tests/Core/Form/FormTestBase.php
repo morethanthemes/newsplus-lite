@@ -1,15 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Form;
 
 use Drupal\Component\Utility\Html;
+use Drupal\Core\EventSubscriber\RedirectResponseSubscriber;
 use Drupal\Core\Form\FormBuilder;
 use Drupal\Core\Form\FormInterface;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Form\FormValidator;
 use Drupal\Tests\UnitTestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 
 /**
  * Provides a base class for testing form functionality.
@@ -26,61 +32,61 @@ abstract class FormTestBase extends UnitTestCase {
   protected $formBuilder;
 
   /**
-   * @var \Drupal\Core\Form\FormValidatorInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Form\FormValidatorInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $formValidator;
 
   /**
-   * @var \Drupal\Core\Form\FormSubmitterInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Form\FormSubmitterInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $formSubmitter;
 
   /**
    * The mocked URL generator.
    *
-   * @var \Drupal\Core\Routing\UrlGeneratorInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Routing\UrlGeneratorInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $urlGenerator;
 
   /**
    * The mocked module handler.
    *
-   * @var \Drupal\Core\Extension\ModuleHandlerInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $moduleHandler;
 
   /**
    * The form cache.
    *
-   * @var \Drupal\Core\Form\FormCacheInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Form\FormCacheInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $formCache;
 
   /**
    * The cache backend to use.
    *
-   * @var \Drupal\Core\Cache\CacheBackendInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Cache\CacheBackendInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $cache;
 
   /**
    * The current user.
    *
-   * @var \Drupal\Core\Session\AccountInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Session\AccountInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $account;
 
   /**
    * The controller resolver.
    *
-   * @var \Drupal\Core\Controller\ControllerResolverInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Controller\ControllerResolverInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $controllerResolver;
 
   /**
    * The CSRF token generator.
    *
-   * @var \Drupal\Core\Access\CsrfTokenGenerator|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Access\CsrfTokenGenerator|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $csrfToken;
 
@@ -101,7 +107,7 @@ abstract class FormTestBase extends UnitTestCase {
   /**
    * The class results.
    *
-   * @var \Drupal\Core\DependencyInjection\ClassResolverInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\DependencyInjection\ClassResolverInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $classResolver;
 
@@ -115,46 +121,52 @@ abstract class FormTestBase extends UnitTestCase {
   /**
    * The event dispatcher.
    *
-   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Symfony\Contracts\EventDispatcher\EventDispatcherInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $eventDispatcher;
 
   /**
-   * @var \Drupal\Core\StringTranslation\TranslationInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\StringTranslation\TranslationInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $translationManager;
 
   /**
-   * @var \Drupal\Core\DrupalKernelInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\DrupalKernelInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $kernel;
 
   /**
-   * @var \PHPUnit_Framework_MockObject_MockObject|\Psr\Log\LoggerInterface
+   * @var \PHPUnit\Framework\MockObject\MockObject|\Psr\Log\LoggerInterface
    */
   protected $logger;
 
   /**
+   * @var \PHPUnit\Framework\MockObject\MockObject|\Drupal\Core\EventSubscriber\RedirectResponseSubscriber
+   */
+  protected $redirectResponseSubscriber;
+
+  /**
    * The mocked theme manager.
    *
-   * @var \Drupal\Core\Theme\ThemeManagerInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Theme\ThemeManagerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $themeManager;
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     // Add functions to the global namespace for testing.
     require_once __DIR__ . '/fixtures/form_base_test.inc';
 
-    $this->moduleHandler = $this->getMock('Drupal\Core\Extension\ModuleHandlerInterface');
+    $this->moduleHandler = $this->createMock('Drupal\Core\Extension\ModuleHandlerInterface');
 
-    $this->formCache = $this->getMock('Drupal\Core\Form\FormCacheInterface');
-    $this->cache = $this->getMock('Drupal\Core\Cache\CacheBackendInterface');
-    $this->urlGenerator = $this->getMock('Drupal\Core\Routing\UrlGeneratorInterface');
+    $this->formCache = $this->createMock('Drupal\Core\Form\FormCacheInterface');
+    $this->cache = $this->createMock('Drupal\Core\Cache\CacheBackendInterface');
+    $this->urlGenerator = $this->createMock('Drupal\Core\Routing\UrlGeneratorInterface');
+    $this->redirectResponseSubscriber = $this->createMock(RedirectResponseSubscriber::class);
 
     $this->classResolver = $this->getClassResolverStub();
 
@@ -163,7 +175,7 @@ abstract class FormTestBase extends UnitTestCase {
       ->getMock();
     $this->elementInfo->expects($this->any())
       ->method('getInfo')
-      ->will($this->returnCallback([$this, 'getInfo']));
+      ->willReturnCallback([$this, 'getInfo']);
 
     $this->csrfToken = $this->getMockBuilder('Drupal\Core\Access\CsrfTokenGenerator')
       ->disableOriginalConstructor()
@@ -171,23 +183,21 @@ abstract class FormTestBase extends UnitTestCase {
     $this->kernel = $this->getMockBuilder('\Drupal\Core\DrupalKernel')
       ->disableOriginalConstructor()
       ->getMock();
-    $this->account = $this->getMock('Drupal\Core\Session\AccountInterface');
-    $this->themeManager = $this->getMock('Drupal\Core\Theme\ThemeManagerInterface');
-    $this->request = new Request();
-    $this->eventDispatcher = $this->getMock('Symfony\Component\EventDispatcher\EventDispatcherInterface');
+    $this->account = $this->createMock('Drupal\Core\Session\AccountInterface');
+    $this->themeManager = $this->createMock('Drupal\Core\Theme\ThemeManagerInterface');
+    $this->request = Request::createFromGlobals();
+    $this->request->setSession(new Session(new MockArraySessionStorage()));
+    $this->eventDispatcher = $this->createMock('Symfony\Contracts\EventDispatcher\EventDispatcherInterface');
     $this->requestStack = new RequestStack();
     $this->requestStack->push($this->request);
-    $this->logger = $this->getMock('Drupal\Core\Logger\LoggerChannelInterface');
-    $form_error_handler = $this->getMock('Drupal\Core\Form\FormErrorHandlerInterface');
-    $this->formValidator = $this->getMockBuilder('Drupal\Core\Form\FormValidator')
-      ->setConstructorArgs([$this->requestStack, $this->getStringTranslationStub(), $this->csrfToken, $this->logger, $form_error_handler])
-      ->setMethods(NULL)
-      ->getMock();
+    $this->logger = $this->createMock('Drupal\Core\Logger\LoggerChannelInterface');
+    $form_error_handler = $this->createMock('Drupal\Core\Form\FormErrorHandlerInterface');
+    $this->formValidator = new FormValidator($this->requestStack, $this->getStringTranslationStub(), $this->csrfToken, $this->logger, $form_error_handler);
     $this->formSubmitter = $this->getMockBuilder('Drupal\Core\Form\FormSubmitter')
-      ->setConstructorArgs([$this->requestStack, $this->urlGenerator])
-      ->setMethods(['batchGet', 'drupalInstallationAttempted'])
+      ->setConstructorArgs([$this->requestStack, $this->urlGenerator, $this->redirectResponseSubscriber])
+      ->onlyMethods(['batchGet'])
       ->getMock();
-    $this->root = dirname(dirname(substr(__DIR__, 0, -strlen(__NAMESPACE__))));
+    $this->root = dirname(substr(__DIR__, 0, -strlen(__NAMESPACE__)), 2);
 
     $this->formBuilder = new FormBuilder($this->formValidator, $this->formSubmitter, $this->formCache, $this->moduleHandler, $this->eventDispatcher, $this->requestStack, $this->classResolver, $this->elementInfo, $this->themeManager, $this->csrfToken);
   }
@@ -195,7 +205,7 @@ abstract class FormTestBase extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function tearDown() {
+  protected function tearDown(): void {
     Html::resetSeenIds();
     (new FormState())->clearErrors();
   }
@@ -212,19 +222,19 @@ abstract class FormTestBase extends UnitTestCase {
    *   (optional) The number of times the form is expected to be built. Defaults
    *   to 1.
    *
-   * @return \PHPUnit_Framework_MockObject_MockObject|\Drupal\Core\Form\FormInterface
+   * @return \PHPUnit\Framework\MockObject\MockObject|\Drupal\Core\Form\FormInterface
    *   The mocked form object.
    */
   protected function getMockForm($form_id, $expected_form = NULL, $count = 1) {
-    $form = $this->getMock('Drupal\Core\Form\FormInterface');
+    $form = $this->createMock('Drupal\Core\Form\FormInterface');
     $form->expects($this->once())
       ->method('getFormId')
-      ->will($this->returnValue($form_id));
+      ->willReturn($form_id);
 
     if ($expected_form) {
       $form->expects($this->exactly($count))
         ->method('buildForm')
-        ->will($this->returnValue($expected_form));
+        ->willReturn($expected_form);
     }
     return $form;
   }

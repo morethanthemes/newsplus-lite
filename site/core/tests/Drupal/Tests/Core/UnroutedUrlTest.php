@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
@@ -15,16 +17,16 @@ use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 class UnroutedUrlTest extends UnitTestCase {
 
   /**
-   * The URL assembler
+   * The URL assembler.
    *
-   * @var \Drupal\Core\Utility\UnroutedUrlAssemblerInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Utility\UnroutedUrlAssemblerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $urlAssembler;
 
   /**
    * The router.
    *
-   * @var \Drupal\Tests\Core\Routing\TestRouterInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Tests\Core\Routing\TestRouterInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $router;
 
@@ -45,15 +47,15 @@ class UnroutedUrlTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
-    $this->urlAssembler = $this->getMock('Drupal\Core\Utility\UnroutedUrlAssemblerInterface');
+    $this->urlAssembler = $this->createMock('Drupal\Core\Utility\UnroutedUrlAssemblerInterface');
     $this->urlAssembler->expects($this->any())
       ->method('assemble')
-      ->will($this->returnArgument(0));
+      ->willReturnArgument(0);
 
-    $this->router = $this->getMock('Drupal\Tests\Core\Routing\TestRouterInterface');
+    $this->router = $this->createMock('Drupal\Tests\Core\Routing\TestRouterInterface');
     $container = new ContainerBuilder();
     $container->set('router.no_access_checks', $this->router);
     $container->set('unrouted_url_assembler', $this->urlAssembler);
@@ -67,17 +69,16 @@ class UnroutedUrlTest extends UnitTestCase {
    *
    * @dataProvider providerFromUri
    */
-  public function testFromUri($uri, $is_external) {
+  public function testFromUri($uri, $is_external): void {
     $url = Url::fromUri($uri);
 
     $this->assertInstanceOf('Drupal\Core\Url', $url);
   }
 
-
   /**
    * Data provider for testFromUri().
    */
-  public function providerFromUri() {
+  public static function providerFromUri() {
     return [
       // [$uri, $is_external]
       // An external URI.
@@ -103,15 +104,15 @@ class UnroutedUrlTest extends UnitTestCase {
    * @covers ::fromUri
    * @dataProvider providerFromInvalidUri
    */
-  public function testFromInvalidUri($uri) {
-    $this->setExpectedException(\InvalidArgumentException::class);
+  public function testFromInvalidUri($uri): void {
+    $this->expectException(\InvalidArgumentException::class);
     $url = Url::fromUri($uri);
   }
 
   /**
    * Data provider for testFromInvalidUri().
    */
-  public function providerFromInvalidUri() {
+  public static function providerFromInvalidUri() {
     return [
       // Schemeless paths.
       ['test'],
@@ -125,7 +126,6 @@ class UnroutedUrlTest extends UnitTestCase {
       // Disallowed characters in the authority (host name) that are valid
       // elsewhere in the path.
       ['base://(:;2&+h^'],
-      ['base://AKI@&hO@'],
     ];
   }
 
@@ -134,7 +134,7 @@ class UnroutedUrlTest extends UnitTestCase {
    *
    * @covers ::createFromRequest
    */
-  public function testCreateFromRequest() {
+  public function testCreateFromRequest(): void {
     $request = Request::create('/test-path');
 
     $this->router->expects($this->once())
@@ -142,7 +142,7 @@ class UnroutedUrlTest extends UnitTestCase {
       ->with($request)
       ->will($this->throwException(new ResourceNotFoundException()));
 
-    $this->setExpectedException(ResourceNotFoundException::class);
+    $this->expectException(ResourceNotFoundException::class);
     Url::createFromRequest($request);
   }
 
@@ -154,7 +154,7 @@ class UnroutedUrlTest extends UnitTestCase {
    *
    * @covers ::isExternal
    */
-  public function testIsExternal($uri, $is_external) {
+  public function testIsExternal($uri, $is_external): void {
     $url = Url::fromUri($uri);
     $this->assertSame($url->isExternal(), $is_external);
   }
@@ -167,7 +167,7 @@ class UnroutedUrlTest extends UnitTestCase {
    *
    * @covers ::toString
    */
-  public function testToString($uri) {
+  public function testToString($uri): void {
     $url = Url::fromUri($uri);
     $this->assertSame($uri, $url->toString());
   }
@@ -180,9 +180,9 @@ class UnroutedUrlTest extends UnitTestCase {
    *
    * @covers ::getRouteName
    */
-  public function testGetRouteName($uri) {
+  public function testGetRouteName($uri): void {
     $url = Url::fromUri($uri);
-    $this->setExpectedException(\UnexpectedValueException::class);
+    $this->expectException(\UnexpectedValueException::class);
     $url->getRouteName();
   }
 
@@ -194,9 +194,9 @@ class UnroutedUrlTest extends UnitTestCase {
    *
    * @covers ::getRouteParameters
    */
-  public function testGetRouteParameters($uri) {
+  public function testGetRouteParameters($uri): void {
     $url = Url::fromUri($uri);
-    $this->setExpectedException(\UnexpectedValueException::class);
+    $this->expectException(\UnexpectedValueException::class);
     $url->getRouteParameters();
   }
 
@@ -208,9 +208,9 @@ class UnroutedUrlTest extends UnitTestCase {
    *
    * @covers ::getInternalPath
    */
-  public function testGetInternalPath($uri) {
+  public function testGetInternalPath($uri): void {
     $url = Url::fromUri($uri);
-    $this->setExpectedException(\Exception::class);
+    $this->expectException(\Exception::class);
     $url->getInternalPath();
   }
 
@@ -222,7 +222,7 @@ class UnroutedUrlTest extends UnitTestCase {
    *
    * @covers ::getUri
    */
-  public function testGetUri($uri) {
+  public function testGetUri($uri): void {
     $url = Url::fromUri($uri);
     $this->assertNotNull($url->getUri());
   }
@@ -235,9 +235,9 @@ class UnroutedUrlTest extends UnitTestCase {
    *
    * @covers ::getOptions
    */
-  public function testGetOptions($uri) {
+  public function testGetOptions($uri): void {
     $url = Url::fromUri($uri);
-    $this->assertInternalType('array', $url->getOptions());
+    $this->assertIsArray($url->getOptions());
   }
 
 }

@@ -18,7 +18,7 @@ class PrivateKey {
   protected $state;
 
   /**
-   * Constructs the token generator.
+   * Constructs the private key object.
    *
    * @param \Drupal\Core\State\StateInterface $state
    *   The state service.
@@ -48,7 +48,7 @@ class PrivateKey {
    * @param string $key
    *   The private key to set.
    */
-  public function set($key) {
+  public function set(#[\SensitiveParameter] $key) {
     return $this->state->set('system.private_key', $key);
   }
 

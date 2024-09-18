@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\search\Unit;
 
 use Drupal\search\Plugin\SearchPluginCollection;
@@ -14,7 +16,7 @@ class SearchPluginCollectionTest extends UnitTestCase {
   /**
    * The mocked plugin manager.
    *
-   * @var \Drupal\Component\Plugin\PluginManagerInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Component\Plugin\PluginManagerInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $pluginManager;
 
@@ -35,35 +37,37 @@ class SearchPluginCollectionTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
-    $this->pluginManager = $this->getMock('Drupal\Component\Plugin\PluginManagerInterface');
+  protected function setUp(): void {
+    parent::setUp();
+
+    $this->pluginManager = $this->createMock('Drupal\Component\Plugin\PluginManagerInterface');
     $this->searchPluginCollection = new SearchPluginCollection($this->pluginManager, 'banana', ['id' => 'banana', 'color' => 'yellow'], 'fruit_stand');
   }
 
   /**
    * Tests the get() method.
    */
-  public function testGet() {
-    $plugin = $this->getMock('Drupal\search\Plugin\SearchInterface');
+  public function testGet(): void {
+    $plugin = $this->createMock('Drupal\search\Plugin\SearchInterface');
     $this->pluginManager->expects($this->once())
       ->method('createInstance')
-      ->will($this->returnValue($plugin));
+      ->willReturn($plugin);
     $this->assertSame($plugin, $this->searchPluginCollection->get('banana'));
   }
 
   /**
    * Tests the get() method with a configurable plugin.
    */
-  public function testGetWithConfigurablePlugin() {
-    $plugin = $this->getMock('Drupal\search\Plugin\ConfigurableSearchPluginInterface');
+  public function testGetWithConfigurablePlugin(): void {
+    $plugin = $this->createMock('Drupal\search\Plugin\ConfigurableSearchPluginInterface');
     $plugin->expects($this->once())
       ->method('setSearchPageId')
       ->with('fruit_stand')
-      ->will($this->returnValue($plugin));
+      ->willReturn($plugin);
 
     $this->pluginManager->expects($this->once())
       ->method('createInstance')
-      ->will($this->returnValue($plugin));
+      ->willReturn($plugin);
 
     $this->assertSame($plugin, $this->searchPluginCollection->get('banana'));
   }

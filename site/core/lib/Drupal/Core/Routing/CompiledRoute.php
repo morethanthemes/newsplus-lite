@@ -2,7 +2,6 @@
 
 namespace Drupal\Core\Routing;
 
-use Drupal\Component\Utility\Unicode;
 use Symfony\Component\Routing\CompiledRoute as SymfonyCompiledRoute;
 
 /**
@@ -69,7 +68,7 @@ class CompiledRoute extends SymfonyCompiledRoute {
     // Support case-insensitive route matching by ensuring the pattern outline
     // is lowercase.
     // @see \Drupal\Core\Routing\RouteProvider::getRoutesByPath()
-    $this->patternOutline = Unicode::strtolower($pattern_outline);
+    $this->patternOutline = mb_strtolower($pattern_outline);
     $this->numParts = $num_parts;
   }
 
@@ -112,55 +111,24 @@ class CompiledRoute extends SymfonyCompiledRoute {
   }
 
   /**
-   * Returns the options.
-   *
-   * @return array
-   *   The options.
-   */
-  public function getOptions() {
-    return $this->route->getOptions();
-  }
-
-  /**
-   * Returns the defaults.
-   *
-   * @return array
-   *   The defaults.
-   */
-  public function getDefaults() {
-    return $this->route->getDefaults();
-  }
-
-  /**
-   * Returns the requirements.
-   *
-   * @return array
-   *   The requirements.
-   */
-  public function getRequirements() {
-    return $this->route->getRequirements();
-  }
-
-  /**
    * {@inheritdoc}
    */
-  public function serialize() {
+  public function __serialize(): array {
     // Calling the parent method is safer than trying to optimize out the extra
     // function calls.
-    $data = unserialize(parent::serialize());
+    $data = parent::__serialize();
     $data['fit'] = $this->fit;
     $data['patternOutline'] = $this->patternOutline;
     $data['numParts'] = $this->numParts;
 
-    return serialize($data);
+    return $data;
   }
 
   /**
    * {@inheritdoc}
    */
-  public function unserialize($serialized) {
-    parent::unserialize($serialized);
-    $data = unserialize($serialized);
+  public function __unserialize(array $data): void {
+    parent::__unserialize($data);
 
     $this->fit = $data['fit'];
     $this->patternOutline = $data['patternOutline'];

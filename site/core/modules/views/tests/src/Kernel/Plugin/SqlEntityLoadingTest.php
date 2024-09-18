@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Kernel\Plugin;
 
 use Drupal\node\Entity\Node;
@@ -19,7 +21,7 @@ class SqlEntityLoadingTest extends ViewsKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['node', 'user'];
+  protected static $modules = ['node', 'user'];
 
   /**
    * {@inheritdoc}
@@ -29,7 +31,7 @@ class SqlEntityLoadingTest extends ViewsKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
+  protected function setUp($import_test_views = TRUE): void {
     parent::setUp($import_test_views);
 
     $this->installEntitySchema('node');
@@ -37,9 +39,10 @@ class SqlEntityLoadingTest extends ViewsKernelTestBase {
     $this->installSchema('node', 'node_access');
   }
 
-  public function testViewWithNonDefaultPendingRevision() {
+  public function testViewWithNonDefaultPendingRevision(): void {
     $node_type = NodeType::create([
       'type' => 'page',
+      'name' => 'Page',
     ]);
     $node_type->save();
 
@@ -69,7 +72,7 @@ class SqlEntityLoadingTest extends ViewsKernelTestBase {
         'nid' => $node->id(),
         // The default revision ID.
         'vid_1' => $revision->getRevisionId(),
-        // THe latest revision ID.
+        // The latest revision ID.
         'vid' => $revision2->getRevisionId(),
       ],
     ];

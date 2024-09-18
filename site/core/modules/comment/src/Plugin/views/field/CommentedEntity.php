@@ -2,14 +2,14 @@
 
 namespace Drupal\comment\Plugin\views\field;
 
+use Drupal\views\Attribute\ViewsField;
 use Drupal\views\Plugin\views\field\EntityField;
 use Drupal\views\ResultRow;
 
 /**
  * Views field display for commented entity.
- *
- * @ViewsField("commented_entity")
  */
+#[ViewsField("commented_entity")]
 class CommentedEntity extends EntityField {
 
   /**
@@ -38,7 +38,7 @@ class CommentedEntity extends EntityField {
       }
 
       foreach ($entity_ids_per_type as $type => $ids) {
-        $this->loadedCommentedEntities[$type] = $this->entityManager->getStorage($type)->loadMultiple($ids);
+        $this->loadedCommentedEntities[$type] = $this->entityTypeManager->getStorage($type)->loadMultiple($ids);
       }
     }
 

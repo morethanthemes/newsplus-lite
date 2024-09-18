@@ -2,25 +2,26 @@
 
 namespace Drupal\Core\Field\Plugin\Field\FieldFormatter;
 
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Field\Attribute\FieldFormatter;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Plugin implementation of the 'language' formatter.
- *
- * @FieldFormatter(
- *   id = "language",
- *   label = @Translation("Language"),
- *   field_types = {
- *     "language"
- *   }
- * )
  */
+#[FieldFormatter(
+  id: 'language',
+  label: new TranslatableMarkup('Language'),
+  field_types: [
+    'language',
+  ],
+)]
 class LanguageFormatter extends StringFormatter {
 
   /**
@@ -46,14 +47,14 @@ class LanguageFormatter extends StringFormatter {
    * @param string $view_mode
    *   The view mode.
    * @param array $third_party_settings
-   *   Any third party settings settings.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   The entity manager.
+   *   Any third party settings.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   The entity type manager.
    * @param \Drupal\Core\Language\LanguageManagerInterface $language_manager
    *   The language manager.
    */
-  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, $label, $view_mode, array $third_party_settings, EntityManagerInterface $entity_manager, LanguageManagerInterface $language_manager) {
-    parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $label, $view_mode, $third_party_settings, $entity_manager);
+  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, $label, $view_mode, array $third_party_settings, EntityTypeManagerInterface $entity_type_manager, LanguageManagerInterface $language_manager) {
+    parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $label, $view_mode, $third_party_settings, $entity_type_manager);
 
     $this->languageManager = $language_manager;
   }
@@ -70,7 +71,7 @@ class LanguageFormatter extends StringFormatter {
       $configuration['label'],
       $configuration['view_mode'],
       $configuration['third_party_settings'],
-      $container->get('entity.manager'),
+      $container->get('entity_type.manager'),
       $container->get('language_manager')
     );
   }
@@ -117,9 +118,15 @@ class LanguageFormatter extends StringFormatter {
     // storage by LanguageManager::getLanguages()) or in its native language
     // name. That only depends on formatter settings and no language condition.
     $languages = $this->getSetting('native_language') ? $this->languageManager->getNativeLanguages(LanguageInterface::STATE_ALL) : $this->languageManager->getLanguages(LanguageInterface::STATE_ALL);
-    return [
-      '#plain_text' => $item->language && isset($languages[$item->language->getId()]) ? $languages[$item->language->getId()]->getName() : ''
-    ];
+    // \Drupal\Core\Language\LanguageInterface::LANGCODE_NOT_SPECIFIED
+    // and \Drupal\Core\Language\LanguageInterface::LANGCODE_NOT_APPLICABLE are
+    // not returned from the language manager above.
+    $value = [];
+    if (isset($item->language)) {
+      $name = isset($languages[$item->language->getId()]) ? $languages[$item->language->getId()]->getName() : $item->language->getId();
+      $value = ['#plain_text' => $name];
+    }
+    return $value;
   }
 
 }

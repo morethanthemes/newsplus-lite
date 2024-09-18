@@ -3,11 +3,12 @@
 namespace Drupal\Core\Layout;
 
 use Drupal\Component\Plugin\CategorizingPluginManagerInterface;
+use Drupal\Core\Plugin\FilteredPluginManagerInterface;
 
 /**
  * Provides the interface for a plugin manager of layouts.
  */
-interface LayoutPluginManagerInterface extends CategorizingPluginManagerInterface {
+interface LayoutPluginManagerInterface extends CategorizingPluginManagerInterface, FilteredPluginManagerInterface {
 
   /**
    * Gets theme implementations for layouts.
@@ -45,14 +46,14 @@ interface LayoutPluginManagerInterface extends CategorizingPluginManagerInterfac
    *
    * @return \Drupal\Core\Layout\LayoutDefinition[]
    */
-  public function getSortedDefinitions(array $definitions = NULL);
+  public function getSortedDefinitions(?array $definitions = NULL);
 
   /**
    * {@inheritdoc}
    *
    * @return \Drupal\Core\Layout\LayoutDefinition[][]
    */
-  public function getGroupedDefinitions(array $definitions = NULL);
+  public function getGroupedDefinitions(?array $definitions = NULL);
 
   /**
    * Returns an array of layout labels grouped by category.

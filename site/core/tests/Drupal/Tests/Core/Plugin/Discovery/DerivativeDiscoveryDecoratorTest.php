@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Plugin\Discovery;
 
 use Drupal\Component\Plugin\Definition\DerivablePluginDefinitionInterface;
@@ -19,15 +21,17 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
   /**
    * The mock main discovery object.
    *
-   * @var \Drupal\Component\Plugin\Discovery\DiscoveryInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Component\Plugin\Discovery\DiscoveryInterface|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $discoveryMain;
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
-    $this->discoveryMain = $discovery_main = $this->getMock('Drupal\Component\Plugin\Discovery\DiscoveryInterface');
+  protected function setUp(): void {
+    parent::setUp();
+
+    $this->discoveryMain = $discovery_main = $this->createMock('Drupal\Component\Plugin\Discovery\DiscoveryInterface');
   }
 
   /**
@@ -35,7 +39,7 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
    *
    * @see \Drupal\Component\Plugin\Discovery\DerivativeDiscoveryDecorator::getDerivativeFetcher()
    */
-  public function testGetDerivativeFetcher() {
+  public function testGetDerivativeFetcher(): void {
     $definitions = [];
     $definitions['non_container_aware_discovery'] = [
       'id' => 'non_container_aware_discovery',
@@ -44,13 +48,13 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
 
     $this->discoveryMain->expects($this->any())
       ->method('getDefinitions')
-      ->will($this->returnValue($definitions));
+      ->willReturn($definitions);
 
     $discovery = new DerivativeDiscoveryDecorator($this->discoveryMain);
     $definitions = $discovery->getDefinitions();
 
     // Ensure that both test derivatives got added.
-    $this->assertEquals(2, count($definitions));
+    $this->assertCount(2, $definitions);
     $this->assertEquals('non_container_aware_discovery', $definitions['non_container_aware_discovery:test_discovery_0']['id']);
     $this->assertEquals('\Drupal\Tests\Core\Plugin\Discovery\TestDerivativeDiscovery', $definitions['non_container_aware_discovery:test_discovery_0']['deriver']);
 
@@ -61,7 +65,7 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
   /**
    * Tests the getDerivativeFetcher method with objects instead of arrays.
    */
-  public function testGetDerivativeFetcherWithAnnotationObjects() {
+  public function testGetDerivativeFetcherWithAnnotationObjects(): void {
     $definitions = [];
     $definitions['non_container_aware_discovery'] = (object) [
       'id' => 'non_container_aware_discovery',
@@ -70,13 +74,13 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
 
     $this->discoveryMain->expects($this->any())
       ->method('getDefinitions')
-      ->will($this->returnValue($definitions));
+      ->willReturn($definitions);
 
     $discovery = new DerivativeDiscoveryDecorator($this->discoveryMain);
     $definitions = $discovery->getDefinitions();
 
     // Ensure that both test derivatives got added.
-    $this->assertEquals(2, count($definitions));
+    $this->assertCount(2, $definitions);
     $this->assertInstanceOf('\stdClass', $definitions['non_container_aware_discovery:test_discovery_0']);
     $this->assertEquals('non_container_aware_discovery', $definitions['non_container_aware_discovery:test_discovery_0']->id);
     $this->assertEquals('\Drupal\Tests\Core\Plugin\Discovery\TestDerivativeDiscoveryWithObject', $definitions['non_container_aware_discovery:test_discovery_0']->deriver);
@@ -91,7 +95,7 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
    *
    * @covers ::getDeriverClass
    */
-  public function testGetDeriverClassWithClassedDefinitions() {
+  public function testGetDeriverClassWithClassedDefinitions(): void {
     $definitions = [];
     $definition = $this->prophesize(DerivablePluginDefinitionInterface::class);
     $definition->id()->willReturn('non_container_aware_discovery');
@@ -100,7 +104,7 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
 
     $this->discoveryMain->expects($this->any())
       ->method('getDefinitions')
-      ->will($this->returnValue($definitions));
+      ->willReturn($definitions);
 
     $discovery = new DerivativeDiscoveryDecorator($this->discoveryMain);
     $definitions = $discovery->getDefinitions();
@@ -113,7 +117,7 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
   /**
    * @covers ::getDeriverClass
    */
-  public function testGetDeriverClassWithInvalidClassedDefinitions() {
+  public function testGetDeriverClassWithInvalidClassedDefinitions(): void {
     $definition = $this->prophesize(DerivablePluginDefinitionInterface::class);
     $definition->id()->willReturn('non_existent_discovery');
     $definition->getDeriver()->willReturn('\Drupal\system\Tests\Plugin\NonExistentDeriver');
@@ -126,7 +130,8 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
 
     $discovery = new DerivativeDiscoveryDecorator($this->discoveryMain);
 
-    $this->setExpectedException(InvalidDeriverException::class, 'Plugin (non_existent_discovery) deriver "\Drupal\system\Tests\Plugin\NonExistentDeriver" does not exist.');
+    $this->expectException(InvalidDeriverException::class);
+    $this->expectExceptionMessage('Plugin (non_existent_discovery) deriver "\Drupal\system\Tests\Plugin\NonExistentDeriver" does not exist.');
     $discovery->getDefinitions();
   }
 
@@ -135,7 +140,7 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
    *
    * @see \Drupal\Component\Plugin\Discovery\DerivativeDiscoveryDecorator::getDeriver().\
    */
-  public function testNonExistentDerivativeFetcher() {
+  public function testNonExistentDerivativeFetcher(): void {
     $definitions = [];
     // Do this with a class that doesn't exist.
     $definitions['non_existent_discovery'] = [
@@ -144,10 +149,11 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
     ];
     $this->discoveryMain->expects($this->any())
       ->method('getDefinitions')
-      ->will($this->returnValue($definitions));
+      ->willReturn($definitions);
 
     $discovery = new DerivativeDiscoveryDecorator($this->discoveryMain);
-    $this->setExpectedException(InvalidDeriverException::class, 'Plugin (non_existent_discovery) deriver "\Drupal\system\Tests\Plugin\NonExistentDeriver" does not exist.');
+    $this->expectException(InvalidDeriverException::class);
+    $this->expectExceptionMessage('Plugin (non_existent_discovery) deriver "\Drupal\system\Tests\Plugin\NonExistentDeriver" does not exist.');
     $discovery->getDefinitions();
   }
 
@@ -156,7 +162,7 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
    *
    * @see \Drupal\Component\Plugin\Discovery\DerivativeDiscoveryDecorator::getDeriver().\
    */
-  public function testInvalidDerivativeFetcher() {
+  public function testInvalidDerivativeFetcher(): void {
     $definitions = [];
     // Do this with a class that doesn't implement the interface.
     $definitions['invalid_discovery'] = [
@@ -165,17 +171,18 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
     ];
     $this->discoveryMain->expects($this->any())
       ->method('getDefinitions')
-      ->will($this->returnValue($definitions));
+      ->willReturn($definitions);
 
     $discovery = new DerivativeDiscoveryDecorator($this->discoveryMain);
-    $this->setExpectedException(InvalidDeriverException::class, 'Plugin (invalid_discovery) deriver "\Drupal\KernelTests\Core\Plugin\DerivativeTest" must implement \Drupal\Component\Plugin\Derivative\DeriverInterface.');
+    $this->expectException(InvalidDeriverException::class);
+    $this->expectExceptionMessage('Plugin (invalid_discovery) deriver "\Drupal\KernelTests\Core\Plugin\DerivativeTest" must implement \Drupal\Component\Plugin\Derivative\DeriverInterface.');
     $discovery->getDefinitions();
   }
 
   /**
    * Tests derivative definitions when a definition already exists.
    */
-  public function testExistingDerivative() {
+  public function testExistingDerivative(): void {
     $definitions = [];
     $definitions['non_container_aware_discovery'] = [
       'id' => 'non_container_aware_discovery',
@@ -199,7 +206,7 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
 
     $this->discoveryMain->expects($this->any())
       ->method('getDefinitions')
-      ->will($this->returnValue($definitions));
+      ->willReturn($definitions);
 
     $discovery = new DerivativeDiscoveryDecorator($this->discoveryMain);
     $returned_definitions = $discovery->getDefinitions();
@@ -209,13 +216,13 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
 
     $expected = $definitions['non_container_aware_discovery'];
     $expected['id'] = 'non_container_aware_discovery:test_discovery_1';
-    $this->assertArrayEquals($expected, $returned_definitions['non_container_aware_discovery:test_discovery_1']);
+    $this->assertEquals($expected, $returned_definitions['non_container_aware_discovery:test_discovery_1']);
   }
 
   /**
    * Tests a single definition when a derivative already exists.
    */
-  public function testSingleExistingDerivative() {
+  public function testSingleExistingDerivative(): void {
     $base_definition = [
       'id' => 'non_container_aware_discovery',
       'deriver' => '\Drupal\Tests\Core\Plugin\Discovery\TestDerivativeDiscovery',
@@ -236,20 +243,25 @@ class DerivativeDiscoveryDecoratorTest extends UnitTestCase {
       'null_value' => NULL,
     ];
 
-    $this->discoveryMain->expects($this->at(0))
+    $ids = [
+      $derivative_definition['id'],
+      $base_definition['id'],
+    ];
+    $this->discoveryMain->expects($this->exactly(count($ids)))
       ->method('getDefinition')
-      ->with('non_container_aware_discovery:test_discovery_1')
-      ->will($this->returnValue($derivative_definition));
-    $this->discoveryMain->expects($this->at(1))
-      ->method('getDefinition')
-      ->with('non_container_aware_discovery')
-      ->will($this->returnValue($base_definition));
+      ->with($this->callback(function (string $id) use (&$ids): bool {
+        return array_shift($ids) === $id;
+      }))
+      ->willReturnOnConsecutiveCalls(
+        $derivative_definition,
+        $base_definition,
+      );
 
     $discovery = new DerivativeDiscoveryDecorator($this->discoveryMain);
 
     $expected = $base_definition;
     $expected['id'] = 'non_container_aware_discovery:test_discovery_1';
-    $this->assertArrayEquals($expected, $discovery->getDefinition('non_container_aware_discovery:test_discovery_1'));
+    $this->assertEquals($expected, $discovery->getDefinition('non_container_aware_discovery:test_discovery_1'));
   }
 
 }

@@ -58,6 +58,9 @@ interface UserInterface extends ContentEntityInterface, EntityChangedInterface, 
    *
    * @return bool
    *   Returns TRUE if the user has the role, otherwise FALSE.
+   *
+   * @todo in Drupal 11, move method to Drupal\Core\Session\AccountInterface.
+   * @see https://www.drupal.org/node/3228209
    */
   public function hasRole($rid);
 
@@ -66,6 +69,8 @@ interface UserInterface extends ContentEntityInterface, EntityChangedInterface, 
    *
    * @param string $rid
    *   The role ID to add.
+   *
+   * @return $this
    */
   public function addRole($rid);
 
@@ -74,6 +79,8 @@ interface UserInterface extends ContentEntityInterface, EntityChangedInterface, 
    *
    * @param string $rid
    *   The role ID to remove.
+   *
+   * @return $this
    */
   public function removeRole($rid);
 
@@ -83,7 +90,7 @@ interface UserInterface extends ContentEntityInterface, EntityChangedInterface, 
    * @param string $username
    *   The new user name.
    *
-   * @return \Drupal\user\UserInterface
+   * @return $this
    *   The called user entity.
    */
   public function setUsername($username);
@@ -91,8 +98,8 @@ interface UserInterface extends ContentEntityInterface, EntityChangedInterface, 
   /**
    * Returns the hashed password.
    *
-   * @return string
-   *   The hashed password.
+   * @return string|null
+   *   The hashed password, or NULL if a password is not set.
    */
   public function getPassword();
 
@@ -100,12 +107,12 @@ interface UserInterface extends ContentEntityInterface, EntityChangedInterface, 
    * Sets the user password.
    *
    * @param string $password
-   *   The new unhashed password.
+   *   The new un-hashed password.
    *
-   * @return \Drupal\user\UserInterface
+   * @return $this
    *   The called user entity.
    */
-  public function setPassword($password);
+  public function setPassword(#[\SensitiveParameter] $password);
 
   /**
    * Sets the email address of the user.
@@ -113,7 +120,7 @@ interface UserInterface extends ContentEntityInterface, EntityChangedInterface, 
    * @param string $mail
    *   The new email address of the user.
    *
-   * @return \Drupal\user\UserInterface
+   * @return $this
    *   The called user entity.
    */
   public function setEmail($mail);
@@ -132,7 +139,7 @@ interface UserInterface extends ContentEntityInterface, EntityChangedInterface, 
    * @param int $timestamp
    *   Timestamp of the last access.
    *
-   * @return \Drupal\user\UserInterface
+   * @return $this
    *   The called user entity.
    */
   public function setLastAccessTime($timestamp);
@@ -151,7 +158,7 @@ interface UserInterface extends ContentEntityInterface, EntityChangedInterface, 
    * @param int $timestamp
    *   Timestamp of the last login time.
    *
-   * @return \Drupal\user\UserInterface
+   * @return $this
    *   The called user entity.
    */
   public function setLastLoginTime($timestamp);
@@ -175,7 +182,7 @@ interface UserInterface extends ContentEntityInterface, EntityChangedInterface, 
   /**
    * Activates the user.
    *
-   * @return \Drupal\user\UserInterface
+   * @return $this
    *   The called user entity.
    */
   public function activate();
@@ -183,7 +190,7 @@ interface UserInterface extends ContentEntityInterface, EntityChangedInterface, 
   /**
    * Blocks the user.
    *
-   * @return \Drupal\user\UserInterface
+   * @return $this
    *   The called user entity.
    */
   public function block();
@@ -206,7 +213,7 @@ interface UserInterface extends ContentEntityInterface, EntityChangedInterface, 
    *
    * @return $this
    */
-  public function setExistingPassword($password);
+  public function setExistingPassword(#[\SensitiveParameter] $password);
 
   /**
    * Checks the existing password if set.

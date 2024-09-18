@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\image\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\BasicAuthResourceTestTrait;
@@ -16,7 +18,12 @@ class ImageStyleXmlBasicAuthTest extends ImageStyleResourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['basic_auth'];
+  protected static $modules = ['basic_auth'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * {@inheritdoc}
@@ -32,13 +39,5 @@ class ImageStyleXmlBasicAuthTest extends ImageStyleResourceTestBase {
    * {@inheritdoc}
    */
   protected static $auth = 'basic_auth';
-
-  /**
-   * {@inheritdoc}
-   */
-  public function testGet() {
-    // @todo Remove this method override in https://www.drupal.org/node/2905655
-    $this->markTestSkipped();
-  }
 
 }

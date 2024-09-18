@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\forum\Kernel\Migrate\d6;
 
 use Drupal\Core\Entity\Entity\EntityFormDisplay;
@@ -13,13 +15,14 @@ use Drupal\Tests\node\Kernel\Migrate\d6\MigrateNodeTestBase;
  * Tests forum migration from Drupal 6 to Drupal 8.
  *
  * @group migrate_drupal_6
+ * @group legacy
  */
 class MigrateForumTest extends MigrateNodeTestBase {
 
   /**
    * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'comment',
     'forum',
     'menu_ui',
@@ -29,7 +32,7 @@ class MigrateForumTest extends MigrateNodeTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installEntitySchema('comment');
@@ -50,9 +53,16 @@ class MigrateForumTest extends MigrateNodeTestBase {
   }
 
   /**
+   * Gets the path to the fixture file.
+   */
+  protected function getFixtureFilePath() {
+    return __DIR__ . '/../../../../fixtures/drupal6.php';
+  }
+
+  /**
    * Tests forum migration.
    */
-  public function testForumMigration() {
+  public function testForumMigration(): void {
     // Tests that the taxonomy_forums field storage config exists.
     $field_storage_config = FieldStorageConfig::load('node.taxonomy_forums');
     $this->assertInstanceOf(FieldStorageConfig::class, $field_storage_config);
@@ -63,11 +73,11 @@ class MigrateForumTest extends MigrateNodeTestBase {
 
     // Tests that the taxonomy_forums entity view display component exists.
     $entity_view_display = EntityViewDisplay::load('node.forum.default')->getComponent('taxonomy_forums');
-    $this->assertTrue(is_array($entity_view_display));
+    $this->assertIsArray($entity_view_display);
 
     // Tests that the taxonomy_forums entity form display component exists.
     $entity_form_display = EntityFormDisplay::load('node.forum.default')->getComponent('taxonomy_forums');
-    $this->assertTrue(is_array($entity_form_display));
+    $this->assertIsArray($entity_form_display);
 
     // Test that the taxonomy_forums field has the right value.
     $node = Node::load(19);

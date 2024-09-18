@@ -1,7 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\system\Unit\Menu;
 
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\Extension;
 use Drupal\Tests\Core\Menu\LocalTaskIntegrationTestBase;
 
@@ -15,35 +19,49 @@ class SystemLocalTasksTest extends LocalTaskIntegrationTestBase {
   /**
    * The mocked theme handler.
    *
-   * @var \Drupal\Core\Extension\ThemeHandlerInterface|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Extension\ThemeHandlerInterface
    */
   protected $themeHandler;
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->directoryList = [
       'system' => 'core/modules/system',
     ];
 
-    $this->themeHandler = $this->getMock('Drupal\Core\Extension\ThemeHandlerInterface');
+    $this->themeHandler = $this->createMock('Drupal\Core\Extension\ThemeHandlerInterface');
 
-    $theme = new Extension($this->root, 'theme', '/core/themes/bartik', 'bartik.info.yml');
+    $theme = new Extension($this->root, 'theme', 'core/themes/olivero', 'olivero.info.yml');
     $theme->status = 1;
-    $theme->info = ['name' => 'bartik'];
+    $theme->info = ['name' => 'olivero'];
     $this->themeHandler->expects($this->any())
       ->method('listInfo')
-      ->will($this->returnValue([
-        'bartik' => $theme,
-      ]));
+      ->willReturn([
+        'olivero' => $theme,
+      ]);
     $this->themeHandler->expects($this->any())
       ->method('hasUi')
-      ->with('bartik')
+      ->with('olivero')
       ->willReturn(TRUE);
     $this->container->set('theme_handler', $this->themeHandler);
+
+    $fooEntityDefinition = $this->createMock(EntityTypeInterface::class);
+    $fooEntityDefinition
+      ->expects($this->once())
+      ->method('hasLinkTemplate')
+      ->with('version-history')
+      ->willReturn(TRUE);
+    $entityTypeManager = $this->createMock(EntityTypeManagerInterface::class);
+    $entityTypeManager->expects($this->any())
+      ->method('getDefinitions')
+      ->willReturn([
+        'foo' => $fooEntityDefinition,
+      ]);
+    $this->container->set('entity_type.manager', $entityTypeManager);
   }
 
   /**
@@ -51,21 +69,27 @@ class SystemLocalTasksTest extends LocalTaskIntegrationTestBase {
    *
    * @dataProvider getSystemAdminRoutes
    */
-  public function testSystemAdminLocalTasks($route, $expected) {
+  public function testSystemAdminLocalTasks($route, $expected): void {
     $this->assertLocalTasks($route, $expected);
   }
 
   /**
    * Provides a list of routes to test.
    */
-  public function getSystemAdminRoutes() {
+  public static function getSystemAdminRoutes() {
     return [
       ['system.admin_content', [['system.admin_content']]],
       [
         'system.theme_settings_theme',
         [
           ['system.themes_page', 'system.theme_settings'],
-          ['system.theme_settings_global', 'system.theme_settings_theme:bartik'],
+          ['system.theme_settings_global', 'system.theme_settings_theme:olivero'],
+        ],
+      ],
+      [
+        'entity.foo.version_history',
+        [
+          ['entity.version_history:foo.version_history'],
         ],
       ],
     ];

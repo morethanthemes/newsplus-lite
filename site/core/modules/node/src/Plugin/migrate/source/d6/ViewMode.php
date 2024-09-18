@@ -2,8 +2,15 @@
 
 namespace Drupal\node\Plugin\migrate\source\d6;
 
+// cspell:ignore cnfi
+
 /**
- * The view mode source.
+ * Drupal 6 view mode source from database.
+ *
+ * For available configuration keys, refer to the parent classes.
+ *
+ * @see \Drupal\migrate\Plugin\migrate\source\SqlBase
+ * @see \Drupal\migrate\Plugin\migrate\source\SourcePluginBase
  *
  * @MigrateSource(
  *   id = "d6_view_mode",
@@ -63,17 +70,6 @@ class ViewMode extends ViewModeBase {
   public function getIds() {
     $ids['view_mode']['type'] = 'string';
     return $ids;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function calculateDependencies() {
-    $this->dependencies = parent::calculateDependencies();
-    if (isset($this->configuration['constants']['targetEntityType'])) {
-      $this->addDependency('module', $this->entityManager->getDefinition($this->configuration['constants']['targetEntityType'])->getProvider());
-    }
-    return $this->dependencies;
   }
 
 }

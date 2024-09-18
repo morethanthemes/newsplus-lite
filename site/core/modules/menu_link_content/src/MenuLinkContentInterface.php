@@ -4,11 +4,13 @@ namespace Drupal\menu_link_content;
 
 use Drupal\Core\Entity\EntityChangedInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Entity\EntityPublishedInterface;
+use Drupal\Core\Entity\RevisionLogInterface;
 
 /**
  * Defines an interface for custom menu links.
  */
-interface MenuLinkContentInterface extends ContentEntityInterface, EntityChangedInterface {
+interface MenuLinkContentInterface extends ContentEntityInterface, EntityChangedInterface, EntityPublishedInterface, RevisionLogInterface {
 
   /**
    * Flags this instance as being wrapped in a menu link plugin instance.
@@ -24,7 +26,7 @@ interface MenuLinkContentInterface extends ContentEntityInterface, EntityChanged
   public function getTitle();
 
   /**
-   * Gets the url object pointing to the URL of the menu link content entity.
+   * Gets the URL object pointing to the URL of the menu link content entity.
    *
    * @return \Drupal\Core\Url
    *   A Url object instance.

@@ -2,6 +2,7 @@
 
 namespace Drupal\Core\Render\Element;
 
+use Drupal\Core\Render\Attribute\FormElement;
 use Drupal\Core\Render\Element;
 
 /**
@@ -12,26 +13,27 @@ use Drupal\Core\Render\Element;
  *
  * Properties:
  * - #size: The size of the input element in characters.
+ * - #pattern: A string for the native HTML5 pattern attribute.
  *
  * Usage example:
  * @code
- * $form['phone'] = array(
+ * $form['phone'] = [
  *   '#type' => 'tel',
  *   '#title' => $this->t('Phone'),
- * );
+ *   '#pattern' => '[^\d]*',
+ * ];
  * @endcode
  *
  * @see \Drupal\Core\Render\Element
- *
- * @FormElement("tel")
  */
-class Tel extends FormElement {
+#[FormElement('tel')]
+class Tel extends FormElementBase {
 
   /**
    * {@inheritdoc}
    */
   public function getInfo() {
-    $class = get_class($this);
+    $class = static::class;
     return [
       '#input' => TRUE,
       '#size' => 30,

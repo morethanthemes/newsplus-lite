@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Render;
 
 use Drupal\Core\Cache\Cache;
@@ -31,23 +33,20 @@ class BubbleableMetadataTest extends UnitTestCase {
    * @see testMergeAttachmentsHtmlHeadLinkMerging()
    * @see testMergeAttachmentsHttpHeaderMerging()
    */
-  public function testMerge(BubbleableMetadata $a, CacheableMetadata $b, BubbleableMetadata $expected) {
+  public function testMerge(BubbleableMetadata $a, CacheableMetadata $b, BubbleableMetadata $expected): void {
     // Verify that if the second operand is a CacheableMetadata object, not a
     // BubbleableMetadata object, that BubbleableMetadata::merge() doesn't
     // attempt to merge assets.
     if (!$b instanceof BubbleableMetadata) {
       $renderer = $this->getMockBuilder('Drupal\Core\Render\Renderer')
         ->disableOriginalConstructor()
-        ->setMethods(['mergeAttachments'])
         ->getMock();
-      $renderer->expects($this->never())
-        ->method('mergeAttachments');
     }
     // Otherwise, let the original ::mergeAttachments() method be executed.
     else {
       $renderer = $this->getMockBuilder('Drupal\Core\Render\Renderer')
         ->disableOriginalConstructor()
-        ->setMethods(NULL)
+        ->onlyMethods([])
         ->getMock();
     }
 
@@ -60,7 +59,7 @@ class BubbleableMetadataTest extends UnitTestCase {
     $container->set('renderer', $renderer);
     \Drupal::setContainer($container);
 
-    $this->assertEquals($expected, $a->merge($b));
+    $this->assertEqualsCanonicalizing($expected, $a->merge($b));
   }
 
   /**
@@ -68,7 +67,7 @@ class BubbleableMetadataTest extends UnitTestCase {
    *
    * @return array
    */
-  public function providerTestMerge() {
+  public static function providerTestMerge() {
     return [
       // Second operand is a BubbleableMetadata object.
       // All empty.
@@ -76,7 +75,7 @@ class BubbleableMetadataTest extends UnitTestCase {
       // Cache contexts.
       [(new BubbleableMetadata())->setCacheContexts(['foo']), (new BubbleableMetadata())->setCacheContexts(['bar']), (new BubbleableMetadata())->setCacheContexts(['bar', 'foo'])],
       // Cache tags.
-      [(new BubbleableMetadata())->setCacheTags(['foo']), (new BubbleableMetadata())->setCacheTags(['bar']), (new BubbleableMetadata())->setCacheTags(['bar', 'foo'])],
+      [(new BubbleableMetadata())->setCacheTags(['foo']), (new BubbleableMetadata())->setCacheTags(['bar']), (new BubbleableMetadata())->setCacheTags(['foo', 'bar'])],
       // Cache max-ages.
       [(new BubbleableMetadata())->setCacheMaxAge(60), (new BubbleableMetadata())->setCacheMaxAge(Cache::PERMANENT), (new BubbleableMetadata())->setCacheMaxAge(60)],
       // Assets.
@@ -90,7 +89,7 @@ class BubbleableMetadataTest extends UnitTestCase {
       // Cache contexts.
       [(new BubbleableMetadata())->setCacheContexts(['foo']), (new CacheableMetadata())->setCacheContexts(['bar']), (new BubbleableMetadata())->setCacheContexts(['bar', 'foo'])],
       // Cache tags.
-      [(new BubbleableMetadata())->setCacheTags(['foo']), (new CacheableMetadata())->setCacheTags(['bar']), (new BubbleableMetadata())->setCacheTags(['bar', 'foo'])],
+      [(new BubbleableMetadata())->setCacheTags(['foo']), (new CacheableMetadata())->setCacheTags(['bar']), (new BubbleableMetadata())->setCacheTags(['foo', 'bar'])],
       // Cache max-ages.
       [(new BubbleableMetadata())->setCacheMaxAge(60), (new CacheableMetadata())->setCacheMaxAge(Cache::PERMANENT), (new BubbleableMetadata())->setCacheMaxAge(60)],
     ];
@@ -110,7 +109,7 @@ class BubbleableMetadataTest extends UnitTestCase {
    * @see testMergeAttachmentsHtmlHeadLinkMerging()
    * @see testMergeAttachmentsHttpHeaderMerging()
    */
-  public function testAddAttachments(BubbleableMetadata $initial, $attachments, BubbleableMetadata $expected) {
+  public function testAddAttachments(BubbleableMetadata $initial, $attachments, BubbleableMetadata $expected): void {
     $test = $initial;
     $test->addAttachments($attachments);
     $this->assertEquals($expected, $test);
@@ -119,7 +118,7 @@ class BubbleableMetadataTest extends UnitTestCase {
   /**
    * Provides test data for testAddAttachments().
    */
-  public function providerTestAddAttachments() {
+  public static function providerTestAddAttachments() {
     return [
       [new BubbleableMetadata(), [], new BubbleableMetadata()],
       [new BubbleableMetadata(), ['library' => ['core/foo']], (new BubbleableMetadata())->setAttachments(['library' => ['core/foo']])],
@@ -131,7 +130,7 @@ class BubbleableMetadataTest extends UnitTestCase {
    * @covers ::applyTo
    * @dataProvider providerTestApplyTo
    */
-  public function testApplyTo(BubbleableMetadata $metadata, array $render_array, array $expected) {
+  public function testApplyTo(BubbleableMetadata $metadata, array $render_array, array $expected): void {
     $this->assertNull($metadata->applyTo($render_array));
     $this->assertEquals($expected, $render_array);
   }
@@ -141,7 +140,7 @@ class BubbleableMetadataTest extends UnitTestCase {
    *
    * @return array
    */
-  public function providerTestApplyTo() {
+  public static function providerTestApplyTo() {
     $data = [];
 
     $empty_metadata = new BubbleableMetadata();
@@ -196,7 +195,7 @@ class BubbleableMetadataTest extends UnitTestCase {
    * @covers ::createFromRenderArray
    * @dataProvider providerTestCreateFromRenderArray
    */
-  public function testCreateFromRenderArray(array $render_array, BubbleableMetadata $expected) {
+  public function testCreateFromRenderArray(array $render_array, BubbleableMetadata $expected): void {
     $this->assertEquals($expected, BubbleableMetadata::createFromRenderArray($render_array));
   }
 
@@ -205,7 +204,7 @@ class BubbleableMetadataTest extends UnitTestCase {
    *
    * @return array
    */
-  public function providerTestCreateFromRenderArray() {
+  public static function providerTestCreateFromRenderArray() {
     $data = [];
 
     $empty_metadata = new BubbleableMetadata();
@@ -239,7 +238,7 @@ class BubbleableMetadataTest extends UnitTestCase {
    *
    * @covers ::mergeAttachments
    */
-  public function testMergeAttachmentsLibraryMerging() {
+  public function testMergeAttachmentsLibraryMerging(): void {
     $a['#attached'] = [
       'library' => [
         'core/drupal',
@@ -372,9 +371,9 @@ class BubbleableMetadataTest extends UnitTestCase {
     // adds the exact same settings twice and hence tests idempotency, the
     // second adds *almost* the same settings twice: the second time, some
     // values are altered, and some key-value pairs are added.
-    $settings_two['moduleName']['thingiesOnPage']['id1'] = [];
     $this->assertSame($settings_one, $merged['drupalSettings']['commonTestRealWorldIdentical']);
     $expected_settings_two = $settings_two_a;
+    $expected_settings_two['moduleName']['thingiesOnPage']['id1'] = [];
     $expected_settings_two['moduleName']['ui'][0] = 'button D';
     $expected_settings_two['moduleName']['ui'][1] = 'button E';
     $expected_settings_two['moduleName']['ui'][2] = 'button C';
@@ -384,81 +383,22 @@ class BubbleableMetadataTest extends UnitTestCase {
   }
 
   /**
-   * Tests feed asset merging.
-   *
-   * @covers ::mergeAttachments
-   *
-   * @dataProvider providerTestMergeAttachmentsFeedMerging
-   */
-  public function testMergeAttachmentsFeedMerging($a, $b, $expected) {
-    $this->assertSame($expected, BubbleableMetadata::mergeAttachments($a, $b));
-  }
-
-  /**
-   * Data provider for testMergeAttachmentsFeedMerging
-   *
-   * @return array
-   */
-  public function providerTestMergeAttachmentsFeedMerging() {
-    $feed_a = [
-      'aggregator/rss',
-      'Feed title',
-    ];
-
-    $feed_b = [
-      'taxonomy/term/1/feed',
-      'RSS - foo',
-    ];
-
-    $a = [
-      'feed' => [
-        $feed_a,
-      ],
-    ];
-    $b = [
-      'feed' => [
-        $feed_b,
-      ],
-    ];
-
-    $expected_a = [
-      'feed' => [
-        $feed_a,
-        $feed_b,
-      ],
-    ];
-
-    // Merging in the opposite direction yields the opposite library order.
-    $expected_b = [
-      'feed' => [
-        $feed_b,
-        $feed_a,
-      ],
-    ];
-
-    return [
-      [$a, $b, $expected_a],
-      [$b, $a, $expected_b],
-    ];
-  }
-
-  /**
    * Tests html_head asset merging.
    *
    * @covers ::mergeAttachments
    *
    * @dataProvider providerTestMergeAttachmentsHtmlHeadMerging
    */
-  public function testMergeAttachmentsHtmlHeadMerging($a, $b, $expected) {
+  public function testMergeAttachmentsHtmlHeadMerging($a, $b, $expected): void {
     $this->assertSame($expected, BubbleableMetadata::mergeAttachments($a, $b));
   }
 
   /**
-   * Data provider for testMergeAttachmentsHtmlHeadMerging
+   * Data provider for testMergeAttachmentsHtmlHeadMerging.
    *
    * @return array
    */
-  public function providerTestMergeAttachmentsHtmlHeadMerging() {
+  public static function providerTestMergeAttachmentsHtmlHeadMerging() {
     $meta = [
       '#tag' => 'meta',
       '#attributes' => [
@@ -522,16 +462,16 @@ class BubbleableMetadataTest extends UnitTestCase {
    *
    * @dataProvider providerTestMergeAttachmentsHtmlHeadLinkMerging
    */
-  public function testMergeAttachmentsHtmlHeadLinkMerging($a, $b, $expected) {
+  public function testMergeAttachmentsHtmlHeadLinkMerging($a, $b, $expected): void {
     $this->assertSame($expected, BubbleableMetadata::mergeAttachments($a, $b));
   }
 
   /**
-   * Data provider for testMergeAttachmentsHtmlHeadLinkMerging
+   * Data provider for testMergeAttachmentsHtmlHeadLinkMerging.
    *
    * @return array
    */
-  public function providerTestMergeAttachmentsHtmlHeadLinkMerging() {
+  public static function providerTestMergeAttachmentsHtmlHeadLinkMerging() {
     $rel = [
       'rel' => 'rel',
       'href' => 'http://rel.example.com',
@@ -588,16 +528,16 @@ class BubbleableMetadataTest extends UnitTestCase {
    *
    * @dataProvider providerTestMergeAttachmentsHttpHeaderMerging
    */
-  public function testMergeAttachmentsHttpHeaderMerging($a, $b, $expected) {
+  public function testMergeAttachmentsHttpHeaderMerging($a, $b, $expected): void {
     $this->assertSame($expected, BubbleableMetadata::mergeAttachments($a, $b));
   }
 
   /**
-   * Data provider for testMergeAttachmentsHttpHeaderMerging
+   * Data provider for testMergeAttachmentsHttpHeaderMerging.
    *
    * @return array
    */
-  public function providerTestMergeAttachmentsHttpHeaderMerging() {
+  public static function providerTestMergeAttachmentsHttpHeaderMerging() {
     $content_type = [
       'Content-Type',
       'application/rss+xml; charset=utf-8',
@@ -641,7 +581,6 @@ class BubbleableMetadataTest extends UnitTestCase {
     ];
   }
 
-
   /**
    * @covers ::addCacheableDependency
    * @dataProvider providerTestMerge
@@ -653,7 +592,7 @@ class BubbleableMetadataTest extends UnitTestCase {
    * @see \Drupal\Tests\Core\Cache\CacheTest::testMergeMaxAges()
    * @see \Drupal\Tests\Core\Cache\CacheContextsTest
    */
-  public function testAddCacheableDependency(BubbleableMetadata $a, $b, BubbleableMetadata $expected) {
+  public function testAddCacheableDependency(BubbleableMetadata $a, $b, BubbleableMetadata $expected): void {
     $cache_contexts_manager = $this->getMockBuilder('Drupal\Core\Cache\Context\CacheContextsManager')
       ->disableOriginalConstructor()
       ->getMock();
@@ -662,7 +601,7 @@ class BubbleableMetadataTest extends UnitTestCase {
     $container->set('cache_contexts_manager', $cache_contexts_manager);
     \Drupal::setContainer($container);
 
-    $this->assertEquals($expected, $a->addCacheableDependency($b));
+    $this->assertEqualsCanonicalizing($expected, $a->addCacheableDependency($b));
   }
 
   /**
@@ -676,17 +615,17 @@ class BubbleableMetadataTest extends UnitTestCase {
       'merge-cacheable-metadata' => [
         (new BubbleableMetadata())->setCacheContexts(['foo'])->setCacheTags(['foo'])->setCacheMaxAge(20),
         (new CacheableMetadata())->setCacheContexts(['bar'])->setCacheTags(['bar'])->setCacheMaxAge(60),
-        (new BubbleableMetadata())->setCacheContexts(['foo', 'bar'])->setCacheTags(['foo', 'bar'])->setCacheMaxAge(20)
+        (new BubbleableMetadata())->setCacheContexts(['foo', 'bar'])->setCacheTags(['foo', 'bar'])->setCacheMaxAge(20),
       ],
       'merge-bubbleable-metadata' => [
         (new BubbleableMetadata())->setCacheContexts(['foo'])->setCacheTags(['foo'])->setCacheMaxAge(20)->setAttachments(['foo' => []]),
         (new BubbleableMetadata())->setCacheContexts(['bar'])->setCacheTags(['bar'])->setCacheMaxAge(60)->setAttachments(['bar' => []]),
-        (new BubbleableMetadata())->setCacheContexts(['foo', 'bar'])->setCacheTags(['foo', 'bar'])->setCacheMaxAge(20)->setAttachments(['foo' => [], 'bar' => []])
+        (new BubbleableMetadata())->setCacheContexts(['foo', 'bar'])->setCacheTags(['foo', 'bar'])->setCacheMaxAge(20)->setAttachments(['foo' => [], 'bar' => []]),
       ],
       'merge-attachments-metadata' => [
         (new BubbleableMetadata())->setAttachments(['foo' => []]),
-        (new BubbleableMetadata())->setAttachments(['baro' => []]),
-        (new BubbleableMetadata())->setAttachments(['foo' => [], 'bar' => []])
+        (new BubbleableMetadata())->setAttachments(['bar' => []]),
+        (new BubbleableMetadata())->setAttachments(['foo' => [], 'bar' => []]),
       ],
     ];
   }

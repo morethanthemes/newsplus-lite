@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Http;
 
 use Drupal\Core\Http\LinkRelationType;
@@ -15,11 +17,11 @@ class LinkRelationsTest extends KernelTestBase {
   /**
    * Tests correct Link Relations are returned from the Link Relation Type Manager.
    */
-  public function testAvailableLinkRelationships() {
+  public function testAvailableLinkRelationships(): void {
     /** @var \Drupal\Core\Http\LinkRelationTypeManager $link_relation_type_manager */
     $link_relation_type_manager = $this->container->get('plugin.manager.link_relation_type');
 
-    // An link relation type of the "registered" kind.
+    // A link relation type of the "registered" kind.
     /** @var \Drupal\Core\Http\LinkRelationTypeInterface $canonical */
     $canonical = $link_relation_type_manager->createInstance('canonical');
     $this->assertInstanceOf(LinkRelationType::class, $canonical);
@@ -31,7 +33,7 @@ class LinkRelationsTest extends KernelTestBase {
     $this->assertEquals('Designates the preferred version of a resource (the IRI and its contents).', $canonical->getDescription());
     $this->assertEquals('', $canonical->getNotes());
 
-    // An link relation type of the "extension" kind.
+    // A link relation type of the "extension" kind.
     /** @var \Drupal\Core\Http\LinkRelationTypeInterface $canonical */
     $add_form = $link_relation_type_manager->createInstance('add-form');
     $this->assertInstanceOf(LinkRelationType::class, $add_form);

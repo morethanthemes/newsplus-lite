@@ -17,17 +17,14 @@ class UrlHelper {
   protected static $allowedProtocols = ['http', 'https'];
 
   /**
-   * Parses an array into a valid, rawurlencoded query string.
+   * Parses an array into a valid query string encoded with rawurlencode().
    *
-   * rawurlencode() is RFC3986 compliant, and as a consequence RFC3987
+   * Function rawurlencode() is RFC3986 compliant, and as a consequence RFC3987
    * compliant. The latter defines the required format of "URLs" in HTML5.
    * urlencode() is almost the same as rawurlencode(), except that it encodes
    * spaces as "+" instead of "%20". This makes its result non compliant to
    * RFC3986 and as a consequence non compliant to RFC3987 and as a consequence
    * not valid as a "URL" in HTML5.
-   *
-   * @todo Remove this function once PHP 5.4 is required as we can use just
-   *   http_build_query() directly.
    *
    * @param array $query
    *   The query parameter array to be processed; for instance,
@@ -37,8 +34,8 @@ class UrlHelper {
    *   nested items. Defaults to an empty string.
    *
    * @return string
-   *   A rawurlencoded string which can be used as or appended to the URL query
-   *   string.
+   *   A string encoded with rawurlencode() which can be used as or appended to
+   *   the URL query string.
    *
    * @ingroup php_wrappers
    */
@@ -66,6 +63,62 @@ class UrlHelper {
   }
 
   /**
+   * Compresses a string for use in a query parameter.
+   *
+   * While RFC 1738 doesn't specify a maximum length for query strings,
+   * browsers or server configurations may restrict URLs and/or query strings to
+   * a certain length, often 1000 or 2000 characters. This method can be used to
+   * compress a string into a URL-safe query parameter which will be shorter
+   * than if it was used directly.
+   *
+   * @see \Drupal\Component\Utility\UrlHelper::uncompressQueryParameter()
+   *
+   * @param string $data
+   *   The data to compress.
+   *
+   * @return string
+   *   The data compressed into a URL-safe string.
+   */
+  public static function compressQueryParameter(string $data): string {
+    if (!\extension_loaded('zlib')) {
+      return $data;
+    }
+    // Use 'base64url' encoding. Note that the '=' sign is only used for padding
+    // on the right of the string, and is otherwise not part of the data.
+    // @see https://datatracker.ietf.org/doc/html/rfc4648#section-5
+    // @see https://www.php.net/manual/en/function.base64-encode.php#123098
+    return str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(gzcompress($data)));
+  }
+
+  /**
+   * Takes a compressed parameter and converts it back to the original.
+   *
+   * @see \Drupal\Component\Utility\UrlHelper::compressQueryParameter()
+   *
+   * @param string $compressed
+   *   A string as compressed by
+   *   \Drupal\Component\Utility\UrlHelper::compressQueryParameter().
+   *
+   * @return string
+   *   The uncompressed data, or the original string if it cannot be
+   *   uncompressed.
+   */
+  public static function uncompressQueryParameter(string $compressed): string {
+    if (!\extension_loaded('zlib')) {
+      return $compressed;
+    }
+    // Because this comes from user data, suppress the PHP warning that
+    // gzcompress() throws if the base64-encoded string is invalid.
+    $return = @gzuncompress(base64_decode(str_replace(['-', '_'], ['+', '/'], $compressed)));
+
+    // If we failed to uncompress the query parameter, it may be a stale link
+    // from before compression was implemented with the URL parameter
+    // uncompressed already, or it may be an incorrectly formatted URL.
+    // In either case, pass back the original string to the caller.
+    return $return === FALSE ? $compressed : $return;
+  }
+
+  /**
    * Filters a URL query parameter array to remove unwanted elements.
    *
    * @param array $query
@@ -76,7 +129,7 @@ class UrlHelper {
    * @param string $parent
    *   Internal use only. Used to build the $query array key for nested items.
    *
-   * @return
+   * @return array
    *   An array containing query parameters.
    */
   public static function filterQueryParameters(array $query, array $exclude = [], $parent = '') {
@@ -149,15 +202,15 @@ class UrlHelper {
     $query_delimiter_position = strpos($url, '?');
     if ($scheme_delimiter_position !== FALSE && ($query_delimiter_position === FALSE || $scheme_delimiter_position < $query_delimiter_position)) {
       // Split off the fragment, if any.
-      if (strpos($url, '#') !== FALSE) {
-        list($url, $options['fragment']) = explode('#', $url, 2);
+      if (str_contains($url, '#')) {
+        [$url, $options['fragment']] = explode('#', $url, 2);
       }
 
       // Split off everything before the query string into 'path'.
-      $parts = explode('?', $url);
+      $parts = explode('?', $url, 2);
 
       // Don't support URLs without a path, like 'http://'.
-      list(, $path) = explode('://', $parts[0], 2);
+      [, $path] = explode('://', $parts[0], 2);
       if ($path != '') {
         $options['path'] = $parts[0];
       }
@@ -214,12 +267,12 @@ class UrlHelper {
    *   TRUE or FALSE, where TRUE indicates an external path.
    */
   public static function isExternal($path) {
-    $colonpos = strpos($path, ':');
+    $colon_position = strpos($path, ':');
     // Some browsers treat \ as / so normalize to forward slashes.
     $path = str_replace('\\', '/', $path);
     // If the path starts with 2 slashes then it is always considered an
     // external URL without an explicit protocol part.
-    return (strpos($path, '//') === 0)
+    return (str_starts_with($path, '//'))
       // Leading control characters may be ignored or mishandled by browsers,
       // so assume such a path may lead to an external location. The \p{C}
       // character class matches all UTF-8 control, unassigned, and private
@@ -228,8 +281,8 @@ class UrlHelper {
       // Avoid calling static::stripDangerousProtocols() if there is any slash
       // (/), hash (#) or question_mark (?) before the colon (:) occurrence -
       // if any - as this would clearly mean it is not a URL.
-      || ($colonpos !== FALSE
-        && !preg_match('![/?#]!', substr($path, 0, $colonpos))
+      || ($colon_position !== FALSE
+        && !preg_match('![/?#]!', substr($path, 0, $colon_position))
         && static::stripDangerousProtocols($path) == $path);
   }
 
@@ -245,9 +298,19 @@ class UrlHelper {
    *   TRUE if the URL has the same domain and base path.
    *
    * @throws \InvalidArgumentException
-   *   Exception thrown when a either $url or $bath_url are not fully qualified.
+   *   Exception thrown when either $url or $base_url are not fully qualified.
    */
   public static function externalIsLocal($url, $base_url) {
+    // Some browsers treat \ as / so normalize to forward slashes.
+    $url = str_replace('\\', '/', $url);
+
+    // Leading control characters may be ignored or mishandled by browsers, so
+    // assume such a path may lead to a non-local location. The \p{C} character
+    // class matches all UTF-8 control, unassigned, and private characters.
+    if (preg_match('/^\p{C}/u', $url) !== 0) {
+      return FALSE;
+    }
+
     $url_parts = parse_url($url);
     $base_parts = parse_url($base_url);
 
@@ -316,7 +379,7 @@ class UrlHelper {
    * - If the value is a well-formed (per RFC 3986) relative URL or
    *   absolute URL that does not use a dangerous protocol (like
    *   "javascript:"), then the URL remains unchanged. This includes all
-   *   URLs generated via Url::toString() and UrlGeneratorTrait::url().
+   *   URLs generated via Url::toString().
    * - If the value is a well-formed absolute URL with a dangerous protocol,
    *   the protocol is stripped. This process is repeated on the remaining URL
    *   until it is stripped down to a safe protocol.
@@ -340,7 +403,6 @@ class UrlHelper {
    *
    * @see \Drupal\Component\Utility\Html::escape()
    * @see \Drupal\Core\Url::toString()
-   * @see \Drupal\Core\Routing\UrlGeneratorTrait::url()
    * @see \Drupal\Core\Url::fromUri()
    */
   public static function stripDangerousProtocols($uri) {
@@ -349,10 +411,10 @@ class UrlHelper {
     // Iteratively remove any invalid protocol found.
     do {
       $before = $uri;
-      $colonpos = strpos($uri, ':');
-      if ($colonpos > 0) {
+      $colon_position = strpos($uri, ':');
+      if ($colon_position > 0) {
         // We found a colon, possibly a protocol. Verify.
-        $protocol = substr($uri, 0, $colonpos);
+        $protocol = substr($uri, 0, $colon_position);
         // If a colon is preceded by a slash, question mark or hash, it cannot
         // possibly be part of the URL scheme. This must be a relative URL, which
         // inherits the (safe) protocol of the base document.
@@ -362,7 +424,7 @@ class UrlHelper {
         // Check if this is a disallowed protocol. Per RFC2616, section 3.2.3
         // (URI Comparison) scheme comparison must be case-insensitive.
         if (!isset($allowed_protocols[strtolower($protocol)])) {
-          $uri = substr($uri, $colonpos + 1);
+          $uri = substr($uri, $colon_position + 1);
         }
       }
     } while ($before != $uri);

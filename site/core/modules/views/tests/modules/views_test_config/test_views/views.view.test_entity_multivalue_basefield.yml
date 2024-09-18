@@ -4,18 +4,17 @@ dependencies:
   module:
     - entity_test
 id: test_entity_multivalue_basefield
-label: ''
+label: test_entity_multivalue_basefield
 module: views
 description: ''
 tag: ''
 base_table: entity_test_multivalue_basefield
 base_field: id
-core: '8'
 display:
   default:
     display_plugin: default
     id: default
-    display_title: Master
+    display_title: Default
     position: 0
     display_options:
       fields:

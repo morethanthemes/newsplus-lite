@@ -6,21 +6,22 @@ use Drupal\Component\Utility\Html;
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Cache\CacheableDependencyInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\views\Attribute\ViewsStyle;
 use Drupal\views\Plugin\views\wizard\WizardInterface;
 
 /**
  * Style plugin to render each item as a row in a table.
  *
  * @ingroup views_style_plugins
- *
- * @ViewsStyle(
- *   id = "table",
- *   title = @Translation("Table"),
- *   help = @Translation("Displays rows in a table."),
- *   theme = "views_view_table",
- *   display_types = {"normal"}
- * )
  */
+#[ViewsStyle(
+  id: "table",
+  title: new TranslatableMarkup("Table"),
+  help: new TranslatableMarkup("Displays rows in a table."),
+  theme: "views_view_table",
+  display_types: ["normal"],
+)]
 class Table extends StylePluginBase implements CacheableDependencyInterface {
 
   /**
@@ -97,13 +98,13 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
   }
 
   /**
-   * Add our actual sort criteria
+   * Add our actual sort criteria.
    */
   public function buildSortPost() {
     $query = $this->view->getRequest()->query;
     $order = $query->get('order');
     if (!isset($order)) {
-      // check for a 'default' clicksort. If there isn't one, exit gracefully.
+      // Check for a 'default' clickSort. If there isn't one, exit gracefully.
       if (empty($this->options['default'])) {
         return;
       }
@@ -140,6 +141,8 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
   }
 
   /**
+   * Sanitizes the columns.
+   *
    * Normalize a list of columns based upon the fields that are
    * available. This compares the fields stored in the style handler
    * to the list of fields actually in the view, removing fields that
@@ -168,7 +171,7 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
     if ($fields === NULL) {
       $fields = $this->displayHandler->getOption('fields');
     }
-    // Preconfigure the sanitized array so that the order is retained.
+    // Pre-configure the sanitized array so that the order is retained.
     foreach ($fields as $field => $info) {
       // Set to itself so that if it isn't touched, it gets column
       // status automatically.
@@ -215,7 +218,7 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
 
     $form['sticky'] = [
       '#type' => 'checkbox',
-      '#title' => $this->t('Enable Drupal style "sticky" table headers (Javascript)'),
+      '#title' => $this->t('Enable Drupal style "sticky" table headers'),
       '#default_value' => !empty($this->options['sticky']),
       '#description' => $this->t('(Sticky header effects will not be active for preview below, only on live output.)'),
     ];
@@ -316,7 +319,7 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
           '#return_value' => $field,
           '#parents' => ['style_options', 'default'],
           '#id' => $radio_id,
-          // because 'radio' doesn't fully support '#id' =(
+          // Because 'radio' doesn't fully support '#id' =(
           '#attributes' => ['id' => $radio_id],
           '#default_value' => $default,
           '#states' => [
@@ -336,7 +339,7 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
           'views-align-left' => $this->t('Left', [], ['context' => 'Text alignment']),
           'views-align-center' => $this->t('Center', [], ['context' => 'Text alignment']),
           'views-align-right' => $this->t('Right', [], ['context' => 'Text alignment']),
-          ],
+        ],
         '#states' => [
           'visible' => [
             $column_selector => ['value' => $field],
@@ -348,7 +351,7 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
         '#title_display' => 'invisible',
         '#type' => 'textfield',
         '#size' => 10,
-        '#default_value' => isset($this->options['info'][$field]['separator']) ? $this->options['info'][$field]['separator'] : '',
+        '#default_value' => $this->options['info'][$field]['separator'] ?? '',
         '#states' => [
           'visible' => [
             $column_selector => ['value' => $field],
@@ -359,7 +362,7 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
         '#title' => $this->t('Hide empty column for @field', ['@field' => $field]),
         '#title_display' => 'invisible',
         '#type' => 'checkbox',
-        '#default_value' => isset($this->options['info'][$field]['empty_column']) ? $this->options['info'][$field]['empty_column'] : FALSE,
+        '#default_value' => $this->options['info'][$field]['empty_column'] ?? FALSE,
         '#states' => [
           'visible' => [
             $column_selector => ['value' => $field],
@@ -370,7 +373,7 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
         '#title' => $this->t('Responsive setting for @field', ['@field' => $field]),
         '#title_display' => 'invisible',
         '#type' => 'select',
-        '#default_value' => isset($this->options['info'][$field]['responsive']) ? $this->options['info'][$field]['responsive'] : '',
+        '#default_value' => $this->options['info'][$field]['responsive'] ?? '',
         '#options' => ['' => $this->t('High'), RESPONSIVE_PRIORITY_MEDIUM => $this->t('Medium'), RESPONSIVE_PRIORITY_LOW => $this->t('Low')],
         '#states' => [
           'visible' => [
@@ -379,7 +382,7 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
         ],
       ];
 
-      // markup for the field name
+      // Markup for the field name
       $form['info'][$field]['name'] = [
         '#markup' => $field_names[$field],
       ];
@@ -433,7 +436,7 @@ class Table extends StylePluginBase implements CacheableDependencyInterface {
   public function getCacheContexts() {
     $contexts = [];
 
-    foreach ($this->options['info'] as $field_id => $info) {
+    foreach ($this->options['info'] as $info) {
       if (!empty($info['sortable'])) {
         // The rendered link needs to play well with any other query parameter
         // used on the page, like pager and exposed filter.

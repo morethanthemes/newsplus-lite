@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\inline_form_errors\Kernel;
 
 use Drupal\Core\Form\FormState;
@@ -15,12 +17,12 @@ class FormElementInlineErrorTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['inline_form_errors'];
+  protected static $modules = ['inline_form_errors'];
 
   /**
    * Tests that no inline form errors are shown when disabled for a form.
    */
-  public function testDisplayErrorMessagesNotInline() {
+  public function testDisplayErrorMessagesNotInline(): void {
     $form_id = 'test';
 
     $form = [
@@ -42,7 +44,7 @@ class FormElementInlineErrorTest extends KernelTestBase {
 
     // Just test if the #error_no_message property is TRUE. FormErrorHandlerTest
     // tests if the property actually hides the error message.
-    $this->assertArraySubset(['#error_no_message' => TRUE], $form['test']);
+    $this->assertTrue($form['test']['#error_no_message']);
   }
 
 }

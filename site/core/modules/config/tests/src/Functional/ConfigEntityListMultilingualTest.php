@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\config\Functional;
 
 use Drupal\Tests\BrowserTestBase;
 use Drupal\language\Entity\ConfigurableLanguage;
+
+// cspell:ignore antilop
 
 /**
  * Tests the listing of configuration entities in a multilingual scenario.
@@ -13,19 +17,22 @@ use Drupal\language\Entity\ConfigurableLanguage;
 class ConfigEntityListMultilingualTest extends BrowserTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['config_test', 'language', 'block'];
+  protected static $modules = ['config_test', 'language', 'block'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
     // Delete the override config_test entity. It is not required by this test.
-    \Drupal::entityManager()->getStorage('config_test')->load('override')->delete();
+    \Drupal::entityTypeManager()->getStorage('config_test')->load('override')->delete();
     ConfigurableLanguage::createFromLangcode('hu')->save();
 
     $this->drupalPlaceBlock('local_actions_block');
@@ -34,13 +41,16 @@ class ConfigEntityListMultilingualTest extends BrowserTestBase {
   /**
    * Tests the listing UI with different language scenarios.
    */
-  public function testListUI() {
+  public function testListUI(): void {
     // Log in as an administrative user to access the full menu trail.
-    $this->drupalLogin($this->drupalCreateUser(['access administration pages', 'administer site configuration']));
+    $this->drupalLogin($this->drupalCreateUser([
+      'access administration pages',
+      'administer site configuration',
+    ]));
 
     // Get the list page.
     $this->drupalGet('admin/structure/config_test');
-    $this->assertLinkByHref('admin/structure/config_test/manage/dotted.default');
+    $this->assertSession()->linkByHrefExists('admin/structure/config_test/manage/dotted.default');
 
     // Add a new entity using the action link.
     $this->clickLink('Add test configuration');
@@ -49,15 +59,15 @@ class ConfigEntityListMultilingualTest extends BrowserTestBase {
       'id' => 'antilop',
       'langcode' => 'hu',
     ];
-    $this->drupalPostForm(NULL, $edit, t('Save'));
+    $this->submitForm($edit, 'Save');
     // Ensure that operations for editing the Hungarian entity appear in English.
-    $this->assertLinkByHref('admin/structure/config_test/manage/antilop');
+    $this->assertSession()->linkByHrefExists('admin/structure/config_test/manage/antilop');
 
     // Get the list page in Hungarian and assert Hungarian admin links
     // regardless of language of config entities.
     $this->drupalGet('hu/admin/structure/config_test');
-    $this->assertLinkByHref('hu/admin/structure/config_test/manage/dotted.default');
-    $this->assertLinkByHref('hu/admin/structure/config_test/manage/antilop');
+    $this->assertSession()->linkByHrefExists('hu/admin/structure/config_test/manage/dotted.default');
+    $this->assertSession()->linkByHrefExists('hu/admin/structure/config_test/manage/antilop');
   }
 
 }

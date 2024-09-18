@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\comment\Functional\Views;
 
 /**
@@ -10,6 +12,11 @@ namespace Drupal\Tests\comment\Functional\Views;
 class CommentRowTest extends CommentTestBase {
 
   /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
    * Views used by this test.
    *
    * @var array
@@ -17,13 +24,11 @@ class CommentRowTest extends CommentTestBase {
   public static $testViews = ['test_comment_row'];
 
   /**
-   * Test comment row.
+   * Tests comment row.
    */
-  public function testCommentRow() {
+  public function testCommentRow(): void {
     $this->drupalGet('test-comment-row');
-
-    $result = $this->xpath('//article[contains(@class, "comment")]');
-    $this->assertEqual(1, count($result), 'One rendered comment found.');
+    $this->assertSession()->elementsCount('xpath', '//article[contains(@class, "comment")]', 1);
   }
 
 }

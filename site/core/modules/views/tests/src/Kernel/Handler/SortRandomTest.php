@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Kernel\Handler;
 
 use Drupal\Core\Cache\Cache;
@@ -69,13 +71,13 @@ class SortRandomTest extends ViewsKernelTestBase {
    *
    * @see DatabaseSelectTestCase::testRandomOrder()
    */
-  public function testRandomOrdering() {
+  public function testRandomOrdering(): void {
     // Execute a basic view first.
     $view = Views::getView('test_view');
     $this->executeView($view);
 
     // Verify the result.
-    $this->assertEqual(count($this->dataSet()), count($view->result), 'The number of returned rows match.');
+    $this->assertSameSize($this->dataSet(), $view->result, 'The number of returned rows match.');
     $this->assertIdenticalResultset($view, $this->dataSet(), [
       'views_test_data_name' => 'name',
       'views_test_data_age' => 'age',
@@ -84,7 +86,7 @@ class SortRandomTest extends ViewsKernelTestBase {
     // Execute a random view, we expect the result set to be different.
     $view_random = $this->getBasicRandomView();
     $this->executeView($view_random);
-    $this->assertEqual(count($this->dataSet()), count($view_random->result), 'The number of returned rows match.');
+    $this->assertSameSize($this->dataSet(), $view_random->result, 'The number of returned rows match.');
     $this->assertNotIdenticalResultset($view_random, $view->result, [
       'views_test_data_name' => 'views_test_data_name',
       'views_test_data_age' => 'views_test_data_name',
@@ -93,7 +95,7 @@ class SortRandomTest extends ViewsKernelTestBase {
     // Execute a second random view, we expect the result set to be different again.
     $view_random_2 = $this->getBasicRandomView();
     $this->executeView($view_random_2);
-    $this->assertEqual(count($this->dataSet()), count($view_random_2->result), 'The number of returned rows match.');
+    $this->assertSameSize($this->dataSet(), $view_random_2->result, 'The number of returned rows match.');
     $this->assertNotIdenticalResultset($view_random, $view->result, [
       'views_test_data_name' => 'views_test_data_name',
       'views_test_data_age' => 'views_test_data_name',
@@ -106,7 +108,7 @@ class SortRandomTest extends ViewsKernelTestBase {
    * The random sorting should opt out of caching by defining a max age of 0.
    * At the same time, the row render caching still works.
    */
-  public function testRandomOrderingWithRenderCaching() {
+  public function testRandomOrderingWithRenderCaching(): void {
     $view_random = $this->getBasicRandomView();
 
     $display = &$view_random->storage->getDisplay('default');
@@ -122,7 +124,7 @@ class SortRandomTest extends ViewsKernelTestBase {
     $render_cache = \Drupal::service('render_cache');
 
     $original = $build = DisplayPluginBase::buildBasicRenderable($view_random->id(), 'default');
-    $result = $renderer->renderPlain($build);
+    $result = $renderer->renderInIsolation($build);
 
     $original['#cache'] += ['contexts' => []];
     $original['#cache']['contexts'] = Cache::mergeContexts($original['#cache']['contexts'], $this->container->getParameter('renderer.config')['required_cache_contexts']);
@@ -130,10 +132,12 @@ class SortRandomTest extends ViewsKernelTestBase {
     $this->assertFalse($render_cache->get($original), 'Ensure there is no render cache entry.');
 
     $build = DisplayPluginBase::buildBasicRenderable($view_random->id(), 'default');
-    $result2 = $renderer->renderPlain($build);
+    $result2 = $renderer->renderInIsolation($build);
 
     // Ensure that the random ordering works and don't produce the same result.
-    $this->assertNotEqual($result, $result2);
+    // We use assertNotSame and cast values to strings since HTML tags are
+    // significant.
+    $this->assertNotSame((string) $result, (string) $result2);
   }
 
 }

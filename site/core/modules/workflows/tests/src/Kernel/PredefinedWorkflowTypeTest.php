@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\workflows\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
@@ -15,12 +17,12 @@ class PredefinedWorkflowTypeTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['workflows', 'workflow_type_test'];
+  protected static $modules = ['workflows', 'workflow_type_test'];
 
   /**
-   * Test a predefined workflow type.
+   * Tests a predefined workflow type.
    */
-  public function testPredefinedWorkflowType() {
+  public function testPredefinedWorkflowType(): void {
     $workflow = Workflow::create([
       'id' => 'aces',
       'label' => 'Aces Workflow',

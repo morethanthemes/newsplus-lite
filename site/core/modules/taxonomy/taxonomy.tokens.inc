@@ -5,6 +5,8 @@
  * Builds placeholder replacement tokens for taxonomy terms and vocabularies.
  */
 
+use Drupal\Core\Datetime\Entity\DateFormat;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\taxonomy\Entity\Vocabulary;
 
@@ -78,6 +80,11 @@ function taxonomy_token_info() {
     'description' => t("The parent term of the taxonomy term, if one exists."),
     'type' => 'term',
   ];
+  $term['changed'] = [
+    'name' => t("Date changed"),
+    'description' => t("The date the taxonomy was most recently updated."),
+    'type' => 'date',
+  ];
 
   return [
     'types' => $types,
@@ -94,10 +101,18 @@ function taxonomy_token_info() {
 function taxonomy_tokens($type, $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata) {
   $token_service = \Drupal::token();
 
+  if (isset($options['langcode'])) {
+    $url_options['language'] = \Drupal::languageManager()->getLanguage($options['langcode']);
+    $langcode = $options['langcode'];
+  }
+  else {
+    $langcode = LanguageInterface::LANGCODE_DEFAULT;
+  }
+
   $replacements = [];
-  $taxonomy_storage = \Drupal::entityManager()->getStorage('taxonomy_term');
   if ($type == 'term' && !empty($data['term'])) {
     $term = $data['term'];
+    $term = \Drupal::service('entity.repository')->getTranslationFromContext($term, $options['langcode'] ?? NULL);
 
     foreach ($tokens as $name => $original) {
       switch ($name) {
@@ -106,7 +121,7 @@ function taxonomy_tokens($type, $tokens, array $data, array $options, Bubbleable
           break;
 
         case 'name':
-          $replacements[$original] = $term->getName();
+          $replacements[$original] = $term->label();
           break;
 
         case 'description':
@@ -116,11 +131,11 @@ function taxonomy_tokens($type, $tokens, array $data, array $options, Bubbleable
           break;
 
         case 'url':
-          $replacements[$original] = $term->url('canonical', ['absolute' => TRUE]);
+          $replacements[$original] = $term->toUrl('canonical', ['absolute' => TRUE])->toString();
           break;
 
         case 'node-count':
-          $query = db_select('taxonomy_index');
+          $query = \Drupal::database()->select('taxonomy_index');
           $query->condition('tid', $term->id());
           $query->addTag('term_node_count');
           $count = $query->countQuery()->execute()->fetchField();
@@ -134,11 +149,18 @@ function taxonomy_tokens($type, $tokens, array $data, array $options, Bubbleable
           break;
 
         case 'parent':
+          $taxonomy_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
           if ($parents = $taxonomy_storage->loadParents($term->id())) {
             $parent = array_pop($parents);
             $bubbleable_metadata->addCacheableDependency($parent);
             $replacements[$original] = $parent->getName();
           }
+          break;
+
+        case 'changed':
+          $date_format = DateFormat::load('medium');
+          $bubbleable_metadata->addCacheableDependency($date_format);
+          $replacements[$original] = \Drupal::service('date.formatter')->format($term->getChangedTime(), 'medium', '', NULL, $langcode);
           break;
       }
     }
@@ -148,9 +170,16 @@ function taxonomy_tokens($type, $tokens, array $data, array $options, Bubbleable
       $replacements += $token_service->generate('vocabulary', $vocabulary_tokens, ['vocabulary' => $vocabulary], $options, $bubbleable_metadata);
     }
 
-    if (($vocabulary_tokens = $token_service->findWithPrefix($tokens, 'parent')) && $parents = $taxonomy_storage->loadParents($term->id())) {
-      $parent = array_pop($parents);
-      $replacements += $token_service->generate('term', $vocabulary_tokens, ['term' => $parent], $options, $bubbleable_metadata);
+    if (($vocabulary_tokens = $token_service->findWithPrefix($tokens, 'parent'))) {
+      $taxonomy_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
+      if ($parents = $taxonomy_storage->loadParents($term->id())) {
+        $parent = array_pop($parents);
+        $replacements += $token_service->generate('term', $vocabulary_tokens, ['term' => $parent], $options, $bubbleable_metadata);
+      }
+    }
+
+    if ($changed_tokens = $token_service->findWithPrefix($tokens, 'changed')) {
+      $replacements += $token_service->generate('date', $changed_tokens, ['date' => $term->getChangedTime()], $options, $bubbleable_metadata);
     }
   }
 
@@ -170,11 +199,12 @@ function taxonomy_tokens($type, $tokens, array $data, array $options, Bubbleable
         case 'description':
           $build = ['#markup' => $vocabulary->getDescription()];
           // @todo Fix in https://www.drupal.org/node/2577827
-          $replacements[$original] = \Drupal::service('renderer')->renderPlain($build);
+          $replacements[$original] = \Drupal::service('renderer')->renderInIsolation($build);
           break;
 
         case 'term-count':
           $replacements[$original] = \Drupal::entityQuery('taxonomy_term')
+            ->accessCheck(TRUE)
             ->condition('vid', $vocabulary->id())
             ->addTag('vocabulary_term_count')
             ->count()
@@ -182,6 +212,7 @@ function taxonomy_tokens($type, $tokens, array $data, array $options, Bubbleable
           break;
 
         case 'node-count':
+          $taxonomy_storage = \Drupal::entityTypeManager()->getStorage('taxonomy_term');
           $replacements[$original] = $taxonomy_storage->nodeCount($vocabulary->id());
           break;
       }

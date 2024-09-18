@@ -43,13 +43,16 @@ class FormTestClickedButtonForm extends FormBase {
     foreach ($args as $arg) {
       $name = 'button' . ++$i;
       // 's', 'b', or 'i' in the argument define the button type wanted.
-      if (strpos($arg, 's') !== FALSE) {
+      if (!is_string($arg)) {
+        $type = NULL;
+      }
+      elseif (str_contains($arg, 's')) {
         $type = 'submit';
       }
-      elseif (strpos($arg, 'b') !== FALSE) {
+      elseif (str_contains($arg, 'b')) {
         $type = 'button';
       }
-      elseif (strpos($arg, 'i') !== FALSE) {
+      elseif (str_contains($arg, 'i')) {
         $type = 'image_button';
       }
       else {
@@ -69,7 +72,7 @@ class FormTestClickedButtonForm extends FormBase {
         }
         // 'r' for restricted, so we can test that button click detection code
         // correctly takes #access security into account.
-        if (strpos($arg, 'r') !== FALSE) {
+        if (str_contains($arg, 'r')) {
           $form[$name]['#access'] = FALSE;
         }
       }
@@ -83,10 +86,10 @@ class FormTestClickedButtonForm extends FormBase {
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     if ($triggering_element = $form_state->getTriggeringElement()) {
-      drupal_set_message(t('The clicked button is %name.', ['%name' => $triggering_element['#name']]));
+      $this->messenger()->addStatus(t('The clicked button is %name.', ['%name' => $triggering_element['#name']]));
     }
     else {
-      drupal_set_message('There is no clicked button.');
+      $this->messenger()->addStatus('There is no clicked button.');
     }
   }
 
@@ -94,7 +97,7 @@ class FormTestClickedButtonForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    drupal_set_message('Submit handler for form_test_clicked_button executed.');
+    $this->messenger()->addStatus('Submit handler for form_test_clicked_button executed.');
   }
 
 }

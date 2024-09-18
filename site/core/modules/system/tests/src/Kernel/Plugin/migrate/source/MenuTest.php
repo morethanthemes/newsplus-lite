@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\system\Kernel\Plugin\migrate\source;
 
 use Drupal\Tests\migrate\Kernel\MigrateSqlSourceTestBase;
@@ -16,12 +18,12 @@ class MenuTest extends MigrateSqlSourceTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['system', 'migrate_drupal'];
+  protected static $modules = ['system', 'migrate_drupal'];
 
   /**
    * {@inheritdoc}
    */
-  public function providerSource() {
+  public static function providerSource() {
     $tests = [];
 
     // The source data.
@@ -40,6 +42,19 @@ class MenuTest extends MigrateSqlSourceTestBase {
 
     // The expected results are identical to the source data.
     $tests[0]['expected_data'] = $tests[0]['source_data']['menu_custom'];
+
+    $tests[1] = $tests[0];
+    $tests[1]['source_data']['menu_custom'][0] +=
+      [
+        'language' => 'it',
+        'i18n_mode' => 1,
+      ];
+    $tests[1]['source_data']['menu_custom'][1] +=
+      [
+        'language' => 'fr',
+        'i18n_mode' => 2,
+      ];
+    $tests[1]['expected_data'] = $tests[1]['source_data']['menu_custom'];
 
     return $tests;
   }

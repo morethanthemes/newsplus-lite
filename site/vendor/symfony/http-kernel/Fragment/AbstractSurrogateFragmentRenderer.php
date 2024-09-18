@@ -13,9 +13,9 @@ namespace Symfony\Component\HttpKernel\Fragment;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\UriSigner;
 use Symfony\Component\HttpKernel\Controller\ControllerReference;
 use Symfony\Component\HttpKernel\HttpCache\SurrogateInterface;
-use Symfony\Component\HttpKernel\UriSigner;
 
 /**
  * Implements Surrogate rendering strategy.
@@ -24,19 +24,17 @@ use Symfony\Component\HttpKernel\UriSigner;
  */
 abstract class AbstractSurrogateFragmentRenderer extends RoutableFragmentRenderer
 {
-    private $surrogate;
-    private $inlineStrategy;
-    private $signer;
+    private ?SurrogateInterface $surrogate;
+    private FragmentRendererInterface $inlineStrategy;
+    private ?UriSigner $signer;
 
     /**
      * The "fallback" strategy when surrogate is not available should always be an
      * instance of InlineFragmentRenderer.
      *
-     * @param SurrogateInterface        $surrogate      An Surrogate instance
      * @param FragmentRendererInterface $inlineStrategy The inline strategy to use when the surrogate is not supported
-     * @param UriSigner                 $signer
      */
-    public function __construct(SurrogateInterface $surrogate = null, FragmentRendererInterface $inlineStrategy, UriSigner $signer = null)
+    public function __construct(?SurrogateInterface $surrogate, FragmentRendererInterface $inlineStrategy, ?UriSigner $signer = null)
     {
         $this->surrogate = $surrogate;
         $this->inlineStrategy = $inlineStrategy;
@@ -44,8 +42,6 @@ abstract class AbstractSurrogateFragmentRenderer extends RoutableFragmentRendere
     }
 
     /**
-     * {@inheritdoc}
-     *
      * Note that if the current Request has no surrogate capability, this method
      * falls back to use the inline rendering strategy.
      *
@@ -53,54 +49,54 @@ abstract class AbstractSurrogateFragmentRenderer extends RoutableFragmentRendere
      *
      *  * alt: an alternative URI to render in case of an error
      *  * comment: a comment to add when returning the surrogate tag
+     *  * absolute_uri: whether to generate an absolute URI or not. Default is false
      *
      * Note, that not all surrogate strategies support all options. For now
      * 'alt' and 'comment' are only supported by ESI.
      *
      * @see Symfony\Component\HttpKernel\HttpCache\SurrogateInterface
      */
-    public function render($uri, Request $request, array $options = array())
+    public function render(string|ControllerReference $uri, Request $request, array $options = []): Response
     {
         if (!$this->surrogate || !$this->surrogate->hasSurrogateCapability($request)) {
+            $request->attributes->set('_check_controller_is_allowed', -1); // @deprecated, switch to true in Symfony 7
+
             if ($uri instanceof ControllerReference && $this->containsNonScalars($uri->attributes)) {
-                @trigger_error('Passing non-scalar values as part of URI attributes to the ESI and SSI rendering strategies is deprecated since Symfony 3.1, and will be removed in 4.0. Use a different rendering strategy or pass scalar values.', E_USER_DEPRECATED);
+                throw new \InvalidArgumentException('Passing non-scalar values as part of URI attributes to the ESI and SSI rendering strategies is not supported. Use a different rendering strategy or pass scalar values.');
             }
 
             return $this->inlineStrategy->render($uri, $request, $options);
         }
 
+        $absolute = $options['absolute_uri'] ?? false;
+
         if ($uri instanceof ControllerReference) {
-            $uri = $this->generateSignedFragmentUri($uri, $request);
+            $uri = $this->generateSignedFragmentUri($uri, $request, $absolute);
         }
 
-        $alt = isset($options['alt']) ? $options['alt'] : null;
+        $alt = $options['alt'] ?? null;
         if ($alt instanceof ControllerReference) {
-            $alt = $this->generateSignedFragmentUri($alt, $request);
+            $alt = $this->generateSignedFragmentUri($alt, $request, $absolute);
         }
 
-        $tag = $this->surrogate->renderIncludeTag($uri, $alt, isset($options['ignore_errors']) ? $options['ignore_errors'] : false, isset($options['comment']) ? $options['comment'] : '');
+        $tag = $this->surrogate->renderIncludeTag($uri, $alt, $options['ignore_errors'] ?? false, $options['comment'] ?? '');
 
         return new Response($tag);
     }
 
-    private function generateSignedFragmentUri($uri, Request $request)
+    private function generateSignedFragmentUri(ControllerReference $uri, Request $request, bool $absolute): string
     {
-        if (null === $this->signer) {
-            throw new \LogicException('You must use a URI when using the ESI rendering strategy or set a URL signer.');
-        }
-
-        // we need to sign the absolute URI, but want to return the path only.
-        $fragmentUri = $this->signer->sign($this->generateFragmentUri($uri, $request, true));
-
-        return substr($fragmentUri, strlen($request->getSchemeAndHttpHost()));
+        return (new FragmentUriGenerator($this->fragmentPath, $this->signer))->generate($uri, $request, $absolute);
     }
 
-    private function containsNonScalars(array $values)
+    private function containsNonScalars(array $values): bool
     {
         foreach ($values as $value) {
-            if (is_array($value)) {
-                return $this->containsNonScalars($value);
-            } elseif (!is_scalar($value) && null !== $value) {
+            if (\is_scalar($value) || null === $value) {
+                continue;
+            }
+
+            if (!\is_array($value) || $this->containsNonScalars($value)) {
                 return true;
             }
         }

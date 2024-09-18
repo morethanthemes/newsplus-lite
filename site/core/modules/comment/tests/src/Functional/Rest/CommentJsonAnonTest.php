@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\comment\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\AnonResourceTestTrait;
 
 /**
  * @group rest
+ * @group #slow
  */
 class CommentJsonAnonTest extends CommentResourceTestBase {
 
@@ -23,8 +26,13 @@ class CommentJsonAnonTest extends CommentResourceTestBase {
 
   /**
    * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
    *
-   * Anononymous users cannot edit their own comments.
+   * Anonymous users cannot edit their own comments.
    *
    * @see \Drupal\comment\CommentAccessControlHandler::checkAccess
    *
@@ -34,12 +42,12 @@ class CommentJsonAnonTest extends CommentResourceTestBase {
    * @see ::setUpAuthorization
    */
   protected static $patchProtectedFieldNames = [
-    'pid',
-    'entity_id',
-    'changed',
-    'thread',
-    'entity_type',
-    'field_name',
+    'pid' => NULL,
+    'entity_id' => NULL,
+    'changed' => NULL,
+    'thread' => NULL,
+    'entity_type' => NULL,
+    'field_name' => NULL,
   ];
 
 }

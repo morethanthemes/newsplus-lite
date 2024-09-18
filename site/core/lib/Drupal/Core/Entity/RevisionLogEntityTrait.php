@@ -2,6 +2,7 @@
 
 namespace Drupal\Core\Entity;
 
+use Drupal\Core\Entity\Exception\UnsupportedEntityTypeDefinitionException;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\user\UserInterface;
 
@@ -25,18 +26,28 @@ trait RevisionLogEntityTrait {
    * @see \Drupal\Core\Entity\FieldableEntityInterface::baseFieldDefinitions()
    */
   public static function revisionLogBaseFieldDefinitions(EntityTypeInterface $entity_type) {
-    $fields[static::getRevisionMetadataKey($entity_type, 'revision_created')] = BaseFieldDefinition::create('created')
+
+    if (!($entity_type instanceof ContentEntityTypeInterface)) {
+      throw new UnsupportedEntityTypeDefinitionException('The entity type ' . $entity_type->id() . ' is not a content entity type.');
+    }
+    foreach (['revision_created', 'revision_user', 'revision_log_message'] as $revision_metadata_key) {
+      if (!$entity_type->hasRevisionMetadataKey($revision_metadata_key)) {
+        throw new UnsupportedEntityTypeDefinitionException('The entity type ' . $entity_type->id() . ' does not have an "' . $revision_metadata_key . '" entity revision metadata key.');
+      }
+    }
+
+    $fields[$entity_type->getRevisionMetadataKey('revision_created')] = BaseFieldDefinition::create('created')
       ->setLabel(t('Revision create time'))
       ->setDescription(t('The time that the current revision was created.'))
       ->setRevisionable(TRUE);
 
-    $fields[static::getRevisionMetadataKey($entity_type, 'revision_user')] = BaseFieldDefinition::create('entity_reference')
+    $fields[$entity_type->getRevisionMetadataKey('revision_user')] = BaseFieldDefinition::create('entity_reference')
       ->setLabel(t('Revision user'))
       ->setDescription(t('The user ID of the author of the current revision.'))
       ->setSetting('target_type', 'user')
       ->setRevisionable(TRUE);
 
-    $fields[static::getRevisionMetadataKey($entity_type, 'revision_log_message')] = BaseFieldDefinition::create('string_long')
+    $fields[$entity_type->getRevisionMetadataKey('revision_log_message')] = BaseFieldDefinition::create('string_long')
       ->setLabel(t('Revision log message'))
       ->setDescription(t('Briefly describe the changes you have made.'))
       ->setRevisionable(TRUE)
@@ -56,14 +67,14 @@ trait RevisionLogEntityTrait {
    * Implements \Drupal\Core\Entity\RevisionLogInterface::getRevisionCreationTime().
    */
   public function getRevisionCreationTime() {
-    return $this->{static::getRevisionMetadataKey($this->getEntityType(), 'revision_created')}->value;
+    return $this->{$this->getEntityType()->getRevisionMetadataKey('revision_created')}->value;
   }
 
   /**
    * Implements \Drupal\Core\Entity\RevisionLogInterface::setRevisionCreationTime().
    */
   public function setRevisionCreationTime($timestamp) {
-    $this->{static::getRevisionMetadataKey($this->getEntityType(), 'revision_created')}->value = $timestamp;
+    $this->{$this->getEntityType()->getRevisionMetadataKey('revision_created')}->value = $timestamp;
     return $this;
   }
 
@@ -71,14 +82,14 @@ trait RevisionLogEntityTrait {
    * Implements \Drupal\Core\Entity\RevisionLogInterface::getRevisionUser().
    */
   public function getRevisionUser() {
-    return $this->{static::getRevisionMetadataKey($this->getEntityType(), 'revision_user')}->entity;
+    return $this->{$this->getEntityType()->getRevisionMetadataKey('revision_user')}->entity;
   }
 
   /**
    * Implements \Drupal\Core\Entity\RevisionLogInterface::setRevisionUser().
    */
   public function setRevisionUser(UserInterface $account) {
-    $this->{static::getRevisionMetadataKey($this->getEntityType(), 'revision_user')}->entity = $account;
+    $this->{$this->getEntityType()->getRevisionMetadataKey('revision_user')}->entity = $account;
     return $this;
   }
 
@@ -86,14 +97,14 @@ trait RevisionLogEntityTrait {
    * Implements \Drupal\Core\Entity\RevisionLogInterface::getRevisionUserId().
    */
   public function getRevisionUserId() {
-    return $this->{static::getRevisionMetadataKey($this->getEntityType(), 'revision_user')}->target_id;
+    return $this->{$this->getEntityType()->getRevisionMetadataKey('revision_user')}->target_id;
   }
 
   /**
    * Implements \Drupal\Core\Entity\RevisionLogInterface::setRevisionUserId().
    */
   public function setRevisionUserId($user_id) {
-    $this->{static::getRevisionMetadataKey($this->getEntityType(), 'revision_user')}->target_id = $user_id;
+    $this->{$this->getEntityType()->getRevisionMetadataKey('revision_user')}->target_id = $user_id;
     return $this;
   }
 
@@ -101,41 +112,23 @@ trait RevisionLogEntityTrait {
    * Implements \Drupal\Core\Entity\RevisionLogInterface::getRevisionLogMessage().
    */
   public function getRevisionLogMessage() {
-    return $this->{static::getRevisionMetadataKey($this->getEntityType(), 'revision_log_message')}->value;
+    return $this->{$this->getEntityType()->getRevisionMetadataKey('revision_log_message')}->value;
   }
 
   /**
    * Implements \Drupal\Core\Entity\RevisionLogInterface::setRevisionLogMessage().
    */
   public function setRevisionLogMessage($revision_log_message) {
-    $this->{static::getRevisionMetadataKey($this->getEntityType(), 'revision_log_message')}->value = $revision_log_message;
+    $this->{$this->getEntityType()->getRevisionMetadataKey('revision_log_message')}->value = $revision_log_message;
     return $this;
   }
 
   /**
-   * Gets the name of a revision metadata field.
+   * Gets the entity type definition.
    *
-   * @param \Drupal\Core\Entity\EntityTypeInterface $entity_type
-   *   A content entity type definition.
-   * @param string $key
-   *   The revision metadata key to get, must be one of 'revision_created',
-   *   'revision_user' or 'revision_log_message'.
-   *
-   * @return string
-   *   The name of the field for the specified $key.
+   * @return \Drupal\Core\Entity\ContentEntityTypeInterface
+   *   The content entity type definition.
    */
-  protected static function getRevisionMetadataKey(EntityTypeInterface $entity_type, $key) {
-    // We need to prevent ContentEntityType::getRevisionMetadataKey() from
-    // providing fallback as that requires fetching the entity type's field
-    // definition leading to an infinite recursion.
-    /** @var \Drupal\Core\Entity\ContentEntityTypeInterface $entity_type */
-    $revision_metadata_keys = $entity_type->getRevisionMetadataKeys(FALSE) + [
-      'revision_created' => 'revision_created',
-      'revision_user' => 'revision_user',
-      'revision_log_message' => 'revision_log_message',
-    ];
-
-    return $revision_metadata_keys[$key];
-  }
+  abstract public function getEntityType();
 
 }

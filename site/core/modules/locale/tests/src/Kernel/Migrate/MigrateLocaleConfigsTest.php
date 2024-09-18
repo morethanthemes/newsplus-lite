@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\locale\Kernel\Migrate;
 
 use Drupal\Tests\SchemaCheckTestTrait;
@@ -17,12 +19,12 @@ class MigrateLocaleConfigsTest extends MigrateDrupal6TestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['locale', 'language'];
+  protected static $modules = ['locale', 'language'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->executeMigration('locale_settings');
   }
@@ -30,10 +32,10 @@ class MigrateLocaleConfigsTest extends MigrateDrupal6TestBase {
   /**
    * Tests migration of locale variables to locale.settings.yml.
    */
-  public function testLocaleSettings() {
+  public function testLocaleSettings(): void {
     $config = $this->config('locale.settings');
-    $this->assertIdentical(TRUE, $config->get('cache_strings'));
-    $this->assertIdentical('languages', $config->get('javascript.directory'));
+    $this->assertTrue($config->get('cache_strings'));
+    $this->assertSame('languages', $config->get('javascript.directory'));
     $this->assertConfigSchema(\Drupal::service('config.typed'), 'locale.settings', $config->get());
   }
 

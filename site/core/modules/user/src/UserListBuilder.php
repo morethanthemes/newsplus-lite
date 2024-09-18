@@ -9,6 +9,7 @@ use Drupal\Core\Entity\EntityListBuilder;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Routing\RedirectDestinationInterface;
+use Drupal\user\Entity\Role;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -56,7 +57,7 @@ class UserListBuilder extends EntityListBuilder {
   public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
     return new static(
       $entity_type,
-      $container->get('entity.manager')->getStorage($entity_type->id()),
+      $container->get('entity_type.manager')->getStorage($entity_type->id()),
       $container->get('date.formatter'),
       $container->get('redirect.destination')
     );
@@ -67,6 +68,7 @@ class UserListBuilder extends EntityListBuilder {
    */
   public function load() {
     $entity_query = $this->storage->getQuery();
+    $entity_query->accessCheck(TRUE);
     $entity_query->condition('uid', 0, '<>');
     $entity_query->pager(50);
     $header = $this->buildHeader();
@@ -122,14 +124,10 @@ class UserListBuilder extends EntityListBuilder {
     ];
     $row['status'] = $entity->isActive() ? $this->t('active') : $this->t('blocked');
 
-    $roles = user_role_names(TRUE);
+    $roles = Role::loadMultiple($entity->getRoles());
+    unset($roles[RoleInterface::ANONYMOUS_ID]);
     unset($roles[RoleInterface::AUTHENTICATED_ID]);
-    $users_roles = [];
-    foreach ($entity->getRoles() as $role) {
-      if (isset($roles[$role])) {
-        $users_roles[] = $roles[$role];
-      }
-    }
+    $users_roles = array_map(fn(RoleInterface $role) => $role->label(), $roles);
     asort($users_roles);
     $row['roles']['data'] = [
       '#theme' => 'item_list',

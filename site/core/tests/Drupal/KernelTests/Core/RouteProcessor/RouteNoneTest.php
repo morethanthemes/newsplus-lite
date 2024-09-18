@@ -1,13 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\RouteProcessor;
 
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\GeneratedUrl;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\KernelTests\KernelTestBase;
-use Symfony\Cmf\Component\Routing\RouteObjectInterface;
+use Drupal\Core\Routing\RouteObjectInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Session\Session;
+use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 use Symfony\Component\Routing\Route;
 
 /**
@@ -22,7 +26,7 @@ class RouteNoneTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['system'];
+  protected static $modules = ['system'];
 
   /**
    * The URL generator.
@@ -34,7 +38,7 @@ class RouteNoneTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->urlGenerator = \Drupal::urlGenerator();
@@ -43,7 +47,7 @@ class RouteNoneTest extends KernelTestBase {
   /**
    * Tests the output process.
    */
-  public function testProcessOutbound() {
+  public function testProcessOutbound(): void {
     $expected_cacheability = (new BubbleableMetadata())->setCacheMaxAge(Cache::PERMANENT);
 
     $request_stack = \Drupal::requestStack();
@@ -53,70 +57,74 @@ class RouteNoneTest extends KernelTestBase {
     // Test request with subdir on homepage.
     $server = [
       'SCRIPT_NAME' => '/subdir/index.php',
-      'SCRIPT_FILENAME' => \Drupal::root() . '/index.php',
+      'SCRIPT_FILENAME' => $this->root . '/index.php',
       'SERVER_NAME' => 'http://www.example.com',
     ];
     $request = Request::create('/subdir', 'GET', [], [], [], $server);
     $request->attributes->set(RouteObjectInterface::ROUTE_NAME, '<front>');
     $request->attributes->set(RouteObjectInterface::ROUTE_OBJECT, new Route('/'));
+    $request->setSession(new Session(new MockArraySessionStorage()));
 
     $request_stack->push($request);
     $request_context->fromRequest($request);
     $url = GeneratedUrl::createFromObject($expected_cacheability)->setGeneratedUrl('');
-    $this->assertEqual($url, $this->urlGenerator->generateFromRoute('<none>', [], [], TRUE, TRUE));
+    $this->assertEquals($this->urlGenerator->generateFromRoute('<none>', [], [], TRUE, TRUE), $url);
     $url = GeneratedUrl::createFromObject($expected_cacheability)->setGeneratedUrl('#test-fragment');
-    $this->assertEqual($url, $this->urlGenerator->generateFromRoute('<none>', [], ['fragment' => 'test-fragment'], TRUE));
+    $this->assertEquals($this->urlGenerator->generateFromRoute('<none>', [], ['fragment' => 'test-fragment'], TRUE), $url);
 
     // Test request with subdir on other page.
     $server = [
       'SCRIPT_NAME' => '/subdir/index.php',
-      'SCRIPT_FILENAME' => \Drupal::root() . '/index.php',
+      'SCRIPT_FILENAME' => $this->root . '/index.php',
       'SERVER_NAME' => 'http://www.example.com',
     ];
     $request = Request::create('/subdir/node/add', 'GET', [], [], [], $server);
     $request->attributes->set(RouteObjectInterface::ROUTE_NAME, 'node.add');
     $request->attributes->set(RouteObjectInterface::ROUTE_OBJECT, new Route('/node/add'));
+    $request->setSession(new Session(new MockArraySessionStorage()));
 
     $request_stack->push($request);
     $request_context->fromRequest($request);
     $url = GeneratedUrl::createFromObject($expected_cacheability)->setGeneratedUrl('');
-    $this->assertEqual($url, $this->urlGenerator->generateFromRoute('<none>', [], [], TRUE, TRUE));
+    $this->assertEquals($this->urlGenerator->generateFromRoute('<none>', [], [], TRUE, TRUE), $url);
     $url = GeneratedUrl::createFromObject($expected_cacheability)->setGeneratedUrl('#test-fragment');
-    $this->assertEqual($url, $this->urlGenerator->generateFromRoute('<none>', [], ['fragment' => 'test-fragment'], TRUE));
+    $this->assertEquals($this->urlGenerator->generateFromRoute('<none>', [], ['fragment' => 'test-fragment'], TRUE), $url);
 
     // Test request without subdir on the homepage.
     $server = [
       'SCRIPT_NAME' => '/index.php',
-      'SCRIPT_FILENAME' => \Drupal::root() . '/index.php',
+      'SCRIPT_FILENAME' => $this->root . '/index.php',
       'SERVER_NAME' => 'http://www.example.com',
     ];
     $request = Request::create('/', 'GET', [], [], [], $server);
     $request->attributes->set(RouteObjectInterface::ROUTE_NAME, '<front>');
     $request->attributes->set(RouteObjectInterface::ROUTE_OBJECT, new Route('/'));
+    $request->setSession(new Session(new MockArraySessionStorage()));
 
     $request_stack->push($request);
     $request_context->fromRequest($request);
     $url = GeneratedUrl::createFromObject($expected_cacheability)->setGeneratedUrl('');
-    $this->assertEqual($url, $this->urlGenerator->generateFromRoute('<none>', [], [], TRUE, TRUE));
+    $this->assertEquals($this->urlGenerator->generateFromRoute('<none>', [], [], TRUE, TRUE), $url);
     $url = GeneratedUrl::createFromObject($expected_cacheability)->setGeneratedUrl('#test-fragment');
-    $this->assertEqual($url, $this->urlGenerator->generateFromRoute('<none>', [], ['fragment' => 'test-fragment'], TRUE));
+    $this->assertEquals($this->urlGenerator->generateFromRoute('<none>', [], ['fragment' => 'test-fragment'], TRUE), $url);
 
     // Test request without subdir on other page.
     $server = [
       'SCRIPT_NAME' => '/index.php',
-      'SCRIPT_FILENAME' => \Drupal::root() . '/index.php',
+      'SCRIPT_FILENAME' => $this->root . '/index.php',
       'SERVER_NAME' => 'http://www.example.com',
     ];
     $request = Request::create('/node/add', 'GET', [], [], [], $server);
     $request->attributes->set(RouteObjectInterface::ROUTE_NAME, 'node.add');
     $request->attributes->set(RouteObjectInterface::ROUTE_OBJECT, new Route('/node/add'));
+    $request->setSession(new Session(new MockArraySessionStorage()));
 
     $request_stack->push($request);
     $request_context->fromRequest($request);
     $url = GeneratedUrl::createFromObject($expected_cacheability)->setGeneratedUrl('');
-    $this->assertEqual($url, $this->urlGenerator->generateFromRoute('<none>', [], [], TRUE, TRUE));
+    $this->assertEquals($this->urlGenerator->generateFromRoute('<none>', [], [], TRUE, TRUE), $url);
     $url = GeneratedUrl::createFromObject($expected_cacheability)->setGeneratedUrl('#test-fragment');
-    $this->assertEqual($url, $this->urlGenerator->generateFromRoute('<none>', [], ['fragment' => 'test-fragment'], TRUE));
+    $this->assertEquals($this->urlGenerator->generateFromRoute('<none>', [], ['fragment' => 'test-fragment'], TRUE), $url);
   }
 
 }

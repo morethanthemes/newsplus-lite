@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Entity;
 
 use Drupal\comment\Entity\CommentType;
@@ -18,27 +20,44 @@ class EntityDisplayBaseTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['entity_test', 'entity_test_third_party', 'field', 'system', 'comment'];
+  protected static $modules = [
+    'entity_test',
+    'entity_test_third_party',
+    'field',
+    'field_test',
+    'system',
+    'comment',
+    'user',
+  ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
+    parent::setUp();
+    $this->installEntitySchema('comment');
+    $this->installEntitySchema('entity_test');
+    $this->installSchema('user', ['users_data']);
+  }
 
   /**
    * @covers ::preSave
    */
-  public function testPreSave() {
+  public function testPreSave(): void {
     $entity_display = EntityViewDisplay::create([
       'targetEntityType' => 'entity_test',
       'bundle' => 'entity_test',
       'mode' => 'default',
       'status' => TRUE,
       'content' => [
-        'foo' => ['type' => 'visible'],
-        'bar' => ['type' => 'hidden'],
-        'name' => ['type' => 'hidden', 'region' => 'content'],
+        'foo' => ['type' => 'field_no_settings'],
+        'bar' => ['region' => 'hidden'],
+        'name' => ['type' => 'field_no_settings', 'region' => 'content'],
       ],
     ]);
 
     // Ensure that no region is set on the component.
     $this->assertArrayNotHasKey('region', $entity_display->getComponent('foo'));
-    $this->assertArrayNotHasKey('region', $entity_display->getComponent('bar'));
 
     // Ensure that a region is set on the component after saving.
     $entity_display->save();
@@ -48,8 +67,9 @@ class EntityDisplayBaseTest extends KernelTestBase {
     $this->assertArrayHasKey('region', $component);
     $this->assertSame('content', $component['region']);
 
-    // The component with a hidden type has been removed.
-    $this->assertNull($entity_display->getComponent('bar'));
+    $component = $entity_display->getComponent('bar');
+    $this->assertArrayHasKey('region', $component);
+    $this->assertSame('hidden', $component['region']);
 
     // The component with a valid region and hidden type is unchanged.
     $component = $entity_display->getComponent('name');
@@ -60,7 +80,7 @@ class EntityDisplayBaseTest extends KernelTestBase {
   /**
    * @covers ::onDependencyRemoval
    */
-  public function testOnDependencyRemoval() {
+  public function testOnDependencyRemoval(): void {
     // Create a comment field for entity_test.
     $comment_bundle = CommentType::create([
       'id' => 'entity_test',

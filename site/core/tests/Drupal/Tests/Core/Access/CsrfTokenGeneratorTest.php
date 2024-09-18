@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Access;
 
 use Drupal\Core\Site\Settings;
@@ -25,26 +27,26 @@ class CsrfTokenGeneratorTest extends UnitTestCase {
   /**
    * The mock private key instance.
    *
-   * @var \Drupal\Core\PrivateKey|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\PrivateKey|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $privateKey;
 
   /**
    * The mock session metadata bag.
    *
-   * @var \Drupal\Core\Session\MetadataBag|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Session\MetadataBag|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $sessionMetadata;
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->privateKey = $this->getMockBuilder('Drupal\Core\PrivateKey')
       ->disableOriginalConstructor()
-      ->setMethods(['get'])
+      ->onlyMethods(['get'])
       ->getMock();
 
     $this->sessionMetadata = $this->getMockBuilder('Drupal\Core\Session\MetadataBag')
@@ -67,12 +69,12 @@ class CsrfTokenGeneratorTest extends UnitTestCase {
     $key = Crypt::randomBytesBase64();
     $this->privateKey->expects($this->any())
       ->method('get')
-      ->will($this->returnValue($key));
+      ->willReturn($key);
 
     $seed = Crypt::randomBytesBase64();
     $this->sessionMetadata->expects($this->any())
       ->method('getCsrfTokenSeed')
-      ->will($this->returnValue($seed));
+      ->willReturn($seed);
   }
 
   /**
@@ -80,10 +82,10 @@ class CsrfTokenGeneratorTest extends UnitTestCase {
    *
    * @covers ::get
    */
-  public function testGet() {
+  public function testGet(): void {
     $this->setupDefaultExpectations();
 
-    $this->assertInternalType('string', $this->generator->get());
+    $this->assertIsString($this->generator->get());
     $this->assertNotSame($this->generator->get(), $this->generator->get($this->randomMachineName()));
     $this->assertNotSame($this->generator->get($this->randomMachineName()), $this->generator->get($this->randomMachineName()));
   }
@@ -93,21 +95,21 @@ class CsrfTokenGeneratorTest extends UnitTestCase {
    *
    * @covers ::get
    */
-  public function testGenerateSeedOnGet() {
+  public function testGenerateSeedOnGet(): void {
     $key = Crypt::randomBytesBase64();
     $this->privateKey->expects($this->any())
       ->method('get')
-      ->will($this->returnValue($key));
+      ->willReturn($key);
 
     $this->sessionMetadata->expects($this->once())
       ->method('getCsrfTokenSeed')
-      ->will($this->returnValue(NULL));
+      ->willReturn(NULL);
 
     $this->sessionMetadata->expects($this->once())
       ->method('setCsrfTokenSeed')
       ->with($this->isType('string'));
 
-    $this->assertInternalType('string', $this->generator->get());
+    $this->assertIsString($this->generator->get());
   }
 
   /**
@@ -115,7 +117,7 @@ class CsrfTokenGeneratorTest extends UnitTestCase {
    *
    * @covers ::validate
    */
-  public function testValidate() {
+  public function testValidate(): void {
     $this->setupDefaultExpectations();
 
     $token = $this->generator->get();
@@ -137,11 +139,11 @@ class CsrfTokenGeneratorTest extends UnitTestCase {
    * @covers ::validate
    * @dataProvider providerTestValidateParameterTypes
    */
-  public function testValidateParameterTypes($token, $value) {
+  public function testValidateParameterTypes($token, $value): void {
     $this->setupDefaultExpectations();
 
-    // The following check might throw PHP fatals and notices, so we disable
-    // error assertions.
+    // The following check might throw PHP fatal errors and notices, so we
+    // disable error assertions.
     set_error_handler(function () {
       return TRUE;
     });
@@ -155,7 +157,7 @@ class CsrfTokenGeneratorTest extends UnitTestCase {
    * @return array
    *   An array of data used by the test.
    */
-  public function providerTestValidateParameterTypes() {
+  public static function providerTestValidateParameterTypes() {
     return [
       [[], ''],
       [TRUE, 'foo'],
@@ -174,10 +176,10 @@ class CsrfTokenGeneratorTest extends UnitTestCase {
    * @covers ::validate
    * @dataProvider providerTestInvalidParameterTypes
    */
-  public function testInvalidParameterTypes($token, $value = '') {
+  public function testInvalidParameterTypes($token, $value = ''): void {
     $this->setupDefaultExpectations();
 
-    $this->setExpectedException(\InvalidArgumentException::class);
+    $this->expectException(\InvalidArgumentException::class);
     $this->generator->validate($token, $value);
   }
 
@@ -187,7 +189,7 @@ class CsrfTokenGeneratorTest extends UnitTestCase {
    * @return array
    *   An array of data used by the test.
    */
-  public function providerTestInvalidParameterTypes() {
+  public static function providerTestInvalidParameterTypes() {
     return [
       [NULL, new \stdClass()],
       [0, []],
@@ -201,11 +203,11 @@ class CsrfTokenGeneratorTest extends UnitTestCase {
    *
    * @covers ::get
    */
-  public function testGetWithNoHashSalt() {
+  public function testGetWithNoHashSalt(): void {
     // Update settings with no hash salt.
     new Settings([]);
     $generator = new CsrfTokenGenerator($this->privateKey, $this->sessionMetadata);
-    $this->setExpectedException(\RuntimeException::class);
+    $this->expectException(\RuntimeException::class);
     $generator->get();
   }
 

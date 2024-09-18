@@ -12,10 +12,8 @@ name: '<strong>Test theme</strong>'
 type: theme
 description: 'Theme for testing the theme system'
 # version: VERSION
-base theme: classy
-# core: 8.x
-stylesheets-remove:
-  - '@system/css/js.module.css'
+base theme: starterkit_theme
+logo: images/logo2.svg
 libraries:
   - test_theme/global-styling
 libraries-override:
@@ -24,50 +22,50 @@ libraries-override:
   # Remove an entire library.
   core/drupal.progress: false
   # Replace particular library assets.
-  classy/base:
+  starterkit_theme/base:
     css:
       component:
         css/components/button.css: css/my-button.css
-        css/components/collapse-processed.css: css/my-collapse-processed.css
         css/components/container-inline.css: /themes/my_theme/css/my-container-inline.css
         css/components/details.css: /themes/my_theme/css/my-details.css
   # Remove particular library assets.
-  classy/dialog:
+  starterkit_theme/dialog:
     css:
       component:
         css/components/dialog.css: false
+  system/base:
+    css:
+      component:
+        /core/themes/stable9/css/system/components/js.module.css: false
   # It works for JS as well.
-  core/jquery:
+  core/drupal.batch:
     js:
-      assets/vendor/jquery/jquery.min.js: js/collapse.js
+      misc/batch.js: js/collapse.js
   # Use Drupal-relative paths.
   core/drupal.dropbutton:
     css:
       component:
-        /core/themes/stable/css/core/dropbutton/dropbutton.css: /themes/my_theme/css/dropbutton.css
+        /core/themes/stable9/css/core/dropbutton/dropbutton.css: /themes/my_theme/css/dropbutton.css
   # Use stream wrappers.
   core/drupal.vertical-tabs:
     css:
       component:
-        /core/themes/stable/css/core/vertical-tabs.css: public://my_css/vertical-tabs.css
+        /core/themes/stable9/css/core/vertical-tabs.css: public://my_css/vertical-tabs.css
   # Use a protocol-relative URI.
-  core/jquery.ui:
-    css:
-      component:
-        assets/vendor/jquery.ui/themes/base/core.css: //my-server/my_theme/css/jquery_ui.css
+  core/drupal.displace:
+    js:
+      misc/displace.js: //my-server/my_theme/js/overridden.js
   # Use an absolute URI.
-  core/jquery.farbtastic:
-    css:
-      component:
-        assets/vendor/farbtastic/farbtastic.css: http://example.com/my_theme/css/farbtastic.css
+  core/drupal.announce:
+    js:
+      misc/announce.js: http://example.com/my_theme/js/announce.js
 
 regions:
   content: Content
   left: Left
   right: Right
 
-# Information added by Drupal.org packaging script on 2018-06-06
-version: '8.5.4'
-core: '8.x'
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
 project: 'drupal'
-datestamp: 1528319624
+datestamp: 1726135113

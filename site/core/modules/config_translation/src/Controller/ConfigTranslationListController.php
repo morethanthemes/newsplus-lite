@@ -4,7 +4,6 @@ namespace Drupal\config_translation\Controller;
 
 use Drupal\config_translation\ConfigMapperManagerInterface;
 use Drupal\Core\Controller\ControllerBase;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -27,15 +26,6 @@ class ConfigTranslationListController extends ControllerBase {
    */
   public function __construct(ConfigMapperManagerInterface $mapper_manager) {
     $this->mapperManager = $mapper_manager;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('plugin.manager.config_translation.mapper')
-    );
   }
 
   /**
@@ -63,7 +53,7 @@ class ConfigTranslationListController extends ControllerBase {
     // controller defined, use it. Other mappers, for examples the ones for
     // node_type and block, fallback to the generic configuration translation
     // list controller.
-    $build = $this->entityManager()
+    $build = $this->entityTypeManager()
       ->getHandler($entity_type, 'config_translation_list')
       ->setMapperDefinition($mapper_definition)
       ->render();

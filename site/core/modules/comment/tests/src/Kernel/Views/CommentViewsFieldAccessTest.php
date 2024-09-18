@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\comment\Kernel\Views;
 
 use Drupal\comment\Entity\Comment;
@@ -17,12 +19,12 @@ class CommentViewsFieldAccessTest extends FieldFieldAccessTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['comment', 'entity_test'];
+  protected static $modules = ['comment', 'entity_test'];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
+  protected function setUp($import_test_views = TRUE): void {
     parent::setUp($import_test_views);
 
     $this->installEntitySchema('comment');
@@ -32,7 +34,7 @@ class CommentViewsFieldAccessTest extends FieldFieldAccessTestBase {
   /**
    * Check access for comment fields.
    */
-  public function testCommentFields() {
+  public function testCommentFields(): void {
     $user = User::create([
       'name' => 'test user',
     ]);
@@ -45,6 +47,7 @@ class CommentViewsFieldAccessTest extends FieldFieldAccessTestBase {
       'subject' => 'My comment title',
       'uid' => $user->id(),
       'entity_type' => 'entity_test',
+      'field_name' => 'comment',
       'entity_id' => $host->id(),
       'comment_type' => 'entity_test',
     ]);
@@ -57,6 +60,7 @@ class CommentViewsFieldAccessTest extends FieldFieldAccessTestBase {
       'mail' => 'test@example.com',
       'homepage' => 'https://example.com',
       'entity_type' => 'entity_test',
+      'field_name' => 'comment',
       'entity_id' => $host->id(),
       'comment_type' => 'entity_test',
       'created' => 123456,
@@ -74,9 +78,9 @@ class CommentViewsFieldAccessTest extends FieldFieldAccessTestBase {
     $this->assertFieldAccess('comment', 'name', 'anonymous');
     $this->assertFieldAccess('comment', 'mail', 'test@example.com');
     $this->assertFieldAccess('comment', 'homepage', 'https://example.com');
-    $this->assertFieldAccess('comment', 'uid', $user->getUsername());
+    $this->assertFieldAccess('comment', 'uid', $user->getAccountName());
     // $this->assertFieldAccess('comment', 'created', \Drupal::service('date.formatter')->format(123456));
-    // $this->assertFieldAccess('comment', 'changed', \Drupal::service('date.formatter')->format(REQUEST_TIME));
+    // $this->assertFieldAccess('comment', 'changed', \Drupal::service('date.formatter')->format(\Drupal::time()->getRequestTime()));
     $this->assertFieldAccess('comment', 'status', 'On');
   }
 

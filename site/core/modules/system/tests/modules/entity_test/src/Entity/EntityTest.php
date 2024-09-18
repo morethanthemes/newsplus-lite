@@ -26,7 +26,6 @@ use Drupal\user\UserInterface;
  *     "route_provider" = {
  *       "html" = "Drupal\Core\Entity\Routing\DefaultHtmlRouteProvider",
  *     },
- *     "translation" = "Drupal\content_translation\ContentTranslationHandler",
  *     "views_data" = "Drupal\entity_test\EntityTestViewsData"
  *   },
  *   base_table = "entity_test",
@@ -74,7 +73,7 @@ class EntityTest extends ContentEntityBase implements EntityOwnerInterface {
       ->setLabel(t('Name'))
       ->setDescription(t('The name of the test entity.'))
       ->setTranslatable(TRUE)
-      ->setSetting('max_length', 32)
+      ->setSetting('max_length', 64)
       ->setDisplayOptions('view', [
         'label' => 'hidden',
         'type' => 'string',

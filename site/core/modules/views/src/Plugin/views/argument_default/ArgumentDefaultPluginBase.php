@@ -17,8 +17,8 @@ use Drupal\views\Plugin\views\PluginBase;
  *
  * Argument default plugins extend
  * \Drupal\views\Plugin\views\argument_default\ArgumentDefaultPluginBase. They
- * must be annotated with \Drupal\views\Annotation\ViewsArgumentDefault
- * annotation, and they must be in namespace directory
+ * must be attributed with \Drupal\views\Attribute\ViewsArgumentDefault
+ * attribute, and they must be in namespace directory
  * Plugin\views\argument_default.
  *
  * @ingroup views_plugins
@@ -38,6 +38,12 @@ abstract class ArgumentDefaultPluginBase extends PluginBase {
   protected $argument;
 
   /**
+   * The option name.
+   */
+  // phpcs:ignore Drupal.NamingConventions.ValidVariableName.LowerCamelName
+  public string $option_name;
+
+  /**
    * Return the default argument.
    *
    * This needs to be overridden by every default argument handler to properly do what is needed.
@@ -55,8 +61,7 @@ abstract class ArgumentDefaultPluginBase extends PluginBase {
   }
 
   /**
-   * Retrieve the options when this is a new access
-   * control plugin
+   * Retrieve the options when this is a new access control plugin.
    */
   protected function defineOptions() {
     return [];
@@ -68,24 +73,25 @@ abstract class ArgumentDefaultPluginBase extends PluginBase {
   public function buildOptionsForm(&$form, FormStateInterface $form_state) {}
 
   /**
-   * Provide the default form form for validating options
+   * Provide the default form for validating options.
    */
   public function validateOptionsForm(&$form, FormStateInterface $form_state) {}
 
   /**
-   * Provide the default form form for submitting options
+   * Provide the default form for submitting options.
    */
   public function submitOptionsForm(&$form, FormStateInterface $form_state, &$options = []) {}
 
   /**
-   * Determine if the administrator has the privileges to use this
-   * plugin
+   * Determine if the administrator has the privileges to use this plugin.
    */
   public function access() {
     return TRUE;
   }
 
   /**
+   * Disables the given option if the user does not have access.
+   *
    * If we don't have access to the form but are showing it anyway, ensure that
    * the form is safe and cannot be changed from user input.
    *

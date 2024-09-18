@@ -1,15 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\image\Kernel;
 
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\Core\File\FileExists;
 use Drupal\Core\Url;
 use Drupal\entity_test\Entity\EntityTest;
 use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\file\Entity\File;
 use Drupal\image\Entity\ImageStyle;
 use Drupal\KernelTests\KernelTestBase;
-use Drupal\field\Entity\FieldStorageConfig;
 use Drupal\Tests\TestFileCreationTrait;
 
 /**
@@ -25,11 +28,16 @@ class ImageThemeFunctionTest extends KernelTestBase {
   }
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['entity_test', 'field', 'file', 'image', 'system', 'simpletest', 'user'];
+  protected static $modules = [
+    'entity_test',
+    'field',
+    'file',
+    'image',
+    'system',
+    'user',
+  ];
 
   /**
    * Created file entity.
@@ -43,7 +51,10 @@ class ImageThemeFunctionTest extends KernelTestBase {
    */
   protected $imageFactory;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installEntitySchema('entity_test');
@@ -62,7 +73,7 @@ class ImageThemeFunctionTest extends KernelTestBase {
       'field_name' => 'image_test',
       'bundle' => 'entity_test',
     ])->save();
-    file_unmanaged_copy(\Drupal::root() . '/core/misc/druplicon.png', 'public://example.jpg');
+    \Drupal::service('file_system')->copy($this->root . '/core/misc/druplicon.png', 'public://example.jpg');
     $this->image = File::create([
       'uri' => 'public://example.jpg',
     ]);
@@ -73,19 +84,19 @@ class ImageThemeFunctionTest extends KernelTestBase {
   /**
    * Tests usage of the image field formatters.
    */
-  public function testImageFormatterTheme() {
+  public function testImageFormatterTheme(): void {
     /** @var \Drupal\Core\Render\RendererInterface $renderer */
     $renderer = $this->container->get('renderer');
 
     // Create an image.
     $files = $this->drupalGetTestFiles('image');
     $file = reset($files);
-    $original_uri = file_unmanaged_copy($file->uri, 'public://', FILE_EXISTS_RENAME);
+    $original_uri = \Drupal::service('file_system')->copy($file->uri, 'public://', FileExists::Rename);
 
     // Create a style.
     $style = ImageStyle::create(['name' => 'test', 'label' => 'Test']);
     $style->save();
-    $url = file_url_transform_relative($style->buildUrl($original_uri));
+    $url = \Drupal::service('file_url_generator')->transformRelative($style->buildUrl($original_uri));
 
     // Create a test entity with the image field set.
     $entity = EntityTest::create();
@@ -108,7 +119,7 @@ class ImageThemeFunctionTest extends KernelTestBase {
     $element = $base_element;
     $this->setRawContent($renderer->renderRoot($element));
     $elements = $this->xpath('//a[@href=:path]/img[@src=:url and @width=:width and @height=:height]', [':path' => base_path() . $path, ':url' => $url, ':width' => $image->getWidth(), ':height' => $image->getHeight()]);
-    $this->assertEqual(count($elements), 1, 'theme_image_formatter() correctly renders with a NULL value for the alt option.');
+    $this->assertCount(1, $elements, 'theme_image_formatter() correctly renders with a NULL value for the alt option.');
 
     // Test using theme_image_formatter() without an image title, alt text, or
     // link options.
@@ -116,7 +127,7 @@ class ImageThemeFunctionTest extends KernelTestBase {
     $element['#item']->alt = '';
     $this->setRawContent($renderer->renderRoot($element));
     $elements = $this->xpath('//a[@href=:path]/img[@src=:url and @width=:width and @height=:height and @alt=""]', [':path' => base_path() . $path, ':url' => $url, ':width' => $image->getWidth(), ':height' => $image->getHeight()]);
-    $this->assertEqual(count($elements), 1, 'theme_image_formatter() correctly renders without title, alt, or path options.');
+    $this->assertCount(1, $elements, 'theme_image_formatter() correctly renders without title, alt, or path options.');
 
     // Link the image to a fragment on the page, and not a full URL.
     $fragment = $this->randomMachineName();
@@ -127,27 +138,27 @@ class ImageThemeFunctionTest extends KernelTestBase {
       ':fragment' => '#' . $fragment,
       ':url' => $url,
       ':width' => $image->getWidth(),
-      ':height' => $image->getHeight()
+      ':height' => $image->getHeight(),
     ]);
-    $this->assertEqual(count($elements), 1, 'theme_image_formatter() correctly renders a link fragment.');
+    $this->assertCount(1, $elements, 'theme_image_formatter() correctly renders a link fragment.');
   }
 
   /**
    * Tests usage of the image style theme function.
    */
-  public function testImageStyleTheme() {
+  public function testImageStyleTheme(): void {
     /** @var \Drupal\Core\Render\RendererInterface $renderer */
     $renderer = $this->container->get('renderer');
 
     // Create an image.
     $files = $this->drupalGetTestFiles('image');
     $file = reset($files);
-    $original_uri = file_unmanaged_copy($file->uri, 'public://', FILE_EXISTS_RENAME);
+    $original_uri = \Drupal::service('file_system')->copy($file->uri, 'public://', FileExists::Rename);
 
     // Create a style.
     $style = ImageStyle::create(['name' => 'image_test', 'label' => 'Test']);
     $style->save();
-    $url = file_url_transform_relative($style->buildUrl($original_uri));
+    $url = \Drupal::service('file_url_generator')->transformRelative($style->buildUrl($original_uri));
 
     // Create the base element that we'll use in the tests below.
     $base_element = [
@@ -159,27 +170,27 @@ class ImageThemeFunctionTest extends KernelTestBase {
     $element = $base_element;
     $this->setRawContent($renderer->renderRoot($element));
     $elements = $this->xpath('//img[@src=:url and @alt=""]', [':url' => $url]);
-    $this->assertEqual(count($elements), 1, 'theme_image_style() renders an image correctly.');
+    $this->assertCount(1, $elements, 'theme_image_style() renders an image correctly.');
 
     // Test using theme_image_style() with a NULL value for the alt option.
     $element = $base_element;
     $element['#alt'] = NULL;
     $this->setRawContent($renderer->renderRoot($element));
     $elements = $this->xpath('//img[@src=:url]', [':url' => $url]);
-    $this->assertEqual(count($elements), 1, 'theme_image_style() renders an image correctly with a NULL value for the alt option.');
+    $this->assertCount(1, $elements, 'theme_image_style() renders an image correctly with a NULL value for the alt option.');
   }
 
   /**
    * Tests image alt attribute functionality.
    */
-  public function testImageAltFunctionality() {
+  public function testImageAltFunctionality(): void {
     /** @var \Drupal\Core\Render\RendererInterface $renderer */
     $renderer = $this->container->get('renderer');
 
     // Test using alt directly with alt attribute.
     $image_with_alt_property = [
       '#theme' => 'image',
-      '#uri' => '/core/themes/bartik/logo.svg',
+      '#uri' => '/core/themes/olivero/logo.svg',
       '#alt' => 'Regular alt',
       '#title' => 'Test title',
       '#width' => '50%',
@@ -189,12 +200,12 @@ class ImageThemeFunctionTest extends KernelTestBase {
 
     $this->setRawContent($renderer->renderRoot($image_with_alt_property));
     $elements = $this->xpath('//img[contains(@class, class) and contains(@alt, :alt)]', [":class" => "image-with-regular-alt", ":alt" => "Regular alt"]);
-    $this->assertEqual(count($elements), 1, 'Regular alt displays correctly');
+    $this->assertCount(1, $elements, 'Regular alt displays correctly');
 
     // Test using alt attribute inside attributes.
     $image_with_alt_attribute_alt_attribute = [
       '#theme' => 'image',
-      '#uri' => '/core/themes/bartik/logo.svg',
+      '#uri' => '/core/themes/olivero/logo.svg',
       '#width' => '50%',
       '#height' => '50%',
       '#attributes' => [
@@ -207,12 +218,12 @@ class ImageThemeFunctionTest extends KernelTestBase {
 
     $this->setRawContent($renderer->renderRoot($image_with_alt_attribute_alt_attribute));
     $elements = $this->xpath('//img[contains(@class, class) and contains(@alt, :alt)]', [":class" => "image-with-attribute-alt", ":alt" => "Attribute alt"]);
-    $this->assertEqual(count($elements), 1, 'Attribute alt displays correctly');
+    $this->assertCount(1, $elements, 'Attribute alt displays correctly');
 
     // Test using alt attribute as property and inside attributes.
     $image_with_alt_attribute_both = [
       '#theme' => 'image',
-      '#uri' => '/core/themes/bartik/logo.svg',
+      '#uri' => '/core/themes/olivero/logo.svg',
       '#width' => '50%',
       '#height' => '50%',
       '#alt' => 'Kitten sustainable',
@@ -226,7 +237,7 @@ class ImageThemeFunctionTest extends KernelTestBase {
 
     $this->setRawContent($renderer->renderRoot($image_with_alt_attribute_both));
     $elements = $this->xpath('//img[contains(@class, class) and contains(@alt, :alt)]', [":class" => "image-with-attribute-alt", ":alt" => "Attribute alt"]);
-    $this->assertEqual(count($elements), 1, 'Attribute alt overrides alt property if both set.');
+    $this->assertCount(1, $elements, 'Attribute alt overrides alt property if both set.');
   }
 
 }

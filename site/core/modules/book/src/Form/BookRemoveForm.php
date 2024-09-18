@@ -58,7 +58,7 @@ class BookRemoveForm extends ConfirmFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, NodeInterface $node = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, ?NodeInterface $node = NULL) {
     $this->node = $node;
     return parent::buildForm($form, $form_state);
   }
@@ -94,7 +94,7 @@ class BookRemoveForm extends ConfirmFormBase {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return $this->node->urlInfo();
+    return $this->node->toUrl();
   }
 
   /**
@@ -103,7 +103,7 @@ class BookRemoveForm extends ConfirmFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     if ($this->bookManager->checkNodeIsRemovable($this->node)) {
       $this->bookManager->deleteFromBook($this->node->id());
-      drupal_set_message($this->t('The post has been removed from the book.'));
+      $this->messenger()->addStatus($this->t('The post has been removed from the book.'));
     }
     $form_state->setRedirectUrl($this->getCancelUrl());
   }

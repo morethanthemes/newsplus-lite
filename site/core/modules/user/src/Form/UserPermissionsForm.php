@@ -2,6 +2,7 @@
 
 namespace Drupal\user\Form;
 
+use Drupal\Core\Extension\ModuleExtensionList;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -46,11 +47,17 @@ class UserPermissionsForm extends FormBase {
    *   The role storage.
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    *   The module handler.
+   * @param \Drupal\Core\Extension\ModuleExtensionList|null $moduleExtensionList
+   *   The module extension list.
    */
-  public function __construct(PermissionHandlerInterface $permission_handler, RoleStorageInterface $role_storage, ModuleHandlerInterface $module_handler) {
+  public function __construct(PermissionHandlerInterface $permission_handler, RoleStorageInterface $role_storage, ModuleHandlerInterface $module_handler, protected ?ModuleExtensionList $moduleExtensionList = NULL) {
     $this->permissionHandler = $permission_handler;
     $this->roleStorage = $role_storage;
     $this->moduleHandler = $module_handler;
+    if ($this->moduleExtensionList === NULL) {
+      @trigger_error('Calling ' . __METHOD__ . '() without the $moduleExtensionList argument is deprecated in drupal:10.3.0 and will be required in drupal:12.0.0. See https://www.drupal.org/node/3310017', E_USER_DEPRECATED);
+      $this->moduleExtensionList = \Drupal::service('extension.list.module');
+    }
   }
 
   /**
@@ -59,8 +66,9 @@ class UserPermissionsForm extends FormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('user.permissions'),
-      $container->get('entity.manager')->getStorage('user_role'),
-      $container->get('module_handler')
+      $container->get('entity_type.manager')->getStorage('user_role'),
+      $container->get('module_handler'),
+      $container->get('extension.list.module'),
     );
   }
 
@@ -79,6 +87,39 @@ class UserPermissionsForm extends FormBase {
    */
   protected function getRoles() {
     return $this->roleStorage->loadMultiple();
+  }
+
+  /**
+   * Group permissions by the modules that provide them.
+   *
+   * @return string[][]
+   *   A nested array. The outer keys are modules that provide permissions. The
+   *   inner arrays are permission names keyed by their machine names.
+   */
+  protected function permissionsByProvider(): array {
+    $permissions = $this->permissionHandler->getPermissions();
+    $permissions_by_provider = [];
+    foreach ($permissions as $permission_name => $permission) {
+      $permissions_by_provider[$permission['provider']][$permission_name] = $permission;
+    }
+
+    // Move the access content permission to the Node module if it is installed.
+    // @todo Add an alter so that this section can be moved to the Node module.
+    if ($this->moduleHandler->moduleExists('node')) {
+      // Insert 'access content' before the 'view own unpublished content' key
+      // in order to maintain the UI even though the permission is provided by
+      // the system module.
+      $keys = array_keys($permissions_by_provider['node']);
+      $offset = (int) array_search('view own unpublished content', $keys);
+      $permissions_by_provider['node'] = array_merge(
+        array_slice($permissions_by_provider['node'], 0, $offset),
+        ['access content' => $permissions_by_provider['system']['access content']],
+        array_slice($permissions_by_provider['node'], $offset)
+      );
+      unset($permissions_by_provider['system']['access content']);
+    }
+
+    return $permissions_by_provider;
   }
 
   /**
@@ -109,6 +150,27 @@ class UserPermissionsForm extends FormBase {
       '#type' => 'system_compact_link',
     ];
 
+    $form['filters'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['table-filter', 'js-show'],
+      ],
+    ];
+
+    $form['filters']['text'] = [
+      '#type' => 'search',
+      '#title' => $this->t('Filter permissions'),
+      '#title_display' => 'invisible',
+      '#size' => 30,
+      '#placeholder' => $this->t('Filter by permission name'),
+      '#description' => $this->t('Enter permission name'),
+      '#attributes' => [
+        'class' => ['table-filter-text'],
+        'data-table' => '#permissions',
+        'autocomplete' => 'off',
+      ],
+    ];
+
     $form['permissions'] = [
       '#type' => 'table',
       '#header' => [$this->t('Permission')],
@@ -123,28 +185,7 @@ class UserPermissionsForm extends FormBase {
       ];
     }
 
-    $permissions = $this->permissionHandler->getPermissions();
-    $permissions_by_provider = [];
-    foreach ($permissions as $permission_name => $permission) {
-      $permissions_by_provider[$permission['provider']][$permission_name] = $permission;
-    }
-
-    // Move the access content permission to the Node module if it is installed.
-    if ($this->moduleHandler->moduleExists('node')) {
-      // Insert 'access content' before the 'view own unpublished content' key
-      // in order to maintain the UI even though the permission is provided by
-      // the system module.
-      $keys = array_keys($permissions_by_provider['node']);
-      $offset = (int) array_search('view own unpublished content', $keys);
-      $permissions_by_provider['node'] = array_merge(
-        array_slice($permissions_by_provider['node'], 0, $offset),
-        ['access content' => $permissions_by_provider['system']['access content']],
-        array_slice($permissions_by_provider['node'], $offset)
-      );
-      unset($permissions_by_provider['system']['access content']);
-    }
-
-    foreach ($permissions_by_provider as $provider => $permissions) {
+    foreach ($this->permissionsByProvider() as $provider => $permissions) {
       // Module name.
       $form['permissions'][$provider] = [
         [
@@ -153,7 +194,7 @@ class UserPermissionsForm extends FormBase {
             'class' => ['module'],
             'id' => 'module-' . $provider,
           ],
-          '#markup' => $this->moduleHandler->getName($provider),
+          '#markup' => $this->moduleExtensionList->getName($provider),
         ],
       ];
       foreach ($permissions as $perm => $perm_item) {
@@ -165,7 +206,7 @@ class UserPermissionsForm extends FormBase {
         ];
         $form['permissions'][$perm]['description'] = [
           '#type' => 'inline_template',
-          '#template' => '<div class="permission"><span class="title">{{ title }}</span>{% if description or warning %}<div class="description">{% if warning %}<em class="permission-warning">{{ warning }}</em> {% endif %}{{ description }}</div>{% endif %}</div>',
+          '#template' => '<div class="permission"><span class="title table-filter-text-source">{{ title }}</span>{% if description or warning %}<div class="description">{% if warning %}<em class="permission-warning">{{ warning }}</em> {% endif %}{{ description }}</div>{% endif %}</div>',
           '#context' => [
             'title' => $perm_item['title'],
           ],
@@ -216,7 +257,7 @@ class UserPermissionsForm extends FormBase {
       user_role_change_permissions($role_name, (array) $form_state->getValue($role_name));
     }
 
-    drupal_set_message($this->t('The changes have been saved.'));
+    $this->messenger()->addStatus($this->t('The changes have been saved.'));
   }
 
 }

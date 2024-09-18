@@ -1,12 +1,7 @@
-jquery.farbtastic:
+loadjs:
   version: 0.1
   js:
-    assets/vendor/farbtastic/farbtastic.js: {}
-  css:
-    component:
-      assets/vendor/farbtastic/farbtastic.css: {}
-  dependencies:
-    - core/jquery
+    assets/vendor/loadjs/loadjs.min.js: { }
 
 # Library to test CSS and JS file assets.
 files:
@@ -97,15 +92,13 @@ weight:
     lighter.js: { weight: -1 }
     before-jquery.js: { weight: -21 }
 
-browsers:
+# Library to test hook_js_alter().
+hook_js_alter:
+  version: VERSION
   js:
-    old-ie.js:
-      browsers:
-        'IE': 'lte IE 8'
-        '!IE': false
-    no-ie.js:
-      browsers:
-        IE: false
+    alter.js: {}
+  dependencies:
+    - core/drupal.tableselect
 
 querystring:
   js:

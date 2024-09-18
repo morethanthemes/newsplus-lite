@@ -13,22 +13,15 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 class EntityDisplayModeAddForm extends EntityDisplayModeFormBase {
 
   /**
-   * The entity type for which the display mode is being created.
-   *
-   * @var string
-   */
-  protected $targetEntityTypeId;
-
-  /**
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state, $entity_type_id = NULL) {
-    $this->targetEntityTypeId = $entity_type_id;
-    $form = parent::buildForm($form, $form_state);
+    $form = parent::buildForm($form, $form_state, $entity_type_id);
+
     // Change replace_pattern to avoid undesired dots.
     $form['id']['#machine_name']['replace_pattern'] = '[^a-z0-9_]+';
-    $definition = $this->entityManager->getDefinition($this->targetEntityTypeId);
-    $form['#title'] = $this->t('Add new %label @entity-type', ['%label' => $definition->getLabel(), '@entity-type' => $this->entityType->getLowercaseLabel()]);
+    $definition = $this->entityTypeManager->getDefinition($this->targetEntityTypeId);
+    $form['#title'] = $this->t('Add new @entity-type %label', ['@entity-type' => $definition->getLabel(), '%label' => $this->entityType->getSingularLabel()]);
     return $form;
   }
 
@@ -45,7 +38,7 @@ class EntityDisplayModeAddForm extends EntityDisplayModeFormBase {
    * {@inheritdoc}
    */
   protected function prepareEntity() {
-    $definition = $this->entityManager->getDefinition($this->targetEntityTypeId);
+    $definition = $this->entityTypeManager->getDefinition($this->targetEntityTypeId);
     if (!$definition->get('field_ui_base_route') || !$definition->hasViewBuilderClass()) {
       throw new NotFoundHttpException();
     }

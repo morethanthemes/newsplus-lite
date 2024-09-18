@@ -1,34 +1,34 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\contextual\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
 
 /**
- * Tests all edge cases of converting from #contextual_links to ids and vice
- * versa.
+ * Tests edge cases for converting between contextual links and IDs.
  *
  * @group contextual
  */
 class ContextualUnitTest extends KernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['contextual'];
+  protected static $modules = ['contextual'];
 
   /**
-   * Provides testcases for testContextualLinksToId() and
+   * Provides test cases for both test functions.
+   *
+   * Used in testContextualLinksToId() and testContextualIdToLinks().
+   *
+   * @return array[]
+   *   Test cases.
    */
-  public function _contextual_links_id_testcases() {
-    // Test branch conditions:
-    // - one group.
-    // - one dynamic path argument.
-    // - no metadata.
-    $tests[] = [
-      'links' => [
+  public static function contextualLinksDataProvider(): array {
+    $tests['one group, one dynamic path argument, no metadata'] = [
+      [
         'node' => [
           'route_parameters' => [
             'node' => '14031991',
@@ -36,36 +36,28 @@ class ContextualUnitTest extends KernelTestBase {
           'metadata' => ['langcode' => 'en'],
         ],
       ],
-      'id' => 'node:node=14031991:langcode=en',
+      'node:node=14031991:langcode=en',
     ];
 
-    // Test branch conditions:
-    // - one group.
-    // - multiple dynamic path arguments.
-    // - no metadata.
-    $tests[] = [
-      'links' => [
+    $tests['one group, multiple dynamic path arguments, no metadata'] = [
+      [
         'foo' => [
           'route_parameters' => [
-            'bar',
+            0 => 'bar',
             'key' => 'baz',
-            'qux',
+            1 => 'qux',
           ],
           'metadata' => ['langcode' => 'en'],
         ],
       ],
-      'id' => 'foo:0=bar&key=baz&1=qux:langcode=en',
+      'foo:0=bar&key=baz&1=qux:langcode=en',
     ];
 
-    // Test branch conditions:
-    // - one group.
-    // - one dynamic path argument.
-    // - metadata.
-    $tests[] = [
-      'links' => [
+    $tests['one group, one dynamic path argument, metadata'] = [
+      [
         'views_ui_edit' => [
           'route_parameters' => [
-            'view' => 'frontpage'
+            'view' => 'frontpage',
           ],
           'metadata' => [
             'location' => 'page',
@@ -74,14 +66,11 @@ class ContextualUnitTest extends KernelTestBase {
           ],
         ],
       ],
-      'id' => 'views_ui_edit:view=frontpage:location=page&display=page_1&langcode=en',
+      'views_ui_edit:view=frontpage:location=page&display=page_1&langcode=en',
     ];
 
-    // Test branch conditions:
-    // - multiple groups.
-    // - multiple dynamic path arguments.
-    $tests[] = [
-      'links' => [
+    $tests['multiple groups, multiple dynamic path arguments'] = [
+      [
         'node' => [
           'route_parameters' => [
             'node' => '14031991',
@@ -90,9 +79,9 @@ class ContextualUnitTest extends KernelTestBase {
         ],
         'foo' => [
           'route_parameters' => [
-            'bar',
+            0 => 'bar',
             'key' => 'baz',
-            'qux',
+            1 => 'qux',
           ],
           'metadata' => ['langcode' => 'en'],
         ],
@@ -101,30 +90,42 @@ class ContextualUnitTest extends KernelTestBase {
           'metadata' => ['langcode' => 'en'],
         ],
       ],
-      'id' => 'node:node=14031991:langcode=en|foo:0=bar&key=baz&1=qux:langcode=en|edge:0=20011988:langcode=en',
+      'node:node=14031991:langcode=en|foo:0=bar&key=baz&1=qux:langcode=en|edge:0=20011988:langcode=en',
     ];
 
     return $tests;
   }
 
   /**
-   * Tests _contextual_links_to_id().
+   * Tests the conversion from contextual links to IDs.
+   *
+   * @param array $links
+   *   The #contextual_links property value array.
+   * @param string $id
+   *   The serialized representation of the passed links.
+   *
+   * @covers ::_contextual_links_to_id
+   *
+   * @dataProvider contextualLinksDataProvider
    */
-  public function testContextualLinksToId() {
-    $tests = $this->_contextual_links_id_testcases();
-    foreach ($tests as $test) {
-      $this->assertIdentical(_contextual_links_to_id($test['links']), $test['id']);
-    }
+  public function testContextualLinksToId(array $links, string $id): void {
+    $this->assertSame($id, _contextual_links_to_id($links));
   }
 
   /**
-   * Tests _contextual_id_to_links().
+   * Tests the conversion from contextual ID to links.
+   *
+   * @param array $links
+   *   The #contextual_links property value array.
+   * @param string $id
+   *   The serialized representation of the passed links.
+   *
+   * @covers ::_contextual_id_to_links
+   *
+   * @dataProvider contextualLinksDataProvider
    */
-  public function testContextualIdToLinks() {
-    $tests = $this->_contextual_links_id_testcases();
-    foreach ($tests as $test) {
-      $this->assertIdentical(_contextual_id_to_links($test['id']), $test['links']);
-    }
+  public function testContextualIdToLinks(array $links, string $id): void {
+    $this->assertSame($links, _contextual_id_to_links($id));
   }
 
 }

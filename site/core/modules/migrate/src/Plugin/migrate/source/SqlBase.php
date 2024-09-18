@@ -4,6 +4,7 @@ namespace Drupal\migrate\Plugin\migrate\source;
 
 use Drupal\Core\Database\ConnectionNotDefinedException;
 use Drupal\Core\Database\Database;
+use Drupal\Core\Database\DatabaseException;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\State\StateInterface;
 use Drupal\migrate\Exception\RequirementsException;
@@ -13,6 +14,8 @@ use Drupal\migrate\Plugin\migrate\id_map\Sql;
 use Drupal\migrate\Plugin\MigrateIdMapInterface;
 use Drupal\migrate\Plugin\RequirementsInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+
+// cspell:ignore destid sourceid
 
 /**
  * Sources whose data may be fetched via a database connection.
@@ -60,7 +63,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * For a complete example on migrating data from an SQL source, refer to
  * https://www.drupal.org/docs/8/api/migrate-api/migrating-data-from-sql-source
  *
- * @see https://www.drupal.org/docs/8/api/database-api
+ * @see https://www.drupal.org/docs/drupal-apis/database-api
  * @see \Drupal\migrate_drupal\Plugin\migrate\source\DrupalSqlBase
  */
 abstract class SqlBase extends SourcePluginBase implements ContainerFactoryPluginInterface, RequirementsInterface {
@@ -113,7 +116,7 @@ abstract class SqlBase extends SourcePluginBase implements ContainerFactoryPlugi
   /**
    * {@inheritdoc}
    */
-  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, MigrationInterface $migration = NULL) {
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition, ?MigrationInterface $migration = NULL) {
     return new static(
       $configuration,
       $plugin_id,
@@ -180,20 +183,10 @@ abstract class SqlBase extends SourcePluginBase implements ContainerFactoryPlugi
    *   Thrown if no source database connection is configured.
    */
   protected function setUpDatabase(array $database_info) {
-    if (isset($database_info['key'])) {
-      $key = $database_info['key'];
-    }
-    else {
-      // If there is no explicit database configuration at all, fall back to a
-      // connection named 'migrate'.
-      $key = 'migrate';
-    }
-    if (isset($database_info['target'])) {
-      $target = $database_info['target'];
-    }
-    else {
-      $target = 'default';
-    }
+    // If there is no explicit database configuration at all, fall back to a
+    // connection named 'migrate'.
+    $key = $database_info['key'] ?? 'migrate';
+    $target = $database_info['target'] ?? 'default';
     if (isset($database_info['database'])) {
       Database::addConnectionInfo($key, $target, $database_info['database']);
     }
@@ -218,7 +211,12 @@ abstract class SqlBase extends SourcePluginBase implements ContainerFactoryPlugi
    */
   public function checkRequirements() {
     if ($this->pluginDefinition['requirements_met'] === TRUE) {
-      $this->getDatabase();
+      try {
+        $this->getDatabase();
+      }
+      catch (\PDOException | DatabaseException $e) {
+        throw new RequirementsException("No database connection available for source plugin " . $this->pluginId, [], 0, $e);
+      }
     }
   }
 
@@ -264,9 +262,6 @@ abstract class SqlBase extends SourcePluginBase implements ContainerFactoryPlugi
     if ($this->batch == 0) {
       $this->prepareQuery();
 
-      // Get the key values, for potential use in joining to the map table.
-      $keys = [];
-
       // The rules for determining what conditions to add to the query are as
       // follows (applying first applicable rule):
       // 1. If the map is joinable, join it. We will want to accept all rows
@@ -276,11 +271,11 @@ abstract class SqlBase extends SourcePluginBase implements ContainerFactoryPlugi
       //    conditions, so we need to OR them together (but AND with any existing
       //    conditions in the query). So, ultimately the SQL condition will look
       //    like (original conditions) AND (map IS NULL OR map needs update
-      //      OR above high water).
+      //    OR above high water).
       $conditions = $this->query->orConditionGroup();
       $condition_added = FALSE;
       $added_fields = [];
-      if (empty($this->configuration['ignore_map']) && $this->mapJoinable()) {
+      if ($this->mapJoinable()) {
         // Build the join to the map table. Because the source key could have
         // multiple fields, we need to build things up.
         $count = 1;
@@ -322,7 +317,9 @@ abstract class SqlBase extends SourcePluginBase implements ContainerFactoryPlugi
       if ($this->getHighWaterProperty()) {
         $high_water_field = $this->getHighWaterField();
         $high_water = $this->getHighWater();
-        if ($high_water) {
+        // We check against NULL because 0 is an acceptable value for the high
+        // water mark.
+        if ($high_water !== NULL) {
           $conditions->condition($high_water_field, $high_water, '>');
           $condition_added = TRUE;
         }
@@ -376,14 +373,24 @@ abstract class SqlBase extends SourcePluginBase implements ContainerFactoryPlugi
   }
 
   /**
+   * {@inheritdoc}
+   */
+  public function rewind(): void {
+    $this->batch = 0;
+    // Database queries have to be run again as they cannot be rewound.
+    unset($this->iterator);
+    parent::rewind();
+  }
+
+  /**
    * @return \Drupal\Core\Database\Query\SelectInterface
    */
   abstract public function query();
 
   /**
-   * {@inheritdoc}
+   * Gets the source count using countQuery().
    */
-  public function count($refresh = FALSE) {
+  protected function doCount() {
     return (int) $this->query()->countQuery()->execute()->fetchField();
   }
 
@@ -397,6 +404,24 @@ abstract class SqlBase extends SourcePluginBase implements ContainerFactoryPlugi
    *   TRUE if we can join against the map table otherwise FALSE.
    */
   protected function mapJoinable() {
+
+    // Do not join map if explicitly configured not to.
+    if (isset($this->configuration['ignore_map'])  && $this->configuration['ignore_map']) {
+      return FALSE;
+    }
+
+    // If we are using high water, but haven't yet set a high water mark, do not
+    // join the map table, as we want to get all available records.
+    if ($this->getHighWaterProperty() && $this->getHighWater() === NULL) {
+      return FALSE;
+    }
+
+    // If we are tracking changes, we also need to retrieve all rows to compare
+    // hashes
+    if ($this->trackChanges) {
+      return FALSE;
+    }
+
     if (!$this->getIds()) {
       return FALSE;
     }
@@ -432,13 +457,20 @@ abstract class SqlBase extends SourcePluginBase implements ContainerFactoryPlugi
     }
 
     foreach (['username', 'password', 'host', 'port', 'namespace', 'driver'] as $key) {
-      if (isset($source_database_options[$key])) {
+      if (isset($source_database_options[$key]) && isset($id_map_database_options[$key])) {
         if ($id_map_database_options[$key] != $source_database_options[$key]) {
           return FALSE;
         }
       }
     }
     return TRUE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __sleep() {
+    return array_diff(parent::__sleep(), ['database']);
   }
 
 }

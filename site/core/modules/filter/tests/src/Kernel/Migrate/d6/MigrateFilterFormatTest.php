@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\filter\Kernel\Migrate\d6;
 
 use Drupal\filter\Entity\FilterFormat;
@@ -16,7 +18,7 @@ class MigrateFilterFormatTest extends MigrateDrupal6TestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->executeMigration('d6_filter_format');
   }
@@ -24,7 +26,7 @@ class MigrateFilterFormatTest extends MigrateDrupal6TestBase {
   /**
    * Tests the Drupal 6 filter format to Drupal 8 migration.
    */
-  public function testFilterFormat() {
+  public function testFilterFormat(): void {
     $filter_format = FilterFormat::load('filtered_html');
 
     // Check filter status.
@@ -41,8 +43,8 @@ class MigrateFilterFormatTest extends MigrateDrupal6TestBase {
 
     // Check variables migrated into filter.
     $this->assertSame('<a href hreflang> <em> <strong> <cite> <code> <ul type> <ol start type> <li> <dl> <dt> <dd>', $filters['filter_html']['settings']['allowed_html']);
-    $this->assertSame(TRUE, $filters['filter_html']['settings']['filter_html_help']);
-    $this->assertSame(FALSE, $filters['filter_html']['settings']['filter_html_nofollow']);
+    $this->assertTrue($filters['filter_html']['settings']['filter_html_help']);
+    $this->assertFalse($filters['filter_html']['settings']['filter_html_nofollow']);
     $this->assertSame(72, $filters['filter_url']['settings']['filter_url_length']);
 
     // Assert that the php_code format was migrated with filter_null in the

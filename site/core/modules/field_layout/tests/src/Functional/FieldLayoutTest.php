@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\field_layout\Functional;
 
 use Drupal\Tests\BrowserTestBase;
@@ -14,12 +16,22 @@ class FieldLayoutTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['field_layout', 'field_ui', 'node', 'field_layout_test'];
+  protected static $modules = [
+    'field_layout',
+    'field_ui',
+    'node',
+    'field_layout_test',
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->createContentType([
@@ -46,11 +58,11 @@ class FieldLayoutTest extends BrowserTestBase {
   /**
    * Tests an entity type that has fields shown by default.
    */
-  public function testNodeView() {
+  public function testNodeView(): void {
     // By default, the one-column layout is used.
     $this->drupalGet('node/1');
     $this->assertSession()->elementExists('css', '.layout--onecol');
-    $this->assertSession()->elementExists('css', '.layout__region--content .field--name-body');
+    $this->assertSession()->elementTextContains('css', '.layout__region--content', 'The node body');
 
     $this->drupalGet('admin/structure/types/manage/article/display');
     $this->assertEquals(['Content', 'Disabled'], $this->getRegionTitles());
@@ -60,7 +72,7 @@ class FieldLayoutTest extends BrowserTestBase {
   /**
    * Tests that changes to the regions still leave the fields visible.
    */
-  public function testRegionChanges() {
+  public function testRegionChanges(): void {
     $this->drupalGet('admin/structure/types/manage/article/display');
     $this->assertEquals(['Content', 'Disabled'], $this->getRegionTitles());
     $this->assertSession()->optionExists('fields[body][region]', 'content');

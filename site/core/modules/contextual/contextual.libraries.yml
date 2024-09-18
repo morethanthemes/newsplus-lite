@@ -22,9 +22,10 @@ drupal.contextual-links:
     - core/drupal
     - core/drupal.ajax
     - core/drupalSettings
-    - core/backbone
-    - core/modernizr
-    - core/jquery.once
+    # @todo Remove this in https://www.drupal.org/project/drupal/issues/3203920
+    - core/internal.backbone
+    - core/once
+    - core/drupal.touchevents-test
 
 drupal.contextual-toolbar:
   version: VERSION
@@ -41,7 +42,8 @@ drupal.contextual-toolbar:
   dependencies:
     - core/jquery
     - core/drupal
-    - core/backbone
-    - core/jquery.once
+    # @todo Remove this in https://www.drupal.org/project/drupal/issues/3203920
+    - core/internal.backbone
+    - core/once
     - core/drupal.tabbingmanager
     - core/drupal.announce

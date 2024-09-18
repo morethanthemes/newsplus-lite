@@ -19,10 +19,12 @@ namespace Symfony\Component\Process;
  */
 class ExecutableFinder
 {
-    private $suffixes = array('.exe', '.bat', '.cmd', '.com');
+    private array $suffixes = ['.exe', '.bat', '.cmd', '.com'];
 
     /**
      * Replaces default suffixes of executable.
+     *
+     * @return void
      */
     public function setSuffixes(array $suffixes)
     {
@@ -32,9 +34,9 @@ class ExecutableFinder
     /**
      * Adds new possible suffix to check for executable.
      *
-     * @param string $suffix
+     * @return void
      */
-    public function addSuffix($suffix)
+    public function addSuffix(string $suffix)
     {
         $this->suffixes[] = $suffix;
     }
@@ -42,45 +44,37 @@ class ExecutableFinder
     /**
      * Finds an executable by name.
      *
-     * @param string $name      The executable name (without the extension)
-     * @param string $default   The default to return if no executable is found
-     * @param array  $extraDirs Additional dirs to check into
-     *
-     * @return string The executable path or default value
+     * @param string      $name      The executable name (without the extension)
+     * @param string|null $default   The default to return if no executable is found
+     * @param array       $extraDirs Additional dirs to check into
      */
-    public function find($name, $default = null, array $extraDirs = array())
+    public function find(string $name, ?string $default = null, array $extraDirs = []): ?string
     {
-        if (ini_get('open_basedir')) {
-            $searchPath = explode(PATH_SEPARATOR, ini_get('open_basedir'));
-            $dirs = array();
-            foreach ($searchPath as $path) {
-                // Silencing against https://bugs.php.net/69240
-                if (@is_dir($path)) {
-                    $dirs[] = $path;
-                } else {
-                    if (basename($path) == $name && @is_executable($path)) {
-                        return $path;
-                    }
-                }
-            }
-        } else {
-            $dirs = array_merge(
-                explode(PATH_SEPARATOR, getenv('PATH') ?: getenv('Path')),
-                $extraDirs
-            );
-        }
+        $dirs = array_merge(
+            explode(\PATH_SEPARATOR, getenv('PATH') ?: getenv('Path')),
+            $extraDirs
+        );
 
-        $suffixes = array('');
-        if ('\\' === DIRECTORY_SEPARATOR) {
+        $suffixes = [''];
+        if ('\\' === \DIRECTORY_SEPARATOR) {
             $pathExt = getenv('PATHEXT');
-            $suffixes = array_merge($suffixes, $pathExt ? explode(PATH_SEPARATOR, $pathExt) : $this->suffixes);
+            $suffixes = array_merge($pathExt ? explode(\PATH_SEPARATOR, $pathExt) : $this->suffixes, $suffixes);
         }
         foreach ($suffixes as $suffix) {
             foreach ($dirs as $dir) {
-                if (@is_file($file = $dir.DIRECTORY_SEPARATOR.$name.$suffix) && ('\\' === DIRECTORY_SEPARATOR || @is_executable($file))) {
+                if (@is_file($file = $dir.\DIRECTORY_SEPARATOR.$name.$suffix) && ('\\' === \DIRECTORY_SEPARATOR || @is_executable($file))) {
                     return $file;
                 }
+
+                if (!@is_dir($dir) && basename($dir) === $name.$suffix && @is_executable($dir)) {
+                    return $dir;
+                }
             }
+        }
+
+        $command = '\\' === \DIRECTORY_SEPARATOR ? 'where' : 'command -v --';
+        if (\function_exists('exec') && ($executablePath = strtok(@exec($command.' '.escapeshellarg($name)), \PHP_EOL)) && @is_executable($executablePath)) {
+            return $executablePath;
         }
 
         return $default;

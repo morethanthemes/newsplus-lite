@@ -35,8 +35,16 @@ process:
     - plugin: node_update_7008
     - plugin: flatten
     - plugin: filter_format_permission
+      migration: d6_filter_format
 destination:
   plugin: entity:user_role
 migration_dependencies:
   required:
     - d6_filter_format
+  optional:
+    - block_content_type
+    - contact_category
+    - d6_comment_type
+    - d6_node_type
+    - d6_taxonomy_vocabulary
+    - d6_taxonomy_vocabulary_translation

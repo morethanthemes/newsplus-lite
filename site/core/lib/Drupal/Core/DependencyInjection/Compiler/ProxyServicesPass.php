@@ -9,11 +9,16 @@ use Symfony\Component\DependencyInjection\Reference;
 
 /**
  * Replaces all services with a lazy flag.
+ *
+ * @see lazy_services
  */
 class ProxyServicesPass implements CompilerPassInterface {
 
   /**
    * {@inheritdoc}
+   *
+   * phpcs:ignore Drupal.Commenting.FunctionComment.VoidReturn
+   * @return void
    */
   public function process(ContainerBuilder $container) {
     foreach ($container->getDefinitions() as $service_id => $definition) {

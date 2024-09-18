@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Functional;
 
 use Behat\Mink\Exception\ElementNotFoundException;
-use Drupal\Core\Database\Query\SelectInterface;
+use Drupal\Core\Database\Database;
 use Drupal\Tests\BrowserTestBase;
 use Drupal\views\Tests\ViewResultAssertionTrait;
 use Drupal\views\Tests\ViewTestData;
@@ -17,23 +19,30 @@ use Drupal\views\ViewExecutable;
  * include the same methods.
  *
  * @see \Drupal\Tests\views\Kernel\ViewsKernelTestBase
- * @see \Drupal\simpletest\WebTestBase
  */
 abstract class ViewTestBase extends BrowserTestBase {
 
   use ViewResultAssertionTrait;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['views', 'views_test_config'];
+  protected static $modules = ['views', 'views_test_config'];
 
-  protected function setUp($import_test_views = TRUE) {
+  /**
+   * Sets up the test.
+   *
+   * @param bool $import_test_views
+   *   Should the views specified on the test class be imported. If you need
+   *   to setup some additional stuff, like fields, you need to call false and
+   *   then call createTestViews for your own.
+   * @param array $modules
+   *   The module directories to look in for test views.
+   */
+  protected function setUp($import_test_views = TRUE, $modules = ['views_test_config']): void {
     parent::setUp();
     if ($import_test_views) {
-      ViewTestData::createTestViews(get_class($this), ['views_test_config']);
+      ViewTestData::createTestViews(static::class, $modules);
     }
   }
 
@@ -55,7 +64,7 @@ abstract class ViewTestBase extends BrowserTestBase {
 
     // Load the test dataset.
     $data_set = $this->dataSet();
-    $query = db_insert('views_test_data')
+    $query = Database::getConnection()->insert('views_test_data')
       ->fields(array_keys($data_set[0]));
     foreach ($data_set as $record) {
       $query->values($record);
@@ -81,10 +90,7 @@ abstract class ViewTestBase extends BrowserTestBase {
   protected function orderResultSet($result_set, $column, $reverse = FALSE) {
     $order = $reverse ? -1 : 1;
     usort($result_set, function ($a, $b) use ($column, $order) {
-      if ($a[$column] == $b[$column]) {
-        return 0;
-      }
-      return $order * (($a[$column] < $b[$column]) ? -1 : 1);
+      return $order * ($a[$column] <=> $b[$column]);
     });
     return $result_set;
   }
@@ -114,7 +120,7 @@ abstract class ViewTestBase extends BrowserTestBase {
   }
 
   /**
-   * Executes a view with debugging.
+   * Executes a view.
    *
    * @param \Drupal\views\ViewExecutable $view
    *   The view object.
@@ -127,11 +133,6 @@ abstract class ViewTestBase extends BrowserTestBase {
     $view->setDisplay();
     $view->preExecute($args);
     $view->execute();
-    $verbose_message = '<pre>Executed view: ' . ((string) $view->build_info['query']) . '</pre>';
-    if ($view->build_info['query'] instanceof SelectInterface) {
-      $verbose_message .= '<pre>Arguments: ' . print_r($view->build_info['query']->getArguments(), TRUE) . '</pre>';
-    }
-    $this->verbose($verbose_message);
   }
 
   /**

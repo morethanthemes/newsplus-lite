@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\statistics\Kernel\Migrate\d6;
 
 use Drupal\Tests\migrate_drupal\Kernel\d6\MigrateDrupal6TestBase;
@@ -8,13 +10,14 @@ use Drupal\Tests\migrate_drupal\Kernel\d6\MigrateDrupal6TestBase;
  * Tests the migration of node counter data to Drupal 8.
  *
  * @group statistics
+ * @group legacy
  */
 class MigrateNodeCounterTest extends MigrateDrupal6TestBase {
 
   /**
    * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'content_translation',
     'language',
     'menu_ui',
@@ -26,7 +29,7 @@ class MigrateNodeCounterTest extends MigrateDrupal6TestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installEntitySchema('node');
@@ -49,9 +52,16 @@ class MigrateNodeCounterTest extends MigrateDrupal6TestBase {
   }
 
   /**
+   * Gets the path to the fixture file.
+   */
+  protected function getFixtureFilePath() {
+    return __DIR__ . '/../../../../fixtures/drupal6.php';
+  }
+
+  /**
    * Tests migration of node counter.
    */
-  public function testStatisticsSettings() {
+  public function testStatisticsSettings(): void {
     $this->assertNodeCounter(1, 2, 0, 1421727536);
     $this->assertNodeCounter(2, 1, 0, 1471428059);
     $this->assertNodeCounter(3, 1, 0, 1471428153);
@@ -77,14 +87,15 @@ class MigrateNodeCounterTest extends MigrateDrupal6TestBase {
    *   The expected day count.
    * @param int $timestamp
    *   The expected timestamp.
+   *
+   * @internal
    */
-  protected function assertNodeCounter($nid, $total_count, $day_count, $timestamp) {
+  protected function assertNodeCounter(int $nid, int $total_count, int $day_count, int $timestamp): void {
     /** @var \Drupal\statistics\StatisticsViewsResult $statistics */
     $statistics = $this->container->get('statistics.storage.node')->fetchView($nid);
-    // @todo Remove casting after https://www.drupal.org/node/2926069 lands.
-    $this->assertSame($total_count, (int) $statistics->getTotalCount());
-    $this->assertSame($day_count, (int) $statistics->getDayCount());
-    $this->assertSame($timestamp, (int) $statistics->getTimestamp());
+    $this->assertSame($total_count, $statistics->getTotalCount());
+    $this->assertSame($day_count, $statistics->getDayCount());
+    $this->assertSame($timestamp, $statistics->getTimestamp());
   }
 
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Component\FileCache;
 
 use Drupal\Component\FileCache\FileCacheBackendInterface;
@@ -30,7 +32,7 @@ class StaticFileCacheBackend implements FileCacheBackendInterface {
    *   (optional) Configuration used to configure this object.
    */
   public function __construct($configuration) {
-    $this->bin = isset($configuration['bin']) ? $configuration['bin'] : 'file_cache';
+    $this->bin = $configuration['bin'] ?? 'file_cache';
   }
 
   /**

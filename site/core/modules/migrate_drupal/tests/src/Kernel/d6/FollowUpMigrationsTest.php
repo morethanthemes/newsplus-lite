@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\migrate_drupal\Kernel\d6;
 
 use Drupal\node\Entity\Node;
@@ -15,7 +17,7 @@ class FollowUpMigrationsTest extends MigrateNodeTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'content_translation',
     'language',
     'menu_ui',
@@ -24,7 +26,7 @@ class FollowUpMigrationsTest extends MigrateNodeTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->executeMigrations([
       'language',
@@ -35,9 +37,9 @@ class FollowUpMigrationsTest extends MigrateNodeTestBase {
   }
 
   /**
-   * Test entity reference translations.
+   * Tests entity reference translations.
    */
-  public function testEntityReferenceTranslations() {
+  public function testEntityReferenceTranslations(): void {
     // Test the entity reference field before the follow-up migrations.
     $node = Node::load(10);
     $this->assertSame('13', $node->get('field_reference')->target_id);

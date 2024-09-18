@@ -2,13 +2,16 @@
 
 namespace Drupal\views\Plugin\views\argument;
 
+use Drupal\views\Attribute\ViewsArgument;
+
 /**
  * Defines an argument handler to accept a language.
  *
  * @ingroup views_argument_handlers
- *
- * @ViewsArgument("language")
- */
+  */
+#[ViewsArgument(
+  id: 'language',
+)]
 class LanguageArgument extends ArgumentPluginBase {
 
   /**
@@ -42,7 +45,7 @@ class LanguageArgument extends ArgumentPluginBase {
    */
   public function language($langcode) {
     $languages = $this->listLanguages();
-    return isset($languages[$langcode]) ? $languages[$langcode] : $this->t('Unknown language');
+    return $languages[$langcode] ?? $this->t('Unknown language');
   }
 
 }

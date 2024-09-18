@@ -1,4 +1,4 @@
-All Drupal code is Copyright 2001 - 2013 by the original authors.
+All Drupal code is Copyright 2001 - present by the original authors.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,49 +20,43 @@ Drupal includes works under other copyright notices and distributed
 according to the terms of the GNU General Public License or a compatible
 license, including:
 
-Javascript
+JavaScript
 
-  Farbtastic - Copyright (c) 2010 Matt Farina
+  Backbone - Copyright (c) 2010 Jeremy Ashkenas and DocumentCloud
 
-  HTML5 Shiv - Copyright (c) 2012  Alexander Farkas, Jonathan Neal, Paul Irish,
-    and John-David Dalton
+  CKEditor5 - Copyright (c) 2003 CKSource Holding sp. z o.o.
 
-  jQuery - Copyright (c) 2011 John Resig
+  JavaScript Cookie - Copyright (c) 2018 Copyright 2018 Klaus Hartl, Fagner Brack, GitHub Contributors
 
-  jQuery Bgiframe - Copyright (c) 2010 Brandon Aaron (http://brandonaaron.net)
+  jQuery - Copyright (c) OpenJS Foundation and other contributors
 
-  jQuery BBQ - Copyright (c) 2010 "Cowboy" Ben Alman
+  jQuery Form - Copyright (c) 2017 Kevin Morris
 
-  jQuery Cookie - Copyright (c) 2010 Klaus Hartl
+  jQuery UI - Copyright (c) OpenJS Foundation and other contributors
 
-  jQuery Form - Copyright (c) 2011 Mike Alsup
+  LoadJS - Copyright (c) 2015 Andres Morey
 
-  jQuery Globalize - Copyright (c) 2012 Software Freedom Conservancy, Inc.
+  Modernizr - Copyright (c) 2021 The Modernizr Team
 
-  jQuery Mousewheel - Copyright (c) 2010 Brandon Aaron
-    (http://brandonaaron.net)
+  Shepherd - Copyright (c) 2021
 
-  jQuery Metadata - Copyright (c) 2006 John Resig, Yehuda Katz, Jörn Zaefferer,
-    Paul McLanahan
+  Sortable - Copyright (c) 2019 All contributors to Sortable
 
-  jQuery Once - Copyright (c) 2009 Konstantin Käfer
+  Tabbable - Copyright (c) 2015 David Clark
 
-  jQuery UI - Copyright (c) 2012 by the original authors
-    (http://jqueryui.com/about)
+  Underscore.js - Copyright (c) 2009 Jeremy Ashkenas, Julian Gonggrijp, and
+   DocumentCloud and Investigative Reporters & Editors
 
-  Sizzle.js - Copyright (c) 2011 The Dojo Foundation (http://sizzlejs.com/)
+CSS
+
+  Normalize.css - Copyright (c) Nicolas Gallagher and Jonathan Neal
 
 PHP
 
-  ArchiveTar - Copyright (c) 1997 - 2008 Vincent Blavet
+  Drupal depends on numerous PHP Composer packages. All Composer packages
+    retain the copyright of the authors.
 
-  Doctrine Common - Copyright (c) 2006 - 2012 Alexander Mols, Benjamin Eberlei,
-    Fabio B. Silva, Guilherme Blanco, Johannes M. Schmitt, Jonathan Wage,
-    Lukas K. Smith, Marco Pivetta et al.
+Brand materials
 
-  Symfony2 - Copyright (c) 2004 - 2012 Fabien Potencier
-    - YUI - Copyright (c) 2010 Yahoo! Inc.
-    - Zend Framework (1.10dev - 2010-01-24) - Copyright (c) 2005-2010 Zend
-      Technologies USA Inc. (http://www.zend.com)
-
-  Twig - Copyright (c) 2009 Twig Team
+  Drupal brand materials under core/misc/logo have a dedicated license. See
+  core/misc/logo/LICENSE.txt.

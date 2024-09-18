@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\content_translation\Functional;
 
 use Drupal\Core\Url;
@@ -15,15 +17,21 @@ class ContentTranslationOutdatedRevisionTranslationTest extends ContentTranslati
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
+    $this->doSetup();
     $this->enableContentModeration();
   }
 
   /**
    * Tests that outdated revision translations work correctly.
    */
-  public function testFlagAsOutdatedHidden() {
+  public function testFlagAsOutdatedHidden(): void {
     // Create a test node.
     $values = [
       'title' => 'Test 1.1 EN',
@@ -34,7 +42,8 @@ class ContentTranslationOutdatedRevisionTranslationTest extends ContentTranslati
     $entity = $this->storage->load($id);
 
     // Add a published Italian translation.
-    $add_translation_url = Url::fromRoute("entity.{$this->entityTypeId}.content_translation_add", [
+    $add_translation_url = Url::fromRoute("entity.{$this->entityTypeId}.content_translation_add",
+      [
         $entity->getEntityTypeId() => $id,
         'source' => 'en',
         'target' => 'it',
@@ -50,10 +59,11 @@ class ContentTranslationOutdatedRevisionTranslationTest extends ContentTranslati
       'title[0][value]' => 'Test 1.2 IT',
       'moderation_state[0][state]' => 'published',
     ];
-    $this->drupalPostForm(NULL, $edit, t('Save (this translation)'));
+    $this->submitForm($edit, 'Save (this translation)');
 
     // Add a published French translation.
-    $add_translation_url = Url::fromRoute("entity.{$this->entityTypeId}.content_translation_add", [
+    $add_translation_url = Url::fromRoute("entity.{$this->entityTypeId}.content_translation_add",
+      [
         $entity->getEntityTypeId() => $id,
         'source' => 'en',
         'target' => 'fr',
@@ -69,7 +79,7 @@ class ContentTranslationOutdatedRevisionTranslationTest extends ContentTranslati
       'title[0][value]' => 'Test 1.3 FR',
       'moderation_state[0][state]' => 'published',
     ];
-    $this->drupalPostForm(NULL, $edit, t('Save (this translation)'));
+    $this->submitForm($edit, 'Save (this translation)');
 
     // Create an English draft.
     $entity = $this->storage->loadUnchanged($id);
@@ -80,8 +90,10 @@ class ContentTranslationOutdatedRevisionTranslationTest extends ContentTranslati
 
   /**
    * Checks whether the flag widget is displayed.
+   *
+   * @internal
    */
-  protected function assertFlagWidget() {
+  protected function assertFlagWidget(): void {
     $this->assertSession()->pageTextNotContains('Flag other translations as outdated');
     $this->assertSession()->pageTextContains('Translations cannot be flagged as outdated when content is moderated.');
   }

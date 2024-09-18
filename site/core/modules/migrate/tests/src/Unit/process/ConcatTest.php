@@ -1,9 +1,6 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\Tests\migrate\Unit\process\ConcatTest.
- */
+declare(strict_types=1);
 
 namespace Drupal\Tests\migrate\Unit\process;
 
@@ -20,39 +17,40 @@ class ConcatTest extends MigrateProcessTestCase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     $this->plugin = new TestConcat();
     parent::setUp();
   }
 
   /**
-   * Test concat works without a delimiter.
+   * Tests concat works without a delimiter.
    */
-  public function testConcatWithoutDelimiter() {
-    $value = $this->plugin->transform(['foo', 'bar'], $this->migrateExecutable, $this->row, 'destinationproperty');
+  public function testConcatWithoutDelimiter(): void {
+    $value = $this->plugin->transform(['foo', 'bar'], $this->migrateExecutable, $this->row, 'destination_property');
     $this->assertSame('foobar', $value);
   }
 
   /**
-   * Test concat fails properly on non-arrays.
+   * Tests concat fails properly on non-arrays.
    */
-  public function testConcatWithNonArray() {
-    $this->setExpectedException(MigrateException::class);
-    $this->plugin->transform('foo', $this->migrateExecutable, $this->row, 'destinationproperty');
+  public function testConcatWithNonArray(): void {
+    $this->expectException(MigrateException::class);
+    $this->plugin->transform('foo', $this->migrateExecutable, $this->row, 'destination_property');
   }
 
   /**
-   * Test concat works without a delimiter.
+   * Tests concat works without a delimiter.
    */
-  public function testConcatWithDelimiter() {
+  public function testConcatWithDelimiter(): void {
     $this->plugin->setDelimiter('_');
-    $value = $this->plugin->transform(['foo', 'bar'], $this->migrateExecutable, $this->row, 'destinationproperty');
+    $value = $this->plugin->transform(['foo', 'bar'], $this->migrateExecutable, $this->row, 'destination_property');
     $this->assertSame('foo_bar', $value);
   }
 
 }
 
 class TestConcat extends Concat {
+
   public function __construct() {
   }
 

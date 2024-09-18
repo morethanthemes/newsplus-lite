@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\settings_tray\Functional;
 
 use Drupal\block\Entity\Block;
@@ -15,10 +17,15 @@ class SettingsTrayTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'settings_tray',
     'settings_tray_test',
   ];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Gets the block CSS selector.
@@ -29,7 +36,7 @@ class SettingsTrayTest extends BrowserTestBase {
    * @return string
    *   The CSS selector.
    */
-  protected  function getBlockSelector(Block $block) {
+  protected function getBlockSelector(Block $block) {
     return '#block-' . $block->id();
   }
 
@@ -42,7 +49,7 @@ class SettingsTrayTest extends BrowserTestBase {
    *
    * @see SettingsTrayBlockFormTest::testBlocks()
    */
-  public function testPossibleAnnotations() {
+  public function testPossibleAnnotations(): void {
     $test_block_plugin_ids = [
       // Block that explicitly provides an "settings_tray" form class.
       'settings_tray_test_class',
@@ -80,7 +87,7 @@ class SettingsTrayTest extends BrowserTestBase {
   /**
    * Tests that certain blocks opt out from Settings Tray.
    */
-  public function testOptOut() {
+  public function testOptOut(): void {
     $web_assert = $this->assertSession();
 
     $non_excluded_block = $this->placeBlock('system_powered_by_block');

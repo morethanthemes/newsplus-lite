@@ -5,372 +5,169 @@
  * Post update functions for Views.
  */
 
-use Drupal\Core\StringTranslation\TranslatableMarkup;
-use Drupal\views\Entity\View;
-use Drupal\views\Plugin\views\filter\NumericFilter;
-use Drupal\views\Plugin\views\filter\StringFilter;
-use Drupal\views\Views;
+use Drupal\Core\Config\Entity\ConfigEntityUpdater;
+use Drupal\views\ViewEntityInterface;
+use Drupal\views\ViewsConfigUpdater;
 
 /**
- * Update the cacheability metadata for all views.
+ * Implements hook_removed_post_updates().
  */
-function views_post_update_update_cacheability_metadata() {
-  // Load all views.
-  $views = \Drupal::entityManager()->getStorage('view')->loadMultiple();
-
-  /* @var \Drupal\views\Entity\View[] $views */
-  foreach ($views as $view) {
-    $displays = $view->get('display');
-    foreach (array_keys($displays) as $display_id) {
-      $display =& $view->getDisplay($display_id);
-      // Unset the cache_metadata key, so all cacheability metadata for the
-      // display is recalculated.
-      unset($display['cache_metadata']);
-    }
-    $view->save();
-  }
-
+function views_removed_post_updates() {
+  return [
+    'views_post_update_update_cacheability_metadata' => '9.0.0',
+    'views_post_update_cleanup_duplicate_views_data' => '9.0.0',
+    'views_post_update_field_formatter_dependencies' => '9.0.0',
+    'views_post_update_taxonomy_index_tid' => '9.0.0',
+    'views_post_update_serializer_dependencies' => '9.0.0',
+    'views_post_update_boolean_filter_values' => '9.0.0',
+    'views_post_update_grouped_filters' => '9.0.0',
+    'views_post_update_revision_metadata_fields' => '9.0.0',
+    'views_post_update_entity_link_url' => '9.0.0',
+    'views_post_update_bulk_field_moved' => '9.0.0',
+    'views_post_update_filter_placeholder_text' => '9.0.0',
+    'views_post_update_views_data_table_dependencies' => '9.0.0',
+    'views_post_update_table_display_cache_max_age' => '9.0.0',
+    'views_post_update_exposed_filter_blocks_label_display' => '9.0.0',
+    'views_post_update_make_placeholders_translatable' => '9.0.0',
+    'views_post_update_limit_operator_defaults' => '9.0.0',
+    'views_post_update_remove_core_key' => '9.0.0',
+    'views_post_update_field_names_for_multivalue_fields' => '10.0.0',
+    'views_post_update_configuration_entity_relationships' => '10.0.0',
+    'views_post_update_rename_default_display_setting' => '10.0.0',
+    'views_post_update_remove_sorting_global_text_field' => '10.0.0',
+    'views_post_update_title_translations' => '10.0.0',
+    'views_post_update_sort_identifier' => '10.0.0',
+    'views_post_update_provide_revision_table_relationship' => '10.0.0',
+    'views_post_update_image_lazy_load' => '10.0.0',
+  ];
 }
 
 /**
- * Update some views fields that were previously duplicated.
+ * Update Views config schema to make boolean custom titles translatable.
  */
-function views_post_update_cleanup_duplicate_views_data() {
-  $config_factory = \Drupal::configFactory();
-  $ids = [];
-  $message = NULL;
-  $data_tables = [];
-  $base_tables = [];
-  $revision_tables = [];
-  $entities_by_table = [];
-  $duplicate_fields = [];
-  $handler_types = Views::getHandlerTypes();
-
-  /** @var \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager */
-  $entity_type_manager = \Drupal::service('entity_type.manager');
-  // This will allow us to create an index of all entity types of the site.
-  foreach ($entity_type_manager->getDefinitions() as $entity_type_id => $entity_type) {
-    // Store the entity keyed by base table. If it has a data table, use that as
-    // well.
-    if ($data_table = $entity_type->getDataTable()) {
-      $entities_by_table[$data_table] = $entity_type;
-    }
-    if ($base_table = $entity_type->getBaseTable()) {
-      $entities_by_table[$base_table] = $entity_type;
-    }
-
-    // The following code basically contains the same kind of logic as
-    // \Drupal\Core\Entity\Sql\SqlContentEntityStorage::initTableLayout() to
-    // prefetch all tables (base, data, revision, and revision data).
-    $base_tables[$entity_type_id] = $entity_type->getBaseTable() ?: $entity_type->id();
-    $revisionable = $entity_type->isRevisionable();
-
-    $revision_table = '';
-    if ($revisionable) {
-      $revision_table = $entity_type->getRevisionTable() ?: $entity_type->id() . '_revision';
-    }
-    $revision_tables[$entity_type_id] = $revision_table;
-
-    $translatable = $entity_type->isTranslatable();
-    $data_table = '';
-    // For example the data table just exists, when the entity type is
-    // translatable.
-    if ($translatable) {
-      $data_table = $entity_type->getDataTable() ?: $entity_type->id() . '_field_data';
-    }
-    $data_tables[$entity_type_id] = $data_table;
-
-    $duplicate_fields[$entity_type_id] = array_intersect_key($entity_type->getKeys(), array_flip(['id', 'revision', 'bundle']));
-  }
-
-  foreach ($config_factory->listAll('views.view.') as $view_config_name) {
-    $changed = FALSE;
-    $view = $config_factory->getEditable($view_config_name);
-
-    $displays = $view->get('display');
-    if (isset($entities_by_table[$view->get('base_table')])) {
-      $entity_type = $entities_by_table[$view->get('base_table')];
-      $entity_type_id = $entity_type->id();
-      $data_table = $data_tables[$entity_type_id];
-      $base_table = $base_tables[$entity_type_id];
-      $revision_table = $revision_tables[$entity_type_id];
-
-      if ($data_table) {
-        foreach ($displays as $display_name => &$display) {
-          foreach ($handler_types as $handler_type) {
-            if (!empty($display['display_options'][$handler_type['plural']])) {
-              foreach ($display['display_options'][$handler_type['plural']] as $field_name => &$field) {
-                $table = $field['table'];
-                if (($table === $base_table || $table === $revision_table) && in_array($field_name, $duplicate_fields[$entity_type_id])) {
-                  $field['table'] = $data_table;
-                  $changed = TRUE;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if ($changed) {
-      $view->set('display', $displays);
-      $view->save();
-      $ids[] = $view->get('id');
-    }
-  }
-  if (!empty($ids)) {
-    $message = new TranslatableMarkup('Updated tables for field handlers for views: @ids', ['@ids' => implode(', ', array_unique($ids))]);
-  }
-
-  return $message;
+function views_post_update_boolean_custom_titles(?array &$sandbox = NULL): void {
+  // Empty update to rebuild Views config schema.
 }
 
 /**
- * Include field formatter dependencies in a view when the formatter is used.
+ * Add eager load option to all oembed type field configurations.
  */
-function views_post_update_field_formatter_dependencies() {
-  $views = View::loadMultiple();
-  array_walk($views, function (View $view) {
-    $view->save();
+function views_post_update_oembed_eager_load(?array &$sandbox = NULL): void {
+  /** @var \Drupal\views\ViewsConfigUpdater $view_config_updater */
+  $view_config_updater = \Drupal::classResolver(ViewsConfigUpdater::class);
+  \Drupal::classResolver(ConfigEntityUpdater::class)->update($sandbox, 'view', function (ViewEntityInterface $view) use ($view_config_updater): bool {
+    return $view_config_updater->needsOembedEagerLoadFieldUpdate($view);
   });
 }
 
 /**
- * Fix views with dependencies on taxonomy terms that don't exist.
+ * Add lazy load options to all responsive image type field configurations.
  */
-function views_post_update_taxonomy_index_tid() {
-  $views = View::loadMultiple();
-  array_walk($views, function (View $view) {
-    $old_dependencies = $view->getDependencies();
-    $new_dependencies = $view->calculateDependencies()->getDependencies();
-    if ($old_dependencies !== $new_dependencies) {
-      $view->save();
-    }
+function views_post_update_responsive_image_lazy_load(?array &$sandbox = NULL): void {
+  /** @var \Drupal\views\ViewsConfigUpdater $view_config_updater */
+  $view_config_updater = \Drupal::classResolver(ViewsConfigUpdater::class);
+  \Drupal::classResolver(ConfigEntityUpdater::class)->update($sandbox, 'view', function (ViewEntityInterface $view) use ($view_config_updater): bool {
+    return $view_config_updater->needsResponsiveImageLazyLoadFieldUpdate($view);
   });
 }
 
 /**
- * Fix views with serializer dependencies.
+ * Update timestamp formatter settings for views.
  */
-function views_post_update_serializer_dependencies() {
-  $views = View::loadMultiple();
-  array_walk($views, function (View $view) {
-    $old_dependencies = $view->getDependencies();
-    $new_dependencies = $view->calculateDependencies()->getDependencies();
-    if ($old_dependencies !== $new_dependencies) {
-      $view->save();
-    }
+function views_post_update_timestamp_formatter(?array &$sandbox = NULL): void {
+  /** @var \Drupal\views\ViewsConfigUpdater $view_config_updater */
+  $view_config_updater = \Drupal::classResolver(ViewsConfigUpdater::class);
+  \Drupal::classResolver(ConfigEntityUpdater::class)->update($sandbox, 'view', function (ViewEntityInterface $view) use ($view_config_updater): bool {
+    return $view_config_updater->needsTimestampFormatterTimeDiffUpdate($view);
   });
 }
 
 /**
- * Set all boolean filter values to strings.
+ * Fix '-revision_id' replacement token syntax.
  */
-function views_post_update_boolean_filter_values() {
-  $config_factory = \Drupal::configFactory();
-  foreach ($config_factory->listAll('views.view.') as $view_config_name) {
-    $view = $config_factory->getEditable($view_config_name);
-    $save = FALSE;
-    foreach ($view->get('display') as $display_name => $display) {
-      if (isset($display['display_options']['filters'])) {
-        foreach ($display['display_options']['filters'] as $filter_name => $filter) {
-          if (isset($filter['plugin_id']) && $filter['plugin_id'] === 'boolean') {
-            $new_value = FALSE;
-            // Update all boolean and integer values to strings.
-            if ($filter['value'] === TRUE || $filter['value'] === 1) {
-              $new_value = '1';
-            }
-            elseif ($filter['value'] === FALSE || $filter['value'] === 0) {
-              $new_value = '0';
-            }
-            if ($new_value !== FALSE) {
-              $view->set("display.$display_name.display_options.filters.$filter_name.value", $new_value);
-              $save = TRUE;
-            }
-          }
-        }
-      }
-    }
-    if ($save) {
-      $view->save();
-    }
-  }
+function views_post_update_fix_revision_id_part(&$sandbox = NULL): void {
+  /** @var \Drupal\views\ViewsConfigUpdater $view_config_updater */
+  $view_config_updater = \Drupal::classResolver(ViewsConfigUpdater::class);
+  $view_config_updater->setDeprecationsEnabled(FALSE);
+  \Drupal::classResolver(ConfigEntityUpdater::class)
+    ->update($sandbox, 'view', function (ViewEntityInterface $view) use ($view_config_updater) {
+      return $view_config_updater->needsRevisionFieldHyphenFix($view);
+    });
 }
 
 /**
- * Rebuild caches to ensure schema changes are read in.
+ * Add labels to views which don't have one.
  */
-function views_post_update_grouped_filters() {
-  // Empty update to cause a cache rebuild so that the schema changes are read.
-}
-
-/**
- * Fix table names for revision metadata fields.
- *
- * @see https://www.drupal.org/node/2831499
- */
-function views_post_update_revision_metadata_fields() {
-  // The table names are fixed automatically in
-  // \Drupal\views\Entity\View::preSave(), so we just need to re-save all views.
-  $views = View::loadMultiple();
-  array_walk($views, function (View $view) {
-    $view->save();
+function views_post_update_add_missing_labels(&$sandbox = NULL): void {
+  /** @var \Drupal\views\ViewsConfigUpdater $view_config_updater */
+  $view_config_updater = \Drupal::classResolver(ViewsConfigUpdater::class);
+  \Drupal::classResolver(ConfigEntityUpdater::class)->update($sandbox, 'view', function (ViewEntityInterface $view) use ($view_config_updater): bool {
+    return $view_config_updater->addLabelIfMissing($view);
   });
 }
 
 /**
- * Add additional settings to the entity link field and convert node_path usage
- * to entity_link.
+ * Remove the skip_cache settings.
  */
-function views_post_update_entity_link_url() {
-  // Load all views.
-  $views = \Drupal::entityTypeManager()->getStorage('view')->loadMultiple();
-
-  /* @var \Drupal\views\Entity\View[] $views */
-  foreach ($views as $view) {
-    $displays = $view->get('display');
-    $changed = FALSE;
-    foreach ($displays as $display_name => &$display) {
-      if (isset($display['display_options']['fields'])) {
-        foreach ($display['display_options']['fields'] as $field_name => &$field) {
-          if (isset($field['plugin_id']) && $field['plugin_id'] === 'entity_link') {
-            // Add any missing settings for entity_link.
-            if (!isset($field['output_url_as_text'])) {
-              $field['output_url_as_text'] = FALSE;
-              $changed = TRUE;
-            }
-            if (!isset($field['absolute'])) {
-              $field['absolute'] = FALSE;
-              $changed = TRUE;
-            }
-          }
-          elseif (isset($field['plugin_id']) && $field['plugin_id'] === 'node_path') {
-            // Convert the use of node_path to entity_link.
-            $field['plugin_id'] = 'entity_link';
-            $field['field'] = 'view_node';
-            $field['output_url_as_text'] = TRUE;
-            $changed = TRUE;
-          }
-        }
-      }
-    }
-    if ($changed) {
-      $view->set('display', $displays);
-      $view->save();
-    }
-  }
+function views_post_update_remove_skip_cache_setting(): void {
+  \Drupal::configFactory()
+    ->getEditable('views.settings')
+    ->clear('skip_cache')
+    ->save(TRUE);
 }
 
 /**
- * Update dependencies for moved bulk field plugin.
+ * Remove default_argument_skip_url setting.
  */
-function views_post_update_bulk_field_moved() {
-  $views = View::loadMultiple();
-  array_walk($views, function (View $view) {
-    $old_dependencies = $view->getDependencies();
-    $new_dependencies = $view->calculateDependencies()->getDependencies();
-    if ($old_dependencies !== $new_dependencies) {
-      $view->save();
-    }
+function views_post_update_remove_default_argument_skip_url(?array &$sandbox = NULL): void {
+  /** @var \Drupal\views\ViewsConfigUpdater $view_config_updater */
+  $view_config_updater = \Drupal::classResolver(ViewsConfigUpdater::class);
+  \Drupal::classResolver(ConfigEntityUpdater::class)->update($sandbox, 'view', function (ViewEntityInterface $view) use ($view_config_updater): bool {
+    return $view_config_updater->needsDefaultArgumentSkipUrlUpdate($view);
   });
 }
 
 /**
- * Add placeholder settings to string or numeric filters.
+ * Removes User context from views with taxonomy filters.
  */
-function views_post_update_filter_placeholder_text() {
-  // Load all views.
-  $views = \Drupal::entityTypeManager()->getStorage('view')->loadMultiple();
-  /** @var \Drupal\views\Plugin\ViewsHandlerManager $filter_manager */
-  $filter_manager = \Drupal::service('plugin.manager.views.filter');
-
-  /* @var \Drupal\views\Entity\View[] $views */
-  foreach ($views as $view) {
-    $displays = $view->get('display');
-    $save = FALSE;
-    foreach ($displays as $display_name => &$display) {
-      if (isset($display['display_options']['filters'])) {
-        foreach ($display['display_options']['filters'] as $filter_name => &$filter) {
-          // Any of the children of the modified classes will also be inheriting
-          // the new settings.
-          $filter_instance = $filter_manager->getHandler($filter);
-          if ($filter_instance instanceof StringFilter) {
-            if (!isset($filter['expose']['placeholder'])) {
-              $filter['expose']['placeholder'] = '';
-              $save = TRUE;
-            }
-          }
-          elseif ($filter_instance instanceof NumericFilter) {
-            if (!isset($filter['expose']['placeholder'])) {
-              $filter['expose']['placeholder'] = '';
-              $save = TRUE;
-            }
-            if (!isset($filter['expose']['min_placeholder'])) {
-              $filter['expose']['min_placeholder'] = '';
-              $save = TRUE;
-            }
-            if (!isset($filter['expose']['max_placeholder'])) {
-              $filter['expose']['max_placeholder'] = '';
-              $save = TRUE;
-            }
-          }
-        }
-      }
-    }
-    if ($save) {
-      $view->set('display', $displays);
-      $view->save();
-    }
-  }
+function views_post_update_taxonomy_filter_user_context(?array &$sandbox = NULL): void {
+  /** @var \Drupal\views\ViewsConfigUpdater $view_config_updater */
+  $view_config_updater = \Drupal::classResolver(ViewsConfigUpdater::class);
+  \Drupal::classResolver(ConfigEntityUpdater::class)->update($sandbox, 'view', function (ViewEntityInterface $view) use ($view_config_updater): bool {
+    return $view_config_updater->needsTaxonomyTermFilterUpdate($view);
+  });
 }
 
 /**
- * Include views data table provider in views dependencies.
+ * Adds a default pager heading.
  */
-function views_post_update_views_data_table_dependencies(&$sandbox = NULL) {
-  $storage = \Drupal::entityTypeManager()->getStorage('view');
-  if (!isset($sandbox['views'])) {
-    $sandbox['views'] = $storage->getQuery()->accessCheck(FALSE)->execute();
-    $sandbox['count'] = count($sandbox['views']);
-  }
-
-  // Process 10 views at a time.
-  $views = $storage->loadMultiple(array_splice($sandbox['views'], 0, 10));
-  foreach ($views as $view) {
-    $original_dependencies = $view->getDependencies();
-    // Only re-save if dependencies have changed.
-    if ($view->calculateDependencies()->getDependencies() !== $original_dependencies) {
-      // We can trust the data because we've already recalculated the
-      // dependencies.
-      $view->trustData();
-      $view->save();
-    }
-  }
-
-  $sandbox['#finished'] = empty($sandbox['views']) ? 1 : ($sandbox['count'] - count($sandbox['views'])) / $sandbox['count'];
+function views_post_update_pager_heading(?array &$sandbox = NULL): void {
+  /** @var \Drupal\views\ViewsConfigUpdater $view_config_updater */
+  $view_config_updater = \Drupal::classResolver(ViewsConfigUpdater::class);
+  \Drupal::classResolver(ConfigEntityUpdater::class)->update($sandbox, 'view', function (ViewEntityInterface $view) use ($view_config_updater): bool {
+    return $view_config_updater->needsPagerHeadingUpdate($view);
+  });
 }
 
 /**
- * Fix cache max age for table displays.
+ * Removes entity display cache metadata from views with rendered entity fields.
  */
-function views_post_update_table_display_cache_max_age(&$sandbox = NULL) {
-  $storage = \Drupal::entityTypeManager()->getStorage('view');
-  if (!isset($sandbox['views'])) {
-    $sandbox['views'] = $storage->getQuery()->accessCheck(FALSE)->execute();
-    $sandbox['count'] = count($sandbox['views']);
-  }
+function views_post_update_rendered_entity_field_cache_metadata(?array &$sandbox = NULL): void {
+  /** @var \Drupal\views\ViewsConfigUpdater $view_config_updater */
+  $view_config_updater = \Drupal::classResolver(ViewsConfigUpdater::class);
+  \Drupal::classResolver(ConfigEntityUpdater::class)->update($sandbox, 'view', function (ViewEntityInterface $view) use ($view_config_updater): bool {
+    return $view_config_updater->needsRenderedEntityFieldUpdate($view);
+  });
+}
 
-  for ($i = 0; $i < 10 && count($sandbox['views']); $i++) {
-    $view_id = array_shift($sandbox['views']);
-    if ($view = $storage->load($view_id)) {
-      $displays = $view->get('display');
-      foreach ($displays as $display_name => &$display) {
-        if (isset($display['display_options']['style']['type']) && $display['display_options']['style']['type'] === 'table') {
-          $view->save();
-        }
-      }
-    }
-  }
-
-  $sandbox['#finished'] = empty($sandbox['views']) ? 1 : ($sandbox['count'] - count($sandbox['views'])) / $sandbox['count'];
+/**
+ * Post update configured views for entity reference argument plugin IDs.
+ */
+function views_post_update_views_data_argument_plugin_id(?array &$sandbox = NULL): void {
+  /** @var \Drupal\views\ViewsConfigUpdater $view_config_updater */
+  $view_config_updater = \Drupal::classResolver(ViewsConfigUpdater::class);
+  $view_config_updater->setDeprecationsEnabled(FALSE);
+  \Drupal::classResolver(ConfigEntityUpdater::class)->update($sandbox, 'view', function (ViewEntityInterface $view) use ($view_config_updater): bool {
+    return $view_config_updater->needsEntityArgumentUpdate($view);
+  });
 }

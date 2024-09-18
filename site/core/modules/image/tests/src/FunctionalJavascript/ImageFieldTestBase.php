@@ -1,16 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\image\FunctionalJavascript;
 
-use Drupal\FunctionalJavascriptTests\DrupalSelenium2Driver;
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 use Drupal\Tests\image\Kernel\ImageFieldCreationTrait;
 use Drupal\Tests\TestFileCreationTrait;
 
 /**
  * This class provides methods specifically for testing Image's field handling.
  */
-abstract class ImageFieldTestBase extends JavascriptTestBase {
+abstract class ImageFieldTestBase extends WebDriverTestBase {
 
   use ImageFieldCreationTrait;
   use TestFileCreationTrait {
@@ -18,11 +19,9 @@ abstract class ImageFieldTestBase extends JavascriptTestBase {
   }
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'node',
     'image',
     'field_ui',
@@ -30,12 +29,7 @@ abstract class ImageFieldTestBase extends JavascriptTestBase {
   ];
 
   /**
-   * {@inheritdoc}
-   */
-  protected $minkDefaultDriverClass = DrupalSelenium2Driver::class;
-
-  /**
-   * An user with permissions to administer content types and image styles.
+   * A user with permissions to administer content types and image styles.
    *
    * @var \Drupal\user\UserInterface
    */
@@ -44,7 +38,7 @@ abstract class ImageFieldTestBase extends JavascriptTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     // Create Basic page and Article node types.

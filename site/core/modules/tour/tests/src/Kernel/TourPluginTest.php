@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\tour\Kernel;
 
 use Drupal\KernelTests\KernelTestBase;
@@ -8,6 +10,7 @@ use Drupal\KernelTests\KernelTestBase;
  * Tests the functionality of tour plugins.
  *
  * @group tour
+ * @group legacy
  */
 class TourPluginTest extends KernelTestBase {
 
@@ -16,7 +19,7 @@ class TourPluginTest extends KernelTestBase {
    *
    * @var array
    */
-  public static $modules = ['tour'];
+  protected static $modules = ['tour'];
 
   /**
    * Stores the tour plugin manager.
@@ -25,7 +28,10 @@ class TourPluginTest extends KernelTestBase {
    */
   protected $pluginManager;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installConfig(['tour']);
@@ -33,10 +39,10 @@ class TourPluginTest extends KernelTestBase {
   }
 
   /**
-   * Test tour plugins.
+   * Tests tour plugins.
    */
-  public function testTourPlugins() {
-    $this->assertIdentical(count($this->pluginManager->getDefinitions()), 1, 'Only tour plugins for the enabled modules were returned.');
+  public function testTourPlugins(): void {
+    $this->assertCount(1, $this->pluginManager->getDefinitions(), 'Only tour plugins for the enabled modules were returned.');
   }
 
 }

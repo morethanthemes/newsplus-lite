@@ -1,42 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Listeners;
 
 use PHPUnit\Framework\TestResult;
-use PHPUnit\TextUI\ResultPrinter;
+use PHPUnit\TextUI\DefaultResultPrinter;
 
-if (class_exists('PHPUnit_Runner_Version') && version_compare(\PHPUnit_Runner_Version::id(), '6.0.0', '<')) {
-  class_alias('Drupal\Tests\Listeners\Legacy\HtmlOutputPrinter', 'Drupal\Tests\Listeners\HtmlOutputPrinter');
-  // Using an early return instead of a else does not work when using the
-  // PHPUnit phar due to some weird PHP behavior (the class gets defined without
-  // executing the code before it and so the definition is not properly
-  // conditional).
-}
-else {
+/**
+ * Defines a class for providing html output results for functional tests.
+ *
+ * @internal
+ */
+class HtmlOutputPrinter extends DefaultResultPrinter {
+
+  use HtmlOutputPrinterTrait;
+
   /**
-   * Defines a class for providing html output results for functional tests.
-   *
-   * @internal
+   * {@inheritdoc}
    */
-  class HtmlOutputPrinter extends ResultPrinter {
-    use HtmlOutputPrinterTrait;
-    /**
-     * {@inheritdoc}
-     */
-    public function __construct($out = NULL, $verbose = FALSE, $colors = self::COLOR_DEFAULT, $debug = FALSE, $numberOfColumns = 80, $reverse = FALSE) {
-      parent::__construct($out, $verbose, $colors, $debug, $numberOfColumns, $reverse);
+  public function printResult(TestResult $result): void {
+    parent::printResult($result);
 
-      $this->setUpHtmlOutput();
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function printResult(TestResult $result) {
-      parent::printResult($result);
-
-      $this->printHtmlOutput();
-    }
-
+    $this->printHtmlOutput();
   }
+
 }

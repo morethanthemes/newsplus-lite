@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\node\Kernel\Views;
 
 use Drupal\node\Entity\Node;
@@ -18,7 +20,7 @@ class RevisionCreateTimestampTest extends ViewsKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['node_test_views', 'node', 'views', 'user'];
+  protected static $modules = ['node_test_views', 'node', 'views', 'user'];
 
   /**
    * {@inheritdoc}
@@ -28,7 +30,7 @@ class RevisionCreateTimestampTest extends ViewsKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
+  protected function setUp($import_test_views = TRUE): void {
     parent::setUp($import_test_views);
 
     $this->installSchema('node', 'node_access');
@@ -36,14 +38,14 @@ class RevisionCreateTimestampTest extends ViewsKernelTestBase {
     $this->installEntitySchema('user');
 
     if ($import_test_views) {
-      ViewTestData::createTestViews(get_class($this), ['node_test_views']);
+      ViewTestData::createTestViews(static::class, ['node_test_views']);
     }
   }
 
-  public function testRevisionCreateTimestampView() {
+  public function testRevisionCreateTimestampView(): void {
     $node_type = NodeType::create([
       'type' => 'article',
-      'label' => 'Article',
+      'name' => 'Article',
     ]);
     $node_type->save();
     $node = Node::create([

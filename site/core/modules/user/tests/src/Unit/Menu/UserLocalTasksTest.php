@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\user\Unit\Menu;
 
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Tests\Core\Menu\LocalTaskIntegrationTestBase;
 
 /**
@@ -11,9 +14,20 @@ use Drupal\Tests\Core\Menu\LocalTaskIntegrationTestBase;
  */
 class UserLocalTasksTest extends LocalTaskIntegrationTestBase {
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     $this->directoryList = ['user' => 'core/modules/user'];
     parent::setUp();
+
+    // Add services required for user local tasks.
+    $entity_type_manager = $this->createMock(EntityTypeManagerInterface::class);
+    $entity_type_manager->expects($this->any())
+      ->method('getDefinitions')
+      ->willReturn([]);
+    $this->container->set('entity_type.manager', $entity_type_manager);
+    $this->container->set('string_translation', $this->getStringTranslationStub());
   }
 
   /**
@@ -21,18 +35,18 @@ class UserLocalTasksTest extends LocalTaskIntegrationTestBase {
    *
    * @dataProvider getUserAdminRoutes
    */
-  public function testUserAdminLocalTasks($route, $expected) {
+  public function testUserAdminLocalTasks($route, $expected): void {
     $this->assertLocalTasks($route, $expected);
   }
 
   /**
    * Provides a list of routes to test.
    */
-  public function getUserAdminRoutes() {
+  public static function getUserAdminRoutes() {
     return [
-      ['entity.user.collection', [['entity.user.collection', 'user.admin_permissions', 'entity.user_role.collection']]],
-      ['user.admin_permissions', [['entity.user.collection', 'user.admin_permissions', 'entity.user_role.collection']]],
-      ['entity.user_role.collection', [['entity.user.collection', 'user.admin_permissions', 'entity.user_role.collection']]],
+      ['entity.user.collection', [['entity.user.collection', 'user.admin_permissions', 'entity.user_role.collection', 'user.role.settings']]],
+      ['user.admin_permissions', [['entity.user.collection', 'user.admin_permissions', 'entity.user_role.collection', 'user.role.settings']]],
+      ['entity.user_role.collection', [['entity.user.collection', 'user.admin_permissions', 'entity.user_role.collection', 'user.role.settings']]],
       ['entity.user.admin_form', [['user.account_settings_tab']]],
     ];
   }
@@ -42,7 +56,7 @@ class UserLocalTasksTest extends LocalTaskIntegrationTestBase {
    *
    * @dataProvider getUserLoginRoutes
    */
-  public function testUserLoginLocalTasks($route) {
+  public function testUserLoginLocalTasks($route): void {
     $tasks = [
       0 => ['user.register', 'user.pass', 'user.login'],
     ];
@@ -52,7 +66,7 @@ class UserLocalTasksTest extends LocalTaskIntegrationTestBase {
   /**
    * Provides a list of routes to test.
    */
-  public function getUserLoginRoutes() {
+  public static function getUserLoginRoutes() {
     return [
       ['user.login'],
       ['user.register'],
@@ -65,7 +79,7 @@ class UserLocalTasksTest extends LocalTaskIntegrationTestBase {
    *
    * @dataProvider getUserPageRoutes
    */
-  public function testUserPageLocalTasks($route, $subtask = []) {
+  public function testUserPageLocalTasks($route, $subtask = []): void {
     $tasks = [
       0 => ['entity.user.canonical', 'entity.user.edit_form'],
     ];
@@ -78,7 +92,7 @@ class UserLocalTasksTest extends LocalTaskIntegrationTestBase {
   /**
    * Provides a list of routes to test.
    */
-  public function getUserPageRoutes() {
+  public static function getUserPageRoutes() {
     return [
       ['entity.user.canonical'],
       ['entity.user.edit_form'],

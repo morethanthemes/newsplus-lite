@@ -9,8 +9,10 @@ use Drupal\Core\Ajax\CloseDialogCommand;
 use Drupal\Core\Ajax\HtmlCommand;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\EventSubscriber\MainContentViewSubscriber;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\workflows\WorkflowInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -58,23 +60,32 @@ class ContentModerationConfigureEntityTypesForm extends FormBase {
   protected $entityType;
 
   /**
+   * The Messenger service.
+   *
+   * @var \Drupal\Core\Messenger\MessengerInterface
+   */
+  protected $messenger;
+
+  /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('entity_type.manager'),
       $container->get('entity_type.bundle.info'),
-      $container->get('content_moderation.moderation_information')
+      $container->get('content_moderation.moderation_information'),
+      $container->get('messenger')
     );
   }
 
   /**
    * {@inheritdoc}
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityTypeBundleInfoInterface $bundle_info, ModerationInformationInterface $moderation_information) {
+  public function __construct(EntityTypeManagerInterface $entity_type_manager, EntityTypeBundleInfoInterface $bundle_info, ModerationInformationInterface $moderation_information, MessengerInterface $messenger) {
     $this->entityTypeManager = $entity_type_manager;
     $this->bundleInfo = $bundle_info;
     $this->moderationInformation = $moderation_information;
+    $this->messenger = $messenger;
   }
 
   /**
@@ -87,7 +98,7 @@ class ContentModerationConfigureEntityTypesForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, WorkflowInterface $workflow = NULL, $entity_type_id = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, ?WorkflowInterface $workflow = NULL, $entity_type_id = NULL) {
     $this->workflow = $workflow;
     try {
       $this->entityType = $this->entityTypeManager->getDefinition($entity_type_id);
@@ -108,6 +119,7 @@ class ContentModerationConfigureEntityTypesForm extends FormBase {
         // Add the bundle to the options if it's not enabled on a workflow,
         // unless the workflow it's enabled on is this one.
         $options[$bundle_id] = [
+          'title' => ['data' => ['#title' => $bundle['label']]],
           'type' => $bundle['label'],
         ];
         // Add the bundle to the list of default values if it's enabled on this
@@ -132,20 +144,31 @@ class ContentModerationConfigureEntityTypesForm extends FormBase {
       ];
     }
 
+    // Get unsupported features for this entity type.
+    $warnings = $this->moderationInformation->getUnsupportedFeatures($this->entityType);
+    // Display message into the Ajax form returned.
+    if ($this->getRequest()->get(MainContentViewSubscriber::WRAPPER_FORMAT) == 'drupal_modal' && !empty($warnings)) {
+      $form['warnings'] = ['#type' => 'status_messages', '#weight' => -1];
+    }
+    // Set warning message.
+    foreach ($warnings as $warning) {
+      $this->messenger->addWarning($warning);
+    }
+
     $form['actions'] = ['#type' => 'actions'];
     $form['actions']['submit'] = [
       '#type' => 'submit',
       '#button_type' => 'primary',
       '#value' => $this->t('Save'),
       '#ajax' => [
-        'callback' => [$this, 'ajaxcallback'],
+        'callback' => [$this, 'ajaxCallback'],
       ],
     ];
     $form['actions']['cancel'] = [
       '#type' => 'button',
       '#value' => $this->t('Cancel'),
       '#ajax' => [
-        'callback' => [$this, 'ajaxcallback'],
+        'callback' => [$this, 'ajaxCallback'],
       ],
     ];
 
@@ -195,7 +218,7 @@ class ContentModerationConfigureEntityTypesForm extends FormBase {
   /**
    * Route title callback.
    */
-  public function getTitle(WorkflowInterface $workflow = NULL, $entity_type_id) {
+  public function getTitle(WorkflowInterface $workflow, $entity_type_id) {
     $this->entityType = $this->entityTypeManager->getDefinition($entity_type_id);
 
     $title = $this->t('Select the @entity_type types for the @workflow workflow', ['@entity_type' => $this->entityType->getLabel(), '@workflow' => $workflow->label()]);

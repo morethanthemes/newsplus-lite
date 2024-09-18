@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Entity;
 
 use Drupal\comment\Entity\Comment;
 use Drupal\comment\Plugin\Field\FieldType\CommentItemInterface;
 use Drupal\comment\Tests\CommentTestTrait;
-use Drupal\Core\Database\Database;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\block\Entity\Block;
 use Drupal\entity_test\Entity\EntityTest;
@@ -17,11 +18,14 @@ use Drupal\user\Entity\User;
 use Drupal\file\Entity\File;
 
 /**
+ * Tests entity CRUD via hooks.
+ *
  * Tests the invocation of hooks when creating, inserting, loading, updating or
  * deleting an entity.
  *
  * Tested hooks are:
  * - hook_entity_insert() and hook_ENTITY_TYPE_insert()
+ * - hook_entity_preload()
  * - hook_entity_load() and hook_ENTITY_TYPE_load()
  * - hook_entity_update() and hook_ENTITY_TYPE_update()
  * - hook_entity_predelete() and hook_ENTITY_TYPE_predelete()
@@ -36,15 +40,24 @@ class EntityCrudHookTest extends EntityKernelTestBase {
   use CommentTestTrait;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['block', 'block_test', 'entity_crud_hook_test', 'file', 'taxonomy', 'node', 'comment'];
+  protected static $modules = [
+    'block',
+    'block_test',
+    'entity_crud_hook_test',
+    'file',
+    'taxonomy',
+    'node',
+    'comment',
+  ];
 
   protected $ids = [];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installSchema('user', ['users_data']);
@@ -52,37 +65,39 @@ class EntityCrudHookTest extends EntityKernelTestBase {
     $this->installSchema('node', ['node_access']);
     $this->installSchema('comment', ['comment_entity_statistics']);
     $this->installConfig(['node', 'comment']);
+    $this->container->get('theme_installer')->install(['stark']);
   }
 
   /**
    * Checks the order of CRUD hook execution messages.
    *
-   * entity_crud_hook_test.module implements all core entity CRUD hooks and
+   * Module entity_crud_hook_test implements all core entity CRUD hooks and
    * stores a message for each in $GLOBALS['entity_crud_hook_test'].
    *
-   * @param $messages
+   * @param array $messages
    *   An array of plain-text messages in the order they should appear.
+   *
+   * @internal
    */
-  protected function assertHookMessageOrder($messages) {
+  protected function assertHookMessageOrder(array $messages): void {
     $positions = [];
     foreach ($messages as $message) {
       // Verify that each message is found and record its position.
       $position = array_search($message, $GLOBALS['entity_crud_hook_test']);
-      if ($this->assertTrue($position !== FALSE, $message)) {
-        $positions[] = $position;
-      }
+      $this->assertNotFalse($position, $message);
+      $positions[] = $position;
     }
 
     // Sort the positions and ensure they remain in the same order.
     $sorted = $positions;
     sort($sorted);
-    $this->assertTrue($sorted == $positions, 'The hook messages appear in the correct order.');
+    $this->assertSame($positions, $sorted, 'The hook messages appear in the correct order.');
   }
 
   /**
    * Tests hook invocations for CRUD operations on blocks.
    */
-  public function testBlockHooks() {
+  public function testBlockHooks(): void {
     $entity = Block::create([
       'id' => 'stark_test_html',
       'plugin' => 'test_html',
@@ -137,7 +152,7 @@ class EntityCrudHookTest extends EntityKernelTestBase {
   /**
    * Tests hook invocations for CRUD operations on comments.
    */
-  public function testCommentHooks() {
+  public function testCommentHooks(): void {
     $account = $this->createUser();
     NodeType::create([
       'type' => 'article',
@@ -153,8 +168,8 @@ class EntityCrudHookTest extends EntityKernelTestBase {
       'promote' => 0,
       'sticky' => 0,
       'langcode' => LanguageInterface::LANGCODE_NOT_SPECIFIED,
-      'created' => REQUEST_TIME,
-      'changed' => REQUEST_TIME,
+      'created' => \Drupal::time()->getRequestTime(),
+      'changed' => \Drupal::time()->getRequestTime(),
     ]);
     $node->save();
     $nid = $node->id();
@@ -168,8 +183,8 @@ class EntityCrudHookTest extends EntityKernelTestBase {
       'field_name' => 'comment',
       'uid' => $account->id(),
       'subject' => 'Test comment',
-      'created' => REQUEST_TIME,
-      'changed' => REQUEST_TIME,
+      'created' => \Drupal::time()->getRequestTime(),
+      'changed' => \Drupal::time()->getRequestTime(),
       'status' => 1,
       'langcode' => LanguageInterface::LANGCODE_NOT_SPECIFIED,
     ]);
@@ -222,7 +237,7 @@ class EntityCrudHookTest extends EntityKernelTestBase {
   /**
    * Tests hook invocations for CRUD operations on files.
    */
-  public function testFileHooks() {
+  public function testFileHooks(): void {
     $this->installEntitySchema('file');
 
     $url = 'public://entity_crud_hook_test.file';
@@ -235,8 +250,8 @@ class EntityCrudHookTest extends EntityKernelTestBase {
       'filemime' => 'text/plain',
       'filesize' => filesize($url),
       'status' => 1,
-      'created' => REQUEST_TIME,
-      'changed' => REQUEST_TIME,
+      'created' => \Drupal::time()->getRequestTime(),
+      'changed' => \Drupal::time()->getRequestTime(),
     ]);
 
     $this->assertHookMessageOrder([
@@ -287,7 +302,7 @@ class EntityCrudHookTest extends EntityKernelTestBase {
   /**
    * Tests hook invocations for CRUD operations on nodes.
    */
-  public function testNodeHooks() {
+  public function testNodeHooks(): void {
     $account = $this->createUser();
 
     $node = Node::create([
@@ -298,8 +313,8 @@ class EntityCrudHookTest extends EntityKernelTestBase {
       'promote' => 0,
       'sticky' => 0,
       'langcode' => LanguageInterface::LANGCODE_NOT_SPECIFIED,
-      'created' => REQUEST_TIME,
-      'changed' => REQUEST_TIME,
+      'created' => \Drupal::time()->getRequestTime(),
+      'changed' => \Drupal::time()->getRequestTime(),
     ]);
 
     $this->assertHookMessageOrder([
@@ -321,6 +336,7 @@ class EntityCrudHookTest extends EntityKernelTestBase {
     $node = Node::load($node->id());
 
     $this->assertHookMessageOrder([
+      'entity_crud_hook_test_entity_preload called for type node',
       'entity_crud_hook_test_entity_load called for type node',
       'entity_crud_hook_test_node_load called',
     ]);
@@ -350,7 +366,7 @@ class EntityCrudHookTest extends EntityKernelTestBase {
   /**
    * Tests hook invocations for CRUD operations on taxonomy terms.
    */
-  public function testTaxonomyTermHooks() {
+  public function testTaxonomyTermHooks(): void {
     $this->installEntitySchema('taxonomy_term');
 
     $vocabulary = Vocabulary::create([
@@ -419,7 +435,7 @@ class EntityCrudHookTest extends EntityKernelTestBase {
   /**
    * Tests hook invocations for CRUD operations on taxonomy vocabularies.
    */
-  public function testTaxonomyVocabularyHooks() {
+  public function testTaxonomyVocabularyHooks(): void {
     $this->installEntitySchema('taxonomy_term');
 
     $vocabulary = Vocabulary::create([
@@ -478,11 +494,11 @@ class EntityCrudHookTest extends EntityKernelTestBase {
   /**
    * Tests hook invocations for CRUD operations on users.
    */
-  public function testUserHooks() {
+  public function testUserHooks(): void {
     $account = User::create([
       'name' => 'Test user',
       'mail' => 'test@example.com',
-      'created' => REQUEST_TIME,
+      'created' => \Drupal::time()->getRequestTime(),
       'status' => 1,
       'language' => 'en',
     ]);
@@ -522,7 +538,7 @@ class EntityCrudHookTest extends EntityKernelTestBase {
     ]);
 
     $GLOBALS['entity_crud_hook_test'] = [];
-    user_delete($account->id());
+    $account->delete();
 
     $this->assertHookMessageOrder([
       'entity_crud_hook_test_user_predelete called',
@@ -535,26 +551,22 @@ class EntityCrudHookTest extends EntityKernelTestBase {
   /**
    * Tests rollback from failed entity save.
    */
-  public function testEntityRollback() {
+  public function testEntityRollback(): void {
     // Create a block.
     try {
       EntityTest::create(['name' => 'fail_insert'])->save();
       $this->fail('Expected exception has not been thrown.');
     }
     catch (\Exception $e) {
-      $this->pass('Expected exception has been thrown.');
+      // Expected exception; just continue testing.
     }
 
-    if (Database::getConnection()->supportsTransactions()) {
-      // Check that the block does not exist in the database.
-      $ids = \Drupal::entityQuery('entity_test')->condition('name', 'fail_insert')->execute();
-      $this->assertTrue(empty($ids), 'Transactions supported, and entity not found in database.');
-    }
-    else {
-      // Check that the block exists in the database.
-      $ids = \Drupal::entityQuery('entity_test')->condition('name', 'fail_insert')->execute();
-      $this->assertFalse(empty($ids), 'Transactions not supported, and entity found in database.');
-    }
+    // Check that the block does not exist in the database.
+    $ids = \Drupal::entityQuery('entity_test')
+      ->accessCheck(FALSE)
+      ->condition('name', 'fail_insert')
+      ->execute();
+    $this->assertEmpty($ids);
   }
 
 }

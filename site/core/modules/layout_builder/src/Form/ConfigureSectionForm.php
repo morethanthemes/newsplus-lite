@@ -2,15 +2,20 @@
 
 namespace Drupal\layout_builder\Form;
 
-use Drupal\Core\DependencyInjection\ClassResolverInterface;
+use Drupal\Component\Utility\Html;
+use Drupal\Core\Ajax\AjaxFormHelperTrait;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Form\SubformState;
+use Drupal\Core\Form\WorkspaceDynamicSafeFormInterface;
 use Drupal\Core\Layout\LayoutInterface;
+use Drupal\Core\Plugin\ContextAwarePluginInterface;
 use Drupal\Core\Plugin\PluginFormFactoryInterface;
 use Drupal\Core\Plugin\PluginFormInterface;
 use Drupal\Core\Plugin\PluginWithFormsInterface;
+use Drupal\layout_builder\Context\LayoutBuilderContextTrait;
 use Drupal\layout_builder\Controller\LayoutRebuildTrait;
+use Drupal\layout_builder\LayoutBuilderHighlightTrait;
 use Drupal\layout_builder\LayoutTempstoreRepositoryInterface;
 use Drupal\layout_builder\Section;
 use Drupal\layout_builder\SectionStorageInterface;
@@ -20,11 +25,15 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Provides a form for configuring a layout section.
  *
  * @internal
+ *   Form classes are internal.
  */
-class ConfigureSectionForm extends FormBase {
+class ConfigureSectionForm extends FormBase implements WorkspaceDynamicSafeFormInterface {
 
   use AjaxFormHelperTrait;
+  use LayoutBuilderContextTrait;
+  use LayoutBuilderHighlightTrait;
   use LayoutRebuildTrait;
+  use WorkspaceSafeFormTrait;
 
   /**
    * The layout tempstore repository.
@@ -39,6 +48,13 @@ class ConfigureSectionForm extends FormBase {
    * @var \Drupal\Core\Layout\LayoutInterface|\Drupal\Core\Plugin\PluginFormInterface
    */
   protected $layout;
+
+  /**
+   * The section being configured.
+   *
+   * @var \Drupal\layout_builder\Section
+   */
+  protected $section;
 
   /**
    * The plugin form manager.
@@ -62,6 +78,13 @@ class ConfigureSectionForm extends FormBase {
   protected $delta;
 
   /**
+   * The plugin ID.
+   *
+   * @var string
+   */
+  protected $pluginId;
+
+  /**
    * Indicates whether the section is being added or updated.
    *
    * @var bool
@@ -73,14 +96,11 @@ class ConfigureSectionForm extends FormBase {
    *
    * @param \Drupal\layout_builder\LayoutTempstoreRepositoryInterface $layout_tempstore_repository
    *   The layout tempstore repository.
-   * @param \Drupal\Core\DependencyInjection\ClassResolverInterface $class_resolver
-   *   The class resolver.
    * @param \Drupal\Core\Plugin\PluginFormFactoryInterface $plugin_form_manager
    *   The plugin form manager.
    */
-  public function __construct(LayoutTempstoreRepositoryInterface $layout_tempstore_repository, ClassResolverInterface $class_resolver, PluginFormFactoryInterface $plugin_form_manager) {
+  public function __construct(LayoutTempstoreRepositoryInterface $layout_tempstore_repository, PluginFormFactoryInterface $plugin_form_manager) {
     $this->layoutTempstoreRepository = $layout_tempstore_repository;
-    $this->classResolver = $class_resolver;
     $this->pluginFormFactory = $plugin_form_manager;
   }
 
@@ -90,7 +110,6 @@ class ConfigureSectionForm extends FormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('layout_builder.tempstore_repository'),
-      $container->get('class_resolver'),
       $container->get('plugin_form.factory')
     );
   }
@@ -105,19 +124,25 @@ class ConfigureSectionForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, SectionStorageInterface $section_storage = NULL, $delta = NULL, $plugin_id = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, ?SectionStorageInterface $section_storage = NULL, $delta = NULL, $plugin_id = NULL) {
     $this->sectionStorage = $section_storage;
     $this->delta = $delta;
     $this->isUpdate = is_null($plugin_id);
+    $this->pluginId = $plugin_id;
+
+    $section = $this->getCurrentSection();
 
     if ($this->isUpdate) {
-      $section = $this->sectionStorage->getSection($this->delta);
+      if ($label = $section->getLayoutSettings()['label']) {
+        $form['#title'] = $this->t('Configure @section', ['@section' => $label]);
+      }
     }
-    else {
-      $section = new Section($plugin_id);
-    }
+    // Passing available contexts to the layout plugin here could result in an
+    // exception since the layout may not have a context mapping for a required
+    // context slot on creation.
     $this->layout = $section->getLayout();
 
+    $form_state->setTemporaryValue('gathered_contexts', $this->getPopulatedContexts($this->sectionStorage));
     $form['#tree'] = TRUE;
     $form['layout_settings'] = [];
     $subform_state = SubformState::createForSubform($form['layout_settings'], $form, $form_state);
@@ -130,8 +155,21 @@ class ConfigureSectionForm extends FormBase {
     ];
     if ($this->isAjax()) {
       $form['actions']['submit']['#ajax']['callback'] = '::ajaxSubmit';
+      // @todo static::ajaxSubmit() requires data-drupal-selector to be the same
+      //   between the various Ajax requests. A bug in
+      //   \Drupal\Core\Form\FormBuilder prevents that from happening unless
+      //   $form['#id'] is also the same. Normally, #id is set to a unique HTML
+      //   ID via Html::getUniqueId(), but here we bypass that in order to work
+      //   around the data-drupal-selector bug. This is okay so long as we
+      //   assume that this form only ever occurs once on a page. Remove this
+      //   workaround in https://www.drupal.org/node/2897377.
+      $form['#id'] = Html::getId($form_state->getBuildInfo()['form_id']);
     }
+    $target_highlight_id = $this->isUpdate ? $this->sectionUpdateHighlightId($delta) : $this->sectionAddHighlightId($delta);
+    $form['#attributes']['data-layout-builder-target-highlight-id'] = $target_highlight_id;
 
+    // Mark this as an administrative page for JavaScript ("Back to site" link).
+    $form['#attached']['drupalSettings']['path']['currentPathIsAdmin'] = TRUE;
     return $form;
   }
 
@@ -151,14 +189,17 @@ class ConfigureSectionForm extends FormBase {
     $subform_state = SubformState::createForSubform($form['layout_settings'], $form, $form_state);
     $this->getPluginForm($this->layout)->submitConfigurationForm($form['layout_settings'], $subform_state);
 
-    $plugin_id = $this->layout->getPluginId();
+    // If this layout is context-aware, set the context mapping.
+    if ($this->layout instanceof ContextAwarePluginInterface) {
+      $this->layout->setContextMapping($subform_state->getValue('context_mapping', []));
+    }
+
     $configuration = $this->layout->getConfiguration();
 
-    if ($this->isUpdate) {
-      $this->sectionStorage->getSection($this->delta)->setLayoutSettings($configuration);
-    }
-    else {
-      $this->sectionStorage->insertSection($this->delta, new Section($plugin_id, $configuration));
+    $section = $this->getCurrentSection();
+    $section->setLayoutSettings($configuration);
+    if (!$this->isUpdate) {
+      $this->sectionStorage->insertSection($this->delta, $section);
     }
 
     $this->layoutTempstoreRepository->set($this->sectionStorage);
@@ -180,6 +221,8 @@ class ConfigureSectionForm extends FormBase {
    *
    * @return \Drupal\Core\Plugin\PluginFormInterface
    *   The plugin form for the layout.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    */
   protected function getPluginForm(LayoutInterface $layout) {
     if ($layout instanceof PluginWithFormsInterface) {
@@ -191,6 +234,45 @@ class ConfigureSectionForm extends FormBase {
     }
 
     throw new \InvalidArgumentException(sprintf('The "%s" layout does not provide a configuration form', $layout->getPluginId()));
+  }
+
+  /**
+   * Retrieves the section storage property.
+   *
+   * @return \Drupal\layout_builder\SectionStorageInterface
+   *   The section storage for the current form.
+   */
+  public function getSectionStorage() {
+    return $this->sectionStorage;
+  }
+
+  /**
+   * Retrieves the layout being modified by the form.
+   *
+   * @return \Drupal\Core\Layout\LayoutInterface|\Drupal\Core\Plugin\PluginFormInterface
+   *   The layout for the current form.
+   */
+  public function getCurrentLayout(): LayoutInterface {
+    return $this->layout;
+  }
+
+  /**
+   * Retrieves the section being modified by the form.
+   *
+   * @return \Drupal\layout_builder\Section
+   *   The section for the current form.
+   */
+  public function getCurrentSection(): Section {
+    if (!isset($this->section)) {
+      if ($this->isUpdate) {
+        $this->section = $this->sectionStorage->getSection($this->delta);
+      }
+      else {
+        $this->section = new Section($this->pluginId);
+      }
+    }
+
+    return $this->section;
   }
 
 }

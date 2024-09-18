@@ -37,6 +37,8 @@ class ConfigSnapshotSubscriber implements EventSubscriberInterface {
   /**
    * Constructs the ConfigSnapshotSubscriber object.
    *
+   * @param \Drupal\Core\Config\ConfigManagerInterface $config_manager
+   *   The configuration manager.
    * @param \Drupal\Core\Config\StorageInterface $source_storage
    *   The source storage used to discover configuration changes.
    * @param \Drupal\Core\Config\StorageInterface $snapshot_storage
@@ -64,7 +66,7 @@ class ConfigSnapshotSubscriber implements EventSubscriberInterface {
    * @return array
    *   An array of event listener definitions.
    */
-  public static function getSubscribedEvents() {
+  public static function getSubscribedEvents(): array {
     $events[ConfigEvents::IMPORT][] = ['onConfigImporterImport', 40];
     return $events;
   }

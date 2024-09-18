@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Plugin\Discovery;
 
 use Drupal\Core\StringTranslation\TranslatableMarkup;
@@ -37,13 +39,13 @@ abstract class DiscoveryTestBase extends KernelTestBase {
   /**
    * Tests getDefinitions() and getDefinition().
    */
-  public function testDiscoveryInterface() {
+  public function testDiscoveryInterface(): void {
     // Ensure that getDefinitions() returns the expected definitions.
     // For the arrays to be identical (instead of only equal), they must be
     // sorted equally, which seems unnecessary here.
     // The discovered definitions may contain circular references; use a custom
     // assertion message to prevent var_export() from getting called.
-    $this->assertEqual($this->discovery->getDefinitions(), $this->expectedDefinitions, 'Expected definitions found.');
+    $this->assertEquals($this->expectedDefinitions, $this->discovery->getDefinitions(), 'Expected definitions found.');
 
     // Ensure that getDefinition() returns the expected definition.
     foreach ($this->expectedDefinitions as $id => $definition) {
@@ -51,10 +53,10 @@ abstract class DiscoveryTestBase extends KernelTestBase {
     }
 
     // Ensure that an empty array is returned if no plugin definitions are found.
-    $this->assertIdentical($this->emptyDiscovery->getDefinitions(), [], 'array() returned if no plugin definitions are found.');
+    $this->assertSame([], $this->emptyDiscovery->getDefinitions(), 'array() returned if no plugin definitions are found.');
 
     // Ensure that NULL is returned as the definition of a non-existing plugin.
-    $this->assertIdentical($this->emptyDiscovery->getDefinition('non_existing', FALSE), NULL, 'NULL returned as the definition of a non-existing plugin.');
+    $this->assertNull($this->emptyDiscovery->getDefinition('non_existing', FALSE), 'NULL returned as the definition of a non-existing plugin.');
   }
 
   /**
@@ -66,9 +68,6 @@ abstract class DiscoveryTestBase extends KernelTestBase {
    *   The definition to test.
    * @param array $expected_definition
    *   The expected definition to test against.
-   *
-   * @return bool
-   *   TRUE if the assertion succeeded, FALSE otherwise.
    */
   protected function assertDefinitionIdentical(array $definition, array $expected_definition) {
     $func = function (&$item) {
@@ -78,7 +77,7 @@ abstract class DiscoveryTestBase extends KernelTestBase {
     };
     array_walk_recursive($definition, $func);
     array_walk_recursive($expected_definition, $func);
-    return $this->assertIdentical($definition, $expected_definition);
+    $this->assertSame($expected_definition, $definition);
   }
 
 }

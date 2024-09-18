@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\content_moderation\Functional;
 
 use Drupal\node\Entity\Node;
-use Drupal\simpletest\ContentTypeCreationTrait;
 use Drupal\Tests\BrowserTestBase;
-use Drupal\workflows\Entity\Workflow;
+use Drupal\Tests\content_moderation\Traits\ContentModerationTestTrait;
+use Drupal\Tests\node\Traits\ContentTypeCreationTrait;
 
 /**
  * Test the content moderation actions.
@@ -15,13 +17,12 @@ use Drupal\workflows\Entity\Workflow;
 class ModerationActionsTest extends BrowserTestBase {
 
   use ContentTypeCreationTrait;
+  use ContentModerationTestTrait;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'content_moderation',
     'node',
     'views',
@@ -30,7 +31,12 @@ class ModerationActionsTest extends BrowserTestBase {
   /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $moderated_bundle = $this->createContentType(['type' => 'moderated_bundle']);
@@ -38,7 +44,7 @@ class ModerationActionsTest extends BrowserTestBase {
     $standard_bundle = $this->createContentType(['type' => 'standard_bundle']);
     $standard_bundle->save();
 
-    $workflow = Workflow::load('editorial');
+    $workflow = $this->createEditorialWorkflow();
     $workflow->getTypePlugin()->addEntityTypeAndBundle('node', 'moderated_bundle');
     $workflow->save();
 
@@ -51,11 +57,11 @@ class ModerationActionsTest extends BrowserTestBase {
   }
 
   /**
-   * Test the node status actions report moderation status to users correctly.
+   * Tests the node status actions report moderation status to users correctly.
    *
    * @dataProvider nodeStatusActionsTestCases
    */
-  public function testNodeStatusActions($action, $bundle, $warning_appears, $starting_status, $final_status) {
+  public function testNodeStatusActions($action, $bundle, $warning_appears, $starting_status, $final_status): void {
     // Create and run an action on a node.
     $node = Node::create([
       'type' => $bundle,
@@ -67,23 +73,22 @@ class ModerationActionsTest extends BrowserTestBase {
     }
     $node->save();
 
-    $this->drupalPostForm('admin/content', [
+    $this->drupalGet('admin/content');
+    $this->submitForm([
       'node_bulk_form[0]' => TRUE,
       'action' => $action,
     ], 'Apply to selected items');
 
     if ($warning_appears) {
       if ($action == 'node_publish_action') {
-        $this->assertSession()
-          ->elementContains('css', '.messages--warning', node_get_type_label($node) . ' content items were skipped as they are under moderation and may not be directly published.');
+        $this->assertSession()->statusMessageContains(node_get_type_label($node) . ' content items were skipped as they are under moderation and may not be directly published.', 'warning');
       }
       else {
-        $this->assertSession()
-          ->elementContains('css', '.messages--warning', node_get_type_label($node) . ' content items were skipped as they are under moderation and may not be directly unpublished.');
+        $this->assertSession()->statusMessageContains(node_get_type_label($node) . ' content items were skipped as they are under moderation and may not be directly unpublished.', 'warning');
       }
     }
     else {
-      $this->assertSession()->elementNotExists('css', '.messages--warning');
+      $this->assertSession()->statusMessageNotExists('warning');
     }
 
     // Ensure after the action has run, the node matches the expected status.
@@ -97,7 +102,7 @@ class ModerationActionsTest extends BrowserTestBase {
    * @return array
    *   An array of test cases.
    */
-  public function nodeStatusActionsTestCases() {
+  public static function nodeStatusActionsTestCases() {
     return [
       'Moderated bundle shows warning (publish action)' => [
         'node_publish_action',

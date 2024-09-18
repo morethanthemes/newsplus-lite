@@ -2,20 +2,18 @@
 
 namespace Drupal\user\EventSubscriber;
 
-use Drupal\Core\Routing\RouteMatch;
-use Drupal\Core\Routing\UrlGeneratorTrait;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Site\MaintenanceModeEvents;
 use Drupal\Core\Site\MaintenanceModeInterface;
+use Drupal\Core\Url;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
-use Symfony\Component\HttpKernel\KernelEvents;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
 
 /**
  * Maintenance mode subscriber to log out users.
  */
 class MaintenanceModeSubscriber implements EventSubscriberInterface {
-
-  use UrlGeneratorTrait;
 
   /**
    * The maintenance mode.
@@ -45,29 +43,30 @@ class MaintenanceModeSubscriber implements EventSubscriberInterface {
   }
 
   /**
-   * Logout users if site is in maintenance mode.
+   * Logout users if site is in maintenance mode and user is not exempt.
    *
-   * @param \Symfony\Component\HttpKernel\Event\GetResponseEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\RequestEvent $event
    *   The event to process.
    */
-  public function onKernelRequestMaintenance(GetResponseEvent $event) {
-    $request = $event->getRequest();
-    $route_match = RouteMatch::createFromRequest($request);
-    if ($this->maintenanceMode->applies($route_match)) {
-      // If the site is offline, log out unprivileged users.
-      if ($this->account->isAuthenticated() && !$this->maintenanceMode->exempt($this->account)) {
-        user_logout();
-        // Redirect to homepage.
-        $event->setResponse($this->redirect($this->url('<front>')));
-      }
+  public function onMaintenanceModeRequest(RequestEvent $event) {
+    // If the site is offline, log out unprivileged users.
+    if ($this->account->isAuthenticated()) {
+      user_logout();
+      // Redirect to homepage.
+      $event->setResponse(
+        new RedirectResponse(Url::fromRoute('<front>')->toString())
+      );
     }
   }
 
   /**
    * {@inheritdoc}
    */
-  public static function getSubscribedEvents() {
-    $events[KernelEvents::REQUEST][] = ['onKernelRequestMaintenance', 31];
+  public static function getSubscribedEvents(): array {
+    $events[MaintenanceModeEvents::MAINTENANCE_MODE_REQUEST][] = [
+      'onMaintenanceModeRequest',
+      -900,
+    ];
     return $events;
   }
 

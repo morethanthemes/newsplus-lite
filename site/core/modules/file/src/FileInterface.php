@@ -14,30 +14,41 @@ use Drupal\Core\Entity\EntityChangedInterface;
 interface FileInterface extends ContentEntityInterface, EntityChangedInterface, EntityOwnerInterface {
 
   /**
+   * Indicates that the file is permanent and should not be deleted.
+   *
+   * Temporary files older than the system.file.temporary_maximum_age will be
+   * removed during cron runs if cleanup is not disabled. (Permanent files will
+   * not be removed during the file garbage collection process.)
+   */
+  const STATUS_PERMANENT = 1;
+
+  /**
    * Returns the name of the file.
    *
    * This may differ from the basename of the URI if the file is renamed to
    * avoid overwriting an existing file.
    *
-   * @return string
-   *   Name of the file.
+   * @return string|null
+   *   Name of the file, or NULL if unknown.
    */
   public function getFilename();
 
   /**
    * Sets the name of the file.
    *
-   * @param string $filename
-   *   The file name that corresponds to this file. May differ from the basename
-   *   of the URI and changing the filename does not change the URI.
+   * @param string|null $filename
+   *   The file name that corresponds to this file, or NULL if unknown. May
+   *   differ from the basename of the URI and changing the filename does not
+   *   change the URI.
    */
   public function setFilename($filename);
 
   /**
    * Returns the URI of the file.
    *
-   * @return string
-   *   The URI of the file, e.g. public://directory/file.jpg.
+   * @return string|null
+   *   The URI of the file, e.g. public://directory/file.jpg, or NULL if it has
+   *   not yet been set.
    */
   public function getFileUri();
 
@@ -51,34 +62,49 @@ interface FileInterface extends ContentEntityInterface, EntityChangedInterface, 
   public function setFileUri($uri);
 
   /**
-   * Returns the MIME type of the file.
+   * Creates a file URL for the URI of this file.
+   *
+   * @param bool $relative
+   *   (optional) Whether the URL should be root-relative, defaults to TRUE.
    *
    * @return string
-   *   The MIME type of the file, e.g. image/jpeg or text/xml.
+   *   A string containing a URL that may be used to access the file.
+   *
+   * @see \Drupal\Core\File\FileUrlGeneratorInterface
+   */
+  public function createFileUrl($relative = TRUE);
+
+  /**
+   * Returns the MIME type of the file.
+   *
+   * @return string|null
+   *   The MIME type of the file, e.g. image/jpeg or text/xml, or NULL if it
+   *   could not be determined.
    */
   public function getMimeType();
 
   /**
    * Sets the MIME type of the file.
    *
-   * @param string $mime
-   *   The MIME type of the file, e.g. image/jpeg or text/xml.
+   * @param string|null $mime
+   *   The MIME type of the file, e.g. image/jpeg or text/xml, or NULL if it
+   *   could not be determined.
    */
   public function setMimeType($mime);
 
   /**
    * Returns the size of the file.
    *
-   * @return string
-   *   The size of the file in bytes.
+   * @return int|null
+   *   The size of the file in bytes, or NULL if it could not be determined.
    */
   public function getSize();
 
   /**
    * Sets the size of the file.
    *
-   * @param int $size
-   *   The size of the file in bytes.
+   * @param int|null $size
+   *   The size of the file in bytes, or NULL if it could not be determined.
    */
   public function setSize($size);
 
@@ -111,8 +137,8 @@ interface FileInterface extends ContentEntityInterface, EntityChangedInterface, 
   /**
    * Returns the file entity creation timestamp.
    *
-   * @return int
-   *   Creation timestamp of the file entity.
+   * @return int|null
+   *   Creation timestamp of the file entity, or NULL if unknown.
    */
   public function getCreatedTime();
 

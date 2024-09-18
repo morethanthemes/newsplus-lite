@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\KernelTests\Core\Config;
 
 use Drupal\config_entity_static_cache_test\ConfigOverrider;
@@ -13,11 +15,12 @@ use Drupal\KernelTests\KernelTestBase;
 class ConfigEntityStaticCacheTest extends KernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['config_test', 'config_entity_static_cache_test'];
+  protected static $modules = [
+    'config_test',
+    'config_entity_static_cache_test',
+  ];
 
   /**
    * The type ID of the entity under test.
@@ -36,7 +39,7 @@ class ConfigEntityStaticCacheTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->entityTypeId = 'config_test';
     $this->entityId = 'test_1';
@@ -49,7 +52,7 @@ class ConfigEntityStaticCacheTest extends KernelTestBase {
   /**
    * Tests that the static cache is working.
    */
-  public function testCacheHit() {
+  public function testCacheHit(): void {
     $storage = $this->container->get('entity_type.manager')
       ->getStorage($this->entityTypeId);
     $entity_1 = $storage->load($this->entityId);
@@ -63,7 +66,7 @@ class ConfigEntityStaticCacheTest extends KernelTestBase {
   /**
    * Tests that the static cache is reset on entity save and delete.
    */
-  public function testReset() {
+  public function testReset(): void {
     $storage = $this->container->get('entity_type.manager')
       ->getStorage($this->entityTypeId);
     $entity = $storage->load($this->entityId);
@@ -73,7 +76,7 @@ class ConfigEntityStaticCacheTest extends KernelTestBase {
     $entity->label = 'New label';
     $entity->save();
     $entity = $storage->load($this->entityId);
-    $this->assertIdentical($entity->label, 'New label');
+    $this->assertSame('New label', $entity->label);
 
     // Ensure loading after a delete retrieves NULL rather than an obsolete
     // cached one.
@@ -84,9 +87,9 @@ class ConfigEntityStaticCacheTest extends KernelTestBase {
   /**
    * Tests that the static cache is sensitive to config overrides.
    */
-  public function testConfigOverride() {
+  public function testConfigOverride(): void {
     /** @var \Drupal\Core\Config\Entity\ConfigEntityStorage $storage */
-    $storage = \Drupal::entityManager()->getStorage($this->entityTypeId);
+    $storage = \Drupal::entityTypeManager()->getStorage($this->entityTypeId);
     // Prime the cache prior to adding a config override.
     $storage->load($this->entityId);
 
@@ -94,19 +97,19 @@ class ConfigEntityStaticCacheTest extends KernelTestBase {
     // despite the prior cache priming.
     \Drupal::configFactory()->addOverride(new ConfigOverrider());
     $entity_override = $storage->load($this->entityId);
-    $this->assertIdentical($entity_override->label, 'Overridden label');
+    $this->assertSame('Overridden label', $entity_override->label);
 
     // Load override free to ensure that loading the config entity again does
     // not return the overridden value.
     $entity_no_override = $storage->loadOverrideFree($this->entityId);
-    $this->assertNotIdentical($entity_no_override->label, 'Overridden label');
-    $this->assertNotIdentical($entity_override->_loadStamp, $entity_no_override->_loadStamp);
+    $this->assertNotSame('Overridden label', $entity_no_override->label);
+    $this->assertNotSame($entity_override->_loadStamp, $entity_no_override->_loadStamp);
 
     // Reload the entity and ensure the cache is used.
-    $this->assertIdentical($storage->loadOverrideFree($this->entityId)->_loadStamp, $entity_no_override->_loadStamp);
+    $this->assertSame($entity_no_override->_loadStamp, $storage->loadOverrideFree($this->entityId)->_loadStamp);
 
     // Enable overrides and reload the entity and ensure the cache is used.
-    $this->assertIdentical($storage->load($this->entityId)->_loadStamp, $entity_override->_loadStamp);
+    $this->assertSame($entity_override->_loadStamp, $storage->load($this->entityId)->_loadStamp);
   }
 
 }

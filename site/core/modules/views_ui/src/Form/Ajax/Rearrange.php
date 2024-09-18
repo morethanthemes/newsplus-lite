@@ -2,8 +2,10 @@
 
 namespace Drupal\views_ui\Form\Ajax;
 
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Link;
+use Drupal\Core\Render\Markup;
 use Drupal\Core\Url;
 use Drupal\views\ViewEntityInterface;
 use Drupal\views\ViewExecutable;
@@ -85,7 +87,7 @@ class Rearrange extends ViewsFormBase {
           'action' => 'order',
           'relationship' => 'sibling',
           'group' => 'weight',
-        ]
+        ],
       ],
       '#tree' => TRUE,
       '#prefix' => '<div class="scroll" data-drupal-views-scroll>',
@@ -115,18 +117,19 @@ class Rearrange extends ViewsFormBase {
         '#type' => 'textfield',
         '#default_value' => ++$count,
         '#attributes' => ['class' => ['weight']],
-        '#title' => t('Weight for @title', ['@title' => $name]),
+        '#title' => $this->t('Weight for @title', ['@title' => $name]),
         '#title_display' => 'invisible',
       ];
 
       $form['fields'][$id]['removed'] = [
         '#type' => 'checkbox',
-        '#title' => t('Remove @title', ['@title' => $name]),
+        '#title' => $this->t('Remove @title', ['@title' => $name]),
         '#title_display' => 'invisible',
         '#id' => 'views-removed-' . $id,
         '#attributes' => ['class' => ['views-remove-checkbox']],
         '#default_value' => 0,
-        '#suffix' => \Drupal::l(SafeMarkup::format('<span>@text</span>', ['@text' => $this->t('Remove')]),
+        '#prefix' => '<div class="js-hide">',
+        '#suffix' => Markup::create('</div>' . Link::fromTextAndUrl(new FormattableMarkup('<span>@text</span>', ['@text' => $this->t('Remove')]),
           Url::fromRoute('<none>', [], [
             'attributes' => [
               'id' => 'views-remove-link-' . $id,
@@ -135,7 +138,7 @@ class Rearrange extends ViewsFormBase {
               'title' => $this->t('Remove this item'),
             ],
           ])
-        ),
+        )->toString()),
       ];
     }
 
@@ -160,7 +163,7 @@ class Rearrange extends ViewsFormBase {
 
     // Make an array with the weights
     foreach ($form_state->getValue('fields') as $field => $info) {
-      // add each value that is a field with a weight to our list, but only if
+      // Add each value that is a field with a weight to our list, but only if
       // it has had its 'removed' checkbox checked.
       if (is_array($info) && isset($info['weight']) && empty($info['removed'])) {
         $order[$field] = $info['weight'];

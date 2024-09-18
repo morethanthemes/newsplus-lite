@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\system\Functional\Rest;
 
 use Drupal\Tests\rest\Functional\AnonResourceTestTrait;
 
 /**
- * @group rest
+ * @group Action
  */
 class ActionJsonAnonTest extends ActionResourceTestBase {
 
@@ -20,5 +22,10 @@ class ActionJsonAnonTest extends ActionResourceTestBase {
    * {@inheritdoc}
    */
   protected static $mimeType = 'application/json';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
 }

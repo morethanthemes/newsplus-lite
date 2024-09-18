@@ -2,17 +2,20 @@
 
 namespace Drupal\views\Plugin\Block;
 
+use Drupal\Core\Block\Attribute\Block;
 use Drupal\Core\Cache\Cache;
+use Drupal\Component\Utility\Xss;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\views\Plugin\Derivative\ViewsExposedFilterBlock as ViewsExposedFilterBlockDeriver;
 
 /**
  * Provides a 'Views Exposed Filter' block.
- *
- * @Block(
- *   id = "views_exposed_filter_block",
- *   admin_label = @Translation("Views Exposed Filter Block"),
- *   deriver = "Drupal\views\Plugin\Derivative\ViewsExposedFilterBlock"
- * )
  */
+#[Block(
+  id: "views_exposed_filter_block",
+  admin_label: new TranslatableMarkup("Views Exposed Filter Block"),
+  deriver: ViewsExposedFilterBlockDeriver::class
+)]
 class ViewsExposedFilterBlock extends ViewsBlockBase {
 
   /**
@@ -30,13 +33,13 @@ class ViewsExposedFilterBlock extends ViewsBlockBase {
    *   A renderable array representing the content of the block with additional
    *   context of current view and display ID.
    */
-  public function build() {
-    $output = $this->view->display_handler->viewExposedFormBlocks();
+  public function build() : array {
+    $output = $this->view->display_handler->viewExposedFormBlocks() ?? [];
     // Provide the context for block build and block view alter hooks.
     // \Drupal\views\Plugin\Block\ViewsBlock::build() adds the same context in
     // \Drupal\views\ViewExecutable::buildRenderable() using
     // \Drupal\views\Plugin\views\display\DisplayPluginBase::buildRenderable().
-    if (is_array($output) && !empty($output)) {
+    if (!empty($output)) {
       $output += [
         '#view' => $this->view,
         '#display_id' => $this->displayID,
@@ -46,6 +49,14 @@ class ViewsExposedFilterBlock extends ViewsBlockBase {
     // Before returning the block output, convert it to a renderable array with
     // contextual links.
     $this->addContextualLinks($output, 'exposed_filter');
+
+    // Set the blocks title.
+    if (!empty($this->configuration['label_display']) && ($this->view->getTitle() || !empty($this->configuration['views_label']))) {
+      $output['#title'] = [
+        '#markup' => empty($this->configuration['views_label']) ? $this->view->getTitle() : $this->configuration['views_label'],
+        '#allowed_tags' => Xss::getHtmlTagList(),
+      ];
+    }
 
     return $output;
   }

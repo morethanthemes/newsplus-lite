@@ -32,16 +32,17 @@ class FormTestControllerObject extends ConfigFormBase {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    drupal_set_message(t('The FormTestControllerObject::create() method was used for this form.'));
+    \Drupal::messenger()->addStatus(t('The FormTestControllerObject::create() method was used for this form.'));
     return new static(
-      $container->get('config.factory')
+      $container->get('config.factory'),
+      $container->get('config.typed')
     );
   }
 
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state, Request $request = NULL, $custom_attributes = NULL) {
+  public function buildForm(array $form, FormStateInterface $form_state, ?Request $request = NULL, $custom_attributes = NULL) {
     $form['element'] = ['#markup' => 'The FormTestControllerObject::buildForm() method was used for this form.'];
 
     $form['custom_attribute']['#markup'] = $custom_attributes;
@@ -64,14 +65,14 @@ class FormTestControllerObject extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    drupal_set_message($this->t('The FormTestControllerObject::validateForm() method was used for this form.'));
+    $this->messenger()->addStatus($this->t('The FormTestControllerObject::validateForm() method was used for this form.'));
   }
 
   /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    drupal_set_message($this->t('The FormTestControllerObject::submitForm() method was used for this form.'));
+    $this->messenger()->addStatus($this->t('The FormTestControllerObject::submitForm() method was used for this form.'));
     $this->config('form_test.object')
       ->set('bananas', $form_state->getValue('bananas'))
       ->save();

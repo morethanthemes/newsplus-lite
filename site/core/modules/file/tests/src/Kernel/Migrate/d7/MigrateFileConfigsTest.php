@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\file\Kernel\Migrate\d7;
 
 use Drupal\Tests\SchemaCheckTestTrait;
@@ -17,7 +19,7 @@ class MigrateFileConfigsTest extends MigrateDrupal7TestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->executeMigration('file_settings');
   }
@@ -25,7 +27,7 @@ class MigrateFileConfigsTest extends MigrateDrupal7TestBase {
   /**
    * Tests migration of file variables to file.settings.yml.
    */
-  public function testFileSettings() {
+  public function testFileSettings(): void {
     $config = $this->config('file.settings');
     $this->assertSame('textfield', $config->get('description.type'));
     $this->assertSame(256, $config->get('description.length'));

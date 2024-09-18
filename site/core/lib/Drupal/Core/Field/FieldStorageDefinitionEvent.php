@@ -2,12 +2,12 @@
 
 namespace Drupal\Core\Field;
 
-use Symfony\Component\EventDispatcher\GenericEvent;
+use Drupal\Component\EventDispatcher\Event;
 
 /**
  * Defines a base class for all field storage definition events.
  */
-class FieldStorageDefinitionEvent extends GenericEvent {
+class FieldStorageDefinitionEvent extends Event {
 
   /**
    * The field storage definition.
@@ -32,7 +32,7 @@ class FieldStorageDefinitionEvent extends GenericEvent {
    *   (optional) The original field storage definition. This should be passed
    *   only when updating the storage definition.
    */
-  public function __construct(FieldStorageDefinitionInterface $field_storage_definition, FieldStorageDefinitionInterface $original = NULL) {
+  public function __construct(FieldStorageDefinitionInterface $field_storage_definition, ?FieldStorageDefinitionInterface $original = NULL) {
     $this->fieldStorageDefinition = $field_storage_definition;
     $this->original = $original;
   }

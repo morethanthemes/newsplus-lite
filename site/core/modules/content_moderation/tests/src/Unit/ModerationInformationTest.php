@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\content_moderation\Unit;
 
 use Drupal\content_moderation\Entity\Handler\ModerationHandler;
@@ -7,11 +9,13 @@ use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\ContentEntityType;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\content_moderation\ModerationInformation;
 use Drupal\Tests\UnitTestCase;
 use Drupal\workflows\WorkflowInterface;
+use Prophecy\Argument;
 
 /**
  * @coversDefaultClass \Drupal\content_moderation\ModerationInformation
@@ -37,11 +41,12 @@ class ModerationInformationTest extends UnitTestCase {
    */
   protected function getEntityTypeManager() {
     $entity_type_manager = $this->prophesize(EntityTypeManagerInterface::class);
+    $entity_type_manager->getHandler(Argument::any(), 'moderation')->willReturn(new ModerationHandler());
     return $entity_type_manager->reveal();
   }
 
   /**
-   * Sets up content moderation and entity manager mocking.
+   * Sets up content moderation and entity type bundle info mocking.
    *
    * @param string $bundle
    *   The bundle ID.
@@ -58,15 +63,32 @@ class ModerationInformationTest extends UnitTestCase {
     }
     $bundle_info = $this->prophesize(EntityTypeBundleInfoInterface::class);
     $bundle_info->getBundleInfo("test_entity_type")->willReturn([$bundle => $bundle_info_array]);
+    $bundle_info->getBundleInfo("unmoderated_test_type")->willReturn([$bundle => []]);
 
     return $bundle_info->reveal();
+  }
+
+  /**
+   * @covers ::isModeratedEntityType
+   */
+  public function testIsModeratedEntityType(): void {
+    $moderation_information = new ModerationInformation($this->getEntityTypeManager(), $this->setupModerationBundleInfo('test_bundle', 'workflow'));
+
+    $moderated_entity_type = $this->prophesize(EntityTypeInterface::class);
+    $moderated_entity_type->id()->willReturn('test_entity_type');
+
+    $unmoderated_entity_type = $this->prophesize(EntityTypeInterface::class);
+    $unmoderated_entity_type->id()->willReturn('unmoderated_test_type');
+
+    $this->assertTrue($moderation_information->isModeratedEntityType($moderated_entity_type->reveal()));
+    $this->assertFalse($moderation_information->isModeratedEntityType($unmoderated_entity_type->reveal()));
   }
 
   /**
    * @dataProvider providerWorkflow
    * @covers ::isModeratedEntity
    */
-  public function testIsModeratedEntity($workflow, $expected) {
+  public function testIsModeratedEntity($workflow, $expected): void {
     $moderation_information = new ModerationInformation($this->getEntityTypeManager(), $this->setupModerationBundleInfo('test_bundle', $workflow));
 
     $entity_type = new ContentEntityType([
@@ -76,6 +98,7 @@ class ModerationInformationTest extends UnitTestCase {
     ]);
     $entity = $this->prophesize(ContentEntityInterface::class);
     $entity->getEntityType()->willReturn($entity_type);
+    $entity->getEntityTypeId()->willReturn($entity_type->id());
     $entity->bundle()->willReturn('test_bundle');
 
     $this->assertEquals($expected, $moderation_information->isModeratedEntity($entity->reveal()));
@@ -85,7 +108,7 @@ class ModerationInformationTest extends UnitTestCase {
    * @dataProvider providerWorkflow
    * @covers ::getWorkflowForEntity
    */
-  public function testGetWorkflowForEntity($workflow) {
+  public function testGetWorkflowForEntity($workflow): void {
     $entity_type_manager = $this->prophesize(EntityTypeManagerInterface::class);
     if ($workflow) {
       $workflow_entity = $this->prophesize(WorkflowInterface::class)->reveal();
@@ -108,7 +131,7 @@ class ModerationInformationTest extends UnitTestCase {
    * @dataProvider providerWorkflow
    * @covers ::shouldModerateEntitiesOfBundle
    */
-  public function testShouldModerateEntities($workflow, $expected) {
+  public function testShouldModerateEntities($workflow, $expected): void {
     $entity_type = new ContentEntityType([
       'id' => 'test_entity_type',
       'bundle_entity_type' => 'entity_test_bundle',
@@ -123,7 +146,7 @@ class ModerationInformationTest extends UnitTestCase {
   /**
    * Data provider for several tests.
    */
-  public function providerWorkflow() {
+  public static function providerWorkflow() {
     return [
       [NULL, FALSE],
       ['workflow', TRUE],

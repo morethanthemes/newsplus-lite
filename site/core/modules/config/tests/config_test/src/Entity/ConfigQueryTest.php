@@ -16,6 +16,12 @@ namespace Drupal\config_test\Entity;
  *     }
  *   },
  *   config_prefix = "query",
+ *   config_export = {
+ *     "id",
+ *     "label",
+ *     "array",
+ *     "number",
+ *   },
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "label"
@@ -39,5 +45,14 @@ class ConfigQueryTest extends ConfigTest {
    * @var array
    */
   public $array = [];
+
+  /**
+   * {@inheritdoc}
+   */
+  public function concatProtectedProperty(string $value1, string $value2): static {
+    // This method intentionally does not have the config action attribute to
+    // ensure it is still discovered.
+    return parent::concatProtectedProperty($value1, $value2);
+  }
 
 }

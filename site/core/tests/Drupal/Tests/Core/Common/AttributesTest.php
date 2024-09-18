@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Common;
 
 use Drupal\Core\Template\Attribute;
@@ -17,7 +19,7 @@ class AttributesTest extends UnitTestCase {
    *
    * @return array
    */
-  public function providerTestAttributeData() {
+  public static function providerTestAttributeData() {
     return [
       // Verify that special characters are HTML encoded.
       [['&"\'<>' => 'value'], ' &amp;&quot;&#039;&lt;&gt;="value"', 'HTML encode attribute names.'],
@@ -38,7 +40,7 @@ class AttributesTest extends UnitTestCase {
           'alt' => 'Alternate',
         ],
         ' id="id-test" class="first last" alt="Alternate"',
-        'Multiple attributes.'
+        'Multiple attributes.',
       ],
       // Verify empty attributes array is rendered.
       [[], '', 'Empty attributes array.'],
@@ -52,14 +54,14 @@ class AttributesTest extends UnitTestCase {
    *
    * @dataProvider providerTestAttributeData
    */
-  public function testDrupalAttributes($attributes, $expected, $message) {
+  public function testDrupalAttributes($attributes, $expected, $message): void {
     $this->assertSame($expected, (string) new Attribute($attributes), $message);
   }
 
   /**
-   * Test attribute iteration
+   * Tests attribute iteration.
    */
-  public function testAttributeIteration() {
+  public function testAttributeIteration(): void {
     $attribute = new Attribute(['key1' => 'value1']);
     foreach ($attribute as $value) {
       $this->assertSame((string) $value, 'value1', 'Iterate over attribute.');
@@ -67,9 +69,9 @@ class AttributesTest extends UnitTestCase {
   }
 
   /**
-   * Test AttributeValueBase copy.
+   * Tests AttributeValueBase copy.
    */
-  public function testAttributeValueBaseCopy() {
+  public function testAttributeValueBaseCopy(): void {
     $original_attributes = new Attribute([
       'checked' => TRUE,
       'class' => ['who', 'is', 'on'],

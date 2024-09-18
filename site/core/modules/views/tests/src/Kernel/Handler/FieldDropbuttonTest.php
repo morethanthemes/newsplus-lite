@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Kernel\Handler;
 
 use Drupal\Core\Render\RenderContext;
-use Drupal\simpletest\ContentTypeCreationTrait;
-use Drupal\simpletest\NodeCreationTrait;
-use Drupal\simpletest\UserCreationTrait;
+use Drupal\Tests\node\Traits\ContentTypeCreationTrait;
+use Drupal\Tests\node\Traits\NodeCreationTrait;
+use Drupal\Tests\user\Traits\UserCreationTrait;
 use Drupal\Tests\views\Kernel\ViewsKernelTestBase;
 use Drupal\views\Tests\ViewTestData;
 use Drupal\views\Views;
@@ -29,7 +31,7 @@ class FieldDropbuttonTest extends ViewsKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'system',
     'user',
     'node',
@@ -70,7 +72,7 @@ class FieldDropbuttonTest extends ViewsKernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
+  protected function setUp($import_test_views = TRUE): void {
     parent::setUp(FALSE);
     $this->installEntitySchema('node');
     $this->installEntitySchema('user');
@@ -78,7 +80,7 @@ class FieldDropbuttonTest extends ViewsKernelTestBase {
     $this->installConfig('node');
     $this->installConfig('filter');
 
-    ViewTestData::createTestViews(get_class($this), ['views_test_config']);
+    ViewTestData::createTestViews(static::class, ['views_test_config']);
     // Create two node types.
     $this->createContentType(['type' => 'foo']);
     $this->createContentType(['type' => 'bar']);
@@ -87,26 +89,27 @@ class FieldDropbuttonTest extends ViewsKernelTestBase {
     $admin = $this->createUser();
 
     // And three nodes.
+    $requestTime = \Drupal::time()->getRequestTime();
     $this->node1 = $this->createNode([
       'type' => 'bar',
-      'title' => 'bazs',
+      'title' => 'foo',
       'status' => 1,
       'uid' => $admin->id(),
-      'created' => REQUEST_TIME - 10,
+      'created' => $requestTime - 10,
     ]);
     $this->node2 = $this->createNode([
       'type' => 'foo',
-      'title' => 'foos',
+      'title' => 'foo',
       'status' => 1,
       'uid' => $admin->id(),
-      'created' => REQUEST_TIME - 5,
+      'created' => $requestTime - 5,
     ]);
     $this->node3 = $this->createNode([
       'type' => 'bar',
       'title' => 'bars',
       'status' => 1,
       'uid' => $admin->id(),
-      'created' => REQUEST_TIME,
+      'created' => $requestTime,
     ]);
 
     // Now create a user with the ability to edit bar but not foo.
@@ -123,7 +126,7 @@ class FieldDropbuttonTest extends ViewsKernelTestBase {
   /**
    * Tests that dropbutton markup doesn't leak between rows.
    */
-  public function testDropbuttonMarkupShouldNotLeakBetweenRows() {
+  public function testDropbuttonMarkupShouldNotLeakBetweenRows(): void {
     $view = Views::getView('test_dropbutton');
     $view->setDisplay();
     $view->preExecute([]);
@@ -147,21 +150,21 @@ class FieldDropbuttonTest extends ViewsKernelTestBase {
 
     // The first row should contain edit links to node 3, as the user has
     // access.
-    $this->assertContains($this->node3->toUrl('edit-form')->toString(), (string) $dropbutton_output[0]);
-    $this->assertContains($this->node3->toUrl('delete-form')->toString(), (string) $dropbutton_output[0]);
+    $this->assertStringContainsString($this->node3->toUrl('edit-form')->toString(), (string) $dropbutton_output[0]);
+    $this->assertStringContainsString($this->node3->toUrl('delete-form')->toString(), (string) $dropbutton_output[0]);
 
     // Second row should be not contain links to edit/delete any content as user
     // has no edit/delete permissions.
     // It most certainly should not contain links to node 3, as node 2 is the
     // entity that forms this row.
-    $this->assertNotContains($this->node3->toUrl('edit-form')->toString(), (string) $dropbutton_output[1]);
-    $this->assertNotContains($this->node3->toUrl('delete-form')->toString(), (string) $dropbutton_output[1]);
-    $this->assertNotContains($this->node2->toUrl('edit-form')->toString(), (string) $dropbutton_output[1]);
-    $this->assertNotContains($this->node2->toUrl('delete-form')->toString(), (string) $dropbutton_output[1]);
+    $this->assertStringNotContainsString($this->node3->toUrl('edit-form')->toString(), (string) $dropbutton_output[1]);
+    $this->assertStringNotContainsString($this->node3->toUrl('delete-form')->toString(), (string) $dropbutton_output[1]);
+    $this->assertStringNotContainsString($this->node2->toUrl('edit-form')->toString(), (string) $dropbutton_output[1]);
+    $this->assertStringNotContainsString($this->node2->toUrl('delete-form')->toString(), (string) $dropbutton_output[1]);
 
     // Third row should contain links for node 1.
-    $this->assertContains($this->node1->toUrl('edit-form')->toString(), (string) $dropbutton_output[2]);
-    $this->assertContains($this->node1->toUrl('delete-form')->toString(), (string) $dropbutton_output[2]);
+    $this->assertStringContainsString($this->node1->toUrl('edit-form')->toString(), (string) $dropbutton_output[2]);
+    $this->assertStringContainsString($this->node1->toUrl('delete-form')->toString(), (string) $dropbutton_output[2]);
   }
 
 }

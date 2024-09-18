@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Form;
 
 use Drupal\Core\Form\ConfirmFormHelper;
@@ -19,12 +21,12 @@ class ConfirmFormHelperTest extends UnitTestCase {
    *
    * Tests the cancel link title.
    */
-  public function testCancelLinkTitle() {
+  public function testCancelLinkTitle(): void {
     $cancel_text = 'Cancel text';
-    $form = $this->getMock('Drupal\Core\Form\ConfirmFormInterface');
+    $form = $this->createMock('Drupal\Core\Form\ConfirmFormInterface');
     $form->expects($this->any())
       ->method('getCancelText')
-      ->will($this->returnValue($cancel_text));
+      ->willReturn($cancel_text);
 
     $link = ConfirmFormHelper::buildCancelLink($form, new Request());
     $this->assertSame($cancel_text, $link['#title']);
@@ -36,13 +38,13 @@ class ConfirmFormHelperTest extends UnitTestCase {
    *
    * Tests a cancel link route.
    */
-  public function testCancelLinkRoute() {
+  public function testCancelLinkRoute(): void {
     $route_name = 'foo_bar';
     $cancel_route = new Url($route_name);
-    $form = $this->getMock('Drupal\Core\Form\ConfirmFormInterface');
+    $form = $this->createMock('Drupal\Core\Form\ConfirmFormInterface');
     $form->expects($this->any())
       ->method('getCancelUrl')
-      ->will($this->returnValue($cancel_route));
+      ->willReturn($cancel_route);
     $link = ConfirmFormHelper::buildCancelLink($form, new Request());
     $this->assertEquals(Url::fromRoute($route_name), $link['#url']);
     $this->assertSame(['contexts' => ['url.query_args:destination']], $link['#cache']);
@@ -53,12 +55,12 @@ class ConfirmFormHelperTest extends UnitTestCase {
    *
    * Tests a cancel link route with parameters.
    */
-  public function testCancelLinkRouteWithParams() {
+  public function testCancelLinkRouteWithParams(): void {
     $expected = Url::fromRoute('foo_bar.baz', ['baz' => 'banana'], ['absolute' => TRUE]);
-    $form = $this->getMock('Drupal\Core\Form\ConfirmFormInterface');
+    $form = $this->createMock('Drupal\Core\Form\ConfirmFormInterface');
     $form->expects($this->any())
       ->method('getCancelUrl')
-      ->will($this->returnValue($expected));
+      ->willReturn($expected);
     $link = ConfirmFormHelper::buildCancelLink($form, new Request());
     $this->assertEquals($expected, $link['#url']);
     $this->assertSame(['contexts' => ['url.query_args:destination']], $link['#cache']);
@@ -69,7 +71,7 @@ class ConfirmFormHelperTest extends UnitTestCase {
    *
    * Tests a cancel link route with a URL object.
    */
-  public function testCancelLinkRouteWithUrl() {
+  public function testCancelLinkRouteWithUrl(): void {
     $cancel_route = new Url(
       'foo_bar.baz', [
         'baz' => 'banana',
@@ -78,10 +80,10 @@ class ConfirmFormHelperTest extends UnitTestCase {
         'absolute' => TRUE,
       ]
     );
-    $form = $this->getMock('Drupal\Core\Form\ConfirmFormInterface');
+    $form = $this->createMock('Drupal\Core\Form\ConfirmFormInterface');
     $form->expects($this->any())
       ->method('getCancelUrl')
-      ->will($this->returnValue($cancel_route));
+      ->willReturn($cancel_route);
     $link = ConfirmFormHelper::buildCancelLink($form, new Request());
     $this->assertSame($cancel_route, $link['#url']);
     $this->assertSame(['contexts' => ['url.query_args:destination']], $link['#cache']);
@@ -94,11 +96,11 @@ class ConfirmFormHelperTest extends UnitTestCase {
    *
    * @dataProvider providerTestCancelLinkDestination
    */
-  public function testCancelLinkDestination($destination) {
+  public function testCancelLinkDestination($destination): void {
     $query = ['destination' => $destination];
-    $form = $this->getMock('Drupal\Core\Form\ConfirmFormInterface');
+    $form = $this->createMock('Drupal\Core\Form\ConfirmFormInterface');
 
-    $path_validator = $this->getMock('Drupal\Core\Path\PathValidatorInterface');
+    $path_validator = $this->createMock('Drupal\Core\Path\PathValidatorInterface');
     $container_builder = new ContainerBuilder();
     $container_builder->set('path.validator', $path_validator);
     \Drupal::setContainer($container_builder);
@@ -117,7 +119,7 @@ class ConfirmFormHelperTest extends UnitTestCase {
   /**
    * Provides test data for testCancelLinkDestination().
    */
-  public function providerTestCancelLinkDestination() {
+  public static function providerTestCancelLinkDestination() {
     $data = [];
     $data[] = ['baz'];
     $data[] = ['/baz'];

@@ -4,14 +4,15 @@ namespace Drupal\Core\Plugin\Discovery;
 
 use Drupal\Component\Annotation\AnnotationInterface;
 use Drupal\Component\Annotation\Plugin\Discovery\AnnotatedClassDiscovery as ComponentAnnotatedClassDiscovery;
-use Drupal\Component\Utility\Unicode;
 
 /**
- * Defines a discovery mechanism to find annotated plugins in PSR-0 namespaces.
+ * Defines a discovery mechanism to find annotated plugins in PSR-4 namespaces.
  */
 class AnnotatedClassDiscovery extends ComponentAnnotatedClassDiscovery {
 
   /**
+   * The directory suffix.
+   *
    * A suffix to append to each PSR-4 directory associated with a base
    * namespace, to form the directories where plugins are found.
    *
@@ -20,6 +21,8 @@ class AnnotatedClassDiscovery extends ComponentAnnotatedClassDiscovery {
   protected $directorySuffix = '';
 
   /**
+   * The namespace suffix.
+   *
    * A suffix to append to each base namespace, to obtain the namespaces where
    * plugins are found.
    *
@@ -103,7 +106,7 @@ class AnnotatedClassDiscovery extends ComponentAnnotatedClassDiscovery {
     preg_match('|^Drupal\\\\(?<provider>[\w]+)\\\\|', $namespace, $matches);
 
     if (isset($matches['provider'])) {
-      return Unicode::strtolower($matches['provider']);
+      return mb_strtolower($matches['provider']);
     }
 
     return NULL;

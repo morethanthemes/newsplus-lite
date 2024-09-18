@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Functional;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Tests\Traits\Core\CronRunTrait;
 
 /**
@@ -15,11 +16,14 @@ class SearchIntegrationTest extends ViewTestBase {
   use CronRunTrait;
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['node', 'search'];
+  protected static $modules = ['node', 'search'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Views used by this test.
@@ -31,7 +35,7 @@ class SearchIntegrationTest extends ViewTestBase {
   /**
    * Tests search integration.
    */
-  public function testSearchIntegration() {
+  public function testSearchIntegration(): void {
     // Create a content type.
     $type = $this->drupalCreateContentType();
 
@@ -64,21 +68,21 @@ class SearchIntegrationTest extends ViewTestBase {
 
     // Page with a keyword filter of 'pizza'.
     $this->drupalGet('test-filter');
-    $this->assertLink('pizza');
-    $this->assertNoLink('sandwich');
-    $this->assertLink('cola');
+    $this->assertSession()->linkExists('pizza');
+    $this->assertSession()->linkNotExists('sandwich');
+    $this->assertSession()->linkExists('cola');
 
     // Page with a keyword argument, various argument values.
     // Verify that the correct nodes are shown, and only once.
     $this->drupalGet('test-arg/pizza');
     $this->assertOneLink('pizza');
-    $this->assertNoLink('sandwich');
+    $this->assertSession()->linkNotExists('sandwich');
     $this->assertOneLink('cola');
 
     $this->drupalGet('test-arg/sandwich');
-    $this->assertNoLink('pizza');
+    $this->assertSession()->linkNotExists('pizza');
     $this->assertOneLink('sandwich');
-    $this->assertNoLink('cola');
+    $this->assertSession()->linkNotExists('cola');
 
     $this->drupalGet('test-arg/pizza OR sandwich');
     $this->assertOneLink('pizza');
@@ -86,18 +90,18 @@ class SearchIntegrationTest extends ViewTestBase {
     $this->assertOneLink('cola');
 
     $this->drupalGet('test-arg/pizza sandwich OR cola');
-    $this->assertNoLink('pizza');
-    $this->assertNoLink('sandwich');
+    $this->assertSession()->linkNotExists('pizza');
+    $this->assertSession()->linkNotExists('sandwich');
     $this->assertOneLink('cola');
 
     $this->drupalGet('test-arg/cola pizza');
-    $this->assertNoLink('pizza');
-    $this->assertNoLink('sandwich');
+    $this->assertSession()->linkNotExists('pizza');
+    $this->assertSession()->linkNotExists('sandwich');
     $this->assertOneLink('cola');
 
     $this->drupalGet('test-arg/"cola is good"');
-    $this->assertNoLink('pizza');
-    $this->assertNoLink('sandwich');
+    $this->assertSession()->linkNotExists('pizza');
+    $this->assertSession()->linkNotExists('sandwich');
     $this->assertOneLink('cola');
 
     // Test sorting.
@@ -113,9 +117,9 @@ class SearchIntegrationTest extends ViewTestBase {
     $xpath = '//div[@class="views-row"]//a';
     /** @var \Behat\Mink\Element\NodeElement[] $results */
     $results = $this->xpath($xpath);
-    $this->assertEqual($results[0]->getText(), "Drupal's search rocks <em>really</em> rocks!");
-    $this->assertEqual($results[1]->getText(), "Drupal's search rocks.");
-    $this->assertEscaped("Drupal's search rocks <em>really</em> rocks!");
+    $this->assertEquals("Drupal's search rocks <em>really</em> rocks!", $results[0]->getText());
+    $this->assertEquals("Drupal's search rocks.", $results[1]->getText());
+    $this->assertSession()->assertEscaped("Drupal's search rocks <em>really</em> rocks!");
 
     // Test sorting with another set of titles.
     $node = [
@@ -130,8 +134,8 @@ class SearchIntegrationTest extends ViewTestBase {
     $xpath = '//div[@class="views-row"]//a';
     /** @var \SimpleXMLElement[] $results */
     $results = $this->xpath($xpath);
-    $this->assertEqual($results[0]->getText(), "Testing one one one");
-    $this->assertEqual($results[1]->getText(), "Testing one two two two");
+    $this->assertEquals("Testing one one one", $results[0]->getText());
+    $this->assertEquals("Testing one two two two", $results[1]->getText());
   }
 
   /**
@@ -140,13 +144,13 @@ class SearchIntegrationTest extends ViewTestBase {
    * @param string $label
    *   Link label to assert.
    *
-   * @return bool
-   *   TRUE if the assertion succeeded, FALSE otherwise.
+   * @internal
    */
-  protected function assertOneLink($label) {
-    $links = $this->xpath('//a[normalize-space(text())=:label]', [':label' => $label]);
-    $message = SafeMarkup::format('Link with label %label found once.', ['%label' => $label]);
-    return $this->assert(isset($links[0]) && !isset($links[1]), $message);
+  protected function assertOneLink(string $label): void {
+    $xpath = $this->assertSession()->buildXPathQuery('//a[normalize-space(text())=:label]', [
+      ':label' => $label,
+    ]);
+    $this->assertSession()->elementsCount('xpath', $xpath, 1);
   }
 
 }

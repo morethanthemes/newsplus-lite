@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\block_content\Functional\Views;
 
 use Drupal\field\Entity\FieldStorageConfig;
@@ -15,7 +17,12 @@ class BlockContentFieldFilterTest extends BlockContentTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['language'];
+  protected static $modules = ['language'];
+
+  /**
+   * {@inheritdoc}
+   */
+  protected $defaultTheme = 'stark';
 
   /**
    * Views used by this test.
@@ -31,12 +38,11 @@ class BlockContentFieldFilterTest extends BlockContentTestBase {
    */
   public $blockContentInfos = [];
 
-
   /**
    * {@inheritdoc}
    */
-  public function setUp($import_test_views = TRUE) {
-    parent::setUp($import_test_views);
+  protected function setUp($import_test_views = TRUE, $modules = ['block_content_test_views']): void {
+    parent::setUp($import_test_views, $modules);
 
     // Add two new languages.
     ConfigurableLanguage::createFromLangcode('fr')->save();
@@ -52,7 +58,7 @@ class BlockContentFieldFilterTest extends BlockContentTestBase {
     $this->blockContentInfos = [
       'en' => 'Food in Paris',
       'es' => 'Comida en Paris',
-      'fr' => 'Nouriture en Paris',
+      'fr' => 'Nourriture en Paris',
     ];
 
     // Create block_content with translations.
@@ -67,7 +73,7 @@ class BlockContentFieldFilterTest extends BlockContentTestBase {
   /**
    * Tests body and info filters.
    */
-  public function testFilters() {
+  public function testFilters(): void {
     // Test the info filter page, which filters for info contains 'Comida'.
     // Should show just the Spanish translation, once.
     $this->assertPageCounts('test-info-filter', ['es' => 1, 'fr' => 0, 'en' => 0], 'Comida info filter');
@@ -95,14 +101,16 @@ class BlockContentFieldFilterTest extends BlockContentTestBase {
    *   that translation should be shown on the given page.
    * @param string $message
    *   Message suffix to display.
+   *
+   * @internal
    */
-  protected function assertPageCounts($path, $counts, $message) {
+  protected function assertPageCounts(string $path, array $counts, string $message): void {
     // Get the text of the page.
     $this->drupalGet($path);
     $text = $this->getTextContent();
 
     foreach ($counts as $langcode => $count) {
-      $this->assertEqual(substr_count($text, $this->blockContentInfos[$langcode]), $count, 'Translation ' . $langcode . ' has count ' . $count . ' with ' . $message);
+      $this->assertEquals($count, substr_count($text, $this->blockContentInfos[$langcode]), 'Translation ' . $langcode . ' has count ' . $count . ' with ' . $message);
     }
   }
 

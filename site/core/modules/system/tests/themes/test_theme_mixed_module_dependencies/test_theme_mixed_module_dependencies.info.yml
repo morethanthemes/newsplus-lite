@@ -1,0 +1,10 @@
+name: Test Theme with a Module Dependency and Base Theme with a Different Module Dependency
+type: theme
+base theme: test_theme_depending_on_modules
+dependencies:
+  - help
+
+# Information added by Drupal.org packaging script on 2024-09-12
+version: '10.3.5'
+project: 'drupal'
+datestamp: 1726135113

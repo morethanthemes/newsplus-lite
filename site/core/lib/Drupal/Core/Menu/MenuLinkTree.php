@@ -6,8 +6,10 @@ use Drupal\Component\Utility\NestedArray;
 use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Controller\ControllerResolverInterface;
+use Drupal\Core\Routing\PreloadableRouteProviderInterface;
 use Drupal\Core\Routing\RouteProviderInterface;
 use Drupal\Core\Template\Attribute;
+use Drupal\Core\Utility\CallableResolver;
 
 /**
  * Implements the loading, transforming and rendering of menu link trees.
@@ -43,11 +45,11 @@ class MenuLinkTree implements MenuLinkTreeInterface {
   protected $menuActiveTrail;
 
   /**
-   * The controller resolver.
+   * The callable resolver.
    *
-   * @var \Drupal\Core\Controller\ControllerResolverInterface
+   * @var \Drupal\Core\Utility\CallableResolver
    */
-  protected $controllerResolver;
+  protected CallableResolver $callableResolver;
 
   /**
    * Constructs a \Drupal\Core\Menu\MenuLinkTree object.
@@ -60,15 +62,19 @@ class MenuLinkTree implements MenuLinkTreeInterface {
    *   The route provider to load routes by name.
    * @param \Drupal\Core\Menu\MenuActiveTrailInterface $menu_active_trail
    *   The active menu trail service.
-   * @param \Drupal\Core\Controller\ControllerResolverInterface $controller_resolver
-   *   The controller resolver.
+   * @param \Drupal\Core\Utility\CallableResolver|\Drupal\Core\Controller\ControllerResolverInterface $callable_resolver
+   *   The callable resolver.
    */
-  public function __construct(MenuTreeStorageInterface $tree_storage, MenuLinkManagerInterface $menu_link_manager, RouteProviderInterface $route_provider, MenuActiveTrailInterface $menu_active_trail, ControllerResolverInterface $controller_resolver) {
+  public function __construct(MenuTreeStorageInterface $tree_storage, MenuLinkManagerInterface $menu_link_manager, RouteProviderInterface $route_provider, MenuActiveTrailInterface $menu_active_trail, ControllerResolverInterface|CallableResolver $callable_resolver) {
     $this->treeStorage = $tree_storage;
     $this->menuLinkManager = $menu_link_manager;
     $this->routeProvider = $route_provider;
     $this->menuActiveTrail = $menu_active_trail;
-    $this->controllerResolver = $controller_resolver;
+    if ($callable_resolver instanceof ControllerResolverInterface) {
+      @trigger_error('Calling ' . __METHOD__ . '() with an argument of ControllerResolverInterface is deprecated in drupal:10.2.0 and is removed in drupal:11.0.0. Use \Drupal\Core\Utility\CallableResolver instead. See https://www.drupal.org/node/3395294', E_USER_DEPRECATED);
+      $callable_resolver = \Drupal::service('callable_resolver');
+    }
+    $this->callableResolver = $callable_resolver;
   }
 
   /**
@@ -95,7 +101,7 @@ class MenuLinkTree implements MenuLinkTreeInterface {
   public function load($menu_name, MenuTreeParameters $parameters) {
     $data = $this->treeStorage->loadTreeData($menu_name, $parameters);
     // Pre-load all the route objects in the tree for access checks.
-    if ($data['route_names']) {
+    if ($data['route_names'] && $this->routeProvider instanceof PreloadableRouteProviderInterface) {
       $this->routeProvider->getRoutesByNames($data['route_names']);
     }
     return $this->createInstances($data['tree']);
@@ -136,8 +142,7 @@ class MenuLinkTree implements MenuLinkTreeInterface {
    */
   public function transform(array $tree, array $manipulators) {
     foreach ($manipulators as $manipulator) {
-      $callable = $manipulator['callable'];
-      $callable = $this->controllerResolver->getControllerFromDefinition($callable);
+      $callable = $this->callableResolver->getCallableFromDefinition($manipulator['callable']);
       // Prepare the arguments for the menu tree manipulator callable; the first
       // argument is always the menu link tree.
       if (isset($manipulator['args'])) {
@@ -170,7 +175,8 @@ class MenuLinkTree implements MenuLinkTreeInterface {
     $tree_cacheability->applyTo($build);
 
     if ($items) {
-      // Make sure drupal_render() does not re-order the links.
+      // Make sure Drupal\Core\Render\Element::children() does not re-order the
+      // links.
       $build['#sorted'] = TRUE;
       // Get the menu name from the last link.
       $item = end($items);

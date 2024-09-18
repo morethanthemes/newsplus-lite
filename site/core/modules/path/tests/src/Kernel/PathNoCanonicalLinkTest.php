@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\path\Kernel;
 
 use Drupal\content_translation_test\Entity\EntityTestTranslatableUISkip;
@@ -14,21 +16,28 @@ use Drupal\language\Entity\ConfigurableLanguage;
 class PathNoCanonicalLinkTest extends KernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['path', 'content_translation_test', 'language', 'entity_test', 'user', 'system'];
+  protected static $modules = [
+    'path',
+    'content_translation_test',
+    'language',
+    'entity_test',
+    'user',
+    'system',
+  ];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installEntitySchema('entity_test');
     $this->installEntitySchema('entity_test_mul');
-    \Drupal::service('router.builder')->rebuild();
 
     // Adding german language.
-    ConfigurableLanguage::create(['id' => 'de'])->save();
+    ConfigurableLanguage::createFromLangcode('de')->save();
 
     $this->config('language.types')->setData([
       'configurable' => ['language_interface'],
@@ -39,20 +48,20 @@ class PathNoCanonicalLinkTest extends KernelTestBase {
   /**
    * Tests for no canonical link templates.
    */
-  public function testNoCanonicalLinkTemplate() {
+  public function testNoCanonicalLinkTemplate(): void {
     $entity_type = EntityTestTranslatableUISkip::create([
       'name' => 'name english',
-      'language' => 'en'
+      'language' => 'en',
     ]);
     $entity_type->save();
 
     $entity_type->addTranslation('de', ['name' => 'name german']);
     $entity_type->save();
-    $this->assertEqual(count($entity_type->getTranslationLanguages()), 2);
+    $this->assertCount(2, $entity_type->getTranslationLanguages());
 
     $entity_type->removeTranslation('de');
     $entity_type->save();
-    $this->assertEqual(count($entity_type->getTranslationLanguages()), 1);
+    $this->assertCount(1, $entity_type->getTranslationLanguages());
   }
 
 }

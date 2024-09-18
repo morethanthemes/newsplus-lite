@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Kernel\Wizard;
 
 use Drupal\Core\Form\FormState;
@@ -16,11 +18,9 @@ use Drupal\views_ui\ViewUI;
 class WizardPluginBaseKernelTest extends ViewsKernelTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['language', 'system', 'user', 'views_ui'];
+  protected static $modules = ['language', 'system', 'user', 'views_ui'];
 
   /**
    * Contains thw wizard plugin manager.
@@ -29,7 +29,10 @@ class WizardPluginBaseKernelTest extends ViewsKernelTestBase {
    */
   protected $wizard;
 
-  protected function setUp($import_test_views = TRUE) {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp($import_test_views = TRUE): void {
     parent::setUp();
 
     $this->installConfig(['language']);
@@ -42,11 +45,11 @@ class WizardPluginBaseKernelTest extends ViewsKernelTestBase {
    *
    * @see \Drupal\views\Plugin\views\wizard\WizardPluginBase
    */
-  public function testCreateView() {
+  public function testCreateView(): void {
     $form = [];
     $form_state = new FormState();
     $form = $this->wizard->buildForm($form, $form_state);
-    $random_id = strtolower($this->randomMachineName());
+    $random_id = $this->randomMachineName();
     $random_label = $this->randomMachineName();
     $random_description = $this->randomMachineName();
 
@@ -63,12 +66,12 @@ class WizardPluginBaseKernelTest extends ViewsKernelTestBase {
 
     $this->wizard->validateView($form, $form_state);
     $view = $this->wizard->createView($form, $form_state);
-    $this->assertTrue($view instanceof ViewUI, 'The created view is a ViewUI object.');
-    $this->assertEqual($view->get('id'), $random_id);
-    $this->assertEqual($view->get('label'), $random_label);
-    $this->assertEqual($view->get('description'), $random_description);
-    $this->assertEqual($view->get('base_table'), 'views_test_data');
-    $this->assertEqual($view->get('langcode'), 'it');
+    $this->assertInstanceOf(ViewUI::class, $view);
+    $this->assertEquals($random_id, $view->get('id'));
+    $this->assertEquals($random_label, $view->get('label'));
+    $this->assertEquals($random_description, $view->get('description'));
+    $this->assertEquals('views_test_data', $view->get('base_table'));
+    $this->assertEquals('it', $view->get('langcode'));
   }
 
 }

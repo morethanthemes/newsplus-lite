@@ -8,7 +8,6 @@ description: 'Test view to token replacement tests.'
 tag: ''
 base_table: views_test_data
 base_field: id
-core: 8.x
 display:
   default:
     display_options:
@@ -41,7 +40,7 @@ display:
         options:
           items_per_page: 10
     display_plugin: default
-    display_title: Master
+    display_title: Default
     id: default
     position: 0
   page_1:
@@ -91,8 +90,8 @@ display:
         type: mini
         options:
           items_per_page: 2
-      title: 'Test token page with minipager'
-      path: test_tokens_minipager
+      title: 'Test token page with mini pager'
+      path: test_tokens_mini_pager
       display_extenders: {  }
       header:
         area:
@@ -106,5 +105,37 @@ display:
           tokenize: false
           content:
             value: "Total rows: [view:total-rows] - Page count: [view:page-count]"
+            format: basic_html
+          plugin_id: text
+  page_4:
+    display_plugin: page
+    id: page_4
+    display_title: Specific items page
+    position: 5
+    display_options:
+      defaults:
+        title: false
+        pager: false
+        header: false
+      pager:
+        type: some
+        options:
+          offset: 0
+          items_per_page: 3
+      title: 'Test token page with "Display a specified number of items" pager plugin.'
+      path: test_tokens_display_specific_items
+      display_extenders: { }
+      header:
+        area:
+          id: area
+          table: views
+          field: area
+          relationship: none
+          group_type: group
+          admin_label: ''
+          empty: false
+          tokenize: false
+          content:
+            value: "Total rows: [view:total-rows]"
             format: basic_html
           plugin_id: text

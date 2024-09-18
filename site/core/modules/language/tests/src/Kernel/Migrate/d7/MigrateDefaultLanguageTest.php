@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\language\Kernel\Migrate\d7;
 
 use Drupal\language\Entity\ConfigurableLanguage;
@@ -16,12 +18,12 @@ class MigrateDefaultLanguageTest extends MigrateDrupal7TestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['language'];
+  protected static $modules = ['language'];
 
   /**
    * Tests language_default migration with a non-existing language.
    */
-  public function testMigrationWithExistingLanguage() {
+  public function testMigrationWithExistingLanguage(): void {
     $this->setDefaultLanguage('is');
     $this->startCollectingMessages();
     $this->executeMigrations(['language', 'default_language']);
@@ -35,13 +37,13 @@ class MigrateDefaultLanguageTest extends MigrateDrupal7TestBase {
   /**
    * Tests language_default migration with a non-existing language.
    */
-  public function testMigrationWithNonExistentLanguage() {
+  public function testMigrationWithNonExistentLanguage(): void {
     $this->setDefaultLanguage('tv');
     $this->startCollectingMessages();
     $this->executeMigrations(['language', 'default_language']);
 
     // Tests the migration log contains an error message.
-    $messages = $this->migration->getIdMap()->getMessageIterator();
+    $messages = $this->migration->getIdMap()->getMessages();
     $count = 0;
     foreach ($messages as $message) {
       $count++;
@@ -54,7 +56,7 @@ class MigrateDefaultLanguageTest extends MigrateDrupal7TestBase {
   /**
    * Tests language_default migration with unset default language variable.
    */
-  public function testMigrationWithUnsetVariable() {
+  public function testMigrationWithUnsetVariable(): void {
     // Delete the language_default variable.
     $this->sourceDatabase->delete('variable')
       ->condition('name', 'language_default')
@@ -62,7 +64,7 @@ class MigrateDefaultLanguageTest extends MigrateDrupal7TestBase {
     $this->startCollectingMessages();
     $this->executeMigrations(['language', 'default_language']);
 
-    $messages = $this->migration->getIdMap()->getMessageIterator()->fetchAll();
+    $messages = $this->migration->getIdMap()->getMessages()->fetchAll();
     // Make sure there's no migration exceptions.
     $this->assertEmpty($messages);
     // Make sure the default langcode is 'en', as it was the default on D6 & D7.

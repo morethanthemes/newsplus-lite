@@ -3,14 +3,16 @@
 namespace Drupal\node\Plugin\views\argument;
 
 use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\views\Attribute\ViewsArgument;
 use Drupal\views\Plugin\views\argument\StringArgument;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Argument handler to accept a node type.
- *
- * @ViewsArgument("node_type")
  */
+#[ViewsArgument(
+  id: 'node_type',
+)]
 class Type extends StringArgument {
 
   /**
@@ -42,26 +44,24 @@ class Type extends StringArgument {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
-    $entity_manager = $container->get('entity.manager');
+    $entity_type_manager = $container->get('entity_type.manager');
     return new static(
       $configuration,
       $plugin_id,
       $plugin_definition,
-      $entity_manager->getStorage('node_type')
+      $entity_type_manager->getStorage('node_type')
     );
   }
 
   /**
-   * Override the behavior of summaryName(). Get the user friendly version
-   * of the node type.
+   * {@inheritdoc}
    */
   public function summaryName($data) {
     return $this->node_type($data->{$this->name_alias});
   }
 
   /**
-   * Override the behavior of title(). Get the user friendly version of the
-   * node type.
+   * {@inheritdoc}
    */
   public function title() {
     return $this->node_type($this->argument);

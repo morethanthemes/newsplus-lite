@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\standard\FunctionalJavascript;
 
-use Drupal\FunctionalJavascriptTests\JavascriptTestBase;
+use Drupal\FunctionalJavascriptTests\WebDriverTestBase;
 use Drupal\node\Entity\Node;
 
 /**
@@ -10,7 +12,7 @@ use Drupal\node\Entity\Node;
  *
  * @group standard
  */
-class StandardJavascriptTest extends JavascriptTestBase {
+class StandardJavascriptTest extends WebDriverTestBase {
 
   /**
    * {@inheritdoc}
@@ -20,7 +22,7 @@ class StandardJavascriptTest extends JavascriptTestBase {
   /**
    * Tests BigPipe accelerates particular Standard installation profile routes.
    */
-  public function testBigPipe() {
+  public function testBigPipe(): void {
     $this->drupalLogin($this->drupalCreateUser([
       'access content',
       'post comments',
@@ -30,19 +32,18 @@ class StandardJavascriptTest extends JavascriptTestBase {
     $node = Node::create(['type' => 'article'])
       ->setTitle($this->randomMachineName())
       ->setPromoted(TRUE)
-      ->setPublished(TRUE);
+      ->setPublished();
     $node->save();
 
     // Front page: one placeholder, for messages.
     $this->drupalGet('');
     $this->assertBigPipePlaceholderReplacementCount(1);
 
-    // Node page: 3 placeholders:
+    // Node page: 2 placeholders:
     // 1. messages
-    // 2. local tasks block
-    // 3. comment form
+    // 2. comment form
     $this->drupalGet($node->toUrl());
-    $this->assertBigPipePlaceholderReplacementCount(3);
+    $this->assertBigPipePlaceholderReplacementCount(2);
   }
 
   /**
@@ -51,11 +52,12 @@ class StandardJavascriptTest extends JavascriptTestBase {
    * @param int $expected_count
    *   The expected number of BigPipe placeholders.
    */
-  protected function assertBigPipePlaceholderReplacementCount($expected_count) {
+  protected function assertBigPipePlaceholderReplacementCount($expected_count): void {
     $web_assert = $this->assertSession();
     $web_assert->waitForElement('css', 'script[data-big-pipe-event="stop"]');
     $page = $this->getSession()->getPage();
-    $this->assertCount($expected_count, $this->getDrupalSettings()['bigPipePlaceholderIds']);
+    // Settings are removed as soon as they are processed.
+    $this->assertCount(0, $this->getDrupalSettings()['bigPipePlaceholderIds']);
     $this->assertCount($expected_count, $page->findAll('css', 'script[data-big-pipe-replacement-for-placeholder-with-id]'));
   }
 

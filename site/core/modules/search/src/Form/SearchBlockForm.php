@@ -5,7 +5,9 @@ namespace Drupal\search\Form;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Form\WorkspaceSafeFormInterface;
 use Drupal\Core\Render\RendererInterface;
+use Drupal\Core\Url;
 use Drupal\search\SearchPageRepositoryInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -14,7 +16,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @internal
  */
-class SearchBlockForm extends FormBase {
+class SearchBlockForm extends FormBase implements WorkspaceSafeFormInterface {
 
   /**
    * The search page repository.
@@ -74,16 +76,17 @@ class SearchBlockForm extends FormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, FormStateInterface $form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state, $entity_id = NULL) {
     // Set up the form to submit using GET to the correct search page.
-    $entity_id = $this->searchPageRepository->getDefaultSearchPage();
-
-    // SearchPageRepository::getDefaultSearchPage() depends on search.settings.
-    // The dependency needs to be added before the conditional return, otherwise
-    // the block would get cached without the necessary cacheablity metadata in
-    // case there is no default search page and would not be invalidated if that
-    // changes.
-    $this->renderer->addCacheableDependency($form, $this->configFactory->get('search.settings'));
+    if (!$entity_id) {
+      $entity_id = $this->searchPageRepository->getDefaultSearchPage();
+      // SearchPageRepository::getDefaultSearchPage() depends on
+      // search.settings.  The dependency needs to be added before the
+      // conditional return, otherwise the block would get cached without the
+      // necessary cacheability metadata in case there is no default search page
+      // and would not be invalidated if that changes.
+      $this->renderer->addCacheableDependency($form, $this->configFactory->get('search.settings'));
+    }
 
     if (!$entity_id) {
       $form['message'] = [
@@ -93,7 +96,7 @@ class SearchBlockForm extends FormBase {
     }
 
     $route = 'search.view_' . $entity_id;
-    $form['#action'] = $this->url($route);
+    $form['#action'] = Url::fromRoute($route)->toString();
     $form['#method'] = 'get';
 
     $form['keys'] = [

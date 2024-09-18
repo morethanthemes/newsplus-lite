@@ -18,16 +18,10 @@ class Color {
    *   TRUE if $hex is valid or FALSE if it is not.
    */
   public static function validateHex($hex) {
-    // Must be a string.
-    $valid = is_string($hex);
-    // Hash prefix is optional.
-    $hex = ltrim($hex, '#');
-    // Must be either RGB or RRGGBB.
-    $length = Unicode::strlen($hex);
-    $valid = $valid && ($length === 3 || $length === 6);
-    // Must be a valid hex value.
-    $valid = $valid && ctype_xdigit($hex);
-    return $valid;
+    if (!is_string($hex)) {
+      return FALSE;
+    }
+    return preg_match('/^[#]?([0-9a-fA-F]{3}){1,2}$/', $hex) === 1;
   }
 
   /**
@@ -64,8 +58,7 @@ class Color {
   }
 
   /**
-   * Converts RGB color arrays and RGB strings in CSS notation to lowercase
-   * simple colors like '#aabbcc'.
+   * Converts RGB color arrays or strings to lowercase CSS notation.
    *
    * @param array|string $input
    *   The value to convert. If the value is an array the first three elements

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\system\Functional\Render;
 
 use Drupal\Core\Url;
@@ -13,16 +15,19 @@ use Drupal\Tests\BrowserTestBase;
 class PlaceholderMessageTest extends BrowserTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['render_placeholder_message_test'];
+  protected static $modules = ['render_placeholder_message_test'];
 
   /**
-   * Test rendering of message placeholder.
+   * {@inheritdoc}
    */
-  public function testMessagePlaceholder() {
+  protected $defaultTheme = 'stark';
+
+  /**
+   * Tests rendering of message placeholder.
+   */
+  public function testMessagePlaceholder(): void {
     $messages_markup = '<div role="contentinfo" aria-label="Status message"';
 
     $test_routes = [

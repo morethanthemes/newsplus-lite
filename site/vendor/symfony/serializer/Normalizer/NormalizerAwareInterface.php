@@ -12,8 +12,6 @@
 namespace Symfony\Component\Serializer\Normalizer;
 
 /**
- * Class accepting a normalizer.
- *
  * @author Joel Wurtz <joel.wurtz@gmail.com>
  */
 interface NormalizerAwareInterface
@@ -21,7 +19,7 @@ interface NormalizerAwareInterface
     /**
      * Sets the owning Normalizer object.
      *
-     * @param NormalizerInterface $normalizer
+     * @return void
      */
     public function setNormalizer(NormalizerInterface $normalizer);
 }

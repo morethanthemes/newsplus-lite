@@ -5,11 +5,11 @@ namespace Drupal\book\Controller;
 use Drupal\book\BookExport;
 use Drupal\book\BookManagerInterface;
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\Core\Link;
 use Drupal\Core\Render\RendererInterface;
 use Drupal\Core\Url;
 use Drupal\node\NodeInterface;
 use Symfony\Component\DependencyInjection\Container;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -56,17 +56,6 @@ class BookController extends ControllerBase {
   }
 
   /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('book.manager'),
-      $container->get('book.export'),
-      $container->get('renderer')
-    );
-  }
-
-  /**
    * Returns an administrative overview of all books.
    *
    * @return array
@@ -84,7 +73,7 @@ class BookController extends ControllerBase {
         $url->setOptions($book['options']);
       }
       $row = [
-        $this->l($book['title'], $url),
+        Link::fromTextAndUrl($book['title'], $url),
       ];
       $links = [];
       $links['edit'] = [
@@ -116,13 +105,13 @@ class BookController extends ControllerBase {
   public function bookRender() {
     $book_list = [];
     foreach ($this->bookManager->getAllBooks() as $book) {
-      $book_list[] = $this->l($book['title'], $book['url']);
+      $book_list[] = Link::fromTextAndUrl($book['title'], $book['url']);
     }
     return [
       '#theme' => 'item_list',
       '#items' => $book_list,
       '#cache' => [
-        'tags' => \Drupal::entityManager()->getDefinition('node')->getListCacheTags(),
+        'tags' => $this->entityTypeManager()->getDefinition('node')->getListCacheTags(),
       ],
     ];
   }
@@ -154,7 +143,7 @@ class BookController extends ControllerBase {
 
     // @todo Convert the custom export functionality to serializer.
     if (!method_exists($this->bookExport, $method)) {
-      drupal_set_message(t('Unknown export format.'));
+      $this->messenger()->addStatus(t('Unknown export format.'));
       throw new NotFoundHttpException();
     }
 

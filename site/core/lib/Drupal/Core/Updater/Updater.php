@@ -2,14 +2,13 @@
 
 namespace Drupal\Core\Updater;
 
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\FileTransfer\FileTransferException;
 use Drupal\Core\FileTransfer\FileTransfer;
 
 /**
  * Defines the base class for Updaters used in Drupal.
  */
-class Updater {
+abstract class Updater {
 
   /**
    * Directory to install from.
@@ -24,6 +23,16 @@ class Updater {
    * @var string
    */
   protected $root;
+
+  /**
+   * The name of the project directory (basename).
+   */
+  protected string $name;
+
+  /**
+   * The title of the project.
+   */
+  protected string $title;
 
   /**
    * Constructs a new updater.
@@ -65,7 +74,7 @@ class Updater {
       $updater = self::getUpdaterFromDirectory($source);
     }
     else {
-      throw new UpdaterException(t('Unable to determine the type of the source directory.'));
+      throw new UpdaterException('Unable to determine the type of the source directory.');
     }
     return new $updater($source, $root);
   }
@@ -90,7 +99,7 @@ class Updater {
         return $class;
       }
     }
-    throw new UpdaterException(t('Cannot determine the type of project.'));
+    throw new UpdaterException('Cannot determine the type of project.');
   }
 
   /**
@@ -107,12 +116,17 @@ class Updater {
    *   Path to the info file.
    */
   public static function findInfoFile($directory) {
-    $info_files = file_scan_directory($directory, '/.*\.info.yml$/');
+    /** @var \Drupal\Core\File\FileSystemInterface $file_system */
+    $file_system = \Drupal::service('file_system');
+    $info_files = [];
+    if (is_dir($directory)) {
+      $info_files = $file_system->scanDirectory($directory, '/.*\.info.yml$/');
+    }
     if (!$info_files) {
       return FALSE;
     }
     foreach ($info_files as $info_file) {
-      if (Unicode::substr($info_file->filename, 0, -9) == drupal_basename($directory)) {
+      if (mb_substr($info_file->filename, 0, -9) == $file_system->basename($directory)) {
         // Info file Has the same name as the directory, return it.
         return $info_file->uri;
       }
@@ -138,7 +152,7 @@ class Updater {
     $info_file = static::findInfoFile($directory);
     $info = \Drupal::service('info_parser')->parse($info_file);
     if (empty($info)) {
-      throw new UpdaterException(t('Unable to parse info file: %info_file.', ['%info_file' => $info_file]));
+      throw new UpdaterException("Unable to parse info file: '$info_file'.");
     }
 
     return $info;
@@ -151,12 +165,13 @@ class Updater {
    *   provide their canonical name.
    *
    * @param string $directory
+   *   The full directory path.
    *
    * @return string
    *   The name of the project.
    */
   public static function getProjectName($directory) {
-    return drupal_basename($directory);
+    return \Drupal::service('file_system')->basename($directory);
   }
 
   /**
@@ -174,10 +189,18 @@ class Updater {
     $info_file = self::findInfoFile($directory);
     $info = \Drupal::service('info_parser')->parse($info_file);
     if (empty($info)) {
-      throw new UpdaterException(t('Unable to parse info file: %info_file.', ['%info_file' => $info_file]));
+      throw new UpdaterException("Unable to parse info file: '$info_file'.");
     }
     return $info['name'];
   }
+
+  /**
+   * Returns the path to the default install location for the current project.
+   *
+   * @return string
+   *   The absolute path of the directory.
+   */
+  abstract public function getInstallDirectory();
 
   /**
    * Stores the default parameters for the Updater.
@@ -224,7 +247,7 @@ class Updater {
 
       if (!$this->name) {
         // This is bad, don't want to delete the install directory.
-        throw new UpdaterException(t('Fatal error in update, cowardly refusing to wipe out the install directory.'));
+        throw new UpdaterException('Fatal error in update, cowardly refusing to wipe out the install directory.');
       }
 
       // Make sure the installation parent directory exists and is writable.
@@ -249,7 +272,7 @@ class Updater {
       return $this->postUpdateTasks();
     }
     catch (FileTransferException $e) {
-      throw new UpdaterFileTransferException(t('File Transfer failed, reason: @reason', ['@reason' => strtr($e->getMessage(), $e->arguments)]));
+      throw new UpdaterFileTransferException("File Transfer failed, reason: '" . strtr($e->getMessage(), $e->arguments) . "'");
     }
   }
 
@@ -287,7 +310,7 @@ class Updater {
       return $this->postInstallTasks();
     }
     catch (FileTransferException $e) {
-      throw new UpdaterFileTransferException(t('File Transfer failed, reason: @reason', ['@reason' => strtr($e->getMessage(), $e->arguments)]));
+      throw new UpdaterFileTransferException("File Transfer failed, reason: '" . strtr($e->getMessage(), $e->arguments) . "'");
     }
   }
 
@@ -317,12 +340,12 @@ class Updater {
           // Probably still not writable. Try to chmod and do it again.
           // @todo Make a new exception class so we can catch it differently.
           try {
-            $old_perms = substr(sprintf('%o', fileperms($parent_dir)), -4);
+            $old_perms = fileperms($parent_dir) & 0777;
             $filetransfer->chmod($parent_dir, 0755);
             $filetransfer->createDirectory($directory);
             $this->makeWorldReadable($filetransfer, $directory);
             // Put the permissions back.
-            $filetransfer->chmod($parent_dir, intval($old_perms, 8));
+            $filetransfer->chmod($parent_dir, $old_perms);
           }
           catch (FileTransferException $e) {
             $message = t($e->getMessage(), $e->arguments);
@@ -349,8 +372,8 @@ class Updater {
   public function makeWorldReadable(&$filetransfer, $path, $recursive = TRUE) {
     if (!is_executable($path)) {
       // Set it to read + execute.
-      $new_perms = substr(sprintf('%o', fileperms($path)), -4, -1) . "5";
-      $filetransfer->chmod($path, intval($new_perms, 8), $recursive);
+      $new_perms = fileperms($path) & 0777 | 0005;
+      $filetransfer->chmod($path, $new_perms, $recursive);
     }
   }
 

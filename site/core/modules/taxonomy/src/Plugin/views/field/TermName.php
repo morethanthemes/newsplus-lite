@@ -3,6 +3,7 @@
 namespace Drupal\taxonomy\Plugin\views\field;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\views\Attribute\ViewsField;
 use Drupal\views\Plugin\views\field\EntityField;
 use Drupal\views\ResultRow;
 
@@ -10,9 +11,8 @@ use Drupal\views\ResultRow;
  * Displays taxonomy term names and allows converting spaces to hyphens.
  *
  * @ingroup views_field_handlers
- *
- * @ViewsField("term_name")
  */
+#[ViewsField("term_name")]
 class TermName extends EntityField {
 
   /**
@@ -23,14 +23,14 @@ class TermName extends EntityField {
     if ($this->options['convert_spaces']) {
       foreach ($items as &$item) {
         // Replace spaces with hyphens.
-        $name = $item['raw']->get('value')->getValue();
-        // @todo Add link support https://www.drupal.org/node/2567745
-        $item['rendered']['#context']['value'] = str_replace(' ', '-', $name);
+        $name = str_replace(' ', '-', $item['raw']->get('value')->getValue());
+        empty($this->options['settings']['link_to_entity']) ?
+          $item['rendered']['#context']['value'] = $name :
+          $item['rendered']['#title']['#context']['value'] = $name;
       }
     }
     return $items;
   }
-
 
   /**
    * {@inheritdoc}

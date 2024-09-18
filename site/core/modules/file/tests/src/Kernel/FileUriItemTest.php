@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\file\Kernel;
 
 use Drupal\file\Entity\File;
@@ -17,7 +19,7 @@ class FileUriItemTest extends FileManagedUnitTestBase {
   /**
    * Tests the file entity override of the URI field.
    */
-  public function testCustomFileUriField() {
+  public function testCustomFileUriField(): void {
     $uri = 'public://druplicon.txt';
 
     // Create a new file entity.
@@ -26,8 +28,8 @@ class FileUriItemTest extends FileManagedUnitTestBase {
       'filename' => 'druplicon.txt',
       'uri' => $uri,
       'filemime' => 'text/plain',
-      'status' => FILE_STATUS_PERMANENT,
     ]);
+    $file->setPermanent();
     file_put_contents($file->getFileUri(), 'hello world');
 
     $file->save();

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\Core\Controller;
 
 use Drupal\Tests\UnitTestCase;
@@ -14,18 +16,23 @@ class ControllerBaseTest extends UnitTestCase {
   /**
    * The tested controller base class.
    *
-   * @var \Drupal\Core\Controller\ControllerBase|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\Core\Controller\ControllerBase|\PHPUnit\Framework\MockObject\MockObject
    */
   protected $controllerBase;
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
+    parent::setUp();
+
     $this->controllerBase = $this->getMockForAbstractClass('Drupal\Core\Controller\ControllerBase');
   }
 
   /**
    * Tests the config method.
    */
-  public function testGetConfig() {
+  public function testGetConfig(): void {
     $config_factory = $this->getConfigFactoryStub([
       'config_name' => [
         'key' => 'value',
@@ -35,15 +42,14 @@ class ControllerBaseTest extends UnitTestCase {
       ],
     ]);
 
-    $container = $this->getMock('Symfony\Component\DependencyInjection\ContainerInterface');
+    $container = $this->createMock('Symfony\Component\DependencyInjection\ContainerInterface');
     $container->expects($this->once())
       ->method('get')
       ->with('config.factory')
-      ->will($this->returnValue($config_factory));
+      ->willReturn($config_factory);
     \Drupal::setContainer($container);
 
     $config_method = new \ReflectionMethod('Drupal\Core\Controller\ControllerBase', 'config');
-    $config_method->setAccessible(TRUE);
 
     // Call config twice to ensure that the container is just called once.
     $config = $config_method->invoke($this->controllerBase, 'config_name');

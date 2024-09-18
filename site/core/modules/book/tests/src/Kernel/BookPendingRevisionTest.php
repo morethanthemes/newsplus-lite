@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\book\Kernel;
 
 use Drupal\node\Entity\Node;
@@ -10,6 +12,7 @@ use Drupal\KernelTests\KernelTestBase;
  * Tests that the Book module handles pending revisions correctly.
  *
  * @group book
+ * @group legacy
  */
 class BookPendingRevisionTest extends KernelTestBase {
 
@@ -18,12 +21,20 @@ class BookPendingRevisionTest extends KernelTestBase {
    *
    * @var array
    */
-  public static $modules = ['system', 'user', 'field', 'filter', 'text', 'node', 'book'];
+  protected static $modules = [
+    'system',
+    'user',
+    'field',
+    'filter',
+    'text',
+    'node',
+    'book',
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installEntitySchema('user');
@@ -36,7 +47,7 @@ class BookPendingRevisionTest extends KernelTestBase {
   /**
    * Tests pending revision handling for books.
    */
-  public function testBookWithPendingRevisions() {
+  public function testBookWithPendingRevisions(): void {
     $content_type = NodeType::create([
       'type' => $this->randomMachineName(),
       'name' => $this->randomString(),

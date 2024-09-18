@@ -5,6 +5,7 @@ namespace Drupal\Core\Field;
 use Drupal\Component\Plugin\Factory\DefaultFactory;
 use Drupal\Core\Cache\CacheBackendInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Field\Attribute\FieldWidget;
 use Drupal\Core\Plugin\DefaultPluginManager;
 
 /**
@@ -42,7 +43,7 @@ class WidgetPluginManager extends DefaultPluginManager {
    *   The 'field type' plugin manager.
    */
   public function __construct(\Traversable $namespaces, CacheBackendInterface $cache_backend, ModuleHandlerInterface $module_handler, FieldTypePluginManagerInterface $field_type_manager) {
-    parent::__construct('Plugin/Field/FieldWidget', $namespaces, $module_handler, 'Drupal\Core\Field\WidgetInterface', 'Drupal\Core\Field\Annotation\FieldWidget');
+    parent::__construct('Plugin/Field/FieldWidget', $namespaces, $module_handler, 'Drupal\Core\Field\WidgetInterface', FieldWidget::class, 'Drupal\Core\Field\Annotation\FieldWidget');
 
     $this->setCacheBackend($cache_backend, 'field_widget_types_plugins');
     $this->alterInfo('field_widget_info');
@@ -69,8 +70,8 @@ class WidgetPluginManager extends DefaultPluginManager {
    *     - third_party_settings: (array) Settings provided by other extensions
    *       through hook_field_formatter_third_party_settings_form().
    *
-   * @return \Drupal\Core\Field\WidgetInterface|null
-   *   A Widget object or NULL when plugin is not found.
+   * @return \Drupal\Core\Field\WidgetInterface|false
+   *   A Widget object or FALSE when plugin is not found.
    */
   public function getInstance(array $options) {
     // Fill in defaults for missing properties.
@@ -99,7 +100,7 @@ class WidgetPluginManager extends DefaultPluginManager {
       // Grab the default widget for the field type.
       $field_type_definition = $this->fieldTypeManager->getDefinition($field_type);
       if (empty($field_type_definition['default_widget'])) {
-        return NULL;
+        return FALSE;
       }
       $plugin_id = $field_type_definition['default_widget'];
     }
@@ -107,7 +108,7 @@ class WidgetPluginManager extends DefaultPluginManager {
     $configuration += [
       'field_definition' => $field_definition,
     ];
-    return $this->createInstance($plugin_id, $configuration);
+    return $this->createInstance($plugin_id, $configuration) ?? FALSE;
   }
 
   /**
@@ -124,7 +125,6 @@ class WidgetPluginManager extends DefaultPluginManager {
 
     return new $plugin_class($plugin_id, $plugin_definition, $configuration['field_definition'], $configuration['settings'], $configuration['third_party_settings']);
   }
-
 
   /**
    * Merges default values for widget configuration.
@@ -146,7 +146,7 @@ class WidgetPluginManager extends DefaultPluginManager {
     // If no widget is specified, use the default widget.
     if (!isset($configuration['type'])) {
       $field_type = $this->fieldTypeManager->getDefinition($field_type);
-      $configuration['type'] = isset($field_type['default_widget']) ? $field_type['default_widget'] : NULL;
+      $configuration['type'] = $field_type['default_widget'] ?? NULL;
     }
     // Filter out unknown settings, and fill in defaults for missing settings.
     $default_settings = $this->getDefaultSettings($configuration['type']);

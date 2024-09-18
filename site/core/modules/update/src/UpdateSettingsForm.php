@@ -2,44 +2,18 @@
 
 namespace Drupal\update;
 
-use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\ConfigTarget;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
+use Drupal\Core\Url;
 use Drupal\Core\Form\FormStateInterface;
-use Egulias\EmailValidator\EmailValidator;
 
 /**
  * Configure update settings for this site.
  *
  * @internal
  */
-class UpdateSettingsForm extends ConfigFormBase implements ContainerInjectionInterface {
-
-  /**
-   * The email validator.
-   *
-   * @var \Egulias\EmailValidator\EmailValidator
-   */
-  protected $emailValidator;
-
-  /**
-   * Constructs a new UpdateSettingsForm.
-   *
-   * @param \Egulias\EmailValidator\EmailValidator $email_validator
-   *   The email validator.
-   */
-  public function __construct(EmailValidator $email_validator) {
-    $this->emailValidator = $email_validator;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('email.validator')
-    );
-  }
+class UpdateSettingsForm extends ConfigFormBase {
 
   /**
    * {@inheritdoc}
@@ -59,43 +33,55 @@ class UpdateSettingsForm extends ConfigFormBase implements ContainerInjectionInt
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = $this->config('update.settings');
-
     $form['update_check_frequency'] = [
       '#type' => 'radios',
-      '#title' => t('Check for updates'),
-      '#default_value' => $config->get('check.interval_days'),
+      '#title' => $this->t('Check for updates'),
+      '#config_target' => new ConfigTarget(
+        'update.settings',
+        'check.interval_days',
+        toConfig: fn($value) => intval($value)),
       '#options' => [
-        '1' => t('Daily'),
-        '7' => t('Weekly'),
+        1 => $this->t('Daily'),
+        7 => $this->t('Weekly'),
       ],
-      '#description' => t('Select how frequently you want to automatically check for new releases of your currently installed modules and themes.'),
+      '#description' => $this->t('Select how frequently you want to automatically check for new releases of your currently installed modules and themes.'),
     ];
 
     $form['update_check_disabled'] = [
       '#type' => 'checkbox',
-      '#title' => t('Check for updates of uninstalled modules and themes'),
-      '#default_value' => $config->get('check.disabled_extensions'),
+      '#title' => $this->t('Check for updates of uninstalled modules and themes'),
+      '#config_target' => 'update.settings:check.disabled_extensions',
     ];
 
-    $notification_emails = $config->get('notification.emails');
     $form['update_notify_emails'] = [
       '#type' => 'textarea',
-      '#title' => t('Email addresses to notify when updates are available'),
+      '#title' => $this->t('Email addresses to notify when updates are available'),
       '#rows' => 4,
-      '#default_value' => implode("\n", $notification_emails),
-      '#description' => t('Whenever your site checks for available updates and finds new releases, it can notify a list of users via email. Put each address on a separate line. If blank, no emails will be sent.'),
+      '#config_target' => new ConfigTarget(
+        'update.settings',
+        'notification.emails',
+        static::class . '::arrayToMultiLineString',
+        static::class . '::multiLineStringToArray',
+      ),
+      '#description' => $this->t('Whenever your site checks for available updates and finds new releases, it can notify a list of users via email. Put each address on a separate line. If blank, no emails will be sent.'),
     ];
 
     $form['update_notification_threshold'] = [
       '#type' => 'radios',
-      '#title' => t('Email notification threshold'),
-      '#default_value' => $config->get('notification.threshold'),
+      '#title' => $this->t('Email notification threshold'),
+      '#config_target' => 'update.settings:notification.threshold',
       '#options' => [
-        'all' => t('All newer versions'),
-        'security' => t('Only security updates'),
+        'all' => $this->t('All newer versions'),
+        'security' => $this->t('Only security updates'),
       ],
-      '#description' => t('You can choose to send email only if a security update is available, or to be notified about all newer versions. If there are updates available of Drupal core or any of your installed modules and themes, your site will always print a message on the <a href=":status_report">status report</a> page, and will also display an error message on administration pages if there is a security update.', [':status_report' => $this->url('system.status')])
+      '#description' => $this->t(
+        'You can choose to send email only if a security update is available, or to be notified about all newer versions. If there are updates available of Drupal core or any of your installed modules and themes, your site will always print a message on the <a href=":status_report">status report</a> page. If there is a security update, an error message will be printed on administration pages for users with <a href=":update_permissions">permission to view update notifications</a>.',
+        [
+          ':status_report' => Url::fromRoute('system.status')->toString(),
+          ':update_permissions' => Url::fromRoute('user.admin_permissions', [], ['fragment' => 'module-update'])
+            ->toString(),
+        ]
+      ),
     ];
 
     return parent::buildForm($form, $form_state);
@@ -104,34 +90,16 @@ class UpdateSettingsForm extends ConfigFormBase implements ContainerInjectionInt
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    $form_state->set('notify_emails', []);
-    if (!$form_state->isValueEmpty('update_notify_emails')) {
-      $valid = [];
-      $invalid = [];
-      foreach (explode("\n", trim($form_state->getValue('update_notify_emails'))) as $email) {
-        $email = trim($email);
-        if (!empty($email)) {
-          if ($this->emailValidator->isValid($email)) {
-            $valid[] = $email;
-          }
-          else {
-            $invalid[] = $email;
-          }
-        }
-      }
-      if (empty($invalid)) {
-        $form_state->set('notify_emails', $valid);
-      }
-      elseif (count($invalid) == 1) {
-        $form_state->setErrorByName('update_notify_emails', $this->t('%email is not a valid email address.', ['%email' => reset($invalid)]));
-      }
-      else {
-        $form_state->setErrorByName('update_notify_emails', $this->t('%emails are not valid email addresses.', ['%emails' => implode(', ', $invalid)]));
-      }
+  protected function formatMultipleViolationsMessage(string $form_element_name, array $violations): TranslatableMarkup {
+    if ($form_element_name !== 'update_notify_emails') {
+      return parent::formatMultipleViolationsMessage($form_element_name, $violations);
     }
 
-    parent::validateForm($form, $form_state);
+    $invalid_email_addresses = [];
+    foreach ($violations as $violation) {
+      $invalid_email_addresses[] = $violation->getInvalidValue();
+    }
+    return $this->t('%emails are not valid email addresses.', ['%emails' => implode(', ', $invalid_email_addresses)]);
   }
 
   /**
@@ -145,14 +113,33 @@ class UpdateSettingsForm extends ConfigFormBase implements ContainerInjectionInt
       update_storage_clear();
     }
 
-    $config
-      ->set('check.disabled_extensions', $form_state->getValue('update_check_disabled'))
-      ->set('check.interval_days', $form_state->getValue('update_check_frequency'))
-      ->set('notification.emails', $form_state->get('notify_emails'))
-      ->set('notification.threshold', $form_state->getValue('update_notification_threshold'))
-      ->save();
-
     parent::submitForm($form, $form_state);
+  }
+
+  /**
+   * Prepares the submitted value to be stored in the notify_emails property.
+   *
+   * @param string $value
+   *   The submitted value.
+   *
+   * @return array
+   *   The value to be stored in config.
+   */
+  public static function multiLineStringToArray(string $value): array {
+    return array_map('trim', explode("\n", trim($value)));
+  }
+
+  /**
+   * Prepares the saved notify_emails property to be displayed in the form.
+   *
+   * @param array $value
+   *   The value saved in config.
+   *
+   * @return string
+   *   The value of the form element.
+   */
+  public static function arrayToMultiLineString(array $value): string {
+    return implode("\n", $value);
   }
 
 }

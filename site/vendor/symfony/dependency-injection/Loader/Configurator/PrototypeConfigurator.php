@@ -19,8 +19,6 @@ use Symfony\Component\DependencyInjection\Loader\PhpFileLoader;
  */
 class PrototypeConfigurator extends AbstractServiceConfigurator
 {
-    const FACTORY = 'load';
-
     use Traits\AbstractTrait;
     use Traits\ArgumentTrait;
     use Traits\AutoconfigureTrait;
@@ -28,6 +26,7 @@ class PrototypeConfigurator extends AbstractServiceConfigurator
     use Traits\BindTrait;
     use Traits\CallTrait;
     use Traits\ConfiguratorTrait;
+    use Traits\ConstructorTrait;
     use Traits\DeprecateTrait;
     use Traits\FactoryTrait;
     use Traits\LazyTrait;
@@ -37,23 +36,30 @@ class PrototypeConfigurator extends AbstractServiceConfigurator
     use Traits\ShareTrait;
     use Traits\TagTrait;
 
-    private $loader;
-    private $resource;
-    private $exclude;
-    private $allowParent;
+    public const FACTORY = 'load';
 
-    public function __construct(ServicesConfigurator $parent, PhpFileLoader $loader, Definition $defaults, $namespace, $resource, $allowParent)
+    private PhpFileLoader $loader;
+    private string $resource;
+    private ?array $excludes = null;
+    private bool $allowParent;
+    private ?string $path;
+
+    public function __construct(ServicesConfigurator $parent, PhpFileLoader $loader, Definition $defaults, string $namespace, string $resource, bool $allowParent, ?string $path = null)
     {
         $definition = new Definition();
-        $definition->setPublic($defaults->isPublic());
+        if (!$defaults->isPublic() || !$defaults->isPrivate()) {
+            $definition->setPublic($defaults->isPublic());
+        }
         $definition->setAutowired($defaults->isAutowired());
         $definition->setAutoconfigured($defaults->isAutoconfigured());
-        $definition->setBindings($defaults->getBindings());
-        $definition->setChanges(array());
+        // deep clone, to avoid multiple process of the same instance in the passes
+        $definition->setBindings(unserialize(serialize($defaults->getBindings())));
+        $definition->setChanges([]);
 
         $this->loader = $loader;
         $this->resource = $resource;
         $this->allowParent = $allowParent;
+        $this->path = $path;
 
         parent::__construct($parent, $definition, $namespace, $defaults->getTags());
     }
@@ -62,22 +68,22 @@ class PrototypeConfigurator extends AbstractServiceConfigurator
     {
         parent::__destruct();
 
-        if ($this->loader) {
-            $this->loader->registerClasses($this->definition, $this->id, $this->resource, $this->exclude);
+        if (isset($this->loader)) {
+            $this->loader->registerClasses($this->definition, $this->id, $this->resource, $this->excludes, $this->path);
         }
-        $this->loader = null;
+        unset($this->loader);
     }
 
     /**
-     * Excludes files from registration using a glob pattern.
+     * Excludes files from registration using glob patterns.
      *
-     * @param string $exclude
+     * @param string[]|string $excludes
      *
      * @return $this
      */
-    final public function exclude($exclude)
+    final public function exclude(array|string $excludes): static
     {
-        $this->exclude = $exclude;
+        $this->excludes = (array) $excludes;
 
         return $this;
     }

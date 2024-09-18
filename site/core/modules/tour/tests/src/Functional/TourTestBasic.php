@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\tour\Functional;
 
 /**
@@ -14,12 +16,12 @@ abstract class TourTestBasic extends TourTestBase {
    *   An array of tip attributes, keyed by path.
    *
    * @code
-   * protected $tips = array(
-   *   '/foo/bar' => array(
-   *     array('data-id' => 'foo'),
-   *     array('data-class' => 'bar'),
-   *   ),
-   * );
+   * protected $tips = [
+   *   '/foo/bar' => [
+   *     ['data-id' => 'foo'],
+   *     ['data-class' => 'bar'],
+   *   ],
+   * ];
    * @endcode
    */
   protected $tips = [];
@@ -39,15 +41,18 @@ abstract class TourTestBasic extends TourTestBase {
    */
   protected $permissions = ['access tour'];
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     parent::setUp();
 
     // Make sure we are using distinct default and administrative themes for
     // the duration of these tests.
-    $this->container->get('theme_handler')->install(['bartik', 'seven']);
+    $this->container->get('theme_installer')->install(['olivero', 'claro']);
     $this->config('system.theme')
-      ->set('default', 'bartik')
-      ->set('admin', 'seven')
+      ->set('default', 'olivero')
+      ->set('admin', 'claro')
       ->save();
 
     $this->permissions[] = 'view the administration theme';
@@ -60,7 +65,7 @@ abstract class TourTestBasic extends TourTestBase {
   /**
    * A simple tip test.
    */
-  public function testTips() {
+  public function testTips(): void {
     foreach ($this->tips as $path => $attributes) {
       $this->drupalGet($path);
       $this->assertTourTips($attributes);

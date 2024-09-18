@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\migrate\Kernel;
 
 use Drupal\migrate\MigrateExecutable;
@@ -13,19 +15,24 @@ use Drupal\taxonomy\Entity\Vocabulary;
 class MigrateRollbackEntityConfigTest extends MigrateTestBase {
 
   /**
-   * Modules to enable.
-   *
-   * @var array
+   * {@inheritdoc}
    */
-  public static $modules = ['field', 'taxonomy', 'text', 'language', 'config_translation', 'user'];
+  protected static $modules = [
+    'field',
+    'taxonomy',
+    'text',
+    'language',
+    'config_translation',
+    'user',
+    'system',
+  ];
 
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installEntitySchema('user');
-    $this->installEntitySchema('taxonomy_vocabulary');
     $this->installEntitySchema('taxonomy_term');
     $this->installConfig(['taxonomy']);
   }
@@ -33,7 +40,7 @@ class MigrateRollbackEntityConfigTest extends MigrateTestBase {
   /**
    * Tests rolling back configuration entity translations.
    */
-  public function testConfigEntityRollback() {
+  public function testConfigEntityRollback(): void {
     // We use vocabularies to demonstrate importing and rolling back
     // configuration entities with translations. First, import vocabularies.
     $vocabulary_data_rows = [
@@ -71,7 +78,7 @@ class MigrateRollbackEntityConfigTest extends MigrateTestBase {
     foreach ($vocabulary_data_rows as $row) {
       /** @var \Drupal\taxonomy\Entity\Vocabulary $vocabulary */
       $vocabulary = Vocabulary::load($row['id']);
-      $this->assertTrue($vocabulary);
+      $this->assertNotEmpty($vocabulary);
       $map_row = $vocabulary_id_map->getRowBySource(['id' => $row['id']]);
       $this->assertNotNull($map_row['destid1']);
     }
@@ -83,14 +90,14 @@ class MigrateRollbackEntityConfigTest extends MigrateTestBase {
         'name' => '1',
         'language' => 'fr',
         'property' => 'name',
-        'translation' => 'fr - categories'
+        'translation' => 'fr - categories',
       ],
       [
         'id' => '2',
         'name' => '2',
         'language' => 'fr',
         'property' => 'name',
-        'translation' => 'fr - tags'
+        'translation' => 'fr - tags',
       ],
     ];
     $ids = [
@@ -106,7 +113,7 @@ class MigrateRollbackEntityConfigTest extends MigrateTestBase {
         'ids' => $ids,
         'constants' => [
           'name' => 'name',
-        ]
+        ],
       ],
       'process' => [
         'vid' => 'id',
@@ -159,7 +166,7 @@ class MigrateRollbackEntityConfigTest extends MigrateTestBase {
     foreach ($vocabulary_data_rows as $row) {
       /** @var \Drupal\taxonomy\Entity\Vocabulary $vocabulary */
       $vocabulary = Vocabulary::load($row['id']);
-      $this->assertTrue($vocabulary);
+      $this->assertNotEmpty($vocabulary);
       $map_row = $vocabulary_id_map->getRowBySource(['id' => $row['id']]);
       $this->assertNotNull($map_row['destid1']);
     }

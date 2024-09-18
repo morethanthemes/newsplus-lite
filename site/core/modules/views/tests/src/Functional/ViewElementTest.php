@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\views\Functional;
 
 use Drupal\views\Views;
@@ -21,8 +23,13 @@ class ViewElementTest extends ViewTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp($import_test_views = TRUE) {
-    parent::setUp($import_test_views);
+  protected $defaultTheme = 'starterkit_theme';
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp($import_test_views = TRUE, $modules = ['views_test_config']): void {
+    parent::setUp($import_test_views, $modules);
 
     $this->enableViewsTestModule();
   }
@@ -30,20 +37,17 @@ class ViewElementTest extends ViewTestBase {
   /**
    * Tests the rendered output and form output of a view element.
    */
-  public function testViewElement() {
+  public function testViewElement(): void {
     $view = Views::getView('test_view_embed');
     $view->setDisplay();
     // Test a form.
     $this->drupalGet('views_test_data_element_form');
-
-    $xpath = $this->xpath('//div[@class="views-element-container js-form-wrapper form-wrapper"]');
-    $this->assertTrue($xpath, 'The view container has been found on the form.');
-
-    $xpath = $this->xpath('//div[@class="view-content"]');
-    $this->assertTrue($xpath, 'The view content has been found on the form.');
+    // Verify that the view container has been found on the form.
+    $this->assertSession()->elementExists('xpath', '//div[@class="views-element-container js-form-wrapper form-wrapper"]');
+    // Verify that the view content has been found on the form.
+    $this->assertSession()->elementExists('xpath', '//div[@class="view-content"]');
     // There should be 5 rows in the results.
-    $xpath = $this->xpath('//div[@class="view-content"]/div');
-    $this->assertEqual(count($xpath), 5);
+    $this->assertSession()->elementsCount('xpath', '//div[@class="view-content"]/div', 5);
 
     // Add an argument and save the view.
     $view->displayHandlers->get('default')->overrideOption('arguments', [
@@ -67,28 +71,23 @@ class ViewElementTest extends ViewTestBase {
 
     // Test that the form has the expected result.
     $this->drupalGet('views_test_data_element_form');
-    $xpath = $this->xpath('//div[@class="view-content"]/div');
-    $this->assertEqual(count($xpath), 1);
+    $this->assertSession()->elementsCount('xpath', '//div[@class="view-content"]/div', 1);
   }
 
   /**
-   * Tests the rendered output and form output of a view element, using the
-   * embed display plugin.
+   * Tests the rendered output and form output of the "embed" display plugin.
    */
-  public function testViewElementEmbed() {
+  public function testViewElementEmbed(): void {
     $view = Views::getView('test_view_embed');
     $view->setDisplay();
     // Test a form.
     $this->drupalGet('views_test_data_element_embed_form');
-
-    $xpath = $this->xpath('//div[@class="views-element-container js-form-wrapper form-wrapper"]');
-    $this->assertTrue($xpath, 'The view container has been found on the form.');
-
-    $xpath = $this->xpath('//div[@class="view-content"]');
-    $this->assertTrue($xpath, 'The view content has been found on the form.');
+    // Verify that the view container has been found on the form.
+    $this->assertSession()->elementExists('xpath', '//div[@class="views-element-container js-form-wrapper form-wrapper"]');
+    // Verify that the view content has been found on the form.
+    $this->assertSession()->elementExists('xpath', '//div[@class="view-content"]');
     // There should be 5 rows in the results.
-    $xpath = $this->xpath('//div[@class="view-content"]/div');
-    $this->assertEqual(count($xpath), 5);
+    $this->assertSession()->elementsCount('xpath', '//div[@class="view-content"]/div', 5);
 
     // Add an argument and save the view.
     $view->displayHandlers->get('default')->overrideOption('arguments', [
@@ -112,8 +111,7 @@ class ViewElementTest extends ViewTestBase {
 
     // Test that the form has the same expected result.
     $this->drupalGet('views_test_data_element_embed_form');
-    $xpath = $this->xpath('//div[@class="view-content"]/div');
-    $this->assertEqual(count($xpath), 1);
+    $this->assertSession()->elementsCount('xpath', '//div[@class="view-content"]/div', 1);
   }
 
 }

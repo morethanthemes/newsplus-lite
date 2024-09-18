@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\field\Kernel\Timestamp;
 
-use Drupal\Component\Utility\SafeMarkup;
-use Drupal\Component\Utility\Unicode;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\entity_test\Entity\EntityTest;
@@ -21,7 +22,13 @@ class TimestampFormatterTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['system', 'field', 'text', 'entity_test', 'user'];
+  protected static $modules = [
+    'system',
+    'field',
+    'text',
+    'entity_test',
+    'user',
+  ];
 
   /**
    * @var string
@@ -46,7 +53,7 @@ class TimestampFormatterTest extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
 
     $this->installConfig(['system']);
@@ -55,7 +62,7 @@ class TimestampFormatterTest extends KernelTestBase {
 
     $this->entityType = 'entity_test';
     $this->bundle = $this->entityType;
-    $this->fieldName = Unicode::strtolower($this->randomMachineName());
+    $this->fieldName = $this->randomMachineName();
 
     $field_storage = FieldStorageConfig::create([
       'field_name' => $this->fieldName,
@@ -71,7 +78,8 @@ class TimestampFormatterTest extends KernelTestBase {
     ]);
     $instance->save();
 
-    $this->display = entity_get_display($this->entityType, $this->bundle, 'default')
+    $this->display = \Drupal::service('entity_display.repository')
+      ->getViewDisplay($this->entityType, $this->bundle)
       ->setComponent($this->fieldName, [
         'type' => 'boolean',
         'settings' => [],
@@ -99,11 +107,11 @@ class TimestampFormatterTest extends KernelTestBase {
   /**
    * Tests TimestampFormatter.
    */
-  public function testTimestampFormatter() {
+  public function testTimestampFormatter(): void {
     $data = [];
 
     // Test standard formats.
-    $date_formats = array_keys(\Drupal::entityManager()->getStorage('date_format')->loadMultiple());
+    $date_formats = array_keys(\Drupal::entityTypeManager()->getStorage('date_format')->loadMultiple());
 
     foreach ($date_formats as $date_format) {
       $data[] = ['date_format' => $date_format, 'custom_date_format' => '', 'timezone' => ''];
@@ -113,12 +121,12 @@ class TimestampFormatterTest extends KernelTestBase {
     $data[] = ['date_format' => 'custom', 'custom_date_format' => 'e', 'timezone' => 'Asia/Tokyo'];
 
     foreach ($data as $settings) {
-      list($date_format, $custom_date_format, $timezone) = array_values($settings);
+      [$date_format, $custom_date_format, $timezone] = array_values($settings);
       if (empty($timezone)) {
         $timezone = NULL;
       }
 
-      $value = REQUEST_TIME - 87654321;
+      $value = \Drupal::time()->getRequestTime() - 87654321;
       $expected = \Drupal::service('date.formatter')->format($value, $date_format, $custom_date_format, $timezone);
 
       $component = $this->display->getComponent($this->fieldName);
@@ -137,10 +145,10 @@ class TimestampFormatterTest extends KernelTestBase {
   /**
    * Tests TimestampAgoFormatter.
    */
-  public function testTimestampAgoFormatter() {
+  public function testTimestampAgoFormatter(): void {
     $data = [];
 
-    foreach ([1, 2, 3, 4, 5, 6] as $granularity) {
+    foreach ([1, 2, 3, 4, 5, 6, 7] as $granularity) {
       $data[] = [
         'future_format' => '@interval hence',
         'past_format' => '@interval ago',
@@ -156,7 +164,7 @@ class TimestampFormatterTest extends KernelTestBase {
 
       // Test a timestamp in the past
       $value = $request_time - 87654321;
-      $expected = SafeMarkup::format($past_format, ['@interval' => \Drupal::service('date.formatter')->formatTimeDiffSince($value, ['granularity' => $granularity])]);
+      $expected = new FormattableMarkup($past_format, ['@interval' => \Drupal::service('date.formatter')->formatTimeDiffSince($value, ['granularity' => $granularity])]);
 
       $component = $this->display->getComponent($this->fieldName);
       $component['type'] = 'timestamp_ago';
@@ -171,7 +179,7 @@ class TimestampFormatterTest extends KernelTestBase {
 
       // Test a timestamp in the future
       $value = $request_time + 87654321;
-      $expected = SafeMarkup::format($future_format, ['@interval' => \Drupal::service('date.formatter')->formatTimeDiffUntil($value, ['granularity' => $granularity])]);
+      $expected = new FormattableMarkup($future_format, ['@interval' => \Drupal::service('date.formatter')->formatTimeDiffUntil($value, ['granularity' => $granularity])]);
 
       $component = $this->display->getComponent($this->fieldName);
       $component['type'] = 'timestamp_ago';

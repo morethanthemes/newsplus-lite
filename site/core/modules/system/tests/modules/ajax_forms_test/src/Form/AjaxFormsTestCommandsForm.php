@@ -44,6 +44,42 @@ class AjaxFormsTestCommandsForm extends FormBase {
       ],
     ];
 
+    // Shows the 'announce' command with default priority.
+    $form['announce_command_example'] = [
+      '#value' => $this->t("AJAX 'Announce': Click to announce"),
+      '#type' => 'submit',
+      '#ajax' => [
+        'callback' => 'ajax_forms_test_advanced_commands_announce_callback',
+      ],
+    ];
+
+    // Shows the 'announce' command with 'polite' priority.
+    $form['announce_command_polite_example'] = [
+      '#value' => $this->t("AJAX 'Announce': Click to announce with 'polite' priority"),
+      '#type' => 'submit',
+      '#ajax' => [
+        'callback' => 'ajax_forms_test_advanced_commands_announce_polite_callback',
+      ],
+    ];
+
+    // Shows the 'announce' command with 'assertive' priority.
+    $form['announce_command_assertive_example'] = [
+      '#value' => $this->t("AJAX 'Announce': Click to announce with 'assertive' priority"),
+      '#type' => 'submit',
+      '#ajax' => [
+        'callback' => 'ajax_forms_test_advanced_commands_announce_assertive_callback',
+      ],
+    ];
+
+    // Shows the 'announce' command used twice in one AjaxResponse.
+    $form['announce_command_double_example'] = [
+      '#value' => $this->t("AJAX 'Announce': Click to announce twice"),
+      '#type' => 'submit',
+      '#ajax' => [
+        'callback' => 'ajax_forms_test_advanced_commands_double_announce_callback',
+      ],
+    ];
+
     // Shows the 'append' command.
     $form['append_command_example'] = [
       '#value' => $this->t("AJAX 'Append': Click to append something"),
@@ -170,8 +206,7 @@ class AjaxFormsTestCommandsForm extends FormBase {
     ];
 
     // Demonstrates the Ajax 'settings' command. The 'settings' command has
-    // nothing visual to "show", but it can be tested via SimpleTest and via
-    // Firebug.
+    // nothing visual to "show", but it can be tested.
     $form['settings_command_example'] = [
       '#type' => 'submit',
       '#value' => $this->t("AJAX 'settings' command"),
@@ -186,6 +221,16 @@ class AjaxFormsTestCommandsForm extends FormBase {
       '#value' => $this->t("AJAX 'add_css' command"),
       '#ajax' => [
         'callback' => 'ajax_forms_test_advanced_commands_add_css_callback',
+      ],
+    ];
+
+    // Shows the Ajax 'add_css' command with legacy string parameter.
+    // @todo Remove in Drupal 11.0.0 https://www.drupal.org/i/3339374
+    $form['add_css_legacy_command_example'] = [
+      '#type' => 'submit',
+      '#value' => $this->t("AJAX 'add_css' legacy command"),
+      '#ajax' => [
+        'callback' => 'ajax_forms_test_advanced_commands_add_css_legacy_callback',
       ],
     ];
 

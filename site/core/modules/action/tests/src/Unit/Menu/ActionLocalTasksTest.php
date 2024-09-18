@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Drupal\Tests\action\Unit\Menu;
 
 use Drupal\Tests\Core\Menu\LocalTaskIntegrationTestBase;
@@ -8,10 +10,14 @@ use Drupal\Tests\Core\Menu\LocalTaskIntegrationTestBase;
  * Tests action local tasks.
  *
  * @group action
+ * @group legacy
  */
 class ActionLocalTasksTest extends LocalTaskIntegrationTestBase {
 
-  protected function setUp() {
+  /**
+   * {@inheritdoc}
+   */
+  protected function setUp(): void {
     $this->directoryList = ['action' => 'core/modules/action'];
     parent::setUp();
   }
@@ -19,7 +25,7 @@ class ActionLocalTasksTest extends LocalTaskIntegrationTestBase {
   /**
    * Tests local task existence.
    */
-  public function testActionLocalTasks() {
+  public function testActionLocalTasks(): void {
     $this->assertLocalTasks('entity.action.collection', [['action.admin']]);
   }
 

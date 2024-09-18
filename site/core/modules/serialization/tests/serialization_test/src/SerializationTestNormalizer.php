@@ -11,21 +11,12 @@ class SerializationTestNormalizer implements NormalizerInterface {
    *
    * @var string
    */
-  static protected $format = 'serialization_test';
+  protected static $format = 'serialization_test';
 
   /**
-   * Normalizes an object into a set of arrays/scalars.
-   *
-   * @param object $object
-   *   Object to normalize.
-   * @param string $format
-   *   Format the normalization result will be encoded as.
-   *
-   * @return array
-   *   An array containing a normalized representation of $object, appropriate
-   *   for encoding to the requested format.
+   * {@inheritdoc}
    */
-  public function normalize($object, $format = NULL, array $context = []) {
+  public function normalize($object, $format = NULL, array $context = []): array|string|int|float|bool|\ArrayObject|NULL {
     $normalized = (array) $object;
     // Add identifying value that can be used to verify that the expected
     // normalizer was invoked.
@@ -34,18 +25,19 @@ class SerializationTestNormalizer implements NormalizerInterface {
   }
 
   /**
-   * Checks whether format is supported by this normalizer.
-   *
-   * @param mixed $data
-   *   Data to normalize.
-   * @param string $format
-   *   Format the normalization result will be encoded as.
-   *
-   * @return bool
-   *   Returns TRUE if the normalizer can handle the request.
+   * {@inheritdoc}
    */
-  public function supportsNormalization($data, $format = NULL) {
+  public function supportsNormalization($data, ?string $format = NULL, array $context = []): bool {
     return static::$format === $format;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getSupportedTypes(?string $format): array {
+    return [
+      \stdClass::class => TRUE,
+    ];
   }
 
 }

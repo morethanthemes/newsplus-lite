@@ -14,9 +14,10 @@ interface UserAuthInterface {
    *   The user name to authenticate.
    * @param string $password
    *   A plain-text password, such as trimmed text from form values.
+   *
    * @return int|bool
    *   The user's uid on success, or FALSE on failure to authenticate.
    */
-  public function authenticate($username, $password);
+  public function authenticate($username, #[\SensitiveParameter] $password);
 
 }

@@ -37,4 +37,11 @@ destination:
   plugin: entity:user_role
 migration_dependencies:
   optional:
+    - block_content_type
+    - contact_category
+    - d7_comment_type
     - d7_filter_format
+    - d7_node_type
+    - d7_shortcut_set
+    - d7_taxonomy_vocabulary
+    - d7_taxonomy_vocabulary_translation

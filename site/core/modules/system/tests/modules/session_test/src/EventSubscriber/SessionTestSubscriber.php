@@ -4,8 +4,8 @@ namespace Drupal\session_test\EventSubscriber;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
-use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
-use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\HttpKernel\Event\RequestEvent;
 
 /**
  * Defines a test session subscriber that checks whether the session is empty.
@@ -13,7 +13,7 @@ use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 class SessionTestSubscriber implements EventSubscriberInterface {
 
   /**
-   * Stores whether $_SESSION is empty at the beginning of the request.
+   * Stores whether the session is empty at the beginning of the request.
    *
    * @var bool
    */
@@ -22,24 +22,24 @@ class SessionTestSubscriber implements EventSubscriberInterface {
   /**
    * Set header for session testing.
    *
-   * @param \Symfony\Component\HttpKernel\Event\GetResponseEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\RequestEvent $event
    *   The Event to process.
    */
-  public function onKernelRequestSessionTest(GetResponseEvent $event) {
+  public function onKernelRequestSessionTest(RequestEvent $event) {
     $session = $event->getRequest()->getSession();
-    $this->emptySession = (int) !($session && $session->start());
+    $this->emptySession = !($session && $session->start());
   }
 
   /**
    * Performs tasks for session_test module on kernel.response.
    *
-   * @param \Symfony\Component\HttpKernel\Event\FilterResponseEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\ResponseEvent $event
    *   The Event to process.
    */
-  public function onKernelResponseSessionTest(FilterResponseEvent $event) {
+  public function onKernelResponseSessionTest(ResponseEvent $event) {
     // Set header for session testing.
     $response = $event->getResponse();
-    $response->headers->set('X-Session-Empty', $this->emptySession);
+    $response->headers->set('X-Session-Empty', $this->emptySession ? '1' : '0');
   }
 
   /**
@@ -48,7 +48,7 @@ class SessionTestSubscriber implements EventSubscriberInterface {
    * @return array
    *   An array of event listener definitions.
    */
-  public static function getSubscribedEvents() {
+  public static function getSubscribedEvents(): array {
     $events[KernelEvents::RESPONSE][] = ['onKernelResponseSessionTest'];
     $events[KernelEvents::REQUEST][] = ['onKernelRequestSessionTest'];
     return $events;

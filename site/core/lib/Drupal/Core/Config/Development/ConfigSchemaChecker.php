@@ -3,7 +3,7 @@
 namespace Drupal\Core\Config\Development;
 
 use Drupal\Component\Utility\Crypt;
-use Drupal\Component\Utility\SafeMarkup;
+use Drupal\Component\Render\FormattableMarkup;
 use Drupal\Core\Config\ConfigCrudEvent;
 use Drupal\Core\Config\ConfigEvents;
 use Drupal\Core\Config\Schema\SchemaCheckTrait;
@@ -20,8 +20,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  * is invalid.
  *
  * @see \Drupal\KernelTests\KernelTestBase::register()
- * @see \Drupal\simpletest\WebTestBase::setUp()
- * @see \Drupal\simpletest\KernelTestBase::containerBuild()
+ * @see \Drupal\Core\Test\FunctionalTestSetupTrait::prepareSettings()
  */
 class ConfigSchemaChecker implements EventSubscriberInterface {
   use SchemaCheckTrait;
@@ -54,8 +53,12 @@ class ConfigSchemaChecker implements EventSubscriberInterface {
    *   The typed config manager.
    * @param string[] $exclude
    *   An array of config object names that are excluded from schema checking.
+   * @param bool $validateConstraints
+   *   Determines if constraints will be validated. If TRUE, constraint
+   *   validation errors will be added to the errors found by
+   *   SchemaCheckTrait::checkConfigSchema().
    */
-  public function __construct(TypedConfigManagerInterface $typed_manager, array $exclude = []) {
+  public function __construct(TypedConfigManagerInterface $typed_manager, array $exclude = [], private readonly bool $validateConstraints = FALSE) {
     $this->typedManager = $typed_manager;
     $this->exclude = $exclude;
   }
@@ -83,14 +86,14 @@ class ConfigSchemaChecker implements EventSubscriberInterface {
     $checksum = Crypt::hashBase64(serialize($data));
     if (!in_array($name, $this->exclude) && !isset($this->checked[$name . ':' . $checksum])) {
       $this->checked[$name . ':' . $checksum] = TRUE;
-      $errors = $this->checkConfigSchema($this->typedManager, $name, $data);
+      $errors = $this->checkConfigSchema($this->typedManager, $name, $data, $this->validateConstraints);
       if ($errors === FALSE) {
         throw new SchemaIncompleteException("No schema for $name");
       }
       elseif (is_array($errors)) {
         $text_errors = [];
         foreach ($errors as $key => $error) {
-          $text_errors[] = SafeMarkup::format('@key @error', ['@key' => $key, '@error' => $error]);
+          $text_errors[] = new FormattableMarkup('@key @error', ['@key' => $key, '@error' => $error]);
         }
         throw new SchemaIncompleteException("Schema errors for $name with the following errors: " . implode(', ', $text_errors));
       }
@@ -100,7 +103,7 @@ class ConfigSchemaChecker implements EventSubscriberInterface {
   /**
    * {@inheritdoc}
    */
-  public static function getSubscribedEvents() {
+  public static function getSubscribedEvents(): array {
     $events[ConfigEvents::SAVE][] = ['onConfigSave', 255];
     return $events;
   }
