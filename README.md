@@ -8,7 +8,7 @@ You are welcome however to grab this code and have the demonstration site runnin
 Installation instructions
 --------------
 + Checkout this repository and place the “site” folder under your apache path.
-+ Create an empty MySQL database and import there the “db_instances/db_instance.sql” file. 
++ Create an empty Postgres database and import there the “db_instances/db_instance_postgres.sql” file. 
 + Start the Drupal installation wizard by pointing your browser to the recently created folder.
  + Continue the installation by selection "Standard" installation profile.
  + In the 4th step enter your recently created database information.
